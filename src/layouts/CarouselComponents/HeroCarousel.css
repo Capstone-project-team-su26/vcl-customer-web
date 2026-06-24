@@ -1,0 +1,250 @@
+/* HeroCarousel.css */
+.hero-carousel-wrapper {
+    width: 100%;
+    background: linear-gradient(135deg, #fffbf5 0%, #fbe8c5 100%);
+    overflow: hidden;
+    position: relative;
+    height: 650px;
+  }
+  
+  .hero-carousel-container {
+    max-width: 1440px;
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+    display: flex;
+    position: relative;
+  }
+  
+  /* ================= ĐƯỜNG CONG BÊN TRÁI ================= */
+  .timeline-left-container {
+    width: 400px; /* Bù trừ cho timeline container, khớp với offset path */
+    height: 100%;
+    position: relative;
+    flex-shrink: 0;
+  }
+  
+  .curve-svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  
+  /* Base style cho các chấm dọc đường cong, sử dụng CSS Motion Path */
+  .timeline-dots .dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: #111111;
+    border-radius: 50%;
+    z-index: 15;
+    cursor: pointer;
+    /* CSS Motion Path cho dấu chấm, khớp với SVG path */
+    offset-path: path("M 50 550 C 120 420, 380 320, 280 50");
+    offset-distance: var(--path-distance); /* Sử dụng biến tiến trình của slide */
+    offset-rotate: auto;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .timeline-dots .dot:hover {
+    transform: translate(-50%, -50%) scale(1.4);
+    background-color: #f5a623;
+  }
+  
+  .timeline-dots .dot.active {
+    background-color: #e28a16;
+    transform: translate(-50%, -50%) scale(1.35);
+    box-shadow: 0 0 0 5px rgba(226, 138, 22, 0.25);
+  }
+  
+  /* MÁY BAY VÀ NHÃN TAG DI CHUYỂN */
+  .moving-plane-block {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 20;
+    pointer-events: none;
+    offset-path: path("M 50 550 C 120 420, 380 320, 280 50");
+    offset-distance: var(--path-progress);
+    offset-rotate: auto 0deg; 
+    transition: offset-distance 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  
+  .plane-tag-box {
+    background-color: #f5a623;
+    padding: 6px 14px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(245, 166, 35, 0.35);
+    margin-bottom: 50px; 
+    white-space: nowrap;
+    /* Giữ tag chữ luôn thẳng đứng khi máy bay nghiêng cánh */
+    transform: rotate(calc(var(--offset-rotate) * -1)); 
+  }
+  
+  .plane-tag-box::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #f5a623;
+  }
+  
+  .plane-tag-box .tag-top {
+    font-size: 9px;
+    font-weight: 700;
+    color: #533100;
+    opacity: 0.75;
+    letter-spacing: 0.5px;
+  }
+  
+  .plane-tag-box .tag-bottom {
+    font-size: 13px;
+    font-weight: 800;
+    color: #000000;
+    margin-top: 1px;
+  }
+  
+  .plane-image-wrapper {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: -22px; 
+  }
+  
+  /* Đổ bóng tự nhiên theo đúng hình dáng máy bay xóa phông PNG */
+  .plane-real-img {
+    width: 60px; 
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
+  }
+  
+  
+  /* ================= PHẦN KHỐI TRƯỢT CAROUSEL BÊN PHẢI ================= */
+  .carousel-right-container {
+    flex: 1;
+    height: 100%;
+    position: relative;
+    /* margin-left: 400px; */ /* Bỏ margin-left vì timeline container đã là flex item */
+  }
+  
+  /* ÉP CỨNG CHIỀU CAO CHO TOÀN BỘ CẤU TRÚC SUB-DIV CỦA ANT DESIGN SLIDER */
+  .carousel-right-container .ant-carousel,
+  .carousel-right-container .ant-slick-slider,
+  .carousel-right-container .ant-slick-list,
+  .carousel-right-container .ant-slick-track,
+  .carousel-right-container .ant-slick-slide,
+  .carousel-right-container .ant-slick-slide > div {
+    height: 100% !important;
+  }
+  
+  .slide-item {
+    width: 100%;
+    height: 100%;
+    display: block !important;
+  }
+  
+  /* Khung layout bóc tách chữ và ảnh */
+  .slide-inner-content {
+    display: flex !important;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* KHỐI CHỮ: Chiếm nửa trái và luôn căn giữa hoàn hảo */
+  .content-text-block {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center;
+    text-align: center;  
+    padding: 0 20px;
+  }
+  
+  .hero-title {
+    font-size: 42px;
+    font-weight: 900;
+    color: #111111;
+    line-height: 1.35;
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+  }
+  
+  .hero-title .highlight {
+    color: #e28a16; /* Màu cam thương hiệu cho phần highlight */
+  }
+  
+  .hero-description {
+    font-size: 16px;
+    color: #4a4a4a;
+    line-height: 1.65;
+    margin-bottom: 30px;
+    max-width: 460px;
+  }
+  
+  .cta-btn {
+    background-color: #f5a623;
+    color: #ffffff;
+    border: none;
+    padding: 14px 36px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 10px; 
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 5px 15px rgba(245, 166, 35, 0.3);
+    transition: all 0.2s ease;
+  }
+  
+  .cta-btn:hover {
+    background-color: #e09219;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(245, 166, 35, 0.45);
+  }
+  
+  /* KHỐI ẢNH LỚN: Chiếm nửa phải và ép hẳn về góc lề phải */
+  .content-image-block {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    justify-content: flex-end; /* Đẩy sát biên đồ họa sang phải */
+    align-items: center;
+  }
+  
+  .hero-main-img {
+    max-width: 100%;
+    max-height: 540px;
+    object-fit: contain;
+    animation: imgFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+  
+  /* Hiệu ứng trượt nhẹ từ phải sang trái khi đổi ảnh */
+  @keyframes imgFadeIn {
+    from { 
+      opacity: 0; 
+      transform: scale(0.98) translateX(30px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: scale(1) translateX(0); 
+    }
+  }
