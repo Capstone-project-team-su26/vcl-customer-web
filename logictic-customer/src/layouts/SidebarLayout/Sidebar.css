@@ -1,0 +1,364 @@
+.sidebar-container {
+    width: 280px;
+    height: 100vh;
+    background-color: #ffffff;
+    border-right: 1px solid #f3f4f6;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  
+  /* ================= KHU VỰC CỨNG PHÍA TRÊN ================= */
+  .sidebar-fixed-top {
+    flex-shrink: 0;
+  }
+  
+  .sidebar-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .logo-box { 
+    display: flex; 
+    flex-direction: column; 
+  }
+  
+  .logo-subtitle { 
+    font-size: 10px; 
+    color: #9ca3af; 
+    font-weight: 700; 
+    letter-spacing: 0.08em; 
+  }
+  
+  .logo-main-text { 
+    font-size: 20px; 
+    color: #d97706; /* Màu cam hổ phách đậm đà sang trọng hơn */
+    font-weight: 800; 
+    margin: 2px 0 0 0; 
+    letter-spacing: -0.02em;
+  }
+  
+  .collapse-btn {
+    background: #ffffff; 
+    border: 1px solid #e5e7eb; 
+    color: #9ca3af;
+    width: 28px; 
+    height: 28px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .collapse-btn:hover {
+    border-color: #d97706;
+    color: #d97706;
+    background-color: #fffbeb;
+  }
+  
+  /* ================= PROFILE CARD ================= */
+  .profile-card {
+    border: 1px solid #f3f4f6; 
+    border-radius: 16px; 
+    padding: 1rem 1.15rem;
+    display: flex; 
+    gap: 0.85rem; 
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    margin: 0 1.25rem 1rem 1.25rem; /* Sửa padding lỗi bọc ngoài bằng margin chuẩn */
+  }
+  
+  .avatar-wrapper { 
+    position: relative; 
+    display: flex;
+    align-items: center;
+  }
+  
+  .avatar-circle {
+    width: 46px; 
+    height: 46px; 
+    background: linear-gradient(135deg, #ec4899, #db2777); /* Hiệu ứng chuyển màu gradient tinh tế */
+    color: #ffffff;
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 700;
+    font-size: 16px;
+    box-shadow: 0 2px 6px rgba(219, 39, 119, 0.2);
+  }
+  
+  .status-dot-online { 
+    position: absolute; 
+    bottom: 1px; 
+    right: 1px; 
+    width: 10px; 
+    height: 10px; 
+    background-color: #10b981; 
+    border: 2px solid #ffffff; 
+    border-radius: 50%; 
+  }
+  
+  .profile-info { 
+    flex: 1; 
+    min-width: 0; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .profile-name-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+  }
+  
+  .profile-name { 
+    font-size: 13.5px; 
+    font-weight: 700; 
+    color: #1f2937; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+  }
+  
+  .verified-badge { 
+    width: 14px; 
+    height: 14px; 
+    color: #10b981; 
+    flex-shrink: 0; 
+  }
+  
+  .profile-id { 
+    font-size: 11px; 
+    color: #d97706; 
+    font-weight: 600; 
+    margin: 3px 0 6px 0; 
+  }
+  
+  .profile-progress-label { 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 9px; 
+    color: #9ca3af; 
+    font-weight: 700; 
+    margin-bottom: 5px; 
+    letter-spacing: 0.02em;
+  }
+  
+  .profile-progress-bar { 
+    width: 100%; 
+    height: 5px; 
+    background-color: #f3f4f6; 
+    border-radius: 10px; 
+  }
+  
+  .progress-fill { 
+    height: 100%; 
+    background-color: #d97706; 
+    border-radius: 10px; 
+  }
+  
+  /* ================= VÙNG MENU CUỘN MỀM MẠI ================= */
+  .sidebar-scrollable-menu {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0 1.25rem 1rem 1.25rem;
+    padding: 0.25rem 0.75rem 1.5rem 0.75rem;
+    border-radius: 16px;
+    border: 1px solid #fecdd3;
+    background: linear-gradient(180deg, #fff1f2 0%, #fff5f5 100%);
+    background-image: radial-gradient(#fecdd3 1px, transparent 1px);
+    background-size: 16px 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .sidebar-scrollable-menu::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* TIÊU ĐỀ PHÂN KHU */
+  .menu-section-label { 
+    font-size: 11px; 
+    font-weight: 700; 
+    color: #a1a1aa; 
+    padding: 1.25rem 0.5rem 0.5rem 0.5rem;
+    letter-spacing: 0.06em; 
+  }
+  
+  /* CÁC NÚT MENU CHÍNH */
+  .menu-item { 
+    display: flex; 
+    align-items: center; 
+    padding: 0.75rem 0.85rem; 
+    color: #4b5563; 
+    font-size: 13.5px; 
+    font-weight: 500; 
+    border-radius: 10px;
+    cursor: pointer; 
+    text-decoration: none; 
+    position: relative; 
+    margin-bottom: 4px;
+    background-color: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(254, 205, 211, 0.2);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .menu-item:hover { 
+    background-color: #ffffff; 
+    color: #111827; 
+    border-color: #fda4af;
+    transform: translateX(2px); /* Hiệu ứng nhích nhẹ sang phải thời thượng */
+    box-shadow: 0 2px 6px rgba(225, 29, 72, 0.04);
+  }
+  
+  .menu-icon { 
+    font-size: 16px; 
+    margin-right: 0.75rem; 
+    color: #9ca3af; 
+    transition: color 0.2s;
+  }
+  
+  .menu-item:hover .menu-icon { 
+    color: #e11d48; 
+  }
+  
+  /* MENU ĐANG ACTIVE */
+  .menu-item.active { 
+    background-color: #fffbeb; 
+    color: #111827; 
+    font-weight: 700;
+    border-color: #fef3c7;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.05);
+  }
+  
+  .menu-item.active .menu-icon { 
+    color: #d97706; 
+  }
+  
+  .menu-item.active::before { 
+    content: ""; 
+    position: absolute; 
+    left: -0.5rem; 
+    top: 8px; 
+    bottom: 8px; 
+    width: 3.5px; 
+    background-color: #d97706; 
+    border-radius: 0 4px 4px 0; 
+  }
+  
+  .arrow-icon { 
+    margin-left: auto; 
+    font-size: 9px; 
+    color: #9ca3af; 
+  }
+  
+  /* ================= MENU CON (SUBMENU TIMELINE) ================= */
+  .menu-item-dropdown {
+    margin-bottom: 4px;
+  }
+  
+  .submenu-list { 
+    padding-left: 0; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1px; 
+    margin-top: 2px;
+  }
+  
+  .timeline-style { 
+    position: relative; 
+  }
+  
+  /* Đường thẳng dọc nét đứt nhẹ nhàng */
+  .timeline-style::before { 
+    content: ""; 
+    position: absolute; 
+    left: 1.6rem;       
+    top: 0; 
+    bottom: 0.85rem; 
+    width: 1.5px; 
+    background-color: #fca5a5; 
+    z-index: 1;
+  }
+  
+  .submenu-item { 
+    padding: 0.55rem 1rem 0.55rem 2.6rem; 
+    font-size: 13px; 
+    color: #6b7280; 
+    cursor: pointer; 
+    text-decoration: none; 
+    position: relative; 
+    display: block;
+    transition: all 0.2s;
+  }
+  
+  .submenu-item:hover { 
+    color: #e11d48; 
+    transform: translateX(1px);
+  }
+  
+  /* Chấm tròn định vị chuẩn chỉ */
+  .timeline-style .submenu-item::before { 
+    content: ""; 
+    position: absolute; 
+    left: 1.43rem;       
+    top: 50%; 
+    transform: translateY(-50%); 
+    width: 6px; 
+    height: 6px; 
+    border-radius: 50%; 
+    background-color: #f43f5e; 
+    z-index: 2; 
+    transition: all 0.2s ease;
+  }
+  
+  /* Khi Submenu được Active */
+  .timeline-style .submenu-item.active-sub { 
+    color: #111827; 
+    font-weight: 700; 
+  }
+  
+  .timeline-style .submenu-item.active-sub::before { 
+    background-color: #d97706; 
+    box-shadow: 0 0 0 3px #fef3c7; 
+  }
+  
+  /* ================= KHU VỰC CỨNG PHÍA DƯỚI ================= */
+  .sidebar-fixed-bottom {
+    flex-shrink: 0;
+    padding: 1rem 1.25rem 1.5rem 1.25rem;
+    border-top: 1px solid #f3f4f6;
+    background-color: #ffffff;
+  }
+  
+  .logout-button { 
+    width: 100%; 
+    height: 44px; 
+    background: #ffffff; 
+    border: 1px solid #e5e7eb; 
+    color: #374151; 
+    font-size: 13.5px; 
+    font-weight: 600; 
+    border-radius: 10px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 0.5rem; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+  }
+  
+  .logout-button:hover { 
+    background: #fff1f2; 
+    border-color: #fecdd3; 
+    color: #e11d48; 
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.05);
+  }

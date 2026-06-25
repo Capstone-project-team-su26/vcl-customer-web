@@ -7,7 +7,9 @@ export const loginApi = async (email, password) => {
       password: password
     });
 
-    const resData = response.data;
+    // ================= SỬA LẠI ĐOẠN NÀY =================
+    // Nếu response đã là data sạch (do interceptor bóc tách trước), hoặc là chuẩn của Axios
+    const resData = response?.data ? response.data : response;
 
     if (resData && resData.token) {
       localStorage.setItem('accessToken', resData.token);
@@ -15,7 +17,8 @@ export const loginApi = async (email, password) => {
       localStorage.setItem('accessToken', resData.accessToken);
     }
 
-    return resData;
+    return resData; // Đảm bảo trả về đúng object chứa userId, fullName...
+    // ====================================================
   } catch (error) {
     console.error('URL bị lỗi:', error.config?.url);
     console.error('Base URL hiện tại:', error.config?.baseURL);

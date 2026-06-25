@@ -1,5 +1,5 @@
 import React from "react";
-import Header from "../../layouts/HeaderComponets/Headeer"; // Đã sửa chuẩn lỗi gõ nhanh 'HeaderComponets/Headeer'
+import Header from "../../layouts/HeaderLayout/Headeer"; // Đã sửa chuẩn lỗi gõ nhanh 'HeaderComponets/Headeer'
 
 
 export default function Home() {

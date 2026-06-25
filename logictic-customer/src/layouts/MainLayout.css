@@ -1,0 +1,69 @@
+/* Khung chứa toàn màn hình - Chặn hoàn toàn thanh cuộn tổng */
+.main-layout-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; 
+    background-color: #f1f5f9; /* Nền xám nhạt làm bật các khối hộp bên trong */
+    box-sizing: border-box;
+  }
+  
+  /* Ép Sidebar đứng im tuyệt đối tại chỗ, cách các viền màn hình 1 khoảng */
+  .main-layout-container aside {
+    position: fixed;
+    top: 1rem;       /* Khoảng cách từ đỉnh Sidebar xuống mép trên màn hình */
+    left: 1rem;      /* Khoảng cách từ Sidebar ra mép trái màn hình */
+    bottom: 1rem;    /* Khoảng cách từ chân Sidebar lên mép dưới màn hình */
+    width: 280px;
+    height: calc(100vh - 2rem); /* Chiều cao tự trừ đi khoảng cách trên dưới */
+    z-index: 999;
+    
+    background-color: #ffffff;
+    border-radius: 26px; /* Bo góc cho thanh Sidebar */
+    
+    /* 🆕 THÊM VIỀN MÀU VÀNG NHẠT CHO SIDEBAR CHUẨN UX */
+    border: 2px solid #fef08a; 
+    
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.015);
+    box-sizing: border-box; /* Đảm bảo viền không làm tăng kích thước khối */
+  }
+  
+  /* Nội dung bên phải tự cuộn độc lập, có khoảng cách với Sidebar và viền */
+  .main-layout-content {
+    flex: 1;
+    overflow-y: auto;   /* Chỉ cho phép vùng này cuộn */
+    
+    /* Tăng margin-left: Độ rộng Sidebar (280px) + Khoảng cách trái (1rem) + Khoảng trống ở giữa (1.25rem) */
+    margin-left: calc(280px + 2.25rem); 
+    
+    /* Tạo khoảng cách đồng bộ cho khối nội dung bên phải */
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    margin-right: 1rem;
+    height: calc(100vh - 2rem); /* Chiều cao bằng với Sidebar */
+    
+    background-color: #ffffff; /* Đổ nền trắng tạo thành 1 khối hộp riêng biệt */
+    border-radius: 18px;      /* Bo tròn góc chuẩn thiết kế trong ảnh */
+    
+    /* 🆕 THÊM VIỀN MÀU VÀNG NHẠT CHO TRANG NỘI DUNG PHẢI TONE-SUR-TONE */
+    border: 2px solid #fef08a;
+    
+    padding: 2rem;            /* Khoảng cách đệm bên trong ruột trang */
+    box-sizing: border-box;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+  }
+  
+  /* Tùy chỉnh thanh cuộn bên phải thanh mảnh, tinh tế */
+  .main-layout-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  .main-layout-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .main-layout-content::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+  }
+  .main-layout-content::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+  }
