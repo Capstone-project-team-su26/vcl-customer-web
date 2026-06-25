@@ -1,0 +1,179 @@
+.create-order-container {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 1400px; /* 🆕 Mở rộng độ rộng tối đa của vùng chứa */
+    margin: 0 auto;
+    padding: 0 0.5rem;
+  }
+  
+  .create-order-header {
+    margin-bottom: 2.5rem; /* 🆕 Tăng khoảng cách dưới tiêu đề */
+  }
+  
+  .create-order-header .main-title {
+    font-size: 24px; /* 🆕 Tăng kích thước chữ tiêu đề chính */
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.01em;
+  }
+  
+  .create-order-header .subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0;
+  }
+  
+  /* Chia lưới 2 cột rộng rãi */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem; /* 🆕 Tăng khoảng cách giữa các hộp thoáng hơn hẳn */
+  }
+  
+  /* Khung Card tổng thể */
+  .service-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 2.5rem; /* 🆕 Tăng không gian đệm bên trong ruột hộp rộng rãi hơn */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-sizing: border-box;
+    min-height: 280px; /* 🆕 Tăng chiều cao tối thiểu giúp hộp nhìn to và đẹp */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* ================= KHỐI DỊCH VỤ ĐANG HOẠT ĐỘNG ================= */
+  .service-card.card-active {
+    cursor: pointer;
+  }
+  
+  /* Hover ô số 1: Mua hộ (Viền màu xanh ngọc nguyên bản) */
+  .service-card.card-active:nth-child(1) {
+    border: 1.5px solid #10b981; /* 🆕 Cho viền mặc định rõ hơn như ảnh mẫu của bạn */
+  }
+  .service-card.card-active:nth-child(1):hover {
+    box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
+    transform: translateY(-4px); /* 🆕 Hiệu ứng nổi nhẹ lên trên khi hover */
+  }
+  
+  /* Hover ô số 2: Ký gửi */
+  .service-card.card-active:nth-child(2):hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 12px 30px rgba(148, 163, 184, 0.12);
+    transform: translateY(-4px);
+  }
+  
+  /* ================= 🆕 KHỐI SẮP RA MẮT: LÀM MỜ LÊN CHUẨN ĐẸP ================= */
+  .service-card.card-disabled {
+    opacity: 0.45; /* 🆕 Giảm độ mờ sâu xuống giúp phân biệt rõ rệt */
+    filter: grayscale(40%); /* 🆕 Giảm bớt độ bão hòa màu để tạo cảm giác "chưa kích hoạt" */
+    background-color: #f8fafc; /* 🆕 Đổi nền xám rất nhẹ tạo độ chìm */
+    cursor: not-allowed; /* Hiện icon cấm click */
+    border-style: dashed; /* 🆕 Viền nét đứt tạo điểm nhấn mỹ thuật */
+  }
+  
+  /* Khung bọc Icon tròn */
+  .svc-icon-wrapper {
+    margin-bottom: 1.5rem;
+  }
+  
+  .svc-icon {
+    font-size: 24px; /* 🆕 Tăng size icon cho cân xứng với hộp rộng */
+    padding: 12px;
+    border-radius: 12px;
+    display: inline-flex;
+  }
+  
+  /* Màu sắc của từng loại Icon */
+  .icon-green { background-color: #e6f4ea; color: #10b981; }
+  .icon-orange { background-color: #fff3e0; color: #f59e0b; }
+  .icon-purple { background-color: #f3e5f5; color: #a855f7; }
+  .icon-blue { background-color: #e3f2fd; color: #3b82f6; }
+  
+  /* Nội dung văn bản */
+  .svc-content {
+    flex: 1;
+  }
+  
+  .svc-title {
+    font-size: 18px; /* 🆕 Tăng size chữ tiêu đề dịch vụ */
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    letter-spacing: 0.01em;
+  }
+  
+  /* Màu tiêu đề riêng */
+  .service-card:nth-child(1) .svc-title {
+    color: #f59e0b;
+  }
+  .service-card:nth-child(2) .svc-title {
+    color: #1e293b;
+  }
+  
+  .svc-desc {
+    font-size: 13.5px; /* 🆕 Tăng nhẹ size chữ mô tả */
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+  }
+  
+  /* Footer chứa nút bấm */
+  .svc-footer {
+    margin-top: 2rem;
+  }
+  
+  .btn-action {
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    background: transparent;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+  }
+  
+  /* Style nút Tiếp tục */
+  .btn-next {
+    color: #f59e0b;
+  }
+  .btn-next:hover {
+    color: #d97706;
+  }
+  .arrow-next {
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  .service-card.card-active:hover .arrow-next {
+    transform: translateX(6px);
+  }
+  
+  /* Style nút Liên hệ tư vấn của khối sắp ra mắt */
+  .btn-consult {
+    background-color: #fffbeb;
+    color: #f59e0b;
+    padding: 0.6rem 1.5rem; /* 🆕 Nới rộng nút tư vấn */
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .btn-consult:hover {
+    background-color: #fef3c7;
+  }
+  
+  /* Tag Sắp ra mắt */
+  .coming-soon-badge {
+    position: absolute;
+    top: 2.5rem;
+    right: 2.5rem;
+    background-color: #f59e0b;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 0.4rem 1.2rem;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+  }

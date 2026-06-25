@@ -7,9 +7,10 @@ import NotFound from "../pages/NotFound";
 
 // ⬇️ IMPORT CÁC COMPONENT LAYOUT VÀ MÀN HÌNH MỚI CỦA BẠN VÀO ĐÂY
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
-import Dashboard from "../pages/DashboardPage/Dashboard";
+import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
 import ProcessingOrders from "../pages/DashboardPage/ProcessingOrders";
-import CreateOrder from "../pages/DashboardPage/CreateOrder";
+import CreateOrder from "../pages/DashboardPage/CreateCustomer/CreateOrder";
+import ConsigmentOrder from "../pages/DashboardPage/CreateCustomer/KiGuiHang/ConsignmentOrder";
 
 
 
@@ -30,6 +31,7 @@ const AppRouter = () => {
           <Route path="/customer/dashboard" element={<Dashboard />} />
           <Route path="/processing-orders" element={<ProcessingOrders />} />
           <Route path="/create-order" element={<CreateOrder />} />
+          <Route path="/create-order/consignment" element={<ConsigmentOrder />} />
           
 
     
