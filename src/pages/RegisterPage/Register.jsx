@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
-import './Register.css'; // Dùng chung file CSS với màn hình Login
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; 
+import "./Register.css"; // Dùng chung file CSS với màn hình Login
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    phone: '',
-    country: '',
-    address: ''
+    fullName: "",
+    email: "",
+    password: "",
+    phone: "",
+    country: "",
+    address: ""
   });
   
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate(); 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,8 +42,8 @@ export default function Register() {
       >
         <div className="banner-overlay" />
 
-        {/* Logo */}
-        <div className="logo-wrapper">
+        {/* Logo - Bổ sung hành vi quay về Trang chủ */}
+        <div className="logo-wrapper" style={{ cursor: "pointer" }} onClick={() => navigate("/")}>
           <div className="logo-icon-box">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
           </div>
@@ -165,14 +167,14 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Hàng chứa: Số điện thoại & Quốc gia (Để tiết kiệm không gian hiển thị) */}
+            {/* Hàng chứa: Số điện thoại & Quốc gia */}
             <div style={{ display: 'flex', gap: '1rem' }}>
               {/* Số điện thoại */}
               <div className="input-group" style={{ flex: 1 }}>
                 <label className="input-label">Phone</label>
                 <div className="input-wrapper">
                   <div className="input-icon-left">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.5 19.5 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                   </div>
                   <input
                     type="tel"
@@ -232,18 +234,24 @@ export default function Register() {
             </button>
           </form>
 
-          {/* Chuyển hướng sang đăng nhập */}
+          {/* Bottom Links: ĐÃ KHẮC PHỤC THẺ A GÂY DÍNH HASH LINK #LOGIN */}
           <div className="request-access-box">
-            Already have an account?{' '}
-            <a href="#login" className="request-link">Sign In</a>
+            Already have an account?{" "}
+            <span 
+              className="request-link" 
+              onClick={() => navigate("/login")}
+              style={{ cursor: "pointer", fontWeight: "600" }}
+            >
+              Sign In
+            </span>
           </div>
 
           <div className="form-footer-links">
-            <a href="#support">Support</a>
+            <span onClick={() => navigate("/support")} style={{ cursor: "pointer" }}>Support</span>
             <span>•</span>
-            <a href="#privacy">Privacy Policy</a>
+            <span onClick={() => navigate("/privacy")} style={{ cursor: "pointer" }}>Privacy Policy</span>
             <span>•</span>
-            <a href="#terms">Terms</a>
+            <span onClick={() => navigate("/terms")} style={{ cursor: "pointer" }}>Terms</span>
           </div>
         </div>
 
