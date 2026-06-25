@@ -263,10 +263,7 @@ export default function Login() {
     </div>
   </div>
 
-  <div className="system-status-bar">
-    <span className="status-dot" />
-    System Status: Operational
-  </div>
+
 
 </div>
     
