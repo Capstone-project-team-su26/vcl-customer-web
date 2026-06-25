@@ -1,0 +1,305 @@
+/* Layout tổng thể đồng bộ cấu trúc 2 bên */
+.otp-screen-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #0b0f19;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  /* ================= BÊN TRÁI: BANNER THƯƠNG HIỆU ================= */
+  .otp-screen-banner {
+    flex: 1.2;
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3rem;
+    overflow: hidden;
+  }
+  
+  /* Ẩn banner bên trái khi thu nhỏ màn hình (Mobiles/Tablets) */
+  @media (max-width: 960px) {
+    .otp-screen-banner {
+      display: none;
+    }
+  }
+  
+  .otp-banner-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(11, 15, 25, 0.95) 0%, rgba(37, 99, 235, 0.3) 100%);
+    z-index: 1;
+  }
+  
+  .otp-logo-wrapper {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .otp-logo-icon-box {
+    background-color: #2563eb;
+    color: #ffffff;
+    padding: 0.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .otp-logo-text {
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+  
+  .otp-banner-content {
+    position: relative;
+    z-index: 2;
+    max-width: 520px;
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+  
+  .otp-banner-title {
+    color: #ffffff;
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+  }
+  
+  .otp-banner-description {
+    color: #9ca3af;
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+  
+  
+  /* ================= BÊN PHẢI: KHU VỰC FORM CHÍNH ================= */
+  .otp-form-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    position: relative;
+  }
+  
+  /* Hiệu ứng viền phát sáng nhẹ quanh Card */
+  .otp-card-glow-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    background: padding-box, linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(16, 185, 129, 0.15)) border-box;
+    border: 1px solid transparent;
+    border-radius: 16px;
+  }
+  
+  .otp-inner-card {
+    background-color: #111827;
+    padding: 2.5rem;
+    border-radius: 15px;
+  }
+  
+  .otp-form-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .otp-form-title {
+    color: #ffffff;
+    font-size: 1.625rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+  }
+  
+  .otp-form-subtitle {
+    color: #9ca3af;
+    font-size: 0.925rem;
+    line-height: 1.5;
+  }
+  
+  /* Định dạng hiển thị Tên Email Đăng ký tĩnh */
+  .otp-display-email {
+    margin-top: 0.85rem;
+    background-color: rgba(37, 99, 235, 0.12);
+    color: #60a5fa;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    display: inline-block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    word-break: break-all;
+  }
+  
+  .otp-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  /* Khung cấu trúc Input mã OTP */
+  .otp-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .otp-input-label {
+    color: #e5e7eb;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .otp-required-star {
+    color: #ef4444;
+    margin-left: 2px;
+  }
+  
+  .otp-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .otp-icon-left {
+    position: absolute;
+    left: 1rem;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+  
+  .otp-form-input {
+    width: 100%;
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    color: #ffffff;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+  
+  .otp-form-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    background-color: #111827;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  }
+  
+  /* Định dạng khoảng cách mật mã ẩn riêng cho input OTP */
+  .input-code-style {
+    letter-spacing: 6px;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  
+  
+  /* ================= KHU VỰC GỬI LẠI MÃ (RESEND) ================= */
+  .otp-resend-wrapper {
+    margin-top: -0.25rem;
+    text-align: right;
+    font-size: 0.875rem;
+    min-height: 20px; /* Đảm bảo layout không bị nhảy chiều cao khi đổi trạng thái */
+  }
+  
+  .countdown-text {
+    color: #9ca3af;
+  }
+  
+  .countdown-text b {
+    color: #3b82f6;
+    font-weight: 600;
+  }
+  
+  .resend-action-btn {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    transition: color 0.2s ease;
+  }
+  
+  .resend-action-btn:hover {
+    color: #60a5fa;
+  }
+  
+  
+  /* ================= CÁC NÚT ĐIỀU HƯỚNG BỔ TRỢ ================= */
+  .otp-back-btn {
+    width: 100%;
+    height: 46px;
+    background-color: transparent;
+    border: 1px solid #374151;
+    color: #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.25rem;
+    transition: all 0.2s ease;
+  }
+  
+  .otp-back-btn:hover {
+    background-color: #1f2937;
+    color: #ffffff;
+    border-color: #4b5563;
+  }
+  
+  .otp-form-footer {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    color: #4b5563;
+    font-size: 0.8rem;
+  }
+  
+  .otp-form-footer span {
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  
+  .otp-form-footer span:hover {
+    color: #9ca3af;
+  }
+  
+  
+  /* ================= TRẠNG THÁI HỆ THỐNG DƯỚI ĐÁY MÀN HÌNH ================= */
+  .otp-status-bar {
+    position: absolute;
+    bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4b5563;
+    font-size: 0.8rem;
+  }
+  
+  .otp-status-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #10b981;
+  }
