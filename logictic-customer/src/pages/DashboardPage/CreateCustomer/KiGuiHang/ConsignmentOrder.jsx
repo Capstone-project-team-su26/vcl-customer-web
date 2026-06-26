@@ -23,11 +23,11 @@ const createEmptyPackage = () => ({
   id: Date.now() + Math.random(),
   productName: "",
   productType: "Electronics",
-  quantity: 1,
-  weight: 0.1,
-  width: 1,
-  height: 1,
-  length: 1,
+  quantity: "",
+  weight: "",
+  width: "",
+  height: "",
+  length: "",
   declaredValue: 0,
   trackingCode: "",
   note: "",
@@ -323,7 +323,7 @@ export default function ConsignmentOrder() {
                 <div className="form-row-2col">
                   <div className="input-field-group">
                     <label className="field-label required-label">SỐ LƯỢNG</label>
-                    <input type="number" className="custom-input" min={1} value={pkg.quantity} onChange={(e) => handleInputChange(pkg.id, "quantity", parseInt(e.target.value, 10) || 1)} />
+                    <input type="number" className="custom-input" placeholder="Nhập số lượng sản phẩm..." min={1} value={pkg.quantity} onChange={(e) => handleInputChange(pkg.id, "quantity", parseInt(e.target.value, 10) || 1)} />
                   </div>
                   <div className="input-field-group">
                     <label className="field-label">GIÁ TRỊ KHAI BÁO (VND)</label>
@@ -335,19 +335,19 @@ export default function ConsignmentOrder() {
                 <div className="form-row-4col">
                   <div className="input-field-group">
                     <label className="field-label">CÂN NẶNG (KG)</label>
-                    <input type="number" step="0.01" className="custom-input" value={pkg.weight} onChange={(e) => handleInputChange(pkg.id, "weight", e.target.value)} />
+                    <input type="number" step="0.01" placeholder="Nhập cân nặng..." className="custom-input" value={pkg.weight} onChange={(e) => handleInputChange(pkg.id, "weight", e.target.value)} />
                   </div>
                   <div className="input-field-group">
                     <label className="field-label">DÀI (CM)</label>
-                    <input type="number" className="custom-input" value={pkg.length} onChange={(e) => handleInputChange(pkg.id, "length", e.target.value)} />
+                    <input type="number" className="custom-input" placeholder="Nhập chiều dài..." value={pkg.length} onChange={(e) => handleInputChange(pkg.id, "length", e.target.value)} />
                   </div>
                   <div className="input-field-group">
                     <label className="field-label">RỘNG (CM)</label>
-                    <input type="number" className="custom-input" value={pkg.width} onChange={(e) => handleInputChange(pkg.id, "width", e.target.value)} />
+                    <input type="number" className="custom-input" placeholder="Nhập chiều rộng..." value={pkg.width} onChange={(e) => handleInputChange(pkg.id, "width", e.target.value)} />
                   </div>
                   <div className="input-field-group">
                     <label className="field-label">CAO (CM)</label>
-                    <input type="number" className="custom-input" value={pkg.height} onChange={(e) => handleInputChange(pkg.id, "height", e.target.value)} />
+                    <input type="number" className="custom-input" placeholder="Nhập chiều cao..." value={pkg.height} onChange={(e) => handleInputChange(pkg.id, "height", e.target.value)} />
                   </div>
                 </div>
 
