@@ -1,88 +1,225 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   LeftOutlined, 
   EnvironmentOutlined, 
-  PlusOutlined, 
-  PictureOutlined,
   SafetyCertificateOutlined,
   CheckOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
-  PlusCircleOutlined
+  PlusCircleOutlined,
+  CloudUploadOutlined,
+  CloseOutlined
 } from "@ant-design/icons";
 import { Switch } from "antd";
 import "./ConsignmentOrder.css";
 
+import AuthNotify from "../../../../utils/AuthNotify"; 
+import { createConsignmentApi } from "../../../../api/OrderApi/consignmentApi";
+import { uploadPackageImage } from "../../../../api/OrderApi/imageUploadApi";
+import { compressImage } from "../../../../utils/compressImage";
+
+const createEmptyPackage = () => ({
+  id: Date.now() + Math.random(),
+  productName: "",
+  productType: "Electronics",
+  quantity: 1,
+  weight: 0.1,
+  width: 1,
+  height: 1,
+  length: 1,
+  declaredValue: 0,
+  trackingCode: "",
+  note: "",
+  images: []
+});
+
 export default function ConsignmentOrder() {
   const navigate = useNavigate();
-  const [inspectPackage, setInspectPackage] = useState(false);
+  const fileInputRefs = useRef({});
 
-  // 1. State quản lý địa chỉ
-  const [isAddingAddress, setIsAddingAddress] = useState(false);
-  const [newAddressInput, setNewAddressInput] = useState("");
-  const [savedAddress, setSavedAddress] = useState("");
+  // Trạng thái hiển thị UI
+  const [inspectPackage, setInspectPackage] = useState(true);
+  const [activeLightboxImg, setActiveLightboxImg] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 2. State quản lý DANH SÁCH KIỆN HÀNG bên cột phải
-  const [packages, setPackages] = useState([
-    { id: Date.now(), productName: "", productType: "", quantity: 1, trackingCode: "", otherFee: "", surcharge: "" }
+  // 1. Thông tin người nhận & Địa chỉ
+  const [receiverName, setReceiverName] = useState("Nguyen Van A");
+  const [receiverPhone, setReceiverPhone] = useState("0901234567");
+  const [addressList, setAddressList] = useState([
+    "123 Le Loi, Quan 1, TP.HCM",
+    "Số 45, Đường Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
   ]);
+  const [selectedDeliveryAddress, setSelectedDeliveryAddress] = useState("123 Le Loi, Quan 1, TP.HCM"); 
 
-  // Hàm xử lý lưu địa chỉ
-  const handleSaveAddress = () => {
-    if (newAddressInput.trim() !== "") {
-      setSavedAddress(newAddressInput.trim());
-      setIsAddingAddress(false);
-      setNewAddressInput("");
+  const [packages, setPackages] = useState([createEmptyPackage()]);
+
+  const handleDropzoneClick = (packageId) => {
+    fileInputRefs.current[packageId]?.click();
+  };
+
+  const handleFileChange = (packageId, e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const oversized = files.filter((file) => file.size > 5 * 1024 * 1024);
+    if (oversized.length > 0) {
+      AuthNotify.warning("Ảnh quá lớn", "Mỗi ảnh tối đa 5MB.");
+      e.target.value = "";
+      return;
     }
+
+    const newImageObjects = files.map((file) => ({
+      id: Math.random().toString(36).substring(2, 9),
+      fileObj: file,
+      previewUrl: URL.createObjectURL(file)
+    }));
+
+    setPackages((prev) =>
+      prev.map((pkg) =>
+        pkg.id === packageId
+          ? { ...pkg, images: [...pkg.images, ...newImageObjects] }
+          : pkg
+      )
+    );
+
+    AuthNotify.success("Đã chọn ảnh", `Đã thêm ${files.length} ảnh cho kiện hàng.`);
+    e.target.value = "";
   };
 
-  // Hàm thêm một form kiện hàng mới
+  const handleRemoveImage = (e, packageId, targetId, previewUrl) => {
+    e.stopPropagation();
+    setPackages((prev) =>
+      prev.map((pkg) =>
+        pkg.id === packageId
+          ? { ...pkg, images: pkg.images.filter((img) => img.id !== targetId) }
+          : pkg
+      )
+    );
+    URL.revokeObjectURL(previewUrl);
+  };
+
+  const revokePackageImages = (pkg) => {
+    pkg.images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+  };
+
   const handleAddPackage = () => {
-    const newPkg = {
-      id: Date.now(), // Tạo key định danh duy nhất
-      productName: "",
-      productType: "",
-      quantity: 1,
-      trackingCode: "",
-      otherFee: "",
-      surcharge: ""
-    };
-    setPackages([...packages, newPkg]);
+    setPackages((prev) => [...prev, createEmptyPackage()]);
   };
 
-  // Hàm xóa kiện hàng theo ID (Chỉ cho xóa nếu danh sách có nhiều hơn 1 kiện)
   const handleDeletePackage = (id) => {
     if (packages.length > 1) {
-      setPackages(packages.filter(pkg => pkg.id !== id));
+      const target = packages.find((pkg) => pkg.id === id);
+      if (target) revokePackageImages(target);
+      setPackages(packages.filter((pkg) => pkg.id !== id));
+      delete fileInputRefs.current[id];
     } else {
-      alert("Đơn hàng ký gửi phải có ít nhất 1 kiện hàng!");
+      AuthNotify.warning("Không thể xóa", "Yêu cầu tối thiểu có 1 kiện hàng.");
     }
   };
 
-  // Hàm cập nhật dữ liệu khi gõ vào từng ô input của từng kiện hàng cụ thể
   const handleInputChange = (id, field, value) => {
     setPackages(packages.map(pkg => pkg.id === id ? { ...pkg, [field]: value } : pkg));
   };
 
-  const handleCreateOrder = () => {
-    console.log("Dữ liệu gửi đi:", { savedAddress, inspectPackage, packages });
-    alert("Tiến hành tạo đơn hàng thành công!");
+  const handleCreateOrder = async () => {
+    if (!selectedDeliveryAddress) {
+      AuthNotify.warning("Chưa chọn địa chỉ", "Vui lòng chọn địa chỉ nhận hàng.");
+      return;
+    }
+  
+    const hasInvalidItem = packages.some(pkg => !pkg.productName.trim());
+    if (hasInvalidItem) {
+      AuthNotify.warning("Thiếu thông tin", "Vui lòng nhập tên sản phẩm cho tất cả các kiện.");
+      return;
+    }
+  
+    try {
+      setIsSubmitting(true);
+
+      const unifiedNote = packages
+        .map((p) => p.note.trim() ? p.note.trim() : "")
+        .filter(Boolean)
+        .join(", ") || "Hang ky gui";
+
+      const items = await Promise.all(
+        packages.map(async (pkg, index) => {
+          let referenceUrl = null;
+
+          if (pkg.images.length > 0) {
+            try {
+              const compressedFile = await compressImage(pkg.images[0].fileObj);
+              referenceUrl = await uploadPackageImage(compressedFile);
+            } catch (uploadError) {
+              console.error("Upload ảnh thất bại:", uploadError);
+              throw new Error(
+                `Không upload được ảnh kiện ${index + 1}. Vui lòng thử lại hoặc chọn ảnh nhỏ hơn.`
+              );
+            }
+          }
+
+          return {
+            productName: pkg.productName.trim(),
+            productType: pkg.productType,
+            quantity: parseInt(pkg.quantity, 10) || 1,
+            weight: parseFloat(pkg.weight) || 0,
+            width: parseFloat(pkg.width) || 0,
+            height: parseFloat(pkg.height) || 0,
+            length: parseFloat(pkg.length) || 0,
+            declaredValue: parseFloat(pkg.declaredValue) || 0,
+            referenceUrl,
+            domesticTrackingCode: pkg.trackingCode.trim() || null
+          };
+        })
+      );
+
+      const orderPayload = {
+        route: "TQ-VN",
+        shippingOption: "Express",
+        receiverName: receiverName.trim(),
+        receiverPhone: receiverPhone.trim(),
+        receiverAddress: selectedDeliveryAddress,
+        requiresInspection: !!inspectPackage,
+        note: unifiedNote,
+        items
+      };
+
+      const result = await createConsignmentApi(orderPayload);
+      
+      if (result) {
+        AuthNotify.success("Tạo đơn thành công", "Đơn hàng ký gửi đã được tiếp nhận.");
+        navigate("/processing-orders");
+      }
+    } catch (error) {
+      console.error("Lỗi tạo đơn ký gửi:", error);
+      const backendErrors = error.response?.data?.errors;
+      const status = error.response?.status;
+      const msg = error.message?.includes("upload")
+        ? error.message
+        : backendErrors
+        ? Object.entries(backendErrors).map(([key, val]) => `${key}: ${val}`).join(" | ")
+        : error.response?.data?.message ||
+          (status === 500
+            ? "Máy chủ xử lý thất bại. Kiểm tra lại ảnh hoặc thử không đính kèm ảnh."
+            : "Không thể tạo đơn ký gửi. Vui lòng thử lại.");
+
+      AuthNotify.error("Giao dịch thất bại", msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="consignment-container">
       
-      {/* NÚT QUAY LẠI TRÊN CÙNG */}
       <div className="back-navigation" onClick={() => navigate(-1)}>
         <LeftOutlined className="back-icon" />
         <span>QUAY LẠI</span>
       </div>
 
-      {/* KHU VỰC CHÍNH CHIA LÀM 2 BÊN CHUẨN UX */}
       <div className="consignment-layout-grid">
         
-        {/* ================= BÊN TRÁI: KHỐI CỐ ĐỊNH (KHÔNG CUỘN) ================= */}
+        {/* ================= CỘT TRÁI (THÔNG TIN ĐỊA CHỈ) ================= */}
         <div className="layout-left-fixed-sidebar">
           <div className="page-header-title-box">
             <div className="title-icon-orange">
@@ -96,207 +233,195 @@ export default function ConsignmentOrder() {
 
           <div className="left-unified-wrapper-box">
             <div className="left-inner-section">
-              <div className="input-field-group">
-                <label className="field-label yellow-label"><EnvironmentOutlined /> TUYẾN HÀNG</label>
-                <select className="custom-select">
-                  <option value="cn-vn">Trung Quốc - Việt Nam</option>
-                </select>
-              </div>
+              <label className="field-label"><EnvironmentOutlined /> TUYẾN HÀNG</label>
+              <div className="static-display-box font-bold-dark">Trung Quốc - Việt Nam (TQ-VN)</div>
+            </div>
 
-              <div className="input-field-group" style={{ marginTop: "1rem" }}>
-                <label className="field-label yellow-label"><EnvironmentOutlined /> ĐỊA CHỈ NHẬN HÀNG</label>
-                <select 
-                  className={`custom-select ${!savedAddress ? "select-disabled-bold" : ""}`} 
-                  disabled={!savedAddress}
-                >
-                  {savedAddress ? (
-                    <option value="saved">{savedAddress}</option>
-                  ) : (
-                    <option value="">CHƯA CÓ ĐỊA CHỈ - VUI LÒNG THÊM MỚI</option>
-                  )}
-                </select>
+            <div className="left-inner-section border-top-dash">
+              <label className="field-label"><EnvironmentOutlined /> HÌNH THỨC VẬN CHUYỂN</label>
+              <div className="static-display-box font-bold-dark">Hỏa tốc (Express)</div>
+            </div>
+
+            <div className="left-inner-section border-top-dash">
+              <div className="input-field-group" style={{ marginBottom: "12px" }}>
+                <label className="field-label required-label">TÊN NGƯỜI NHẬN</label>
+                <input type="text" className="custom-input" value={receiverName} onChange={(e) => setReceiverName(e.target.value)} />
+              </div>
+              <div className="input-field-group">
+                <label className="field-label required-label">SỐ ĐIỆN THOẠI</label>
+                <input type="text" className="custom-input" value={receiverPhone} onChange={(e) => setReceiverPhone(e.target.value)} />
               </div>
             </div>
 
             <div className="left-inner-section border-top-dash">
-              <div className="inner-section-title">QUẢN LÝ ĐỊA CHỈ GIAO HÀNG</div>
-              {!isAddingAddress ? (
-                <button className="btn-add-address" onClick={() => setIsAddingAddress(true)}>
-                  <PlusOutlined /> THÊM ĐỊA CHỈ MỚI
-                </button>
-              ) : (
-                <div className="add-address-inline-form">
-                  <input 
-                    type="text" 
-                    placeholder="Nhập địa chỉ nhận hàng chi tiết..." 
-                    className="custom-input small-input"
-                    value={newAddressInput}
-                    onChange={(e) => setNewAddressInput(e.target.value)}
-                  />
-                  <div className="inline-form-actions">
-                    <button className="btn-inline-save" onClick={handleSaveAddress}>
-                      <CheckOutlined /> Xác nhận
-                    </button>
-                    <button className="btn-inline-cancel" onClick={() => setIsAddingAddress(false)}>
-                      Hủy
-                    </button>
-                  </div>
-                </div>
-              )}
+              <label className="field-label"><EnvironmentOutlined /> ĐỊA CHỈ ĐANG CHỌN</label>
+              <div className="static-display-box address-received-highlight">{selectedDeliveryAddress}</div>
             </div>
 
-            {savedAddress && (
-              <div className="left-inner-section border-top-dash animation-fade-in">
-                <div className="inner-section-title">CHỌN ĐỊA CHỈ GIAO HÀNG</div>
-                <p className="sub-helper-text"><EnvironmentOutlined /> Nhấn vào địa chỉ để chọn</p>
-                <div className="address-item-selected">
-                  {savedAddress}
-                </div>
+            <div className="left-inner-section border-top-dash">
+              <div className="inner-section-title">CHỌN ĐỊA CHỈ NHẬN HÀNG</div>
+              <div className="address-scroll-container">
+                {addressList.map((addr, idx) => (
+                  <div 
+                    key={idx}
+                    className={`address-item-clickable ${selectedDeliveryAddress === addr ? "is-active" : ""}`}
+                    onClick={() => setSelectedDeliveryAddress(addr)}
+                  >
+                    <span className="address-text-truncate">{addr}</span>
+                    {selectedDeliveryAddress === addr && <CheckOutlined className="check-active-icon" />}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
 
             <div className="left-inner-section border-top-dash toggle-row">
-              <div className="toggle-icon-box">
-                <SafetyCertificateOutlined className="shield-icon" />
-              </div>
+              <div className="toggle-icon-box"><SafetyCertificateOutlined className="shield-icon" /></div>
               <div className="toggle-text-info">
                 <h4>YÊU CẦU KIỂM HÀNG</h4>
-                <p>TixiMax sẽ mở kiện hàng để kiểm tra số lượng và tình trạng.</p>
+                <p>Khai mở kiểm đếm số lượng thực tế tại kho.</p>
               </div>
-              <div className="toggle-action">
-                <Switch checked={inspectPackage} onChange={(val) => setInspectPackage(val)} />
-              </div>
+              <Switch checked={inspectPackage} onChange={(val) => setInspectPackage(val)} />
             </div>
           </div>
         </div>
 
-        {/* ================= BÊN PHẢI: KHỐI CUỘN ĐỘC LẬP CHỨA HOÀN TOÀN CÁC KIỆN ================= */}
+        {/* ================= CỘT PHẢI (FORM NHẬP KIỆN HÀNG & UPLOAD ẢNH) ================= */}
         <div className="layout-right-scrollable-form">
           <div className="scrollable-content-wrapper">
             
-            {/* Lặp danh sách các kiện hàng từ State */}
             {packages.map((pkg, index) => (
-              <div className="form-main-card animation-fade-in" key={pkg.id} style={{ marginBottom: "1.5rem" }}>
-                
-                {/* Tiêu đề kiện hàng + Nút xóa bên phải */}
+              <div className="form-main-card" key={pkg.id} style={{ marginBottom: "1.5rem" }}>
                 <div className="form-step-header">
                   <div className="step-header-left">
                     <div className="step-number-circle">{index + 1}</div>
-                    <h3>THÔNG TIN KIỆN KÝ GỬI THỨ {index + 1}</h3>
+                    <h3>THÔNG TIN SẢN PHẨM KIỆN THỨ {index + 1}</h3>
                   </div>
-                  
-                  {/* Icon Thùng rác xóa kiện (Chỉ hiện khi tổng số kiện > 1) */}
                   {packages.length > 1 && (
-                    <button className="btn-delete-package" onClick={() => handleDeletePackage(pkg.id)} title="Xóa kiện hàng này">
+                    <button type="button" className="btn-delete-package" onClick={() => handleDeletePackage(pkg.id)}>
                       <DeleteOutlined /> Xóa kiện
                     </button>
                   )}
                 </div>
 
-                {/* Hàng 1 */}
                 <div className="form-row-2col">
                   <div className="input-field-group">
                     <label className="field-label required-label">TÊN SẢN PHẨM</label>
-                    <input 
-                      type="text" 
-                      placeholder="Nhập tên sản phẩm..." 
-                      className="custom-input"
-                      value={pkg.productName}
-                      onChange={(e) => handleInputChange(pkg.id, "productName", e.target.value)}
-                    />
+                    <input type="text" placeholder="Nhập tên sản phẩm..." className="custom-input" value={pkg.productName} onChange={(e) => handleInputChange(pkg.id, "productName", e.target.value)} />
                   </div>
                   <div className="input-field-group">
                     <label className="field-label required-label">LOẠI HÀNG HÓA</label>
-                    <select 
-                      className="custom-select"
-                      value={pkg.productType}
-                      onChange={(e) => handleInputChange(pkg.id, "productType", e.target.value)}
-                    >
-                      <option value="">Chọn loại sản phẩm...</option>
-                      <option value="electronics">Thiết bị điện tử</option>
-                      <option value="clothes">Quần áo / Giày dép</option>
+                    <select className="custom-select" value={pkg.productType} onChange={(e) => handleInputChange(pkg.id, "productType", e.target.value)}>
+                      <option value="Electronics">Electronics (Thiết bị điện tử)</option>
+                      <option value="Accessories">Accessories (Phụ kiện)</option>
+                      <option value="Clothes">Clothes (Quần áo / Giày dép)</option>
+                      <option value="Cosmetics">Cosmetics (Mỹ phẩm)</option>
+                      <option value="Others">Others (Khác)</option>
                     </select>
                   </div>
                 </div>
 
-                {/* Hàng 2 */}
                 <div className="form-row-2col">
                   <div className="input-field-group">
                     <label className="field-label required-label">SỐ LƯỢNG</label>
-                    <input 
-                      type="number" 
-                      className="custom-input" 
-                      min={1} 
-                      value={pkg.quantity}
-                      onChange={(e) => handleInputChange(pkg.id, "quantity", parseInt(e.target.value) || 1)}
-                    />
+                    <input type="number" className="custom-input" min={1} value={pkg.quantity} onChange={(e) => handleInputChange(pkg.id, "quantity", parseInt(e.target.value, 10) || 1)} />
                   </div>
                   <div className="input-field-group">
-                    <label className="field-label">MÃ VẬN ĐƠN</label>
-                    <input 
-                      type="text" 
-                      placeholder="Mã vận đơn (nếu có)..." 
-                      className="custom-input"
-                      value={pkg.trackingCode}
-                      onChange={(e) => handleInputChange(pkg.id, "trackingCode", e.target.value)}
-                    />
+                    <label className="field-label">GIÁ TRỊ KHAI BÁO (VND)</label>
+                    <input type="number" className="custom-input" value={pkg.declaredValue} onChange={(e) => handleInputChange(pkg.id, "declaredValue", e.target.value)} />
                   </div>
                 </div>
 
-                {/* Hàng 3 */}
-                <div className="form-row-2col">
+                {/* Hàng kích thước 4 cột chuẩn UX */}
+                <div className="form-row-4col">
                   <div className="input-field-group">
-                    <label className="field-label">PHÍ KHÁC</label>
-                    <input 
-                      type="number" 
-                      placeholder="0" 
-                      className="custom-input"
-                      value={pkg.otherFee}
-                      onChange={(e) => handleInputChange(pkg.id, "otherFee", e.target.value)}
-                    />
+                    <label className="field-label">CÂN NẶNG (KG)</label>
+                    <input type="number" step="0.01" className="custom-input" value={pkg.weight} onChange={(e) => handleInputChange(pkg.id, "weight", e.target.value)} />
                   </div>
                   <div className="input-field-group">
-                    <label className="field-label">PHỤ THU</label>
-                    <input 
-                      type="number" 
-                      placeholder="0" 
-                      className="custom-input"
-                      value={pkg.surcharge}
-                      onChange={(e) => handleInputChange(pkg.id, "surcharge", e.target.value)}
-                    />
+                    <label className="field-label">DÀI (CM)</label>
+                    <input type="number" className="custom-input" value={pkg.length} onChange={(e) => handleInputChange(pkg.id, "length", e.target.value)} />
+                  </div>
+                  <div className="input-field-group">
+                    <label className="field-label">RỘNG (CM)</label>
+                    <input type="number" className="custom-input" value={pkg.width} onChange={(e) => handleInputChange(pkg.id, "width", e.target.value)} />
+                  </div>
+                  <div className="input-field-group">
+                    <label className="field-label">CAO (CM)</label>
+                    <input type="number" className="custom-input" value={pkg.height} onChange={(e) => handleInputChange(pkg.id, "height", e.target.value)} />
                   </div>
                 </div>
 
-                {/* Vùng Upload Ảnh */}
-                <div className="input-field-group" style={{ marginTop: "1rem" }}>
-                  <label className="field-label">ẢNH SẢN PHẨM</label>
-                  <div className="upload-dropzone-box">
-                    <PictureOutlined className="upload-big-icon" />
-                    <span className="upload-main-text">Tải ảnh sản phẩm</span>
-                    <span className="upload-sub-text">Chọn ảnh để upload (tối đa 5MB)</span>
+                <div className="input-field-group" style={{ marginBottom: "1.25rem" }}>
+                  <label className="field-label">MÃ VẬN ĐƠN NỘI ĐỊA (DOMESTIC TRACKING CODE)</label>
+                  <input type="text" placeholder="Bỏ trống nếu chưa có mã..." className="custom-input" value={pkg.trackingCode} onChange={(e) => handleInputChange(pkg.id, "trackingCode", e.target.value)} />
+                </div>
+
+                <div className="input-field-group">
+                  <label className="field-label">GHI CHÚ KIỆN HÀNG</label>
+                  <textarea placeholder="Mô tả đặc điểm ghi chú bổ sung cho kiện hàng..." className="custom-textarea" rows={2} value={pkg.note} onChange={(e) => handleInputChange(pkg.id, "note", e.target.value)}></textarea>
+                </div>
+
+                <div className="input-field-group package-image-section">
+                  <label className="field-label">ẢNH SẢN PHẨM KIỆN {index + 1}</label>
+
+                  <input
+                    type="file"
+                    ref={(el) => {
+                      fileInputRefs.current[pkg.id] = el;
+                    }}
+                    multiple
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => handleFileChange(pkg.id, e)}
+                  />
+
+                  <div className="upload-dropzone-box-clickable" onClick={() => handleDropzoneClick(pkg.id)}>
+                    <CloudUploadOutlined className="upload-big-icon" />
+                    <span className="upload-main-text">Bấm để chọn ảnh cho kiện hàng này</span>
+                    <span className="upload-sub-text">Hỗ trợ file ảnh JPG, PNG (tối đa 5MB/ảnh)</span>
                   </div>
-                  <button className="btn-trigger-upload">Chọn ảnh</button>
+
+                  {pkg.images.length > 0 && (
+                    <div className="image-previews-grid animation-fade-in">
+                      {pkg.images.map((img) => (
+                        <div
+                          key={img.id}
+                          className="preview-image-item"
+                          onClick={() => setActiveLightboxImg(img.previewUrl)}
+                        >
+                          <img src={img.previewUrl} alt={`Kiện ${index + 1}`} />
+                          <button
+                            type="button"
+                            className="btn-remove-preview-img"
+                            onClick={(e) => handleRemoveImage(e, pkg.id, img.id, img.previewUrl)}
+                          >
+                            <CloseOutlined />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
 
-            {/* NÚT THÊM KIỆN HÀNG (VIỀN NÉT ĐỨT KHÔNG KHÍ TRONG ẢNH MẪU) */}
             <div className="add-package-dashed-trigger" onClick={handleAddPackage}>
               <PlusCircleOutlined className="plus-dashed-icon" />
-              <span>THÊM KIỆN HÀNG</span>
+              <span>THÊM KIỆN HÀNG MỚI</span>
             </div>
 
-            {/* THANH LƯU Ý CỐ ĐỊNH KÈM NÚT TẠO ĐƠN Ở ĐÁY FILE */}
             <div className="sticky-action-notice-bar">
               <div className="notice-left-message">
                 <InfoCircleOutlined className="info-notice-icon" />
-                <p>
-                  <strong>LƯU Ý:</strong> ĐƠN HÀNG SẼ ĐƯỢC NHÂN VIÊN VCL KIỂM TRA VÀ XÁC NHẬN LẠI THÔNG TIN TRƯỚC KHI THỰC HIỆN MUA HÀNG HOẶC XỬ LÝ.
-                </p>
+                <p><strong>LƯU Ý:</strong> Đơn hàng sẽ được nhân viên VCL kiểm tra và xác nhận lại thông tin trước khi xử lý.</p>
               </div>
-              <button className="btn-final-submit-order" onClick={handleCreateOrder}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{marginRight: '6px'}}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                TẠO ĐƠN HÀNG
+              <button
+                type="button"
+                className="btn-final-submit-order"
+                onClick={handleCreateOrder}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "ĐANG TẠO ĐƠN..." : "TẠO ĐƠN HÀNG NGAY"}
               </button>
             </div>
 
@@ -304,6 +429,17 @@ export default function ConsignmentOrder() {
         </div>
 
       </div>
+
+      {/* MODAL XEM ẢNH LỚN LIGHTBOX */}
+      {activeLightboxImg && (
+        <div className="lightbox-overlay-modal" onClick={() => setActiveLightboxImg(null)}>
+          <div className="lightbox-content-box animate-zoom-in">
+            <img src={activeLightboxImg} alt="Phóng to" className="lightbox-main-img" />
+          </div>
+          <span className="lightbox-hint-text">Bấm vào vùng trống để đóng cửa sổ</span>
+        </div>
+      )}
+
     </div>
   );
 }

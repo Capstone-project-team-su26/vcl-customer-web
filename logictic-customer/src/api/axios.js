@@ -1,37 +1,63 @@
-import axios from 'axios';
+import axios from "axios";
 
 const axiosInstance = axios.create({
-  // Import trực tiếp từ biến môi trường của Vite
   baseURL: import.meta.env.VITE_API_BASE_URL, 
-  timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
+    "Accept": "text/plain, application/json",
+    "Content-Type": "application/json"
+  }
 });
 
-// Tự động đính kèm Token từ localStorage vào Header của mọi request
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+console.log("API URL:", import.meta.env.VITE_API_URL);
 
-// Trả về trực tiếp data từ response để lúc gọi API không phải .data 2 lần
-axiosInstance.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      // window.location.href = '/login'; // Chuyển hướng nếu token hết hạn
-    }
-    return Promise.reject(error);
+/* ================= REQUEST INTERCEPTOR ================= */
+
+axiosInstance.interceptors.request.use((config) => {
+
+  const token =
+    sessionStorage.getItem("accessToken") ||
+    localStorage.getItem("accessToken");
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+
+  console.log("====== API REQUEST ======");
+  console.log("URL:", config.baseURL + config.url);
+  console.log("TOKEN:", token);
+
+  return config;
+
+});
+
+/* ================= RESPONSE INTERCEPTOR ================= */
+
+axiosInstance.interceptors.response.use(
+
+  (response) => response,
+
+  (error) => {
+
+    console.error("API ERROR:", error?.response || error);
+
+    const status = error?.response?.status;
+    const requestUrl = error?.config?.url;
+
+    /* nếu token hết hạn */
+
+    if (status === 401 && !requestUrl?.includes("login")) {
+
+      sessionStorage.clear();
+      localStorage.clear();
+
+      window.location.href = "/login";
+
+    }
+
+    return Promise.reject(error);
+
+  }
+
 );
 
 export default axiosInstance;
