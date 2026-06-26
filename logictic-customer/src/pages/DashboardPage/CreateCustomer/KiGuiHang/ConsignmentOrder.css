@@ -124,6 +124,9 @@
   color: #1e293b;
   margin-bottom: 0.85rem;
 }
+.inner-section-title.required-label {
+  margin-bottom: 0.85rem;
+}
 .btn-add-address {
   width: 100%;
   height: 38px;
@@ -138,6 +141,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  margin-bottom: 0.75rem;
 }
 .btn-add-address:hover {
   background-color: #fffbeb;
@@ -378,9 +382,17 @@
   color: #475569;
   letter-spacing: 0.03em;
 }
-.required-label::before {
-  content: "* ";
+.required-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+}
+.required-label::after {
+  content: "*";
   color: #ef4444;
+  margin-left: 4px;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .custom-input,

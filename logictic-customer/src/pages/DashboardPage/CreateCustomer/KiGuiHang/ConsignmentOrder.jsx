@@ -8,6 +8,7 @@ import {
   DeleteOutlined,
   InfoCircleOutlined,
   PlusCircleOutlined,
+  PlusOutlined,
   CloudUploadOutlined,
   CloseOutlined
 } from "@ant-design/icons";
@@ -28,7 +29,7 @@ const createEmptyPackage = () => ({
   width: "",
   height: "",
   length: "",
-  declaredValue: 0,
+  declaredValue: "",
   trackingCode: "",
   note: "",
   images: []
@@ -50,9 +51,99 @@ export default function ConsignmentOrder() {
     "123 Le Loi, Quan 1, TP.HCM",
     "Số 45, Đường Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
   ]);
-  const [selectedDeliveryAddress, setSelectedDeliveryAddress] = useState("123 Le Loi, Quan 1, TP.HCM"); 
+  const [selectedDeliveryAddress, setSelectedDeliveryAddress] = useState("123 Le Loi, Quan 1, TP.HCM");
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [newAddressInput, setNewAddressInput] = useState("");
 
   const [packages, setPackages] = useState([createEmptyPackage()]);
+
+  const handleSaveAddress = () => {
+    const trimmed = newAddressInput.trim();
+    if (!trimmed) {
+      AuthNotify.warning("Thiếu địa chỉ", "Vui lòng nhập địa chỉ nhận hàng.");
+      return;
+    }
+    if (addressList.includes(trimmed)) {
+      AuthNotify.warning("Trùng địa chỉ", "Địa chỉ này đã có trong danh sách.");
+      return;
+    }
+    setAddressList((prev) => [...prev, trimmed]);
+    setSelectedDeliveryAddress(trimmed);
+    setNewAddressInput("");
+    setIsAddingAddress(false);
+    AuthNotify.success("Đã thêm địa chỉ", "Địa chỉ nhận hàng mới đã được lưu.");
+  };
+
+  const handleCancelAddAddress = () => {
+    setNewAddressInput("");
+    setIsAddingAddress(false);
+  };
+
+  const validateForm = () => {
+    if (!receiverName.trim()) {
+      AuthNotify.warning("Thiếu thông tin", "Vui lòng nhập tên người nhận.");
+      return false;
+    }
+
+    const phone = receiverPhone.trim();
+    if (!phone || !/^0\d{9}$/.test(phone)) {
+      AuthNotify.warning("Thiếu thông tin", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).");
+      return false;
+    }
+
+    if (!selectedDeliveryAddress) {
+      AuthNotify.warning("Chưa chọn địa chỉ", "Vui lòng chọn hoặc thêm địa chỉ nhận hàng.");
+      return false;
+    }
+
+    for (let i = 0; i < packages.length; i++) {
+      const pkg = packages[i];
+      const label = `kiện ${i + 1}`;
+
+      if (!pkg.productName.trim()) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập tên sản phẩm cho ${label}.`);
+        return false;
+      }
+      if (!pkg.productType) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng chọn loại hàng hóa cho ${label}.`);
+        return false;
+      }
+      if (!pkg.quantity || parseInt(pkg.quantity, 10) < 1) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập số lượng hợp lệ cho ${label}.`);
+        return false;
+      }
+      if (pkg.declaredValue === "" || pkg.declaredValue === null || isNaN(parseFloat(pkg.declaredValue))) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập giá trị khai báo cho ${label}.`);
+        return false;
+      }
+      if (!pkg.weight || parseFloat(pkg.weight) <= 0) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập cân nặng cho ${label}.`);
+        return false;
+      }
+      if (!pkg.length || parseFloat(pkg.length) <= 0) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập chiều dài cho ${label}.`);
+        return false;
+      }
+      if (!pkg.width || parseFloat(pkg.width) <= 0) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập chiều rộng cho ${label}.`);
+        return false;
+      }
+      if (!pkg.height || parseFloat(pkg.height) <= 0) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập chiều cao cho ${label}.`);
+        return false;
+      }
+      if (!pkg.note.trim()) {
+        AuthNotify.warning("Thiếu thông tin", `Vui lòng nhập ghi chú cho ${label}.`);
+        return false;
+      }
+      if (pkg.images.length === 0) {
+        AuthNotify.warning("Thiếu ảnh", `Vui lòng tải ảnh sản phẩm cho ${label}.`);
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   const handleDropzoneClick = (packageId) => {
     fileInputRefs.current[packageId]?.click();
@@ -123,17 +214,8 @@ export default function ConsignmentOrder() {
   };
 
   const handleCreateOrder = async () => {
-    if (!selectedDeliveryAddress) {
-      AuthNotify.warning("Chưa chọn địa chỉ", "Vui lòng chọn địa chỉ nhận hàng.");
-      return;
-    }
-  
-    const hasInvalidItem = packages.some(pkg => !pkg.productName.trim());
-    if (hasInvalidItem) {
-      AuthNotify.warning("Thiếu thông tin", "Vui lòng nhập tên sản phẩm cho tất cả các kiện.");
-      return;
-    }
-  
+    if (!validateForm()) return;
+
     try {
       setIsSubmitting(true);
 
@@ -259,19 +341,52 @@ export default function ConsignmentOrder() {
             </div>
 
             <div className="left-inner-section border-top-dash">
-              <div className="inner-section-title">CHỌN ĐỊA CHỈ NHẬN HÀNG</div>
-              <div className="address-scroll-container">
-                {addressList.map((addr, idx) => (
-                  <div 
-                    key={idx}
-                    className={`address-item-clickable ${selectedDeliveryAddress === addr ? "is-active" : ""}`}
-                    onClick={() => setSelectedDeliveryAddress(addr)}
+              <div className="inner-section-title required-label">CHỌN ĐỊA CHỈ NHẬN HÀNG</div>
+
+              {!isAddingAddress ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn-add-address"
+                    onClick={() => setIsAddingAddress(true)}
                   >
-                    <span className="address-text-truncate">{addr}</span>
-                    {selectedDeliveryAddress === addr && <CheckOutlined className="check-active-icon" />}
+                    <PlusOutlined /> THÊM ĐỊA CHỈ NHẬN HÀNG
+                  </button>
+
+                  <div className="address-scroll-container">
+                    {addressList.map((addr, idx) => (
+                      <div
+                        key={idx}
+                        className={`address-item-clickable ${selectedDeliveryAddress === addr ? "is-active" : ""}`}
+                        onClick={() => setSelectedDeliveryAddress(addr)}
+                      >
+                        <span className="address-text-truncate">{addr}</span>
+                        {selectedDeliveryAddress === addr && <CheckOutlined className="check-active-icon" />}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <div className="add-address-inline-form">
+                  <label className="field-label required-label">ĐỊA CHỈ NHẬN HÀNG MỚI</label>
+                  <input
+                    type="text"
+                    className="custom-input small-input"
+                    placeholder="Nhập địa chỉ nhận hàng..."
+                    value={newAddressInput}
+                    onChange={(e) => setNewAddressInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSaveAddress()}
+                  />
+                  <div className="inline-form-actions">
+                    <button type="button" className="btn-inline-cancel" onClick={handleCancelAddAddress}>
+                      Hủy
+                    </button>
+                    <button type="button" className="btn-inline-save" onClick={handleSaveAddress}>
+                      <CheckOutlined /> Lưu địa chỉ
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="left-inner-section border-top-dash toggle-row">
@@ -323,31 +438,30 @@ export default function ConsignmentOrder() {
                 <div className="form-row-2col">
                   <div className="input-field-group">
                     <label className="field-label required-label">SỐ LƯỢNG</label>
-                    <input type="number" className="custom-input" placeholder="Nhập số lượng sản phẩm..." min={1} value={pkg.quantity} onChange={(e) => handleInputChange(pkg.id, "quantity", parseInt(e.target.value, 10) || 1)} />
+                    <input type="number" className="custom-input" placeholder="Nhập số lượng sản phẩm..." min={1} value={pkg.quantity} onChange={(e) => handleInputChange(pkg.id, "quantity", e.target.value)} />
                   </div>
                   <div className="input-field-group">
-                    <label className="field-label">GIÁ TRỊ KHAI BÁO (VND)</label>
-                    <input type="number" className="custom-input" value={pkg.declaredValue} onChange={(e) => handleInputChange(pkg.id, "declaredValue", e.target.value)} />
+                    <label className="field-label required-label">GIÁ TRỊ KHAI BÁO (VND)</label>
+                    <input type="number" className="custom-input" placeholder="Nhập giá trị khai báo..." min={0} value={pkg.declaredValue} onChange={(e) => handleInputChange(pkg.id, "declaredValue", e.target.value)} />
                   </div>
                 </div>
 
-                {/* Hàng kích thước 4 cột chuẩn UX */}
                 <div className="form-row-4col">
                   <div className="input-field-group">
-                    <label className="field-label">CÂN NẶNG (KG)</label>
-                    <input type="number" step="0.01" placeholder="Nhập cân nặng..." className="custom-input" value={pkg.weight} onChange={(e) => handleInputChange(pkg.id, "weight", e.target.value)} />
+                    <label className="field-label required-label">CÂN NẶNG (KG)</label>
+                    <input type="number" step="0.01" placeholder="Nhập cân nặng..." className="custom-input" min={0.01} value={pkg.weight} onChange={(e) => handleInputChange(pkg.id, "weight", e.target.value)} />
                   </div>
                   <div className="input-field-group">
-                    <label className="field-label">DÀI (CM)</label>
-                    <input type="number" className="custom-input" placeholder="Nhập chiều dài..." value={pkg.length} onChange={(e) => handleInputChange(pkg.id, "length", e.target.value)} />
+                    <label className="field-label required-label">DÀI (CM)</label>
+                    <input type="number" className="custom-input" placeholder="Nhập chiều dài..." min={1} value={pkg.length} onChange={(e) => handleInputChange(pkg.id, "length", e.target.value)} />
                   </div>
                   <div className="input-field-group">
-                    <label className="field-label">RỘNG (CM)</label>
-                    <input type="number" className="custom-input" placeholder="Nhập chiều rộng..." value={pkg.width} onChange={(e) => handleInputChange(pkg.id, "width", e.target.value)} />
+                    <label className="field-label required-label">RỘNG (CM)</label>
+                    <input type="number" className="custom-input" placeholder="Nhập chiều rộng..." min={1} value={pkg.width} onChange={(e) => handleInputChange(pkg.id, "width", e.target.value)} />
                   </div>
                   <div className="input-field-group">
-                    <label className="field-label">CAO (CM)</label>
-                    <input type="number" className="custom-input" placeholder="Nhập chiều cao..." value={pkg.height} onChange={(e) => handleInputChange(pkg.id, "height", e.target.value)} />
+                    <label className="field-label required-label">CAO (CM)</label>
+                    <input type="number" className="custom-input" placeholder="Nhập chiều cao..." min={1} value={pkg.height} onChange={(e) => handleInputChange(pkg.id, "height", e.target.value)} />
                   </div>
                 </div>
 
@@ -357,12 +471,12 @@ export default function ConsignmentOrder() {
                 </div>
 
                 <div className="input-field-group">
-                  <label className="field-label">GHI CHÚ KIỆN HÀNG</label>
+                  <label className="field-label required-label">GHI CHÚ KIỆN HÀNG</label>
                   <textarea placeholder="Mô tả đặc điểm ghi chú bổ sung cho kiện hàng..." className="custom-textarea" rows={2} value={pkg.note} onChange={(e) => handleInputChange(pkg.id, "note", e.target.value)}></textarea>
                 </div>
 
                 <div className="input-field-group package-image-section">
-                  <label className="field-label">ẢNH SẢN PHẨM KIỆN {index + 1}</label>
+                  <label className="field-label required-label">ẢNH SẢN PHẨM KIỆN {index + 1}</label>
 
                   <input
                     type="file"
