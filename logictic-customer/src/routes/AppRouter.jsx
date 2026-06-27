@@ -8,9 +8,9 @@ import NotFound from "../pages/NotFound";
 // ⬇️ IMPORT CÁC COMPONENT LAYOUT VÀ MÀN HÌNH MỚI CỦA BẠN VÀO ĐÂY
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
 import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
-import ProcessingOrders from "../pages/DashboardPage/ProcessingOrders";
 import CreateOrder from "../pages/DashboardPage/CreateCustomer/CreateOrder";
 import ConsigmentOrder from "../pages/DashboardPage/CreateCustomer/KiGuiHang/ConsignmentOrder";
+import ConsignmentList from "../pages/DashboardPage/CreateCustomer/OrderXuLy/ConsignmentList"; // Import
 
 
 
@@ -25,26 +25,14 @@ const AppRouter = () => {
         <Route path="/verify-otp" element={<VerifyOtp />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
-        {/* Khi user vào các trang con, MainLayout sẽ được render cố định, phần ruột <Outlet /> bên phải sẽ tự thay đổi */}
+     
         <Route element={<MainLayout />}>
           {/* Định nghĩa các URL con tương ứng với thẻ <NavLink to="..." /> ở Sidebar */}
           <Route path="/customer/dashboard" element={<Dashboard />} />
-          <Route path="/processing-orders" element={<ProcessingOrders />} />
+   
           <Route path="/create-order" element={<CreateOrder />} />
           <Route path="/create-order/consignment" element={<ConsigmentOrder />} />
-          
-
-    
-          
-          {/* Bạn có thể bổ sung thêm các màn hình khác vào đây tương tự:
-          <Route path="/receive-goods" element={<ReceiveGoods />} />
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/waiting-packages" element={<WaitingPackages />} />
-          <Route path="/warehouse/inventory" element={<WarehouseInventory />} />
-          <Route path="/warehouse/export" element={<WarehouseExport />} />
-          <Route path="/history/buy-on-behalf" element={<BuyOnBehalfHistory />} />
-          <Route path="/history/consignment" element={<ConsignmentHistory />} />
-          */}
+          <Route path="/processing-orders" element={<ConsignmentList />} /> 
         </Route>
 
         {/* ================= ROUTE 404 ================= */}
