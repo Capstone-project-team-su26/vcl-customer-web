@@ -104,9 +104,10 @@ export default function Sidebar() {
                 <path d="m9 12 2 2 4-4" />
               </svg>
             </div>
-
+            <span className="profile-name">{email}</span>
             <div className="profile-id" style={{ fontSize: "11px", color: "#8c8c8c", wordBreak: "break-all" }}>
               {id ? `ID: ${id}` : (email || "Chưa có mã ID")}
+             
             </div>
 
             <div className="profile-progress-label">
