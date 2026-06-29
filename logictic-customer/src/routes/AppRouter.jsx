@@ -3,6 +3,8 @@ import Home from "../pages/HomePage/Home";
 import Login from "../pages/LoginPage/Login";
 import Register from "../pages/RegisterPage/Register";
 import VerifyOtp from "../pages/OTPPage/VerifyOtp";
+import ForgotPassword from "../pages/ForgotPasswordPage/ForgotPassword";
+import OTPForgot from "../pages/OTPForgotPage/OTPForgot";
 import NotFound from "../pages/NotFound";
 
 // ⬇️ IMPORT CÁC COMPONENT LAYOUT VÀ MÀN HÌNH MỚI CỦA BẠN VÀO ĐÂY
@@ -23,6 +25,8 @@ const AppRouter = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/otp-forgot" element={<OTPForgot />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
      

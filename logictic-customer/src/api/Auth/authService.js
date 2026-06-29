@@ -73,3 +73,30 @@ export const resendOtpApi = async (email) => {
     throw error; 
   }
 };
+// ================= API QUÊN MẬT KHẨU =================
+export const forgotPasswordApi = async (email) => {
+  try {
+    const response = await axiosInstance.post("/api/Auth/forgot-password", {
+      email,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Yêu cầu cấp lại mật khẩu thất bại:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// ================= API ĐẶT LẠI MẬT KHẨU =================
+export const resetPasswordApi = async (email, otp, newPassword) => {
+  try {
+    const response = await axiosInstance.post("/api/Auth/reset-password", {
+      email,
+      otp,
+      newPassword,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Đặt lại mật khẩu thất bại:", error.response?.data || error.message);
+    throw error;
+  }
+};
