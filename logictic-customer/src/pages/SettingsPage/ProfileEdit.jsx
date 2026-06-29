@@ -105,6 +105,9 @@ export default function ProfileEdit({ profile, loading, onUpdated }) {
       if (updatedProfile.fullName) {
         sessionStorage.setItem("fullName", updatedProfile.fullName);
       }
+      if (updatedProfile.phone) {
+        sessionStorage.setItem("phone", updatedProfile.phone);
+      }
     } catch (error) {
       console.error("Lỗi đồng bộ session user:", error);
     }
@@ -246,14 +249,7 @@ export default function ProfileEdit({ profile, loading, onUpdated }) {
         </div>
 
         <div className="profile-form-actions">
-          <button
-            type="button"
-            className="profile-btn secondary"
-            onClick={handleReset}
-            disabled={submitting}
-          >
-            Hoàn tác
-          </button>
+      
 
           <Button
             type="submit"
