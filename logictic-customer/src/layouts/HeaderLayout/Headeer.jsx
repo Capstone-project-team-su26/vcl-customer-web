@@ -29,11 +29,7 @@ const Header = () => {
 
   const services = [
     "Dịch vụ mua hộ",
-    "Vận chuyển quốc tế",
-    "Ký gửi kho bãi",
-    "Thông quan hải quan",
-    "Đấu giá",
-    "Fulfillment",
+    "Ký gửi hàng hóa",
   ];
 
   return (

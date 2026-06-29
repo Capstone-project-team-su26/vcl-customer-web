@@ -1,4 +1,9 @@
-import axiosInstance from '../axios'; 
+import axiosInstance from '../axios';
+
+const getCleanData = (response) => (response?.data ? response.data : response);
+
+const getAccessToken = () =>
+  sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
 
 export const loginApi = async (email, password) => {
   try {
@@ -97,6 +102,45 @@ export const resetPasswordApi = async (email, otp, newPassword) => {
     return response.data;
   } catch (error) {
     console.error("Đặt lại mật khẩu thất bại:", error.response?.data || error.message);
+    throw error;
+  }
+};
+// ================= API LẤY THÔNG TIN CÁ NHÂN =================
+export const getUserProfileApi = async (token = getAccessToken()) => {
+  try {
+    const config = token
+      ? { headers: { Authorization: `Bearer ${token}` } }
+      : undefined;
+
+    const response = await axiosInstance.get('/api/User/profile', config);
+    return getCleanData(response);
+  } catch (error) {
+    console.error('Lấy thông tin cá nhân thất bại:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// ================= API CẬP NHẬT THÔNG TIN CÁ NHÂN =================
+export const updateUserProfileApi = async (profileData, token = getAccessToken()) => {
+  try {
+    const config = token
+      ? { headers: { Authorization: `Bearer ${token}` } }
+      : undefined;
+
+    const response = await axiosInstance.put(
+      '/api/User/profile',
+      {
+        fullName: profileData.fullName,
+        phone: profileData.phone,
+        country: profileData.country,
+        address: profileData.address,
+      },
+      config
+    );
+
+    return getCleanData(response);
+  } catch (error) {
+    console.error('Cập nhật thông tin cá nhân thất bại:', error.response?.data || error.message);
     throw error;
   }
 };

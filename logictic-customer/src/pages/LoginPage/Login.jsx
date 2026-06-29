@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button, CircularProgress } from "@mui/material"; // Thư viện MUI
 import { loginApi } from "../../api/Auth/authService"; 
 import AuthNotify from "../../utils/AuthNotify"; 
+import BackToHomeButton from "../../components/BackToHomeButton";
 import "./Login.css";
+import "../RegisterPage/Register.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -94,11 +96,13 @@ export default function Login() {
       >
         <div className="banner-overlay" />
 
+        <BackToHomeButton variant="banner" />
+
         <div className="logo-wrapper" style={{ cursor: "pointer" }} onClick={() => navigate("/")}>
           <div className="logo-icon-box">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
           </div>
-          <span className="logo-text">LogisticsPro</span>
+          <span className="logo-text">VCL</span>
         </div>
 
         <div className="banner-content">
@@ -119,6 +123,9 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      {/* Mobile: banner ẩn → nút cố định góc trái */}
+      <BackToHomeButton variant="mobile" />
 
       {/* ================= BÊN PHẢI: KHU VỰC BOX NỔI ĐĂNG NHẬP ================= */}
       <div className="login-form-side">

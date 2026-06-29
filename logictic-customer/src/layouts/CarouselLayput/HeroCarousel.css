@@ -1,250 +1,366 @@
-/* HeroCarousel.css */
-.hero-carousel-wrapper {
-    width: 100%;
-    background: linear-gradient(135deg, #fffbf5 0%, #fbe8c5 100%);
-    overflow: hidden;
-    position: relative;
-    height: 650px;
+/* ================= VCL HERO — Cosmetics-style smooth carousel ================= */
+
+.hero-vcl {
+  position: relative;
+  width: 100%;
+  min-height: 580px;
+  height: clamp(520px, 72vh, 680px);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Background crossfade */
+.hero-vcl__bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
+.hero-vcl__bg.is-active {
+  opacity: 1;
+}
+
+.hero-vcl__glow {
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 60%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(245, 166, 35, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+  animation: heroGlowPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes heroGlowPulse {
+  from { opacity: 0.6; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.08); }
+}
+
+.hero-vcl__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1440px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 48px 48px 40px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Stage */
+.hero-vcl__stage {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.hero-vcl__slide {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 40px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(40px);
+  transition:
+    opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.9s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.9s;
+  pointer-events: none;
+}
+
+.hero-vcl__slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* Text content — staggered entrance */
+.hero-vcl__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding-right: 20px;
+}
+
+.hero-vcl__eyebrow,
+.hero-vcl__title,
+.hero-vcl__desc,
+.hero-vcl__cta {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-vcl__slide.is-active .hero-vcl__eyebrow.anim-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.1s;
+}
+
+.hero-vcl__slide.is-active .hero-vcl__title.anim-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.22s;
+}
+
+.hero-vcl__slide.is-active .hero-vcl__desc.anim-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.34s;
+}
+
+.hero-vcl__slide.is-active .hero-vcl__cta.anim-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.46s;
+}
+
+.hero-vcl__eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #a06820;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(160, 104, 32, 0.3);
+}
+
+.hero-vcl__title {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 300;
+  line-height: 1.15;
+  color: #1a1a1a;
+  margin: 0 0 20px;
+  letter-spacing: -0.02em;
+}
+
+.hero-vcl__title em {
+  display: block;
+  font-style: normal;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.hero-vcl__desc {
+  font-size: 16px;
+  line-height: 1.75;
+  color: #5c5348;
+  max-width: 480px;
+  margin: 0 0 32px;
+}
+
+.hero-vcl__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  border: none;
+  border-radius: 50px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(226, 138, 22, 0.35);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+
+.hero-vcl__cta:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 14px 36px rgba(226, 138, 22, 0.45);
+}
+
+/* Visual — floating product shot */
+.hero-vcl__visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 320px;
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  transition:
+    opacity 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s,
+    transform 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+}
+
+.hero-vcl__slide.is-active .hero-vcl__visual.anim-in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.hero-vcl__visual-ring {
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  border: 1px solid;
+  animation: heroRingSpin 20s linear infinite;
+}
+
+.hero-vcl__visual-ring--2 {
+  width: 300px;
+  height: 300px;
+  animation-direction: reverse;
+  animation-duration: 15s;
+}
+
+@keyframes heroRingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.hero-vcl__img-wrap {
+  position: relative;
+  z-index: 2;
+  animation: heroFloat 5s ease-in-out infinite;
+}
+
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+.hero-vcl__img {
+  max-width: min(420px, 90%);
+  max-height: 420px;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.12));
+  animation: heroImgKenBurns 8s ease-in-out infinite alternate;
+}
+
+@keyframes heroImgKenBurns {
+  from { transform: scale(1); }
+  to { transform: scale(1.04); }
+}
+
+.hero-vcl__badge {
+  position: absolute;
+  bottom: 12%;
+  right: 8%;
+  z-index: 3;
+  padding: 10px 18px;
+  border-radius: 50px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  animation: heroBadgeIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both;
+}
+
+@keyframes heroBadgeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Auto dots — decorative only */
+.hero-vcl__dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 8px;
+  flex-shrink: 0;
+}
+
+.hero-vcl__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.15);
+  transition:
+    width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.5s ease,
+    border-radius 0.5s ease;
+}
+
+.hero-vcl__dot.is-active {
+  width: 28px;
+  border-radius: 4px;
+  background: var(--dot-accent, #e28a16);
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 1024px) {
+  .hero-vcl__inner {
+    padding: 36px 28px 24px;
   }
-  
-  .hero-carousel-container {
-    max-width: 1440px;
-    width: 100%;
-    height: 100%;
-    margin: 0 auto;
-    display: flex;
-    position: relative;
+
+  .hero-vcl__slide {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 24px;
+    overflow-y: auto;
   }
-  
-  /* ================= ĐƯỜNG CONG BÊN TRÁI ================= */
-  .timeline-left-container {
-    width: 400px; /* Bù trừ cho timeline container, khớp với offset path */
-    height: 100%;
-    position: relative;
-    flex-shrink: 0;
-  }
-  
-  .curve-svg {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-  
-  /* Base style cho các chấm dọc đường cong, sử dụng CSS Motion Path */
-  .timeline-dots .dot {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background-color: #111111;
-    border-radius: 50%;
-    z-index: 15;
-    cursor: pointer;
-    /* CSS Motion Path cho dấu chấm, khớp với SVG path */
-    offset-path: path("M 50 550 C 120 420, 380 320, 280 50");
-    offset-distance: var(--path-distance); /* Sử dụng biến tiến trình của slide */
-    offset-rotate: auto;
-    transform: translate(-50%, -50%);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .timeline-dots .dot:hover {
-    transform: translate(-50%, -50%) scale(1.4);
-    background-color: #f5a623;
-  }
-  
-  .timeline-dots .dot.active {
-    background-color: #e28a16;
-    transform: translate(-50%, -50%) scale(1.35);
-    box-shadow: 0 0 0 5px rgba(226, 138, 22, 0.25);
-  }
-  
-  /* MÁY BAY VÀ NHÃN TAG DI CHUYỂN */
-  .moving-plane-block {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
+
+  .hero-vcl__content {
+    padding-right: 0;
     align-items: center;
-    z-index: 20;
-    pointer-events: none;
-    offset-path: path("M 50 550 C 120 420, 380 320, 280 50");
-    offset-distance: var(--path-progress);
-    offset-rotate: auto 0deg; 
-    transition: offset-distance 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    text-align: center;
   }
-  
-  .plane-tag-box {
-    background-color: #f5a623;
-    padding: 6px 14px;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(245, 166, 35, 0.35);
-    margin-bottom: 50px; 
-    white-space: nowrap;
-    /* Giữ tag chữ luôn thẳng đứng khi máy bay nghiêng cánh */
-    transform: rotate(calc(var(--offset-rotate) * -1)); 
-  }
-  
-  .plane-tag-box::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 5px solid #f5a623;
-  }
-  
-  .plane-tag-box .tag-top {
-    font-size: 9px;
-    font-weight: 700;
-    color: #533100;
-    opacity: 0.75;
-    letter-spacing: 0.5px;
-  }
-  
-  .plane-tag-box .tag-bottom {
-    font-size: 13px;
-    font-weight: 800;
-    color: #000000;
-    margin-top: 1px;
-  }
-  
-  .plane-image-wrapper {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    bottom: -22px; 
-  }
-  
-  /* Đổ bóng tự nhiên theo đúng hình dáng máy bay xóa phông PNG */
-  .plane-real-img {
-    width: 60px; 
-    height: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
-  }
-  
-  
-  /* ================= PHẦN KHỐI TRƯỢT CAROUSEL BÊN PHẢI ================= */
-  .carousel-right-container {
-    flex: 1;
-    height: 100%;
-    position: relative;
-    /* margin-left: 400px; */ /* Bỏ margin-left vì timeline container đã là flex item */
-  }
-  
-  /* ÉP CỨNG CHIỀU CAO CHO TOÀN BỘ CẤU TRÚC SUB-DIV CỦA ANT DESIGN SLIDER */
-  .carousel-right-container .ant-carousel,
-  .carousel-right-container .ant-slick-slider,
-  .carousel-right-container .ant-slick-list,
-  .carousel-right-container .ant-slick-track,
-  .carousel-right-container .ant-slick-slide,
-  .carousel-right-container .ant-slick-slide > div {
-    height: 100% !important;
-  }
-  
-  .slide-item {
-    width: 100%;
-    height: 100%;
-    display: block !important;
-  }
-  
-  /* Khung layout bóc tách chữ và ảnh */
-  .slide-inner-content {
-    display: flex !important;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-  }
-  
-  /* KHỐI CHỮ: Chiếm nửa trái và luôn căn giữa hoàn hảo */
-  .content-text-block {
-    width: 50%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center; 
-    justify-content: center;
-    text-align: center;  
-    padding: 0 20px;
-  }
-  
-  .hero-title {
-    font-size: 42px;
-    font-weight: 900;
-    color: #111111;
-    line-height: 1.35;
-    margin-bottom: 20px;
-    letter-spacing: -0.5px;
-  }
-  
-  .hero-title .highlight {
-    color: #e28a16; /* Màu cam thương hiệu cho phần highlight */
-  }
-  
-  .hero-description {
-    font-size: 16px;
-    color: #4a4a4a;
-    line-height: 1.65;
-    margin-bottom: 30px;
-    max-width: 460px;
-  }
-  
-  .cta-btn {
-    background-color: #f5a623;
-    color: #ffffff;
-    border: none;
-    padding: 14px 36px;
-    font-size: 15px;
-    font-weight: 700;
-    border-radius: 10px; 
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 5px 15px rgba(245, 166, 35, 0.3);
-    transition: all 0.2s ease;
-  }
-  
-  .cta-btn:hover {
-    background-color: #e09219;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(245, 166, 35, 0.45);
-  }
-  
-  /* KHỐI ẢNH LỚN: Chiếm nửa phải và ép hẳn về góc lề phải */
-  .content-image-block {
-    width: 50%;
-    height: 100%;
-    display: flex;
-    justify-content: flex-end; /* Đẩy sát biên đồ họa sang phải */
-    align-items: center;
-  }
-  
-  .hero-main-img {
+
+  .hero-vcl__desc {
     max-width: 100%;
-    max-height: 540px;
-    object-fit: contain;
-    animation: imgFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   }
-  
-  /* Hiệu ứng trượt nhẹ từ phải sang trái khi đổi ảnh */
-  @keyframes imgFadeIn {
-    from { 
-      opacity: 0; 
-      transform: scale(0.98) translateX(30px); 
-    }
-    to { 
-      opacity: 1; 
-      transform: scale(1) translateX(0); 
-    }
+
+  .hero-vcl__visual {
+    min-height: 240px;
   }
+
+  .hero-vcl__visual-ring {
+    width: 280px;
+    height: 280px;
+  }
+
+  .hero-vcl__visual-ring--2 {
+    width: 220px;
+    height: 220px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-vcl {
+    min-height: auto;
+    height: auto;
+  }
+
+  .hero-vcl__inner {
+    padding: 28px 20px 20px;
+  }
+
+  .hero-vcl__slide {
+    position: relative;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    display: none;
+    pointer-events: none;
+  }
+
+  .hero-vcl__slide.is-active {
+    display: grid;
+    pointer-events: auto;
+  }
+
+  .hero-vcl__title {
+    font-size: 32px;
+  }
+}

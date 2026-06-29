@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button, CircularProgress } from "@mui/material";
 import { registerApi } from "../../api/Auth/authService"; 
 import AuthNotify from "../../utils/AuthNotify"; 
+import BackToHomeButton from "../../components/BackToHomeButton";
 import "./Register.css";
 
 const COUNTRY_LIST = [
@@ -148,11 +149,12 @@ export default function Register() {
         style={{ backgroundImage: `url('https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1200&auto=format&fit=crop')` }}
       >
         <div className="banner-overlay" />
+        <BackToHomeButton variant="banner" />
         <div className="logo-wrapper" style={{ cursor: "pointer" }} onClick={() => navigate("/")}>
           <div className="logo-icon-box">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
           </div>
-          <span className="logo-text">LogisticsPro</span>
+          <span className="logo-text">VCL</span>
         </div>
         <div className="banner-content">
           <h1 className="banner-title">Global Supply Chain Intelligence.</h1>
@@ -171,6 +173,8 @@ export default function Register() {
           </div>
         </div>
       </div>
+
+      <BackToHomeButton variant="mobile" />
 
       {/* ================= BÊN PHẢI: KHU VỰC BOX NỔI ĐĂNG KÝ ================= */}
       <div className="login-form-side">

@@ -1,167 +1,125 @@
-import React, { useState, useRef } from "react";
-import { Carousel } from "antd";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import "./HeroCarousel.css";
 
-// Đảm bảo chính xác đường dẫn đến thư mục chứa ảnh của bạn
-// Cập nhật import hình ảnh từ các tệp được cung cấp cho 5 slide chính
-import imgMuaHo from "../../assets/hero.png"; // Slide "Mua hàng hộ" (ảnh gốc đầy đủ)
-import imgKyGui from "../../assets/hero.png"; // Slide "Ký gửi tại kho" (ảnh gốc isometric đầy đủ)
-import imgThongQuan from "../../assets/hero.png"; // Slide "Thông quan hải quan" (ảnh gốc đầy đủ)
+import imgMuaHo from "../../assets/hero.png";
+import imgKyGui from "../../assets/hero.png";
 
-// Các hình ảnh khác (giả sử có sẵn hoặc giữ chỗ cho các mục không có ảnh)
-import imgVanChuyen from "../../assets/hero.png"; // Giữ chỗ cho Vận chuyển
-import imgDauGia from "../../assets/hero.png"; // Giữ chỗ cho Đấu giá
+const AUTOPLAY_MS = 5000;
 
-// Ảnh máy bay PNG xóa phông chạy dọc đường cong
-import planeImg from "../../assets/airplan.png";
+const slideData = [
+  {
+    id: "mua-ho",
+    eyebrow: "Dịch vụ Mua hộ",
+    title: "Mua hàng hộ",
+    highlight: "quốc tế dễ dàng",
+    desc: "VCL thay bạn mua hàng từ các website nước ngoài, báo giá trọn gói minh bạch và vận chuyển về Việt Nam.",
+    btnText: "Gửi yêu cầu báo giá",
+    path: "/register",
+    image: imgMuaHo,
+    theme: "warm",
+    gradient: "linear-gradient(135deg, #fff9f0 0%, #fde8c8 45%, #f5d4a0 100%)",
+    accent: "#e28a16",
+  },
+  {
+    id: "ky-gui",
+    eyebrow: "Dịch vụ Ký gửi",
+    title: "Ký gửi hàng hóa",
+    highlight: "tại kho VCL",
+    desc: "Bạn tự mua hàng và gửi về kho VCL tại nước ngoài. Hệ thống hỗ trợ gom lô và vận chuyển an toàn về Việt Nam.",
+    btnText: "Tìm hiểu thêm",
+    path: "/register",
+    image: imgKyGui,
+    theme: "cream",
+    gradient: "linear-gradient(135deg, #fffdf8 0%, #f7efe3 50%, #edd9c4 100%)",
+    accent: "#c47d2a",
+  },
+];
 
 export default function HeroCarousel() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const carouselRef = useRef(null);
+  const navigate = useNavigate();
+  const [current, setCurrent] = useState(0);
 
-  // Khai báo đủ dữ liệu cho 5 dịch vụ tương ứng với 5 chấm mốc trên đường cong
-  // Điều chỉnh 'progress' để chia đều cho 5 mục: 0%, 25%, 50%, 75%, 100%
-  const slideData = [
-    {
-      title: (<>MUA HÀNG HỘ <br /> <span className="highlight">QUỐC TẾ DỄ DÀNG</span></>),
-      tag: "DỊCH VỤ MUA HỘ",
-      subTag: "Mua hộ",
-      desc: "Dịch vụ mua hộ hàng từ Indonesia, Nhật Bản, Hàn Quốc, Philippines, US, báo giá trọn gói minh bạch.",
-      btnText: "Gửi yêu cầu báo giá",
-      image: imgMuaHo, // Cập nhật ảnh Mua hàng hộ
-      progress: "0%", // Điểm đầu
-    },
-    {
-      title: (<>KÝ GỬI TẠI <br /> <span className="highlight">KHO QUỐC TẾ CHÍNH CHỦ</span></>),
-      tag: "DỊCH VỤ KÝ GỬI",
-      subTag: "Ký gửi kho",
-      desc: "Hàng hóa được lưu kho an toàn, minh bạch tại các kho hàng chính chủ Tiximax: Nhật, Indo, Phil, Việt.",
-      btnText: "Tìm hiểu thêm",
-      image: imgKyGui, // Cập nhật ảnh Ký gửi kho
-      progress: "25%", // Điểm thứ 2
-    },
-    {
-      title: (<>VẬN CHUYỂN <br /> <span className="highlight">QUỐC TẾ SIÊU TỐC</span></>),
-      tag: "VẬN CHUYỂN QUỐC TẾ",
-      subTag: "Vận chuyển",
-      desc: "Tuyến vận chuyển đa quốc gia về Việt Nam bằng đường hàng không và đường biển nhanh chóng, tối ưu.",
-      btnText: "Xem bảng giá",
-      image: imgVanChuyen, // Giữ chỗ
-      progress: "50%", // Điểm giữa
-    },
-    {
-      title: (<>THÔNG QUAN <br /> <span className="highlight">HẢI QUAN CHÍNH NGẠCH</span></>),
-      tag: "THÔNG QUAN HẢI QUAN",
-      subTag: "Thông quan",
-      desc: "Hỗ trợ đầy đủ thủ tục thông quan, tờ khai hải quan nhanh chóng, đúng pháp luật và đầy đủ hóa đơn.",
-      btnText: "Liên hệ tư vấn",
-      image: imgThongQuan, // Cập nhật ảnh Thông quan
-      progress: "75%", // Điểm thứ 4
-    },
-    {
-      title: (<>ĐẤU GIÁ <br /> <span className="highlight">TRỰC TUYẾN QUỐC TẾ</span></>),
-      tag: "DỊCH VỤ ĐẤU GIÁ",
-      subTag: "Đấu giá",
-      desc: "Hỗ trợ đấu giá các mặt hàng độc lạ từ các sàn TMĐT nước ngoài với tỷ lệ thắng cao và an toàn.",
-      btnText: "Thử ngay",
-      image: imgDauGia, // Giữ chỗ
-      progress: "100%", // Điểm cuối
-    },
-    // Mục Fulfillment đã bị loại bỏ
-  ];
+  const next = useCallback(() => {
+    setCurrent((prev) => (prev + 1) % slideData.length);
+  }, []);
 
-  // Chỉ ra lệnh cho Slider nhảy mốc, tuyệt đối không set State thủ công tại đây
-  const handleDotClick = (index) => {
-    if (carouselRef.current) {
-      carouselRef.current.goTo(index);
-    }
-  };
+  useEffect(() => {
+    const timer = setInterval(next, AUTOPLAY_MS);
+    return () => clearInterval(timer);
+  }, [next]);
 
   return (
-    <div className="hero-carousel-wrapper">
-      <div className="hero-carousel-container">
-        
-        {/* ================= BÊN TRÁI: TIMELINE ĐƯỜNG CONG (5 CHẤM) ================= */}
-        <div className="timeline-left-container">
-          {/* Đường cong SVG mượt mà */}
-          <svg className="curve-svg" viewBox="0 0 400 600" fill="none">
-            <path
-              id="curvePath"
-              d="M 50 550 C 120 420, 380 320, 280 50"
-              stroke="#e28a16"
-              strokeWidth="2"
-              strokeDasharray="8,8"
-              opacity="0.3"
-            />
-          </svg>
+    <section className="hero-vcl">
+      {slideData.map((s, i) => (
+        <div
+          key={s.id}
+          className={`hero-vcl__bg ${i === current ? "is-active" : ""}`}
+          style={{ background: s.gradient }}
+        />
+      ))}
 
-          {/* Cập nhật timeline-dots JSX để sử dụng CSS Motion Path và inline styles cho 5 dấu chấm */}
-          <div className="timeline-dots">
-            {slideData.map((slide, idx) => (
+      <div className="hero-vcl__glow" aria-hidden />
+
+      <div className="hero-vcl__inner">
+        <div className="hero-vcl__stage">
+          {slideData.map((s, i) => {
+            const isActive = i === current;
+            return (
               <div
-                key={idx}
-                className={`dot ${currentSlide === idx ? "active" : ""}`}
-                style={{
-                  "--path-distance": slide.progress, // Sử dụng cùng tiến trình cho dấu chấm
-                }}
-                onClick={() => handleDotClick(idx)}
-              />
-            ))}
-          </div>
+                key={s.id}
+                className={`hero-vcl__slide ${isActive ? "is-active" : ""} hero-vcl__slide--${s.theme}`}
+                aria-hidden={!isActive}
+              >
+                <div className="hero-vcl__content">
+                  <span className={`hero-vcl__eyebrow ${isActive ? "anim-in" : ""}`}>
+                    {s.eyebrow}
+                  </span>
+                  <h1 className={`hero-vcl__title ${isActive ? "anim-in" : ""}`}>
+                    {s.title}
+                    <em style={{ color: s.accent }}>{s.highlight}</em>
+                  </h1>
+                  <p className={`hero-vcl__desc ${isActive ? "anim-in" : ""}`}>
+                    {s.desc}
+                  </p>
+                  <button
+                    type="button"
+                    className={`hero-vcl__cta ${isActive ? "anim-in" : ""}`}
+                    style={{ background: s.accent }}
+                    onClick={() => navigate(s.path)}
+                  >
+                    {s.btnText}
+                    <ArrowRightOutlined />
+                  </button>
+                </div>
 
-          {/* BLOCK MÁY BAY CHẠY ĐỘNG: Gắn biến `--path-progress` truyền từ React vào CSS */}
-          <div 
-            className="moving-plane-block"
-            style={{ "--path-progress": slideData[currentSlide]?.progress }}
-          >
-            {/* Tag thông tin màu cam bám theo máy bay */}
-            <div className="plane-tag-box">
-              <span className="tag-top">{slideData[currentSlide]?.tag}</span>
-              <span className="tag-bottom">{slideData[currentSlide]?.subTag}</span>
-            </div>
-            
-            <div className="plane-image-wrapper">
-              <img src={planeImg} alt="airplane" className="plane-real-img" />
-            </div>
-          </div>
-        </div>
-
-        {/* ================= TRUNG TÂM VÀ BÊN PHẢI: KHỐI HIỂN THỊ CHỮ / ẢNH ================= */}
-        <div className="carousel-right-container">
-          <Carousel
-            ref={carouselRef}
-            autoplay
-            autoplaySpeed={5000}
-            effect="fade"
-            dots={false}
-            afterChange={(current) => setCurrentSlide(current)} // Sử dụng afterChange giúp đồng bộ mượt mà không lỗi render
-          >
-            {slideData.map((slide, index) => (
-              <div key={index} className="slide-item">
-                <div className="slide-inner-content">
-                  
-                  {/* KHỐI VĂN BẢN CHỮ NẰM CHÍNH GIỮA */}
-                  <div className="content-text-block">
-                    <h1 className="hero-title">{slide.title}</h1>
-                    <p className="hero-description">{slide.desc}</p>
-                    <button className="cta-btn">
-                      {slide.btnText} <ArrowRightOutlined />
-                    </button>
+                <div className={`hero-vcl__visual ${isActive ? "anim-in" : ""}`}>
+                  <div className="hero-vcl__visual-ring" style={{ borderColor: `${s.accent}33` }} />
+                  <div className="hero-vcl__visual-ring hero-vcl__visual-ring--2" style={{ borderColor: `${s.accent}22` }} />
+                  <div className="hero-vcl__img-wrap">
+                    <img src={s.image} alt={s.eyebrow} className="hero-vcl__img" />
                   </div>
-
-                  {/* KHỐI ĐỒ HỌA ẢNH ĐẨY HẲN SÁT SANG PHẢI */}
-                  <div className="content-image-block">
-                    <img src={slide.image} alt={slide.subTag} className="hero-main-img" />
-                  </div>
-
+                  <span className="hero-vcl__badge" style={{ background: s.accent }}>
+                    VCL
+                  </span>
                 </div>
               </div>
-            ))}
-          </Carousel>
+            );
+          })}
         </div>
 
+        {/* Chỉ báo tự động — không cần bấm */}
+        <div className="hero-vcl__dots" aria-hidden>
+          {slideData.map((s, i) => (
+            <span
+              key={s.id}
+              className={`hero-vcl__dot ${i === current ? "is-active" : ""}`}
+              style={{ "--dot-accent": slideData[current].accent }}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

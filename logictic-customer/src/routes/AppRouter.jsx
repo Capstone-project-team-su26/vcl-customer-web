@@ -13,6 +13,7 @@ import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
 import CreateOrder from "../pages/DashboardPage/CreateCustomer/CreateOrder";
 import ConsigmentOrder from "../pages/DashboardPage/CreateCustomer/KiGuiHang/ConsignmentOrder";
 import ConsignmentList from "../pages/DashboardPage/CreateCustomer/OrderXuLy/ConsignmentList"; // Import
+import ProfileConfig from "../pages/SettingsPage/ProfileConfig";
 
 
 
@@ -37,6 +38,7 @@ const AppRouter = () => {
           <Route path="/create-order" element={<CreateOrder />} />
           <Route path="/create-order/consignment" element={<ConsigmentOrder />} />
           <Route path="/processing-orders" element={<ConsignmentList />} /> 
+          <Route path="/settings/profile-config" element={<ProfileConfig />} />
         </Route>
 
         {/* ================= ROUTE 404 ================= */}

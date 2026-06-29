@@ -13,6 +13,7 @@ export default function MainLayout() {
     if (path.includes("dashboard")) return "BÀNG ĐIỀU KHIỂN";
     if (path.includes("create-order")) return "TẠO ĐƠN HÀNG";
     if (path.includes("processing-orders")) return "ĐƠN ĐANG XỬ LÝ";
+    if (path.includes("settings/profile-config")) return "CẤU HÌNH TÀI KHOẢN";
     return "HỆ THỐNG";
   };
 
