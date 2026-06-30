@@ -1,111 +1,361 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, CircularProgress } from "@mui/material";
+
 import { forgotPasswordApi } from "../../api/Auth/authService";
 import AuthNotify from "../../utils/AuthNotify";
-import "../RegisterPage/Register.css";
-import "../LoginPage/Login.css";
+import BackToHomeButton from "../../components/BackToHomeButton";
+import forgotPasswordLogo from "../../assets/anhlogocap2.jpeg";
+
 import "./ForgotPassword.css";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const validateEmail = () => {
-    if (!email.trim()) {
+    const emailValue = email.trim();
+
+    if (!emailValue) {
       setError("Vui lòng nhập địa chỉ email.");
       return false;
     }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError("Định dạng email không hợp lệ.");
+
+    if (!emailRegex.test(emailValue)) {
+      setError("Địa chỉ email không đúng định dạng.");
       return false;
     }
+
     setError("");
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateEmail()) {
-      AuthNotify.warning("Cảnh báo", "Vui lòng kiểm tra lại email.");
+  const handleEmailChange = (event) => {
+    setEmail(event.target.value);
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (loading || !validateEmail()) {
+      if (!loading) {
+        AuthNotify.warning(
+          "Thông tin chưa hợp lệ",
+          "Vui lòng kiểm tra lại địa chỉ email."
+        );
+      }
+
       return;
     }
 
+    const emailValue = email.trim();
+
     try {
       setLoading(true);
-      const res = await forgotPasswordApi(email.trim());
+      setError("");
+
+      const response = await forgotPasswordApi(emailValue);
+
       AuthNotify.success(
-        "Đã gửi mã",
-        res?.message || "Mã xác thực đã được gửi tới email của bạn."
+        "Đã gửi mã xác thực",
+        response?.message ||
+          "Mã xác thực đã được gửi tới địa chỉ email của bạn."
       );
+
       setTimeout(() => {
-        navigate("/otp-forgot", { state: { email: email.trim() } });
+        navigate("/otp-forgot", {
+          state: {
+            email: emailValue,
+          },
+        });
       }, 1000);
-    } catch (err) {
-      const msg =
-        err.response?.data?.message ||
+    } catch (requestError) {
+      console.error("Lỗi gửi mã xác thực:", requestError);
+
+      const errorMessage =
+        requestError?.response?.data?.message ||
+        requestError?.response?.data?.title ||
         "Không thể gửi mã xác thực. Vui lòng thử lại.";
-      AuthNotify.error("Gửi mã thất bại", msg);
+
+      AuthNotify.error(
+        "Gửi mã thất bại",
+        errorMessage
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div
-        className="login-banner"
+    <main className="forgot-password-page">
+      {/* ================= BANNER BÊN TRÁI ================= */}
+      <section
+        className="forgot-banner"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=1200&auto=format&fit=crop')`,
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=85&w=1600&auto=format&fit=crop')",
         }}
       >
-        <div className="banner-overlay" />
-        <div className="logo-wrapper" style={{ cursor: "pointer" }} onClick={() => navigate("/")}>
-          <div className="logo-icon-box">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-          </div>
-          <span className="logo-text">VCL</span>
-        </div>
-        <div className="banner-content">
-          <h1 className="banner-title">Recover Your Account</h1>
-          <p className="banner-description">
-            Enter your registered email and we will send you a verification code to reset your password securely.
-          </p>
-        </div>
-      </div>
+        <div className="forgot-banner-overlay" />
+        <div className="forgot-banner-pattern" />
 
-      <div className="login-form-side">
-        <div className="form-card-glow-wrapper">
-          <div className="form-inner-card forgot-card">
-            <div className="form-header">
-              <h2 className="form-title">Forgot Password</h2>
-              <p className="form-subtitle">
-                Nhập email đã đăng ký để nhận mã xác thực đặt lại mật khẩu
+        <BackToHomeButton variant="banner" />
+
+        <button
+          type="button"
+          className="forgot-brand"
+          onClick={() => navigate("/")}
+          aria-label="Trở về trang chủ"
+        >
+          <span className="forgot-brand-frame">
+            <img
+              src={forgotPasswordLogo}
+              alt="Việt Nam Logistic"
+              draggable="false"
+            />
+          </span>
+        </button>
+
+        <div className="forgot-banner-content">
+          <span className="forgot-banner-eyebrow">
+            KHÔI PHỤC TÀI KHOẢN
+          </span>
+
+          <h1 className="forgot-banner-title">
+            Lấy lại quyền truy cập tài khoản của bạn.
+          </h1>
+
+          <p className="forgot-banner-description">
+            Nhập địa chỉ email đã đăng ký. Hệ thống sẽ gửi
+            mã xác thực để bạn có thể đặt lại mật khẩu một
+            cách an toàn.
+          </p>
+
+          <div className="forgot-banner-features">
+            <div className="forgot-banner-feature">
+              <span>✓</span>
+              Xác thực tài khoản qua email
+            </div>
+
+            <div className="forgot-banner-feature">
+              <span>✓</span>
+              Đặt lại mật khẩu nhanh chóng
+            </div>
+
+            <div className="forgot-banner-feature">
+              <span>✓</span>
+              Bảo mật thông tin tài khoản
+            </div>
+          </div>
+        </div>
+
+        <div className="forgot-security-box">
+          <span className="forgot-security-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect
+                width="18"
+                height="11"
+                x="3"
+                y="11"
+                rx="2"
+              />
+
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+
+          <span>
+            Thông tin khôi phục tài khoản của bạn được bảo
+            vệ an toàn.
+          </span>
+        </div>
+      </section>
+
+      {/* Nút về trang chủ trên mobile */}
+      <BackToHomeButton variant="mobile" />
+
+      {/* ================= FORM BÊN PHẢI ================= */}
+      <section className="forgot-form-side">
+        <div className="forgot-decoration forgot-decoration-one" />
+        <div className="forgot-decoration forgot-decoration-two" />
+
+        <div className="forgot-card-wrapper">
+          <div className="forgot-card">
+            {/* Logo mobile */}
+            <button
+              type="button"
+              className="forgot-mobile-logo"
+              onClick={() => navigate("/")}
+              aria-label="Trở về trang chủ"
+            >
+              <span className="forgot-mobile-logo-frame">
+                <img
+                  src={forgotPasswordLogo}
+                  alt="Việt Nam Logistic"
+                  draggable="false"
+                />
+              </span>
+            </button>
+
+            <div className="forgot-icon-box">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect
+                  width="20"
+                  height="16"
+                  x="2"
+                  y="4"
+                  rx="2"
+                />
+
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </div>
+
+            <div className="forgot-form-header">
+              <span className="forgot-form-eyebrow">
+                KHÔI PHỤC MẬT KHẨU
+              </span>
+
+              <h2 className="forgot-form-title">
+                Quên mật khẩu?
+              </h2>
+
+              <p className="forgot-form-subtitle">
+                Nhập email đã đăng ký để nhận mã xác thực
+                đặt lại mật khẩu.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="auth-form" noValidate>
-              <div className="input-group">
-                <label className="input-label">Email address</label>
-                <div className={`input-wrapper ${error ? "input-error-border" : ""}`}>
-                  <div className="input-icon-left">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                  </div>
+            <form
+              onSubmit={handleSubmit}
+              className="forgot-form"
+              noValidate
+            >
+              <div className="forgot-field">
+                <label
+                  htmlFor="forgot-email"
+                  className="forgot-label"
+                >
+                  Địa chỉ email
+                </label>
+
+                <div
+                  className={`forgot-input-wrapper ${
+                    error ? "forgot-input-error" : ""
+                  }`}
+                >
+                  <span className="forgot-input-icon">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect
+                        width="20"
+                        height="16"
+                        x="2"
+                        y="4"
+                        rx="2"
+                      />
+
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </span>
+
                   <input
+                    id="forgot-email"
+                    name="email"
                     type="email"
-                    placeholder="name@logisticspro.com"
-                    className="form-input"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (error) setError("");
-                    }}
+                    onChange={handleEmailChange}
+                    placeholder="Nhập địa chỉ email"
+                    className="forgot-input"
+                    autoComplete="email"
+                    disabled={loading}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={
+                      error
+                        ? "forgot-email-error"
+                        : undefined
+                    }
                   />
                 </div>
-                {error && <div className="error-text-message">{error}</div>}
+
+                {error && (
+                  <div
+                    id="forgot-email-error"
+                    className="forgot-error-message"
+                    role="alert"
+                  >
+                    <span>!</span>
+                    {error}
+                  </div>
+                )}
+              </div>
+
+              <div className="forgot-info-box">
+                <span className="forgot-info-icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                    />
+
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </span>
+
+                <p>
+                  Mã xác thực sẽ được gửi đến email đã đăng
+                  ký với tài khoản của bạn.
+                </p>
               </div>
 
               <Button
@@ -113,24 +363,37 @@ export default function ForgotPassword() {
                 variant="contained"
                 fullWidth
                 disabled={loading}
-                className="mui-animated-btn"
-                sx={{
-                  height: "46px",
-                  borderRadius: "8px",
-                  textTransform: "none",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  backgroundColor: "#2563eb",
-                  boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
-                  gap: "8px",
-                  marginTop: "0.5rem",
-                  "&:hover": { backgroundColor: "#1d4ed8" },
-                }}
+                className="forgot-submit-button"
               >
                 {loading ? (
-                  <CircularProgress size={22} sx={{ color: "#ffffff" }} />
+                  <>
+                    <CircularProgress
+                      size={21}
+                      thickness={4}
+                      sx={{ color: "#ffffff" }}
+                    />
+
+                    <span>Đang gửi mã...</span>
+                  </>
                 ) : (
-                  "Gửi mã xác thực"
+                  <>
+                    <span>Gửi mã xác thực</span>
+
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </>
                 )}
               </Button>
 
@@ -138,13 +401,55 @@ export default function ForgotPassword() {
                 type="button"
                 className="forgot-back-link"
                 onClick={() => navigate("/login")}
+                disabled={loading}
               >
-                Quay lại đăng nhập
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+
+                <span>Quay lại trang đăng nhập</span>
               </button>
             </form>
+
+            <div className="forgot-footer-links">
+              <button
+                type="button"
+                onClick={() => navigate("/support")}
+              >
+                Hỗ trợ
+              </button>
+
+              <span>•</span>
+
+              <button
+                type="button"
+                onClick={() => navigate("/privacy")}
+              >
+                Chính sách bảo mật
+              </button>
+
+              <span>•</span>
+
+              <button
+                type="button"
+                onClick={() => navigate("/terms")}
+              >
+                Điều khoản
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

@@ -1,72 +1,1410 @@
-.otp-input-error {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
-}
-
-.otp-error-text {
-  color: #ef4444;
-  font-size: 12px;
-  margin-top: 6px;
-  font-weight: 500;
-}
-
-.otp-password-wrapper {
-  display: flex;
-  align-items: center;
-  padding-right: 0.5rem;
-}
-
-.otp-password-wrapper .otp-form-input {
-  border: none;
-  box-shadow: none;
-  flex: 1;
-}
-
-.otp-password-toggle {
-  background: transparent;
-  border: none;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  flex-shrink: 0;
-}
-
-.otp-password-toggle:hover {
-  text-decoration: underline;
-}
 /* =========================================================
-   CHUẨN HÓA FONT CHỮ PHẦN PASSWORD VÀ ERROR
+   TRANG ĐẶT LẠI MẬT KHẨU
+   Class riêng, không phụ thuộc VerifyOtp.css
    ========================================================= */
 
-   .otp-error-text {
-    font-family: inherit;
-    font-size: 13px;
-    line-height: 1.45;
-    font-weight: 500;
-    letter-spacing: 0;
+   .otp-forgot-page {
+    --otp-navy: #062f57;
+    --otp-navy-dark: #031b33;
+    --otp-blue: #1976b9;
+    --otp-blue-light: #3d9bd3;
+    --otp-red: #d71920;
+    --otp-orange: #e6a83c;
+    --otp-green: #10b981;
+    --otp-green-dark: #059669;
+    --otp-rose: #fff5f6;
+    --otp-text: #172033;
+    --otp-muted: #64748b;
+    --otp-border: #dce4ed;
+    --otp-error: #ef4444;
+  
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+  
+    display: flex;
+  
+    margin: 0;
+    padding: 0;
+  
+    overflow-x: hidden;
+  
+    color: var(--otp-text);
+    background: var(--otp-rose);
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+  
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
-  .otp-password-wrapper .otp-form-input {
+  .otp-forgot-page *,
+  .otp-forgot-page *::before,
+  .otp-forgot-page *::after {
+    box-sizing: border-box;
+  }
+  
+  .otp-forgot-page button,
+  .otp-forgot-page input {
     font-family: inherit;
-    font-size: 16px;
+  }
+  
+  .otp-forgot-page ::selection {
+    color: #881337;
+    background: #ffe4e6;
+  }
+  
+  /* =========================================================
+     BANNER TRÁI
+     ========================================================= */
+  
+  .otp-forgot-banner {
+    position: relative;
+    overflow: hidden;
+  
+    width: 48%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 3.5rem;
+  
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+  
+    color: #ffffff;
+  
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+  
+  .otp-forgot-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(3, 27, 51, 0.94) 0%,
+        rgba(6, 47, 87, 0.86) 48%,
+        rgba(12, 80, 126, 0.72) 100%
+      );
+  }
+  
+  .otp-forgot-pattern {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  
+    opacity: 0.15;
+  
+    background-image:
+      linear-gradient(
+        rgba(255, 255, 255, 0.11) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.11) 1px,
+        transparent 1px
+      );
+  
+    background-size: 48px 48px;
+  
+    mask-image:
+      linear-gradient(
+        to bottom,
+        #000 0%,
+        transparent 88%
+      );
+  
+    pointer-events: none;
+  }
+  
+  .otp-forgot-banner::after {
+    content: "";
+  
+    position: absolute;
+    right: -180px;
+    bottom: -200px;
+    z-index: 2;
+  
+    width: 510px;
+    height: 510px;
+  
+    border: 1px solid
+      rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 0 70px
+        rgba(255, 255, 255, 0.025),
+      0 0 0 145px
+        rgba(255, 255, 255, 0.018);
+  
+    pointer-events: none;
+  }
+  
+  .otp-forgot-brand,
+  .otp-forgot-banner-content,
+  .otp-forgot-security-box {
+    position: relative;
+    z-index: 10;
+  }
+  
+  @media (min-width: 1050px) {
+    .otp-forgot-banner {
+      display: flex;
+    }
+  }
+  
+  /* =========================================================
+     LOGO DESKTOP
+     ========================================================= */
+  
+  .otp-forgot-brand {
+    width: fit-content;
+    margin: 2.5rem 0 0;
+    padding: 0;
+  
+    display: inline-flex;
+  
+    background: transparent;
+    border: 0;
+  
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .otp-forgot-brand-frame {
+    position: relative;
+    overflow: hidden;
+  
+    width: 370px;
+    height: 96px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.99),
+        rgba(247, 251, 255, 0.95)
+      );
+  
+    border: 1px solid
+      rgba(255, 255, 255, 0.82);
+    border-radius: 20px;
+  
+    box-shadow:
+      0 18px 42px
+        rgba(0, 20, 48, 0.3),
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.95);
+  
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  
+  .otp-forgot-brand-frame::after {
+    content: "";
+  
+    position: absolute;
+    right: 25px;
+    bottom: 7px;
+    left: 25px;
+  
+    height: 2px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--otp-blue),
+        var(--otp-red),
+        var(--otp-orange),
+        transparent
+      );
+  
+    border-radius: 999px;
+    opacity: 0.65;
+  }
+  
+  .otp-forgot-brand-frame img {
+    display: block;
+  
+    width: 100%;
+    height: 100%;
+  
+    object-fit: cover;
+    object-position: center;
+  
+    user-select: none;
+  
+    transform: scale(1.13);
+  
+    filter:
+      contrast(1.05)
+      saturate(1.08);
+  
+    transition:
+      transform 0.25s ease,
+      filter 0.25s ease;
+  }
+  
+  .otp-forgot-brand:hover
+    .otp-forgot-brand-frame {
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 23px 50px
+        rgba(0, 20, 48, 0.38),
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.95);
+  }
+  
+  .otp-forgot-brand:hover
+    .otp-forgot-brand-frame img {
+    transform: scale(1.17);
+  
+    filter:
+      contrast(1.08)
+      saturate(1.13);
+  }
+  
+  /* =========================================================
+     NỘI DUNG BANNER
+     ========================================================= */
+  
+  .otp-forgot-banner-content {
+    width: 100%;
+    max-width: 38rem;
+    margin: auto 0;
+    padding: 2rem 0;
+  }
+  
+  .otp-forgot-banner-eyebrow {
+    margin-bottom: 1.1rem;
+    padding: 0.5rem 0.9rem;
+  
+    display: inline-flex;
+  
+    color: #ffffff;
+    background:
+      rgba(255, 255, 255, 0.1);
+  
+    border: 1px solid
+      rgba(255, 255, 255, 0.17);
+    border-radius: 999px;
+  
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+  
+    backdrop-filter: blur(10px);
+  }
+  
+  .otp-forgot-banner-title {
+    max-width: 620px;
+    margin: 0;
+  
+    color: #ffffff;
+  
+    font-size:
+      clamp(2.5rem, 3.8vw, 3.6rem);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+  }
+  
+  .otp-forgot-banner-description {
+    max-width: 570px;
+    margin: 1.35rem 0 0;
+  
+    color:
+      rgba(255, 255, 255, 0.76);
+  
+    font-size: 0.96rem;
+    line-height: 1.75;
+  }
+  
+  .otp-forgot-feature-list {
+    margin-top: 1.7rem;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .otp-forgot-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  
+    color:
+      rgba(255, 255, 255, 0.91);
+  
+    font-size: 0.86rem;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  
+  .otp-forgot-feature-item > span {
+    flex-shrink: 0;
+  
+    width: 24px;
+    height: 24px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+    background:
+      rgba(61, 155, 211, 0.28);
+  
+    border: 1px solid
+      rgba(131, 210, 255, 0.28);
+    border-radius: 50%;
+  
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+  
+  /* =========================================================
+     HỘP BẢO MẬT
+     ========================================================= */
+  
+  .otp-forgot-security-box {
+    width: 100%;
+    max-width: 610px;
+    padding: 1rem 1.15rem;
+  
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  
+    color:
+      rgba(255, 255, 255, 0.76);
+    background:
+      rgba(255, 255, 255, 0.09);
+  
+    border: 1px solid
+      rgba(255, 255, 255, 0.14);
+    border-radius: 15px;
+  
+    font-size: 0.78rem;
+    line-height: 1.55;
+    font-weight: 500;
+  
+    backdrop-filter: blur(15px);
+  
+    box-shadow:
+      0 14px 30px
+        rgba(0, 20, 48, 0.17);
+  }
+  
+  .otp-forgot-security-icon {
+    flex-shrink: 0;
+  
+    width: 40px;
+    height: 40px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+    background:
+      rgba(61, 155, 211, 0.22);
+  
+    border: 1px solid
+      rgba(131, 210, 255, 0.24);
+    border-radius: 12px;
+  }
+  
+  /* =========================================================
+     FORM BÊN PHẢI
+     ========================================================= */
+  
+  .otp-forgot-form-side {
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 2.5rem 1.25rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background:
+      radial-gradient(
+        circle at 88% 10%,
+        rgba(215, 25, 32, 0.055),
+        transparent 29%
+      ),
+      radial-gradient(
+        circle at 8% 92%,
+        rgba(25, 118, 185, 0.08),
+        transparent 31%
+      ),
+      linear-gradient(
+        145deg,
+        #fff5f6 0%,
+        #fffafb 45%,
+        #f7fbff 100%
+      );
+  }
+  
+  @media (min-width: 1050px) {
+    .otp-forgot-form-side {
+      width: 52%;
+    }
+  }
+  
+  .otp-forgot-decoration {
+    position: absolute;
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .otp-forgot-decoration-one {
+    top: -150px;
+    right: -120px;
+  
+    width: 360px;
+    height: 360px;
+  
+    border: 65px solid
+      rgba(215, 25, 32, 0.025);
+  }
+  
+  .otp-forgot-decoration-two {
+    bottom: -190px;
+    left: -150px;
+  
+    width: 430px;
+    height: 430px;
+  
+    border: 75px solid
+      rgba(25, 118, 185, 0.025);
+  }
+  
+  /* =========================================================
+     CARD
+     ========================================================= */
+  
+  .otp-forgot-card-wrapper {
+    position: relative;
+    z-index: 2;
+  
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .otp-forgot-card-wrapper::before {
+    content: "";
+  
+    position: absolute;
+    inset: -20px;
+    z-index: -1;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(244, 63, 94, 0.08),
+        transparent 67%
+      );
+  
+    filter: blur(20px);
+    pointer-events: none;
+  }
+  
+  .otp-forgot-card {
+    position: relative;
+  
+    width: 100%;
+    padding: 2.5rem 2.35rem 2rem;
+  
+    background:
+      rgba(255, 255, 255, 0.97);
+  
+    border: 1px solid
+      rgba(254, 205, 211, 0.82);
+    border-radius: 1.5rem;
+  
+    box-shadow:
+      0 30px 65px
+        rgba(51, 17, 29, 0.1),
+      0 8px 20px
+        rgba(244, 63, 94, 0.05),
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.95);
+  
+    backdrop-filter: blur(18px);
+  }
+  
+  .otp-forgot-card::before {
+    content: "";
+  
+    position: absolute;
+    top: 0;
+    right: 34px;
+    left: 34px;
+  
+    height: 3px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--otp-blue),
+        var(--otp-red),
+        var(--otp-orange),
+        transparent
+      );
+  
+    border-radius: 0 0 999px 999px;
+  }
+  
+  /* =========================================================
+     LOGO MOBILE
+     ========================================================= */
+  
+  .otp-forgot-mobile-logo {
+    display: none;
+  
+    margin: 0 auto 1.5rem;
+    padding: 0;
+  
+    background: transparent;
+    border: 0;
+  
+    cursor: pointer;
+  }
+  
+  .otp-forgot-mobile-logo-frame {
+    overflow: hidden;
+  
+    width: 310px;
+    height: 80px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background: #ffffff;
+  
+    border: 1px solid
+      rgba(25, 118, 185, 0.13);
+    border-radius: 16px;
+  
+    box-shadow:
+      0 12px 30px
+        rgba(25, 118, 185, 0.1);
+  }
+  
+  .otp-forgot-mobile-logo-frame img {
+    width: 100%;
+    height: 100%;
+  
+    object-fit: cover;
+  
+    transform: scale(1.13);
+  
+    filter:
+      contrast(1.05)
+      saturate(1.08);
+  }
+  
+  /* =========================================================
+     ICON VÀ HEADER
+     ========================================================= */
+  
+  .otp-forgot-main-icon {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 1.15rem;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: var(--otp-blue);
+  
+    background:
+      linear-gradient(
+        135deg,
+        rgba(61, 155, 211, 0.14),
+        rgba(25, 118, 185, 0.07)
+      );
+  
+    border: 1px solid
+      rgba(25, 118, 185, 0.12);
+    border-radius: 17px;
+  
+    box-shadow:
+      0 8px 18px
+        rgba(25, 118, 185, 0.08);
+  }
+  
+  .otp-forgot-header {
+    margin-bottom: 1.7rem;
+  }
+  
+  .otp-forgot-eyebrow {
+    margin-bottom: 0.5rem;
+  
+    display: block;
+  
+    color: var(--otp-blue);
+  
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+  }
+  
+  .otp-forgot-title {
+    margin: 0;
+  
+    color: #0f172a;
+  
+    font-size: 1.9rem;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+  
+  .otp-forgot-subtitle {
+    margin: 0.65rem 0 0;
+  
+    color: var(--otp-muted);
+  
+    font-size: 0.84rem;
+    line-height: 1.6;
+  }
+  
+  .otp-forgot-email {
+    min-width: 0;
+    margin-top: 0.75rem;
+    padding: 0.65rem 0.8rem;
+  
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  
+    color: var(--otp-blue);
+    background:
+      rgba(25, 118, 185, 0.06);
+  
+    border: 1px solid
+      rgba(25, 118, 185, 0.1);
+    border-radius: 0.7rem;
+  
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  
+  .otp-forgot-email svg {
+    flex-shrink: 0;
+  }
+  
+  .otp-forgot-email span {
+    overflow: hidden;
+  
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* =========================================================
+     FORM
+     ========================================================= */
+  
+  .otp-forgot-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.05rem;
+  }
+  
+  .otp-forgot-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.42rem;
+  }
+  
+  .otp-forgot-label {
+    color: #344054;
+  
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+  
+  .otp-forgot-required {
+    margin-left: 3px;
+  
+    color: var(--otp-error);
+  }
+  
+  .otp-forgot-input-wrapper {
+    position: relative;
+  
+    min-height: 50px;
+  
+    display: flex;
+    align-items: center;
+  
+    background: #fbfcfe;
+  
+    border: 1px solid
+      var(--otp-border);
+    border-radius: 0.75rem;
+  
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  .otp-forgot-input-wrapper:focus-within {
+    background: #ffffff;
+    border-color: var(--otp-blue);
+  
+    box-shadow:
+      0 0 0 4px
+        rgba(25, 118, 185, 0.1);
+  
+    transform: translateY(-1px);
+  }
+  
+  .otp-forgot-input-icon {
+    position: absolute;
+    left: 0.95rem;
+    z-index: 2;
+  
+    display: inline-flex;
+    align-items: center;
+  
+    color: #94a3b8;
+  
+    pointer-events: none;
+  
+    transition: color 0.2s ease;
+  }
+  
+  .otp-forgot-input-wrapper:focus-within
+    .otp-forgot-input-icon {
+    color: var(--otp-blue);
+  }
+  
+  .otp-forgot-input {
+    width: 100%;
+    min-height: 49px;
+    padding:
+      0.75rem
+      3.8rem
+      0.75rem
+      2.9rem;
+  
+    color: #0f172a;
+    background: transparent;
+  
+    border: 0;
+    outline: none;
+  
+    font-family: inherit;
+    font-size: 0.88rem;
     line-height: 1.5;
     font-weight: 500;
     letter-spacing: 0;
   }
   
-  .otp-password-wrapper .otp-form-input::placeholder {
+  .otp-forgot-input::placeholder {
+    color: #a0aabc;
+  
     font-family: inherit;
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 0.84rem;
     font-weight: 400;
   }
   
-  .otp-password-toggle {
+  .otp-forgot-input:disabled {
+    color: #94a3b8;
+  
+    cursor: not-allowed;
+  }
+  
+  /* =========================================================
+     OTP
+     ========================================================= */
+  
+  .otp-forgot-code-input {
+    padding-right: 3.6rem;
+  
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+  }
+  
+  .otp-forgot-code-input::placeholder {
+    font-size: 0.84rem;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  
+  .otp-forgot-code-count {
+    position: absolute;
+    right: 0.9rem;
+  
+    color: #94a3b8;
+  
+    font-size: 0.7rem;
+    font-weight: 700;
+  
+    pointer-events: none;
+  }
+  
+  /* =========================================================
+     PASSWORD
+     ========================================================= */
+  
+  .otp-forgot-password-wrapper {
+    padding-right: 0.45rem;
+  }
+  
+  .otp-forgot-password-wrapper
+    .otp-forgot-input {
+    padding-right: 4rem;
+  }
+  
+  .otp-forgot-password-toggle {
+    position: absolute;
+    right: 0.55rem;
+  
+    min-width: 45px;
+    height: 35px;
+    padding: 0 0.5rem;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: var(--otp-blue);
+    background: transparent;
+  
+    border: 0;
+    border-radius: 0.5rem;
+  
     font-family: inherit;
-    font-size: 13px;
+    font-size: 0.75rem;
     line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0;
+  
+    cursor: pointer;
+  
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease;
+  }
+  
+  .otp-forgot-password-toggle:hover {
+    color: var(--otp-navy);
+    background:
+      rgba(25, 118, 185, 0.07);
+  }
+  
+  .otp-forgot-password-toggle:focus-visible {
+    outline: none;
+  
+    box-shadow:
+      0 0 0 3px
+        rgba(25, 118, 185, 0.13);
+  }
+  
+  /* =========================================================
+     LỖI
+     ========================================================= */
+  
+  .otp-forgot-input-wrapper
+    .otp-forgot-input {
+    box-shadow: none;
+  }
+  
+  .otp-forgot-input-wrapper
+    .otp-forgot-input:focus {
+    box-shadow: none;
+  }
+  
+  .otp-forgot-input-wrapper.otp-forgot-input-error {
+    background: #fffafa;
+    border-color: var(--otp-error);
+  
+    box-shadow:
+      0 0 0 3px
+        rgba(239, 68, 68, 0.1);
+  }
+  
+  .otp-forgot-input-error
+    .otp-forgot-input-icon {
+    color: var(--otp-error);
+  }
+  
+  .otp-forgot-error {
+    margin-top: 0.05rem;
+  
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  
+    color: var(--otp-error);
+  
+    font-family: inherit;
+    font-size: 0.75rem;
+    line-height: 1.45;
     font-weight: 600;
     letter-spacing: 0;
+  }
+  
+  .otp-forgot-error > span {
+    flex-shrink: 0;
+  
+    width: 17px;
+    height: 17px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+    background: var(--otp-error);
+  
+    border-radius: 50%;
+  
+    font-size: 0.62rem;
+    font-weight: 800;
+  }
+  
+  /* =========================================================
+     GỬI LẠI OTP
+     ========================================================= */
+  
+  .otp-forgot-resend {
+    min-height: 26px;
+    margin-top: -0.25rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  
+  .otp-forgot-countdown {
+    color: #7b8799;
+  
+    font-size: 0.74rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+  
+  .otp-forgot-countdown strong {
+    color: var(--otp-blue);
+    font-weight: 800;
+  }
+  
+  .otp-forgot-resend-button {
+    padding: 0.3rem 0.45rem;
+  
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  
+    color: var(--otp-blue);
+    background: transparent;
+  
+    border: 0;
+    border-radius: 0.45rem;
+  
+    font-size: 0.76rem;
+    font-weight: 700;
+  
+    cursor: pointer;
+  
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease;
+  }
+  
+  .otp-forgot-resend-button:hover {
+    color: var(--otp-navy);
+    background:
+      rgba(25, 118, 185, 0.06);
+  }
+  
+  .otp-forgot-resend-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  /* =========================================================
+     NÚT SUBMIT
+     ========================================================= */
+  
+  .otp-forgot-submit.MuiButton-root {
+    position: relative;
+    overflow: hidden;
+  
+    min-height: 50px;
+    margin-top: 0.2rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+  
+    color: #ffffff !important;
+  
+    background:
+      linear-gradient(
+        135deg,
+        #34c995 0%,
+        var(--otp-green) 48%,
+        var(--otp-green-dark) 100%
+      ) !important;
+  
+    border-radius: 0.75rem !important;
+  
+    font-size: 0.91rem !important;
+    line-height: 1.4 !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  
+    box-shadow:
+      0 10px 23px
+        rgba(16, 185, 129, 0.23) !important;
+  
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease !important;
+  }
+  
+  .otp-forgot-submit.MuiButton-root::before {
+    content: "";
+  
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -55%;
+  
+    width: 40%;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.38),
+        transparent
+      );
+  
+    transform: skewX(-20deg);
+  
+    transition: left 0.45s ease;
+  }
+  
+  .otp-forgot-submit.MuiButton-root:hover {
+    background:
+      linear-gradient(
+        135deg,
+        #25ba85,
+        #059669
+      ) !important;
+  
+    transform: translateY(-2px);
+  
+    box-shadow:
+      0 14px 29px
+        rgba(16, 185, 129, 0.31) !important;
+  }
+  
+  .otp-forgot-submit.MuiButton-root:hover::before {
+    left: 120%;
+  }
+  
+  .otp-forgot-submit.MuiButton-root > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .otp-forgot-submit.Mui-disabled {
+    color: #ffffff !important;
+  
+    background:
+      linear-gradient(
+        135deg,
+        #91c4b3,
+        #76a999
+      ) !important;
+  
+    transform: none;
+  
+    box-shadow: none !important;
+  }
+  
+  /* =========================================================
+     NÚT QUAY LẠI
+     ========================================================= */
+  
+  .otp-forgot-back-button {
+    width: 100%;
+    min-height: 43px;
+    padding: 0.6rem 1rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+  
+    color: #64748b;
+    background: transparent;
+  
+    border: 1px solid transparent;
+    border-radius: 0.7rem;
+  
+    font-size: 0.82rem;
+    font-weight: 700;
+  
+    cursor: pointer;
+  
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      transform 0.18s ease;
+  }
+  
+  .otp-forgot-back-button:hover {
+    color: var(--otp-blue);
+    background:
+      rgba(25, 118, 185, 0.05);
+    border-color:
+      rgba(25, 118, 185, 0.08);
+  
+    transform: translateY(-1px);
+  }
+  
+  .otp-forgot-back-button svg {
+    transition: transform 0.18s ease;
+  }
+  
+  .otp-forgot-back-button:hover svg {
+    transform: translateX(-3px);
+  }
+  
+  .otp-forgot-back-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+  }
+  
+  /* =========================================================
+     FOOTER
+     ========================================================= */
+  
+  .otp-forgot-footer {
+    margin-top: 1.4rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  
+    color: #a0a9b7;
+  
+    font-size: 0.7rem;
+  }
+  
+  .otp-forgot-footer button {
+    padding: 0;
+  
+    color: #8490a1;
+    background: transparent;
+  
+    border: 0;
+  
+    font-size: inherit;
+  
+    cursor: pointer;
+  }
+  
+  .otp-forgot-footer button:hover {
+    color: var(--otp-blue);
+  }
+  
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  
+  @media (
+    max-width: 1280px
+  ) and (
+    min-width: 1050px
+  ) {
+    .otp-forgot-banner {
+      padding-right: 2.5rem;
+      padding-left: 2.5rem;
+    }
+  
+    .otp-forgot-brand-frame {
+      width: 315px;
+      height: 84px;
+    }
+  
+    .otp-forgot-banner-title {
+      font-size: 2.75rem;
+    }
+  
+    .otp-forgot-card {
+      padding-right: 2rem;
+      padding-left: 2rem;
+    }
+  }
+  
+  @media (max-width: 1049px) {
+    .otp-forgot-page {
+      display: block;
+    }
+  
+    .otp-forgot-form-side {
+      width: 100%;
+      padding:
+        4.8rem
+        1.2rem
+        2rem;
+    }
+  
+    .otp-forgot-mobile-logo {
+      display: flex;
+    }
+  
+    .otp-forgot-card-wrapper {
+      max-width: 540px;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .otp-forgot-form-side {
+      padding-right: 0.85rem;
+      padding-left: 0.85rem;
+    }
+  
+    .otp-forgot-card {
+      padding:
+        2rem
+        1.35rem
+        1.6rem;
+  
+      border-radius: 1.2rem;
+    }
+  
+    .otp-forgot-mobile-logo-frame {
+      width: 270px;
+      height: 72px;
+    }
+  
+    .otp-forgot-title {
+      font-size: 1.65rem;
+    }
+  
+    .otp-forgot-main-icon {
+      width: 52px;
+      height: 52px;
+  
+      border-radius: 15px;
+    }
+  }
+  
+  @media (max-width: 420px) {
+    .otp-forgot-form-side {
+      padding-right: 0.6rem;
+      padding-left: 0.6rem;
+    }
+  
+    .otp-forgot-card {
+      padding-right: 1.05rem;
+      padding-left: 1.05rem;
+    }
+  
+    .otp-forgot-mobile-logo-frame {
+      width: 230px;
+      height: 64px;
+    }
+  
+    .otp-forgot-title {
+      font-size: 1.5rem;
+    }
+  
+    .otp-forgot-input {
+      padding-left: 2.65rem;
+    }
+  
+    .otp-forgot-footer {
+      gap: 0.4rem;
+    }
+  }
+  
+  @media (max-width: 350px) {
+    .otp-forgot-mobile-logo-frame {
+      width: 205px;
+      height: 58px;
+    }
+  
+    .otp-forgot-card {
+      padding-right: 0.85rem;
+      padding-left: 0.85rem;
+    }
+  
+    .otp-forgot-password-toggle {
+      min-width: 41px;
+      padding-right: 0.35rem;
+      padding-left: 0.35rem;
+    }
+  }
+  
+  /* =========================================================
+     GIẢM CHUYỂN ĐỘNG
+     ========================================================= */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .otp-forgot-page *,
+    .otp-forgot-page *::before,
+    .otp-forgot-page *::after {
+      animation-duration:
+        0.01ms !important;
+  
+      animation-iteration-count:
+        1 !important;
+  
+      transition-duration:
+        0.01ms !important;
+    }
   }

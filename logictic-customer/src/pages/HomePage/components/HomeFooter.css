@@ -1,0 +1,872 @@
+/* =========================================================
+   HOME FOOTER - VIỆT NAM LOGICTIC
+   ========================================================= */
+
+   .home-footer {
+    --footer-navy: #021426;
+    --footer-navy-light: #062f57;
+    --footer-blue: #1976b9;
+    --footer-blue-light: #48a9e6;
+    --footer-red: #d71920;
+    --footer-orange: #e6a83c;
+    --footer-green: #10b981;
+    --footer-white: #ffffff;
+    --footer-muted: #9fb0c2;
+    --footer-border: rgba(255, 255, 255, 0.1);
+  
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+    padding: 80px 24px 0;
+  
+    color: var(--footer-white);
+  
+    background:
+      radial-gradient(
+        circle at 90% 5%,
+        rgba(25, 118, 185, 0.2),
+        transparent 27%
+      ),
+      radial-gradient(
+        circle at 5% 90%,
+        rgba(215, 25, 32, 0.08),
+        transparent 28%
+      ),
+      linear-gradient(
+        135deg,
+        #010d19 0%,
+        var(--footer-navy) 45%,
+        var(--footer-navy-light) 100%
+      );
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+  
+    isolation: isolate;
+  
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .home-footer *,
+  .home-footer *::before,
+  .home-footer *::after {
+    box-sizing: border-box;
+  }
+  
+  .home-footer a {
+    color: inherit;
+    text-decoration: none;
+  }
+  
+  .home-footer ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  
+  /* =========================================================
+     NỀN TRANG TRÍ
+     ========================================================= */
+  
+  .home-footer::before {
+    content: "";
+  
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+  
+    opacity: 0.14;
+  
+    background-image:
+      linear-gradient(
+        rgba(255, 255, 255, 0.09) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.09) 1px,
+        transparent 1px
+      );
+  
+    background-size: 54px 54px;
+  
+    mask-image:
+      linear-gradient(
+        to bottom,
+        #000,
+        transparent 85%
+      );
+  
+    pointer-events: none;
+  }
+  
+  .home-footer::after {
+    content: "";
+  
+    position: absolute;
+    top: -280px;
+    right: -240px;
+    z-index: -1;
+  
+    width: 620px;
+    height: 620px;
+  
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 0 75px rgba(255, 255, 255, 0.014),
+      0 0 0 155px rgba(255, 255, 255, 0.009);
+  
+    pointer-events: none;
+  }
+  
+  .home-footer__decoration {
+    position: absolute;
+    z-index: -1;
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .home-footer__decoration--one {
+    top: 20%;
+    left: -180px;
+  
+    width: 370px;
+    height: 370px;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(25, 118, 185, 0.18),
+        transparent 69%
+      );
+  
+    filter: blur(18px);
+  }
+  
+  .home-footer__decoration--two {
+    right: -160px;
+    bottom: -190px;
+  
+    width: 420px;
+    height: 420px;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(230, 168, 60, 0.1),
+        transparent 69%
+      );
+  
+    filter: blur(20px);
+  }
+  
+  /* =========================================================
+     CONTAINER
+     ========================================================= */
+  
+  .home-footer__container {
+    position: relative;
+    z-index: 2;
+  
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+  
+  .home-footer__top {
+    display: grid;
+    grid-template-columns:
+      minmax(330px, 0.9fr)
+      minmax(0, 1.45fr);
+  
+    align-items: start;
+    gap: clamp(60px, 8vw, 120px);
+  }
+  
+  /* =========================================================
+     THƯƠNG HIỆU
+     ========================================================= */
+  
+  .home-footer__brand {
+    min-width: 0;
+  }
+  
+  .home-footer__logo {
+    width: fit-content;
+  
+    display: inline-flex;
+    align-items: center;
+    gap: 13px;
+  
+    outline: none;
+  }
+  
+  .home-footer__logo-icon {
+    flex-shrink: 0;
+  
+    width: 54px;
+    height: 54px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+  
+    background:
+      linear-gradient(
+        135deg,
+        var(--footer-blue-light),
+        var(--footer-blue) 55%,
+        var(--footer-red)
+      );
+  
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 16px;
+  
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+  
+    box-shadow:
+      0 13px 29px rgba(25, 118, 185, 0.28);
+  
+    transition:
+      transform 0.22s ease,
+      box-shadow 0.22s ease;
+  }
+  
+  .home-footer__logo:hover .home-footer__logo-icon {
+    transform: translateY(-3px) rotate(-3deg);
+  
+    box-shadow:
+      0 18px 36px rgba(25, 118, 185, 0.38);
+  }
+  
+  .home-footer__logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  
+  .home-footer__logo-text strong {
+    color: #ffffff;
+  
+    font-size: 20px;
+    line-height: 1.25;
+    font-weight: 850;
+    letter-spacing: -0.025em;
+  }
+  
+  .home-footer__logo-text small {
+    color: #7fc9f5;
+  
+    font-size: 8.5px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  
+  .home-footer__tagline {
+    margin: 24px 0 0;
+  
+    color: #ffffff;
+  
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 700;
+  }
+  
+  .home-footer__description {
+    max-width: 480px;
+    margin: 13px 0 0;
+  
+    color: var(--footer-muted);
+  
+    font-size: 13px;
+    line-height: 1.75;
+    font-weight: 400;
+  }
+  
+  /* =========================================================
+     THÔNG TIN LIÊN HỆ
+     ========================================================= */
+  
+  .home-footer__contact-list {
+    margin-top: 28px;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+  
+  .home-footer__contact-item {
+    width: fit-content;
+    max-width: 100%;
+  
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+  
+    color: rgba(255, 255, 255, 0.83);
+  
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  a.home-footer__contact-item:hover {
+    color: #ffffff;
+    transform: translateX(4px);
+  }
+  
+  .home-footer__contact-icon {
+    flex-shrink: 0;
+  
+    width: 35px;
+    height: 35px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #86d2ff;
+    background: rgba(72, 169, 230, 0.08);
+  
+    border: 1px solid rgba(72, 169, 230, 0.16);
+    border-radius: 11px;
+  
+    font-size: 15px;
+  }
+  
+  .home-footer__contact-item > span:last-child {
+    min-width: 0;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .home-footer__contact-item small {
+    color: #71869a;
+  
+    font-size: 9.5px;
+    line-height: 1.4;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  
+  .home-footer__contact-item strong {
+    overflow-wrap: anywhere;
+  
+    color: inherit;
+  
+    font-size: 12px;
+    line-height: 1.55;
+    font-weight: 650;
+  }
+  
+  /* =========================================================
+     CỘT ĐIỀU HƯỚNG
+     ========================================================= */
+  
+  .home-footer__navigation {
+    display: grid;
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  
+    gap: clamp(28px, 4vw, 60px);
+  }
+  
+  .home-footer__column-title {
+    position: relative;
+  
+    margin: 0 0 23px;
+    padding-bottom: 12px;
+  
+    color: #ffffff;
+  
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  
+  .home-footer__column-title::after {
+    content: "";
+  
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  
+    width: 38px;
+    height: 2px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        var(--footer-blue-light),
+        var(--footer-red)
+      );
+  
+    border-radius: 999px;
+  }
+  
+  .home-footer__link-list {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+  
+  .home-footer__link {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+  
+    color: var(--footer-muted);
+  
+    font-size: 12px;
+    line-height: 1.55;
+    font-weight: 450;
+  
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  .home-footer__link svg {
+    flex-shrink: 0;
+  
+    margin-top: 4px;
+  
+    color: rgba(72, 169, 230, 0.6);
+  
+    font-size: 9px;
+  
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  .home-footer__link:hover {
+    color: #ffffff;
+    transform: translateX(4px);
+  }
+  
+  .home-footer__link:hover svg {
+    color: var(--footer-blue-light);
+    transform: translateX(2px);
+  }
+  
+  /* =========================================================
+     BANNER HỖ TRỢ
+     ========================================================= */
+  
+  .home-footer__support-banner {
+    position: relative;
+    overflow: hidden;
+  
+    margin-top: 65px;
+    padding: 30px 34px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 35px;
+  
+    background:
+      linear-gradient(
+        135deg,
+        rgba(72, 169, 230, 0.12),
+        rgba(255, 255, 255, 0.045)
+      );
+  
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 22px;
+  
+    box-shadow:
+      0 18px 42px rgba(0, 0, 0, 0.18);
+  
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  
+  .home-footer__support-banner::after {
+    content: "";
+  
+    position: absolute;
+    top: -100px;
+    right: 15%;
+  
+    width: 270px;
+    height: 270px;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(72, 169, 230, 0.14),
+        transparent 68%
+      );
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .home-footer__support-content {
+    position: relative;
+    z-index: 2;
+  
+    display: flex;
+    align-items: center;
+    gap: 17px;
+  }
+  
+  .home-footer__support-icon {
+    flex-shrink: 0;
+  
+    width: 53px;
+    height: 53px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+  
+    background:
+      linear-gradient(
+        135deg,
+        var(--footer-blue-light),
+        var(--footer-blue)
+      );
+  
+    border-radius: 16px;
+  
+    font-size: 21px;
+  
+    box-shadow:
+      0 12px 28px rgba(25, 118, 185, 0.3);
+  }
+  
+  .home-footer__support-content > div {
+    min-width: 0;
+  }
+  
+  .home-footer__support-label {
+    display: block;
+  
+    color: #7fc9f5;
+  
+    font-size: 9px;
+    line-height: 1.4;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+  }
+  
+  .home-footer__support-content h3 {
+    margin: 5px 0 0;
+  
+    color: #ffffff;
+  
+    font-size: 17px;
+    line-height: 1.4;
+    font-weight: 750;
+  }
+  
+  .home-footer__support-content p {
+    margin: 6px 0 0;
+  
+    color: var(--footer-muted);
+  
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  
+  .home-footer__chat-actions {
+    position: relative;
+    z-index: 2;
+  
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 10px;
+  }
+  
+  .home-footer__chat-button {
+    min-height: 45px;
+    padding: 0 18px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  
+    border: 1px solid transparent;
+    border-radius: 999px;
+  
+    font-size: 11.5px;
+    line-height: 1.4;
+    font-weight: 750;
+  
+    transition:
+      color 0.22s ease,
+      background-color 0.22s ease,
+      border-color 0.22s ease,
+      box-shadow 0.22s ease,
+      transform 0.22s ease;
+  }
+  
+  .home-footer__chat-button svg {
+    font-size: 16px;
+  }
+  
+  .home-footer__chat-button--whatsapp {
+    color: #ffffff;
+    background: #16a568;
+  
+    box-shadow:
+      0 10px 23px rgba(22, 165, 104, 0.25);
+  }
+  
+  .home-footer__chat-button--whatsapp:hover {
+    color: #ffffff;
+    background: #0e8f58;
+  
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 15px 31px rgba(22, 165, 104, 0.34);
+  }
+  
+  .home-footer__chat-button--messenger {
+    color: #ffffff;
+    background:
+      linear-gradient(
+        135deg,
+        #45a8f8,
+        #1976b9
+      );
+  
+    box-shadow:
+      0 10px 23px rgba(25, 118, 185, 0.26);
+  }
+  
+  .home-footer__chat-button--messenger:hover {
+    color: #ffffff;
+  
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 15px 31px rgba(25, 118, 185, 0.36);
+  }
+  
+  /* =========================================================
+     FOOTER BOTTOM
+     ========================================================= */
+  
+  .home-footer__bottom {
+    margin-top: 32px;
+    padding: 22px 0;
+  
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+  
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .home-footer__copyright {
+    margin: 0;
+  
+    color: #74879a;
+  
+    font-size: 10.5px;
+    line-height: 1.5;
+    font-weight: 450;
+  }
+  
+  .home-footer__trust {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+  
+    color: #74879a;
+  
+    font-size: 10.5px;
+    line-height: 1.5;
+  }
+  
+  .home-footer__trust span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .home-footer__trust svg {
+    color: var(--footer-green);
+  }
+  
+  .home-footer__separator {
+    color: rgba(255, 255, 255, 0.18);
+  }
+  
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 1100px) {
+    .home-footer {
+      padding-top: 70px;
+    }
+  
+    .home-footer__top {
+      grid-template-columns: 1fr;
+      gap: 55px;
+    }
+  
+    .home-footer__brand {
+      max-width: 620px;
+    }
+  
+    .home-footer__navigation {
+      gap: 40px;
+    }
+  }
+  
+  @media (max-width: 850px) {
+    .home-footer__support-banner {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  
+    .home-footer__chat-actions {
+      width: 100%;
+    }
+  
+    .home-footer__chat-button {
+      flex: 1;
+    }
+  }
+  
+  @media (max-width: 700px) {
+    .home-footer {
+      padding:
+        58px
+        17px
+        0;
+    }
+  
+    .home-footer__navigation {
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+  
+      gap: 38px 25px;
+    }
+  
+    .home-footer__navigation
+      .home-footer__column:last-child {
+      grid-column: 1 / -1;
+    }
+  
+    .home-footer__support-banner {
+      margin-top: 48px;
+      padding: 25px 22px;
+    }
+  
+    .home-footer__bottom {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .home-footer__trust {
+      justify-content: flex-start;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .home-footer__logo-icon {
+      width: 48px;
+      height: 48px;
+  
+      border-radius: 14px;
+    }
+  
+    .home-footer__logo-text strong {
+      font-size: 17px;
+    }
+  
+    .home-footer__navigation {
+      grid-template-columns: 1fr;
+    }
+  
+    .home-footer__navigation
+      .home-footer__column:last-child {
+      grid-column: auto;
+    }
+  
+    .home-footer__support-content {
+      align-items: flex-start;
+    }
+  
+    .home-footer__support-icon {
+      width: 46px;
+      height: 46px;
+  
+      border-radius: 14px;
+    }
+  
+    .home-footer__support-content h3 {
+      font-size: 15px;
+    }
+  
+    .home-footer__chat-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  
+    .home-footer__chat-button {
+      width: 100%;
+    }
+  
+    .home-footer__trust {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  
+    .home-footer__separator {
+      display: none !important;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .home-footer *,
+    .home-footer *::before,
+    .home-footer *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }

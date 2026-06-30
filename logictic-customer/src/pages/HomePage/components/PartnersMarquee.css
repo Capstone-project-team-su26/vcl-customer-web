@@ -1,0 +1,725 @@
+/* =========================================================
+   PARTNERS MARQUEE - VIỆT NAM LOGICTIC
+   ========================================================= */
+
+   .partners-marquee-section {
+    --partners-navy: #031b33;
+    --partners-navy-light: #07517f;
+    --partners-blue: #1976b9;
+    --partners-blue-light: #48a9e6;
+    --partners-red: #d71920;
+    --partners-orange: #e6a83c;
+    --partners-text: #172033;
+    --partners-muted: #64748b;
+    --partners-border: #dce6ef;
+  
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+    padding: 100px 0;
+  
+    color: var(--partners-text);
+  
+    background:
+      radial-gradient(
+        circle at 92% 8%,
+        rgba(25, 118, 185, 0.1),
+        transparent 27%
+      ),
+      radial-gradient(
+        circle at 5% 92%,
+        rgba(215, 25, 32, 0.045),
+        transparent 26%
+      ),
+      linear-gradient(
+        145deg,
+        #ffffff 0%,
+        #f7fbff 53%,
+        #fffafa 100%
+      );
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+  
+    isolation: isolate;
+  
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .partners-marquee-section *,
+  .partners-marquee-section *::before,
+  .partners-marquee-section *::after {
+    box-sizing: border-box;
+  }
+  
+  /* =========================================================
+     NỀN TRANG TRÍ
+     ========================================================= */
+  
+  .partners-marquee-section::before {
+    content: "";
+  
+    position: absolute;
+    inset: 0;
+    z-index: -3;
+  
+    opacity: 0.3;
+  
+    background-image:
+      linear-gradient(
+        rgba(25, 118, 185, 0.04) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(25, 118, 185, 0.04) 1px,
+        transparent 1px
+      );
+  
+    background-size: 56px 56px;
+  
+    mask-image:
+      linear-gradient(
+        to bottom,
+        #000,
+        transparent 92%
+      );
+  
+    pointer-events: none;
+  }
+  
+  .partners-marquee-section__decoration {
+    position: absolute;
+    z-index: -2;
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .partners-marquee-section__decoration--one {
+    top: -170px;
+    right: -130px;
+  
+    width: 410px;
+    height: 410px;
+  
+    border: 70px solid rgba(25, 118, 185, 0.024);
+  }
+  
+  .partners-marquee-section__decoration--two {
+    bottom: -190px;
+    left: -150px;
+  
+    width: 440px;
+    height: 440px;
+  
+    border: 76px solid rgba(215, 25, 32, 0.018);
+  }
+  
+  /* =========================================================
+     CONTAINER
+     ========================================================= */
+  
+  .partners-marquee-section__container {
+    position: relative;
+    z-index: 2;
+  
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  
+  /* =========================================================
+     HEADER
+     ========================================================= */
+  
+  .partners-marquee-section__header {
+    max-width: 830px;
+    margin: 0 auto 52px;
+  
+    text-align: center;
+  }
+  
+  .partners-marquee-section__label {
+    margin-bottom: 18px;
+    padding: 8px 14px;
+  
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  
+    color: var(--partners-blue);
+    background: rgba(25, 118, 185, 0.065);
+  
+    border: 1px solid rgba(25, 118, 185, 0.12);
+    border-radius: 999px;
+  
+    font-size: 10px;
+    line-height: 1.4;
+    font-weight: 850;
+    letter-spacing: 0.16em;
+  }
+  
+  .partners-marquee-section__label > span {
+    width: 8px;
+    height: 8px;
+  
+    background:
+      linear-gradient(
+        135deg,
+        var(--partners-blue),
+        var(--partners-red)
+      );
+  
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 0 5px rgba(25, 118, 185, 0.08);
+  }
+  
+  .partners-marquee-section__title {
+    margin: 0;
+  
+    color: var(--partners-text);
+  
+    font-size: clamp(38px, 4.5vw, 62px);
+    line-height: 1.08;
+    font-weight: 350;
+    letter-spacing: -0.045em;
+  }
+  
+  .partners-marquee-section__title strong {
+    margin-top: 5px;
+  
+    display: block;
+  
+    color: transparent;
+  
+    background:
+      linear-gradient(
+        90deg,
+        var(--partners-navy),
+        var(--partners-blue),
+        var(--partners-red)
+      );
+  
+    background-clip: text;
+    -webkit-background-clip: text;
+  
+    font-weight: 850;
+  }
+  
+  .partners-marquee-section__description {
+    max-width: 680px;
+    margin: 21px auto 0;
+  
+    color: var(--partners-muted);
+  
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+  
+  /* =========================================================
+     MARQUEE
+     ========================================================= */
+  
+  .partners-marquee {
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+    padding: 12px 0;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  /* Không cho marquee dừng khi rê chuột */
+  
+  .partners-marquee:hover
+    .partners-marquee__track,
+  .partners-marquee__row:hover
+    .partners-marquee__track,
+  .partners-marquee__logo:hover
+    ~ .partners-marquee__track {
+    animation-play-state: running !important;
+  }
+  
+  /* =========================================================
+     HIỆU ỨNG MỜ HAI BÊN
+     ========================================================= */
+  
+  .partners-marquee__fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 10;
+  
+    width: min(10vw, 150px);
+  
+    pointer-events: none;
+  }
+  
+  .partners-marquee__fade--left {
+    left: 0;
+  
+    background:
+      linear-gradient(
+        90deg,
+        #f9fcff 0%,
+        rgba(249, 252, 255, 0.92) 24%,
+        transparent 100%
+      );
+  }
+  
+  .partners-marquee__fade--right {
+    right: 0;
+  
+    background:
+      linear-gradient(
+        270deg,
+        #fffafa 0%,
+        rgba(255, 250, 250, 0.92) 24%,
+        transparent 100%
+      );
+  }
+  
+  /* =========================================================
+     TỪNG HÀNG
+     ========================================================= */
+  
+  .partners-marquee__row {
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+  
+    padding: 2px 0;
+  }
+  
+  .partners-marquee__track {
+    width: max-content;
+  
+    display: flex;
+    align-items: center;
+  
+    will-change: transform;
+  
+    animation-name: partnersMarqueeToLeft;
+    animation-duration:
+      var(--partners-duration, 35s);
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-play-state: running;
+  }
+  
+  /* Hàng chạy sang trái */
+  
+  .partners-marquee__row--left
+    .partners-marquee__track {
+    animation-name: partnersMarqueeToLeft;
+  }
+  
+  /* Hàng chạy sang phải */
+  
+  .partners-marquee__row--right
+    .partners-marquee__track {
+    animation-name: partnersMarqueeToRight;
+  }
+  
+  @keyframes partnersMarqueeToLeft {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+  
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+  
+  @keyframes partnersMarqueeToRight {
+    from {
+      transform: translate3d(-50%, 0, 0);
+    }
+  
+    to {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  
+  /* =========================================================
+     NHÓM ĐỐI TÁC
+     ========================================================= */
+  
+  .partners-marquee__group {
+    flex-shrink: 0;
+  
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  
+    padding-right: 16px;
+  }
+  
+  /* =========================================================
+     LOGO ĐỐI TÁC
+     ========================================================= */
+  
+  .partners-marquee__logo {
+    position: relative;
+    overflow: hidden;
+  
+    width: 205px;
+    height: 76px;
+    padding: 0 21px;
+  
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  
+    color: #334155;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.98),
+        rgba(247, 251, 255, 0.93)
+      );
+  
+    border: 1px solid var(--partners-border);
+    border-radius: 17px;
+  
+    box-shadow:
+      0 11px 28px rgba(15, 23, 42, 0.06);
+  
+    user-select: none;
+  
+    transition:
+      color 0.22s ease,
+      background-color 0.22s ease,
+      border-color 0.22s ease,
+      box-shadow 0.22s ease,
+      transform 0.22s ease;
+  }
+  
+  .partners-marquee__logo::before {
+    content: "";
+  
+    position: absolute;
+    top: -55px;
+    right: -45px;
+  
+    width: 105px;
+    height: 105px;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(25, 118, 185, 0.1),
+        transparent 68%
+      );
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .partners-marquee__logo::after {
+    content: "";
+  
+    position: absolute;
+    right: 22px;
+    bottom: 0;
+    left: 22px;
+  
+    height: 2px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--partners-blue),
+        var(--partners-red),
+        transparent
+      );
+  
+    border-radius: 999px;
+  
+    opacity: 0;
+  
+    transform: scaleX(0.5);
+  
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s ease;
+  }
+  
+  .partners-marquee__logo:hover {
+    color: var(--partners-blue);
+  
+    background: #ffffff;
+    border-color: rgba(25, 118, 185, 0.24);
+  
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 17px 35px rgba(15, 23, 42, 0.1),
+      0 7px 17px rgba(25, 118, 185, 0.06);
+  }
+  
+  .partners-marquee__logo:hover::after {
+    opacity: 0.85;
+    transform: scaleX(1);
+  }
+  
+  /* Dù hover logo, animation của track vẫn chạy */
+  
+  .partners-marquee__row:hover
+    .partners-marquee__track {
+    animation-play-state: running !important;
+  }
+  
+  /* =========================================================
+     BIỂU TƯỢNG LOGO
+     ========================================================= */
+  
+  .partners-marquee__logo-symbol {
+    position: relative;
+    z-index: 2;
+  
+    flex-shrink: 0;
+  
+    width: 42px;
+    height: 42px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+  
+    background:
+      linear-gradient(
+        135deg,
+        var(--partners-blue-light),
+        var(--partners-blue),
+        var(--partners-navy-light)
+      );
+  
+    border-radius: 13px;
+  
+    font-size: 16px;
+    line-height: 1;
+    font-weight: 900;
+  
+    box-shadow:
+      0 8px 18px rgba(25, 118, 185, 0.22);
+  
+    transition:
+      transform 0.22s ease;
+  }
+  
+  .partners-marquee__logo:hover
+    .partners-marquee__logo-symbol {
+    transform: rotate(-5deg) scale(1.06);
+  }
+  
+  .partners-marquee__logo-name {
+    position: relative;
+    z-index: 2;
+  
+    overflow: hidden;
+  
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Màu xen kẽ từng hàng */
+  
+  .partners-marquee__row:nth-of-type(4)
+    .partners-marquee__logo-symbol {
+    background:
+      linear-gradient(
+        135deg,
+        #ec4899,
+        #be185d
+      );
+  }
+  
+  .partners-marquee__row:nth-of-type(5)
+    .partners-marquee__logo-symbol {
+    background:
+      linear-gradient(
+        135deg,
+        #f59e0b,
+        #d97706
+      );
+  }
+  
+  .partners-marquee__row:nth-of-type(6)
+    .partners-marquee__logo-symbol {
+    background:
+      linear-gradient(
+        135deg,
+        #10b981,
+        #047857
+      );
+  }
+  
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 900px) {
+    .partners-marquee-section {
+      padding: 85px 0;
+    }
+  
+    .partners-marquee-section__container {
+      padding: 0 20px;
+    }
+  
+    .partners-marquee-section__header {
+      margin-bottom: 42px;
+    }
+  
+    .partners-marquee {
+      gap: 13px;
+    }
+  
+    .partners-marquee__logo {
+      width: 185px;
+      height: 70px;
+      padding: 0 17px;
+    }
+  
+    .partners-marquee__logo-symbol {
+      width: 39px;
+      height: 39px;
+  
+      font-size: 15px;
+    }
+  
+    .partners-marquee__logo-name {
+      font-size: 13px;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .partners-marquee-section {
+      padding: 65px 0;
+    }
+  
+    .partners-marquee-section__container {
+      padding: 0 16px;
+    }
+  
+    .partners-marquee-section__header {
+      margin-bottom: 34px;
+    }
+  
+    .partners-marquee-section__title {
+      font-size: 34px;
+    }
+  
+    .partners-marquee-section__description {
+      font-size: 13px;
+      line-height: 1.7;
+    }
+  
+    .partners-marquee {
+      gap: 11px;
+    }
+  
+    .partners-marquee__group {
+      gap: 11px;
+      padding-right: 11px;
+    }
+  
+    .partners-marquee__logo {
+      width: 165px;
+      height: 64px;
+      padding: 0 14px;
+  
+      gap: 10px;
+  
+      border-radius: 14px;
+    }
+  
+    .partners-marquee__logo-symbol {
+      width: 35px;
+      height: 35px;
+  
+      border-radius: 11px;
+  
+      font-size: 13px;
+    }
+  
+    .partners-marquee__logo-name {
+      font-size: 11.5px;
+    }
+  
+    .partners-marquee__fade {
+      width: 45px;
+    }
+  }
+  
+  @media (max-width: 420px) {
+    .partners-marquee-section__container {
+      padding: 0 11px;
+    }
+  
+    .partners-marquee-section__label {
+      font-size: 8.5px;
+    }
+  
+    .partners-marquee-section__title {
+      font-size: 30px;
+    }
+  
+    .partners-marquee__logo {
+      width: 148px;
+      height: 59px;
+    }
+  
+    .partners-marquee__logo-symbol {
+      width: 32px;
+      height: 32px;
+    }
+  
+    .partners-marquee__logo-name {
+      font-size: 10.5px;
+    }
+  }
+  
+  /* =========================================================
+     GIẢM CHUYỂN ĐỘNG
+     ========================================================= */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .partners-marquee__track {
+      animation-duration: 70s !important;
+    }
+  
+    .partners-marquee__logo {
+      transition-duration: 0.01ms !important;
+    }
+  }

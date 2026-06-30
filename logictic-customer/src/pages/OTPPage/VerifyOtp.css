@@ -1,471 +1,1305 @@
-/* Layout tổng thể đồng bộ cấu trúc 2 bên */
-.otp-screen-container {
-    display: flex;
+/* =========================================================
+   TRANG XÁC THỰC OTP
+   Dùng class riêng để không xung đột CSS trang khác
+   ========================================================= */
+
+   .verify-otp-page {
+    --verify-navy: #062f57;
+    --verify-navy-dark: #031b33;
+    --verify-blue: #1976b9;
+    --verify-blue-light: #3d9bd3;
+    --verify-red: #d71920;
+    --verify-orange: #e6a83c;
+    --verify-green: #10b981;
+    --verify-green-dark: #059669;
+    --verify-text: #172033;
+    --verify-muted: #64748b;
+    --verify-border: #dce4ed;
+    --verify-error: #ef4444;
+  
+    width: 100%;
     min-height: 100vh;
-    width: 100%;
-    background-color: #0b0f19;
-  }
+    min-height: 100dvh;
   
-  /* ================= BÊN TRÁI: BANNER THƯƠNG HIỆU ================= */
-  .otp-screen-banner {
-    flex: 1.2;
-    position: relative;
-    background-size: cover;
-    background-position: center;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 3rem;
-    overflow: hidden;
+  
+    margin: 0;
+    padding: 0;
+  
+    overflow-x: hidden;
+  
+    color: var(--verify-text);
+  
+    background:
+      linear-gradient(
+        145deg,
+        #fff5f6 0%,
+        #fffafb 45%,
+        #f7fbff 100%
+      );
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+  
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Ẩn banner bên trái khi thu nhỏ màn hình (Mobiles/Tablets) */
-  @media (max-width: 960px) {
-    .otp-screen-banner {
-      display: none;
-    }
-  }
-  
-  .otp-banner-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(11, 15, 25, 0.95) 0%, rgba(37, 99, 235, 0.3) 100%);
-    z-index: 1;
-  }
-  
-  .otp-logo-wrapper {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  
-  .otp-logo-icon-box {
-    background-color: #2563eb;
-    color: #ffffff;
-    padding: 0.5rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .otp-logo-text {
-    color: #ffffff;
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-  }
-  
-  .otp-banner-content {
-    position: relative;
-    z-index: 2;
-    max-width: 520px;
-    margin-top: auto;
-    margin-bottom: auto;
-  }
-  
-  .otp-banner-title {
-    color: #ffffff;
-    font-size: 2.5rem;
-    font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-    letter-spacing: -0.025em;
-  }
-  
-  .otp-banner-description {
-    color: #9ca3af;
-    font-size: 1.05rem;
-    line-height: 1.6;
-  }
-  
-  
-  /* ================= BÊN PHẢI: KHU VỰC FORM CHÍNH ================= */
-  .otp-form-side {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-    position: relative;
-  }
-  
-  /* Hiệu ứng viền phát sáng nhẹ quanh Card */
-  .otp-card-glow-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 440px;
-    background: padding-box, linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(16, 185, 129, 0.15)) border-box;
-    border: 1px solid transparent;
-    border-radius: 16px;
-  }
-  
-  .otp-inner-card {
-    background-color: #111827;
-    padding: 2.5rem;
-    border-radius: 15px;
-  }
-  
-  .otp-form-header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  
-  .otp-form-title {
-    color: #ffffff;
-    font-size: 1.625rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    letter-spacing: -0.025em;
-  }
-  
-  .otp-form-subtitle {
-    color: #9ca3af;
-    font-size: 0.925rem;
-    line-height: 1.5;
-  }
-  
-  /* Định dạng hiển thị Tên Email Đăng ký tĩnh */
-  .otp-display-email {
-    margin-top: 0.85rem;
-    background-color: rgba(37, 99, 235, 0.12);
-    color: #60a5fa;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    display: inline-block;
-    font-weight: 600;
-    font-size: 0.95rem;
-    border: 1px solid rgba(37, 99, 235, 0.25);
-    word-break: break-all;
-  }
-  
-  .otp-auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-  
-  /* Khung cấu trúc Input mã OTP */
-  .otp-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .otp-input-label {
-    color: #e5e7eb;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-  
-  .otp-required-star {
-    color: #ef4444;
-    margin-left: 2px;
-  }
-  
-  .otp-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  
-  .otp-icon-left {
-    position: absolute;
-    left: 1rem;
-    color: #9ca3af;
-    display: flex;
-    align-items: center;
-    pointer-events: none;
-  }
-  
-  .otp-form-input {
-    width: 100%;
-    background-color: #1f2937;
-    border: 1px solid #374151;
-    color: #ffffff;
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.2s ease;
+  .verify-otp-page *,
+  .verify-otp-page *::before,
+  .verify-otp-page *::after {
     box-sizing: border-box;
   }
   
-  .otp-form-input:focus {
-    outline: none;
-    border-color: #2563eb;
-    background-color: #111827;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  .verify-otp-page button,
+  .verify-otp-page input {
+    font-family: inherit;
   }
   
-  /* Định dạng khoảng cách mật mã ẩn riêng cho input OTP */
-  .input-code-style {
-    letter-spacing: 6px;
-    font-size: 1.3rem;
-    font-weight: 700;
+  .verify-otp-page ::selection {
+    color: #881337;
+    background: #ffe4e6;
   }
   
+  /* =========================================================
+     BANNER TRÁI
+     ========================================================= */
   
-  /* ================= KHU VỰC GỬI LẠI MÃ (RESEND) ================= */
-  .otp-resend-wrapper {
-    margin-top: -0.25rem;
-    text-align: right;
-    font-size: 0.875rem;
-    min-height: 20px; /* Đảm bảo layout không bị nhảy chiều cao khi đổi trạng thái */
+  .verify-otp-banner {
+    position: relative;
+    overflow: hidden;
+  
+    width: 48%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 3.5rem;
+  
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+  
+    color: #ffffff;
+  
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
   }
   
-  .countdown-text {
-    color: #9ca3af;
+  .verify-otp-banner-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(3, 27, 51, 0.94) 0%,
+        rgba(6, 47, 87, 0.86) 48%,
+        rgba(12, 80, 126, 0.72) 100%
+      );
   }
   
-  .countdown-text b {
-    color: #3b82f6;
-    font-weight: 600;
+  .verify-otp-banner-pattern {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  
+    opacity: 0.15;
+  
+    background-image:
+      linear-gradient(
+        rgba(255, 255, 255, 0.11) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.11) 1px,
+        transparent 1px
+      );
+  
+    background-size: 48px 48px;
+  
+    mask-image:
+      linear-gradient(
+        to bottom,
+        #000 0%,
+        transparent 88%
+      );
+  
+    pointer-events: none;
   }
   
-  .resend-action-btn {
-    background: none;
-    border: none;
-    color: #3b82f6;
-    font-weight: 600;
+  .verify-otp-banner::after {
+    content: "";
+  
+    position: absolute;
+    right: -180px;
+    bottom: -200px;
+    z-index: 2;
+  
+    width: 510px;
+    height: 510px;
+  
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 0 70px rgba(255, 255, 255, 0.025),
+      0 0 0 145px rgba(255, 255, 255, 0.018);
+  
+    pointer-events: none;
+  }
+  
+  .verify-otp-brand,
+  .verify-otp-banner-content,
+  .verify-otp-security-box {
+    position: relative;
+    z-index: 10;
+  }
+  
+  @media (min-width: 1050px) {
+    .verify-otp-banner {
+      display: flex;
+    }
+  }
+  
+  /* =========================================================
+     LOGO DESKTOP
+     ========================================================= */
+  
+  .verify-otp-brand {
+    width: fit-content;
+    margin: 2.5rem 0 0;
+    padding: 0;
+  
+    display: inline-flex;
+  
+    background: transparent;
+    border: 0;
+  
     cursor: pointer;
-    text-decoration: underline;
+    outline: none;
+  }
+  
+  .verify-otp-brand-frame {
+    position: relative;
+    overflow: hidden;
+  
+    width: 370px;
+    height: 96px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.99),
+        rgba(247, 251, 255, 0.95)
+      );
+  
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    border-radius: 20px;
+  
+    box-shadow:
+      0 18px 42px rgba(0, 20, 48, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  
+  .verify-otp-brand-frame::after {
+    content: "";
+  
+    position: absolute;
+    right: 25px;
+    bottom: 7px;
+    left: 25px;
+  
+    height: 2px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--verify-blue),
+        var(--verify-red),
+        var(--verify-orange),
+        transparent
+      );
+  
+    border-radius: 999px;
+    opacity: 0.65;
+  }
+  
+  .verify-otp-brand-frame img {
+    display: block;
+  
+    width: 100%;
+    height: 100%;
+  
+    object-fit: cover;
+    object-position: center;
+  
+    transform: scale(1.13);
+  
+    filter:
+      contrast(1.05)
+      saturate(1.08);
+  
+    transition:
+      transform 0.25s ease,
+      filter 0.25s ease;
+  }
+  
+  .verify-otp-brand:hover
+    .verify-otp-brand-frame {
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 23px 50px rgba(0, 20, 48, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+  
+  .verify-otp-brand:hover
+    .verify-otp-brand-frame img {
+    transform: scale(1.17);
+  
+    filter:
+      contrast(1.08)
+      saturate(1.13);
+  }
+  
+  /* =========================================================
+     NỘI DUNG BANNER
+     ========================================================= */
+  
+  .verify-otp-banner-content {
+    width: 100%;
+    max-width: 38rem;
+    margin: auto 0;
+    padding: 2rem 0;
+  }
+  
+  .verify-otp-banner-eyebrow {
+    margin-bottom: 1.1rem;
+    padding: 0.5rem 0.9rem;
+  
+    display: inline-flex;
+  
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+  
+    border: 1px solid rgba(255, 255, 255, 0.17);
+    border-radius: 999px;
+  
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+  
+    backdrop-filter: blur(10px);
+  }
+  
+  .verify-otp-banner-title {
+    max-width: 620px;
+    margin: 0;
+  
+    color: #ffffff;
+  
+    font-size: clamp(2.5rem, 3.8vw, 3.6rem);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+  }
+  
+  .verify-otp-banner-description {
+    max-width: 570px;
+    margin: 1.35rem 0 0;
+  
+    color: rgba(255, 255, 255, 0.76);
+  
+    font-size: 0.96rem;
+    line-height: 1.75;
+  }
+  
+  .verify-otp-feature-list {
+    margin-top: 1.7rem;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .verify-otp-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  
+    color: rgba(255, 255, 255, 0.91);
+  
+    font-size: 0.86rem;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  
+  .verify-otp-feature-item > span {
+    flex-shrink: 0;
+  
+    width: 24px;
+    height: 24px;
+  
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 0;
-    transition: color 0.2s ease;
-  }
-  
-  .resend-action-btn:hover {
-    color: #60a5fa;
-  }
-  
-  
-  /* ================= CÁC NÚT ĐIỀU HƯỚNG BỔ TRỢ ================= */
-  .otp-back-btn {
-    width: 100%;
-    height: 46px;
-    background-color: transparent;
-    border: 1px solid #374151;
-    color: #d1d5db;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 0.25rem;
-    transition: all 0.2s ease;
-  }
-  
-  .otp-back-btn:hover {
-    background-color: #1f2937;
-    color: #ffffff;
-    border-color: #4b5563;
-  }
-  
-  .otp-form-footer {
-    display: flex;
     justify-content: center;
-    gap: 0.75rem;
-    margin-top: 2rem;
-    color: #4b5563;
-    font-size: 0.8rem;
+  
+    color: #ffffff;
+    background: rgba(61, 155, 211, 0.28);
+  
+    border: 1px solid rgba(131, 210, 255, 0.28);
+    border-radius: 50%;
+  
+    font-size: 0.75rem;
+    font-weight: 800;
   }
   
-  .otp-form-footer span {
-    cursor: pointer;
-    transition: color 0.2s ease;
+  /* =========================================================
+     HỘP BẢO MẬT
+     ========================================================= */
+  
+  .verify-otp-security-box {
+    width: 100%;
+    max-width: 610px;
+    padding: 1rem 1.15rem;
+  
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  
+    color: rgba(255, 255, 255, 0.76);
+    background: rgba(255, 255, 255, 0.09);
+  
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 15px;
+  
+    font-size: 0.78rem;
+    line-height: 1.55;
+    font-weight: 500;
+  
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  
+    box-shadow:
+      0 14px 30px rgba(0, 20, 48, 0.17);
   }
   
-  .otp-form-footer span:hover {
-    color: #9ca3af;
+  .verify-otp-security-icon {
+    flex-shrink: 0;
+  
+    width: 40px;
+    height: 40px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+    background: rgba(61, 155, 211, 0.22);
+  
+    border: 1px solid rgba(131, 210, 255, 0.24);
+    border-radius: 12px;
   }
   
+  /* =========================================================
+     FORM BÊN PHẢI
+     ========================================================= */
   
-  /* ================= TRẠNG THÁI HỆ THỐNG DƯỚI ĐÁY MÀN HÌNH ================= */
-  .otp-status-bar {
+  .verify-otp-form-side {
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 2.5rem 1.25rem 5rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background:
+      radial-gradient(
+        circle at 88% 10%,
+        rgba(215, 25, 32, 0.055),
+        transparent 29%
+      ),
+      radial-gradient(
+        circle at 8% 92%,
+        rgba(25, 118, 185, 0.08),
+        transparent 31%
+      ),
+      linear-gradient(
+        145deg,
+        #fff5f6 0%,
+        #fffafb 45%,
+        #f7fbff 100%
+      );
+  }
+  
+  @media (min-width: 1050px) {
+    .verify-otp-form-side {
+      width: 52%;
+    }
+  }
+  
+  .verify-otp-decoration {
     position: absolute;
-    bottom: 1.5rem;
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .verify-otp-decoration-one {
+    top: -150px;
+    right: -120px;
+  
+    width: 360px;
+    height: 360px;
+  
+    border: 65px solid rgba(215, 25, 32, 0.025);
+  }
+  
+  .verify-otp-decoration-two {
+    bottom: -190px;
+    left: -150px;
+  
+    width: 430px;
+    height: 430px;
+  
+    border: 75px solid rgba(25, 118, 185, 0.025);
+  }
+  
+  /* =========================================================
+     CARD
+     ========================================================= */
+  
+  .verify-otp-card-wrapper {
+    position: relative;
+    z-index: 2;
+  
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .verify-otp-card-wrapper::before {
+    content: "";
+  
+    position: absolute;
+    inset: -20px;
+    z-index: -1;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(244, 63, 94, 0.08),
+        transparent 67%
+      );
+  
+    filter: blur(20px);
+    pointer-events: none;
+  }
+  
+  .verify-otp-card {
+    position: relative;
+  
+    width: 100%;
+    padding: 2.5rem 2.35rem 2rem;
+  
+    background: rgba(255, 255, 255, 0.97);
+  
+    border: 1px solid rgba(254, 205, 211, 0.82);
+    border-radius: 1.5rem;
+  
+    box-shadow:
+      0 30px 65px rgba(51, 17, 29, 0.1),
+      0 8px 20px rgba(244, 63, 94, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  
+  .verify-otp-card::before {
+    content: "";
+  
+    position: absolute;
+    top: 0;
+    right: 34px;
+    left: 34px;
+  
+    height: 3px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--verify-blue),
+        var(--verify-red),
+        var(--verify-orange),
+        transparent
+      );
+  
+    border-radius: 0 0 999px 999px;
+  }
+  
+  /* =========================================================
+     LOGO MOBILE
+     ========================================================= */
+  
+  .verify-otp-mobile-logo {
+    display: none;
+  
+    margin: 0 auto 1.5rem;
+    padding: 0;
+  
+    background: transparent;
+    border: 0;
+  
+    cursor: pointer;
+  }
+  
+  .verify-otp-mobile-logo-frame {
+    overflow: hidden;
+  
+    width: 310px;
+    height: 80px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background: #ffffff;
+  
+    border: 1px solid rgba(25, 118, 185, 0.13);
+    border-radius: 16px;
+  
+    box-shadow:
+      0 12px 30px rgba(25, 118, 185, 0.1);
+  }
+  
+  .verify-otp-mobile-logo-frame img {
+    width: 100%;
+    height: 100%;
+  
+    object-fit: cover;
+    object-position: center;
+  
+    transform: scale(1.13);
+  
+    filter:
+      contrast(1.05)
+      saturate(1.08);
+  }
+  
+  /* =========================================================
+     ICON VÀ HEADER
+     ========================================================= */
+  
+  .verify-otp-main-icon {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 1.15rem;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: var(--verify-blue);
+  
+    background:
+      linear-gradient(
+        135deg,
+        rgba(61, 155, 211, 0.14),
+        rgba(25, 118, 185, 0.07)
+      );
+  
+    border: 1px solid rgba(25, 118, 185, 0.12);
+    border-radius: 17px;
+  
+    box-shadow:
+      0 8px 18px rgba(25, 118, 185, 0.08);
+  }
+  
+  .verify-otp-header {
+    margin-bottom: 1.8rem;
+  }
+  
+  .verify-otp-eyebrow {
+    margin-bottom: 0.5rem;
+  
+    display: block;
+  
+    color: var(--verify-blue);
+  
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+  }
+  
+  .verify-otp-title {
+    margin: 0;
+  
+    color: #0f172a;
+  
+    font-size: 1.9rem;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+  
+  .verify-otp-subtitle {
+    margin: 0.65rem 0 0;
+  
+    color: var(--verify-muted);
+  
+    font-size: 0.84rem;
+    line-height: 1.6;
+  }
+  
+  .verify-otp-email {
+    min-width: 0;
+    margin-top: 0.75rem;
+    padding: 0.65rem 0.8rem;
+  
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #4b5563;
+  
+    color: var(--verify-blue);
+    background: rgba(25, 118, 185, 0.06);
+  
+    border: 1px solid rgba(25, 118, 185, 0.1);
+    border-radius: 0.7rem;
+  
     font-size: 0.8rem;
+    font-weight: 700;
   }
   
-  .otp-status-dot {
-    width: 6px;
-    height: 6px;
-    background-color: #10b981;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #10b981;
+  .verify-otp-email svg {
+    flex-shrink: 0;
   }
+  
+  .verify-otp-email span {
+    overflow: hidden;
+  
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
   /* =========================================================
-   CHUẨN HÓA FONT CHỮ MÀN HÌNH OTP
-   Chỉ thay đổi typography, không đổi giao diện
-   ========================================================= */
-
-.otp-screen-container {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
-
-  font-size: 16px;
-  line-height: 1.5;
-
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Đồng bộ font cho input và button */
-
-.otp-screen-container input,
-.otp-screen-container button {
-  font-family: inherit;
-}
-
-/* Logo */
-
-.otp-logo-text {
-  font-size: 20px;
-  line-height: 1.35;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* Nội dung banner */
-
-.otp-banner-title {
-  font-size: 40px;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.otp-banner-description {
-  font-size: 16px;
-  line-height: 1.65;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-/* Tiêu đề form */
-
-.otp-form-title {
-  font-size: 26px;
-  line-height: 1.3;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-.otp-form-subtitle {
-  font-size: 14px;
-  line-height: 1.6;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-/* Email đăng ký */
-
-.otp-display-email {
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-/* Label input */
-
-.otp-input-label {
-  font-size: 14px;
-  line-height: 1.45;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-/* Input OTP */
-
-.otp-form-input {
-  font-family: inherit;
-  font-size: 16px;
-  line-height: 1.5;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-.otp-form-input::placeholder {
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 400;
-}
-
-/* Mã OTP */
-
-.input-code-style {
-  font-size: 21px;
-  line-height: 1.4;
-  font-weight: 700;
-  letter-spacing: 6px;
-}
-
-/* Gửi lại mã */
-
-.otp-resend-wrapper {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.countdown-text {
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 400;
-}
-
-.countdown-text b {
-  font-weight: 600;
-}
-
-.resend-action-btn {
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-/* Nút quay lại */
-
-.otp-back-btn {
-  font-family: inherit;
-  font-size: 15px;
-  line-height: 1.4;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-/* Footer form */
-
-.otp-form-footer {
-  font-size: 13px;
-  line-height: 1.5;
-  font-weight: 400;
-}
-
-/* Thanh trạng thái */
-
-.otp-status-bar {
-  font-size: 13px;
-  line-height: 1.5;
-  font-weight: 400;
-}
+     FORM
+     ========================================================= */
+  
+  .verify-otp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+  
+  .verify-otp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.42rem;
+  }
+  
+  .verify-otp-label {
+    color: #344054;
+  
+    font-size: 0.84rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+  
+  .verify-otp-required {
+    margin-left: 3px;
+  
+    color: var(--verify-error);
+  }
+  
+  .verify-otp-input-wrapper {
+    position: relative;
+  
+    min-height: 52px;
+  
+    display: flex;
+    align-items: center;
+  
+    background: #fbfcfe;
+  
+    border: 1px solid var(--verify-border);
+    border-radius: 0.75rem;
+  
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  .verify-otp-input-wrapper:focus-within {
+    background: #ffffff;
+    border-color: var(--verify-blue);
+  
+    box-shadow:
+      0 0 0 4px rgba(25, 118, 185, 0.1);
+  
+    transform: translateY(-1px);
+  }
+  
+  .verify-otp-input-icon {
+    position: absolute;
+    left: 0.95rem;
+    z-index: 2;
+  
+    display: inline-flex;
+    align-items: center;
+  
+    color: #94a3b8;
+  
+    pointer-events: none;
+  
+    transition: color 0.2s ease;
+  }
+  
+  .verify-otp-input-wrapper:focus-within
+    .verify-otp-input-icon {
+    color: var(--verify-blue);
+  }
+  
+  .verify-otp-input {
+    width: 100%;
+    min-height: 51px;
+    padding: 0.75rem 3.8rem 0.75rem 2.9rem;
+  
+    color: #0f172a;
+    background: transparent;
+  
+    border: 0;
+    outline: none;
+  
+    font-size: 1.05rem;
+    line-height: 1.5;
+    font-weight: 750;
+    letter-spacing: 0.25em;
+  }
+  
+  .verify-otp-input::placeholder {
+    color: #a0aabc;
+  
+    font-size: 0.84rem;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  
+  .verify-otp-input:disabled {
+    color: #94a3b8;
+  
+    cursor: not-allowed;
+  }
+  
+  .verify-otp-input-count {
+    position: absolute;
+    right: 0.9rem;
+  
+    color: #94a3b8;
+  
+    font-size: 0.7rem;
+    line-height: 1.4;
+    font-weight: 700;
+  
+    pointer-events: none;
+  }
+  
+  /* =========================================================
+     LỖI OTP
+     ========================================================= */
+  
+  .verify-otp-input-wrapper.verify-otp-input-error {
+    background: #fffafa;
+    border-color: var(--verify-error);
+  
+    box-shadow:
+      0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+  
+  .verify-otp-input-error
+    .verify-otp-input-icon {
+    color: var(--verify-error);
+  }
+  
+  .verify-otp-error-text {
+    margin-top: 0.05rem;
+  
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  
+    color: var(--verify-error);
+  
+    font-size: 0.75rem;
+    line-height: 1.45;
+    font-weight: 600;
+  }
+  
+  .verify-otp-error-text > span {
+    flex-shrink: 0;
+  
+    width: 17px;
+    height: 17px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+    background: var(--verify-error);
+  
+    border-radius: 50%;
+  
+    font-size: 0.62rem;
+    font-weight: 800;
+  }
+  
+  /* =========================================================
+     GỬI LẠI OTP
+     ========================================================= */
+  
+  .verify-otp-resend-wrapper {
+    min-height: 28px;
+    margin-top: -0.25rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  
+  .verify-otp-countdown {
+    color: #7b8799;
+  
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+  
+  .verify-otp-countdown strong {
+    color: var(--verify-blue);
+    font-weight: 800;
+  }
+  
+  .verify-otp-resend-button {
+    padding: 0.3rem 0.45rem;
+  
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  
+    color: var(--verify-blue);
+    background: transparent;
+  
+    border: 0;
+    border-radius: 0.45rem;
+  
+    font-size: 0.76rem;
+    line-height: 1.4;
+    font-weight: 700;
+  
+    cursor: pointer;
+  
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease;
+  }
+  
+  .verify-otp-resend-button:hover {
+    color: var(--verify-navy);
+    background: rgba(25, 118, 185, 0.06);
+  }
+  
+  .verify-otp-resend-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  /* =========================================================
+     NÚT XÁC THỰC
+     ========================================================= */
+  
+  .verify-otp-submit.MuiButton-root {
+    position: relative;
+    overflow: hidden;
+  
+    min-height: 50px;
+    margin-top: 0.2rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+  
+    color: #ffffff !important;
+  
+    background:
+      linear-gradient(
+        135deg,
+        #34c995 0%,
+        var(--verify-green) 48%,
+        var(--verify-green-dark) 100%
+      ) !important;
+  
+    border-radius: 0.75rem !important;
+  
+    font-size: 0.91rem !important;
+    line-height: 1.4 !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  
+    box-shadow:
+      0 10px 23px rgba(16, 185, 129, 0.23) !important;
+  
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease !important;
+  }
+  
+  .verify-otp-submit.MuiButton-root::before {
+    content: "";
+  
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -55%;
+  
+    width: 40%;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.38),
+        transparent
+      );
+  
+    transform: skewX(-20deg);
+  
+    transition: left 0.45s ease;
+  }
+  
+  .verify-otp-submit.MuiButton-root:hover {
+    background:
+      linear-gradient(
+        135deg,
+        #25ba85,
+        #059669
+      ) !important;
+  
+    transform: translateY(-2px);
+  
+    box-shadow:
+      0 14px 29px rgba(16, 185, 129, 0.31) !important;
+  }
+  
+  .verify-otp-submit.MuiButton-root:hover::before {
+    left: 120%;
+  }
+  
+  .verify-otp-submit.MuiButton-root > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .verify-otp-submit.Mui-disabled {
+    color: #ffffff !important;
+  
+    background:
+      linear-gradient(
+        135deg,
+        #91c4b3,
+        #76a999
+      ) !important;
+  
+    transform: none;
+  
+    box-shadow: none !important;
+  }
+  
+  /* =========================================================
+     NÚT QUAY LẠI
+     ========================================================= */
+  
+  .verify-otp-back-button {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+  
+    color: #64748b;
+    background: transparent;
+  
+    border: 1px solid transparent;
+    border-radius: 0.7rem;
+  
+    font-size: 0.82rem;
+    line-height: 1.4;
+    font-weight: 700;
+  
+    cursor: pointer;
+  
+    transition:
+      color 0.18s ease,
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      transform 0.18s ease;
+  }
+  
+  .verify-otp-back-button:hover {
+    color: var(--verify-blue);
+    background: rgba(25, 118, 185, 0.05);
+    border-color: rgba(25, 118, 185, 0.08);
+  
+    transform: translateY(-1px);
+  }
+  
+  .verify-otp-back-button svg {
+    transition: transform 0.18s ease;
+  }
+  
+  .verify-otp-back-button:hover svg {
+    transform: translateX(-3px);
+  }
+  
+  .verify-otp-back-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+  }
+  
+  /* =========================================================
+     FOOTER VÀ STATUS
+     ========================================================= */
+  
+  .verify-otp-footer {
+    margin-top: 1.4rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  
+    color: #a0a9b7;
+  
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+  
+  .verify-otp-footer button {
+    padding: 0;
+  
+    color: #8490a1;
+    background: transparent;
+  
+    border: 0;
+  
+    font-size: inherit;
+  
+    cursor: pointer;
+  }
+  
+  .verify-otp-footer button:hover {
+    color: var(--verify-blue);
+  }
+  
+  .verify-otp-status {
+    position: absolute;
+    bottom: 1.4rem;
+  
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  
+    color: #7c8798;
+  
+    font-size: 0.72rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+  
+  .verify-otp-status-dot {
+    width: 7px;
+    height: 7px;
+  
+    background: var(--verify-green);
+  
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 9px rgba(16, 185, 129, 0.75);
+  
+    animation: verifyOtpPulse 2s infinite;
+  }
+  
+  @keyframes verifyOtpPulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+  
+    50% {
+      opacity: 0.45;
+    }
+  }
+  
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 1280px) and (min-width: 1050px) {
+    .verify-otp-banner {
+      padding-right: 2.5rem;
+      padding-left: 2.5rem;
+    }
+  
+    .verify-otp-brand-frame {
+      width: 315px;
+      height: 84px;
+    }
+  
+    .verify-otp-banner-title {
+      font-size: 2.75rem;
+    }
+  
+    .verify-otp-card {
+      padding-right: 2rem;
+      padding-left: 2rem;
+    }
+  }
+  
+  @media (max-width: 1049px) {
+    .verify-otp-page {
+      display: block;
+    }
+  
+    .verify-otp-form-side {
+      width: 100%;
+      padding: 4.8rem 1.2rem 5rem;
+    }
+  
+    .verify-otp-mobile-logo {
+      display: flex;
+    }
+  
+    .verify-otp-card-wrapper {
+      max-width: 540px;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .verify-otp-form-side {
+      padding-right: 0.85rem;
+      padding-left: 0.85rem;
+    }
+  
+    .verify-otp-card {
+      padding: 2rem 1.35rem 1.6rem;
+  
+      border-radius: 1.2rem;
+    }
+  
+    .verify-otp-mobile-logo-frame {
+      width: 270px;
+      height: 72px;
+    }
+  
+    .verify-otp-title {
+      font-size: 1.65rem;
+    }
+  
+    .verify-otp-main-icon {
+      width: 52px;
+      height: 52px;
+  
+      border-radius: 15px;
+    }
+  }
+  
+  @media (max-width: 420px) {
+    .verify-otp-form-side {
+      padding-right: 0.6rem;
+      padding-left: 0.6rem;
+    }
+  
+    .verify-otp-card {
+      padding-right: 1.05rem;
+      padding-left: 1.05rem;
+    }
+  
+    .verify-otp-mobile-logo-frame {
+      width: 230px;
+      height: 64px;
+    }
+  
+    .verify-otp-title {
+      font-size: 1.5rem;
+    }
+  
+    .verify-otp-input {
+      padding-left: 2.65rem;
+  
+      font-size: 0.96rem;
+      letter-spacing: 0.18em;
+    }
+  
+    .verify-otp-footer {
+      gap: 0.4rem;
+    }
+  }
+  
+  @media (max-width: 350px) {
+    .verify-otp-mobile-logo-frame {
+      width: 205px;
+      height: 58px;
+    }
+  
+    .verify-otp-card {
+      padding-right: 0.85rem;
+      padding-left: 0.85rem;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .verify-otp-page *,
+    .verify-otp-page *::before,
+    .verify-otp-page *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }

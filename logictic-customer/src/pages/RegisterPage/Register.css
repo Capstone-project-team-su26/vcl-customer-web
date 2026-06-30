@@ -1,399 +1,1240 @@
-/* Khung chứa bao quát */
-.login-container {
-    display: flex;
+/* =========================================================
+   TRANG ĐĂNG KÝ
+   Dùng class riêng để không xung đột với Login.css
+   ========================================================= */
+
+   .register-page {
+    --register-navy: #062f57;
+    --register-navy-dark: #031b33;
+    --register-blue: #1976b9;
+    --register-blue-light: #3d9bd3;
+    --register-red: #d71920;
+    --register-orange: #e6a83c;
+    --register-rose: #fff5f6;
+    --register-text: #172033;
+    --register-muted: #64748b;
+    --register-border: #dce4ed;
+    --register-error: #e11d48;
+  
+    width: 100%;
     min-height: 100vh;
-    width: 100vw;
-    background-color: #FFF1F2; /* Đổi thành màu hồng nhạt tinh tế (Rose 50) */
-    overflow-x: hidden;
+    min-height: 100dvh;
+  
+    display: flex;
+  
     margin: 0;
     padding: 0;
+  
+    overflow-x: hidden;
+  
+    color: var(--register-text);
+    background: var(--register-rose);
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+  
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
-  .login-container ::selection {
-    background-color: #FFE4E6;
+  .register-page *,
+  .register-page *::before,
+  .register-page *::after {
+    box-sizing: border-box;
   }
   
-  /* ================= BÊN TRÁI: BANNER THƯƠNG HIỆU ================= */
-  .login-banner {
-    position: relative;
+  .register-page button,
+  .register-page input,
+  .register-page select {
+    font-family: inherit;
+  }
+  
+  .register-page ::selection {
+    color: #881337;
+    background: #ffe4e6;
+  }
+  
+  /* =========================================================
+     BANNER TRÁI
+     ========================================================= */
+  
+  .register-banner {
+    position: sticky;
+    top: 0;
+  
+    overflow: hidden;
+  
+    width: 46%;
+    height: 100vh;
+    height: 100dvh;
+    padding: 3.25rem;
+  
     display: none;
-    width: 55%;
     flex-direction: column;
     justify-content: space-between;
-    padding: 4rem 3.5rem;
-    background-size: cover;
+  
+    color: #ffffff;
+  
     background-position: center;
-    color: #FFFFFF;
+    background-repeat: no-repeat;
+    background-size: cover;
   }
   
-  @media (min-width: 1024px) {
-    .login-banner {
-      display: flex;
-    }
-  }
-  
-  .banner-overlay {
+  .register-banner-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, rgba(11, 30, 62, 0.45), rgba(6, 18, 38, 0.92));
     z-index: 1;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(3, 27, 51, 0.93) 0%,
+        rgba(6, 47, 87, 0.84) 48%,
+        rgba(12, 80, 126, 0.72) 100%
+      );
   }
   
-  .logo-wrapper, .banner-content, .banner-stats {
+  .register-banner-pattern {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  
+    opacity: 0.15;
+  
+    background-image:
+      linear-gradient(
+        rgba(255, 255, 255, 0.11) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.11) 1px,
+        transparent 1px
+      );
+  
+    background-size: 48px 48px;
+  
+    mask-image:
+      linear-gradient(
+        to bottom,
+        #000 0%,
+        transparent 88%
+      );
+  
+    pointer-events: none;
+  }
+  
+  .register-banner::after {
+    content: "";
+  
+    position: absolute;
+    right: -180px;
+    bottom: -200px;
+    z-index: 2;
+  
+    width: 510px;
+    height: 510px;
+  
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 0 70px rgba(255, 255, 255, 0.025),
+      0 0 0 145px rgba(255, 255, 255, 0.018);
+  
+    pointer-events: none;
+  }
+  
+  .register-brand,
+  .register-banner-content,
+  .register-banner-stats {
     position: relative;
     z-index: 10;
   }
   
-  .logo-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  @media (min-width: 1024px) {
-    .login-banner > .logo-wrapper {
-      margin-top: 52px;
+  @media (min-width: 1100px) {
+    .register-banner {
+      display: flex;
     }
   }
   
-  .logo-icon-box {
+  /* =========================================================
+     LOGO DESKTOP
+     ========================================================= */
+  
+  .register-brand {
+    width: fit-content;
+    margin: 2.5rem 0 0;
+    padding: 0;
+  
+    display: inline-flex;
+  
+    background: transparent;
+    border: 0;
+  
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .register-brand-frame {
+    position: relative;
+    overflow: hidden;
+  
+    width: 370px;
+    height: 96px;
+  
     display: flex;
-    height: 2.75rem;
-    width: 2.75rem;
     align-items: center;
     justify-content: center;
-    border-radius: 0.5rem;
-    background-color: rgba(255, 159, 67, 0.15);
-    color: #FF9F43;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.99),
+        rgba(247, 251, 255, 0.95)
+      );
+  
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    border-radius: 20px;
+  
+    box-shadow:
+      0 18px 42px rgba(0, 20, 48, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
   }
   
-  .logo-icon-box svg {
-    transform: rotate(45deg);
+  .register-brand-frame::after {
+    content: "";
+  
+    position: absolute;
+    right: 25px;
+    bottom: 7px;
+    left: 25px;
+  
+    height: 2px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--register-blue),
+        var(--register-red),
+        var(--register-orange),
+        transparent
+      );
+  
+    border-radius: 999px;
+    opacity: 0.65;
   }
   
-  .logo-text {
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: -0.025em;
+  .register-brand-frame img {
+    display: block;
+  
+    width: 100%;
+    height: 100%;
+  
+    object-fit: cover;
+    object-position: center;
+  
+    transform: scale(1.13);
+  
+    filter:
+      contrast(1.05)
+      saturate(1.08);
+  
+    transition:
+      transform 0.25s ease,
+      filter 0.25s ease;
   }
   
-  .banner-content {
-    max-width: 36rem;
-    margin-top: auto;
-    margin-bottom: auto;
+  .register-brand:hover .register-brand-frame {
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 23px 50px rgba(0, 20, 48, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
   
-  .banner-title {
-    font-size: 2.5rem;
+  .register-brand:hover .register-brand-frame img {
+    transform: scale(1.17);
+  
+    filter:
+      contrast(1.08)
+      saturate(1.13);
+  }
+  
+  /* =========================================================
+     NỘI DUNG BANNER
+     ========================================================= */
+  
+  .register-banner-content {
+    width: 100%;
+    max-width: 38rem;
+    margin: auto 0;
+    padding: 1.5rem 0;
+  }
+  
+  .register-banner-eyebrow {
+    margin-bottom: 1.1rem;
+    padding: 0.5rem 0.9rem;
+  
+    display: inline-flex;
+  
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+  
+    border: 1px solid rgba(255, 255, 255, 0.17);
+    border-radius: 999px;
+  
+    font-size: 0.68rem;
     font-weight: 800;
-    letter-spacing: -0.025em;
-    line-height: 1.2;
-    margin-bottom: 1rem;
+    letter-spacing: 0.13em;
+  
+    backdrop-filter: blur(10px);
   }
   
-  @media (min-width: 1280px) {
-    .banner-title {
-      font-size: 3.25rem;
+  .register-banner-title {
+    max-width: 620px;
+    margin: 0;
+  
+    color: #ffffff;
+  
+    font-size: clamp(2.4rem, 3.6vw, 3.5rem);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+  }
+  
+  .register-banner-description {
+    max-width: 570px;
+    margin: 1.35rem 0 0;
+  
+    color: rgba(255, 255, 255, 0.76);
+  
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+  
+  .register-benefit-list {
+    margin-top: 1.65rem;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  
+  .register-benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  
+    color: rgba(255, 255, 255, 0.91);
+  
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .register-benefit-item span {
+    flex-shrink: 0;
+  
+    width: 24px;
+    height: 24px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+    background: rgba(61, 155, 211, 0.28);
+  
+    border: 1px solid rgba(131, 210, 255, 0.28);
+    border-radius: 50%;
+  }
+  
+  /* =========================================================
+     THỐNG KÊ
+     ========================================================= */
+  
+  .register-banner-stats {
+    width: 100%;
+    max-width: 670px;
+    padding: 1.2rem 1.3rem;
+  
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      1px
+      minmax(0, 1fr)
+      1px
+      minmax(0, 1fr);
+  
+    align-items: center;
+    gap: 1rem;
+  
+    background: rgba(255, 255, 255, 0.09);
+  
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 17px;
+  
+    backdrop-filter: blur(15px);
+  
+    box-shadow:
+      0 14px 30px rgba(0, 20, 48, 0.17);
+  }
+  
+  .register-stat-item {
+    min-width: 0;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+  }
+  
+  .register-stat-item strong {
+    color: #ffffff;
+  
+    font-size: 1.55rem;
+    font-weight: 800;
+  }
+  
+  .register-stat-item span {
+    overflow: hidden;
+  
+    color: rgba(255, 255, 255, 0.64);
+  
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .register-stat-divider {
+    width: 1px;
+    height: 40px;
+  
+    background: rgba(255, 255, 255, 0.16);
+  }
+  
+  /* =========================================================
+     BÊN PHẢI
+     ========================================================= */
+  
+  .register-form-side {
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 3rem 1.5rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background:
+      radial-gradient(
+        circle at 88% 10%,
+        rgba(215, 25, 32, 0.055),
+        transparent 29%
+      ),
+      radial-gradient(
+        circle at 8% 92%,
+        rgba(25, 118, 185, 0.08),
+        transparent 31%
+      ),
+      linear-gradient(
+        145deg,
+        #fff5f6 0%,
+        #fffafb 45%,
+        #f7fbff 100%
+      );
+  }
+  
+  @media (min-width: 1100px) {
+    .register-form-side {
+      width: 54%;
     }
   }
   
-  .banner-description {
-    font-size: 0.95rem;
-    color: #CBD5E1;
-    line-height: 1.6;
+  .register-decoration {
+    position: absolute;
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .register-decoration-one {
+    top: -150px;
+    right: -120px;
+  
+    width: 360px;
+    height: 360px;
+  
+    border: 65px solid rgba(215, 25, 32, 0.025);
+  }
+  
+  .register-decoration-two {
+    bottom: -190px;
+    left: -150px;
+  
+    width: 430px;
+    height: 430px;
+  
+    border: 75px solid rgba(25, 118, 185, 0.025);
+  }
+  
+  /* =========================================================
+     CARD
+     ========================================================= */
+  
+  .register-card-wrapper {
+    position: relative;
+    z-index: 2;
+  
+    width: 100%;
+    max-width: 680px;
+  }
+  
+  .register-card-wrapper::before {
+    content: "";
+  
+    position: absolute;
+    inset: -20px;
+    z-index: -1;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(244, 63, 94, 0.08),
+        transparent 67%
+      );
+  
+    filter: blur(20px);
+  }
+  
+  .register-card {
+    position: relative;
+  
+    width: 100%;
+    padding: 2.5rem 2.5rem 2rem;
+  
+    background: rgba(255, 255, 255, 0.97);
+  
+    border: 1px solid rgba(254, 205, 211, 0.82);
+    border-radius: 1.5rem;
+  
+    box-shadow:
+      0 30px 65px rgba(51, 17, 29, 0.1),
+      0 8px 20px rgba(244, 63, 94, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  
+    backdrop-filter: blur(18px);
+  }
+  
+  .register-card::before {
+    content: "";
+  
+    position: absolute;
+    top: 0;
+    right: 40px;
+    left: 40px;
+  
+    height: 3px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--register-blue),
+        var(--register-red),
+        var(--register-orange),
+        transparent
+      );
+  
+    border-radius: 0 0 999px 999px;
+  }
+  
+  /* =========================================================
+     LOGO MOBILE
+     ========================================================= */
+  
+  .register-mobile-logo {
+    display: none;
+  
+    margin: 0 auto 1.5rem;
+    padding: 0;
+  
+    background: transparent;
+    border: 0;
+  
+    cursor: pointer;
+  }
+  
+  .register-mobile-logo-frame {
+    overflow: hidden;
+  
+    width: 310px;
+    height: 80px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background: #ffffff;
+  
+    border: 1px solid rgba(25, 118, 185, 0.13);
+    border-radius: 16px;
+  
+    box-shadow:
+      0 12px 30px rgba(25, 118, 185, 0.1);
+  }
+  
+  .register-mobile-logo-frame img {
+    width: 100%;
+    height: 100%;
+  
+    object-fit: cover;
+  
+    transform: scale(1.13);
+  
+    filter:
+      contrast(1.05)
+      saturate(1.08);
+  }
+  
+  /* =========================================================
+     TIÊU ĐỀ
+     ========================================================= */
+  
+  .register-form-header {
+    margin-bottom: 1.7rem;
+  }
+  
+  .register-form-eyebrow {
+    margin-bottom: 0.5rem;
+  
+    display: block;
+  
+    color: var(--register-blue);
+  
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+  }
+  
+  .register-form-title {
+    margin: 0;
+  
+    color: #0f172a;
+  
+    font-size: 1.9rem;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+  
+  .register-form-subtitle {
+    margin: 0.65rem 0 0;
+  
+    color: var(--register-muted);
+  
+    font-size: 0.84rem;
+    line-height: 1.65;
+  }
+  
+  /* =========================================================
+     FORM
+     ========================================================= */
+  
+  .register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+  
+  .register-field-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  
+  .register-field {
+    min-width: 0;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 0.42rem;
+  }
+  
+  .register-label {
+    color: #344054;
+  
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+  
+  .register-required {
+    margin-left: 3px;
+  
+    color: var(--register-error);
+  }
+  
+  .register-input-wrapper {
+    position: relative;
+  
+    min-height: 49px;
+  
+    display: flex;
+    align-items: center;
+  
+    background: #fbfcfe;
+  
+    border: 1px solid var(--register-border);
+    border-radius: 0.7rem;
+  
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  .register-input-wrapper:focus-within {
+    background: #ffffff;
+    border-color: var(--register-blue);
+  
+    box-shadow:
+      0 0 0 4px rgba(25, 118, 185, 0.1);
+  
+    transform: translateY(-1px);
+  }
+  
+  .register-input-icon {
+    position: absolute;
+    left: 0.9rem;
+    z-index: 2;
+  
+    display: inline-flex;
+    align-items: center;
+  
+    color: #94a3b8;
+  
+    pointer-events: none;
+  }
+  
+  .register-input-wrapper:focus-within
+    .register-input-icon {
+    color: var(--register-blue);
+  }
+  
+  .register-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem 1rem 0.75rem 2.8rem;
+  
+    color: #0f172a;
+    background: transparent;
+  
+    border: 0;
+    outline: none;
+  
+    font-size: 0.86rem;
+    font-weight: 500;
+  }
+  
+  .register-input::placeholder {
+    color: #a0aabc;
     font-weight: 400;
   }
   
-  .banner-stats {
-    display: flex;
-    gap: 4rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    padding-top: 2rem;
+  .register-input:disabled {
+    color: #94a3b8;
+  
+    cursor: not-allowed;
   }
   
-  .stat-number {
-    font-size: 2rem;
-    font-weight: 700;
+  .register-password-wrapper .register-input {
+    padding-right: 3rem;
   }
   
-  .stat-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #FF9F43;
-    margin-top: 0.25rem;
-  }
+  .register-password-toggle {
+    position: absolute;
+    right: 0.55rem;
   
-  /* ================= BÊN PHẢI: KHU VỰC BOX NỔI ĐĂNG NHẬP ================= */
-  .login-form-side {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    width: 37px;
+    height: 37px;
+    padding: 0;
+  
+    display: inline-flex;
     align-items: center;
-    width: 100%;
-    padding: 2rem 1rem;
-    position: relative;
+    justify-content: center;
+  
+    color: #8793a6;
+    background: transparent;
+  
+    border: 0;
+    border-radius: 0.55rem;
+  
+    cursor: pointer;
   }
   
-  @media (min-width: 1024px) {
-    .login-form-side {
-      width: 45%;
+  .register-password-toggle:hover {
+    color: var(--register-blue);
+    background: rgba(25, 118, 185, 0.07);
+  }
+  
+  /* =========================================================
+     SELECT
+     ========================================================= */
+  
+  .register-select {
+    padding-right: 2.8rem;
+  
+    appearance: none;
+    cursor: pointer;
+  }
+  
+  .register-select-arrow {
+    position: absolute;
+    right: 0.9rem;
+  
+    display: inline-flex;
+    align-items: center;
+  
+    color: #8793a6;
+  
+    pointer-events: none;
+  }
+  
+  /* =========================================================
+     LỖI
+     ========================================================= */
+  
+  .register-input-wrapper.register-input-error {
+    background: #fffafb;
+    border-color: var(--register-error);
+  
+    box-shadow:
+      0 0 0 3px rgba(225, 29, 72, 0.07);
+  }
+  
+  .register-input-error .register-input-icon {
+    color: var(--register-error);
+  }
+  
+  .register-error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  
+    color: var(--register-error);
+  
+    font-size: 0.73rem;
+    line-height: 1.45;
+    font-weight: 600;
+  }
+  
+  .register-error-message > span {
+    flex-shrink: 0;
+  
+    width: 17px;
+    height: 17px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #ffffff;
+    background: var(--register-error);
+  
+    border-radius: 50%;
+  
+    font-size: 0.62rem;
+    font-weight: 800;
+  }
+  
+  /* =========================================================
+     NÚT SUBMIT MUI
+     ========================================================= */
+  
+  .register-submit-button.MuiButton-root {
+    position: relative;
+    overflow: hidden;
+  
+    min-height: 50px;
+    margin-top: 0.25rem;
+  
+    display: flex;
+    gap: 0.55rem;
+  
+    color: #ffffff !important;
+  
+    background:
+      linear-gradient(
+        135deg,
+        var(--register-blue-light) 0%,
+        var(--register-blue) 45%,
+        var(--register-navy) 100%
+      ) !important;
+  
+    border-radius: 0.75rem !important;
+  
+    font-size: 0.91rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  
+    box-shadow:
+      0 10px 23px rgba(6, 47, 87, 0.23) !important;
+  
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease !important;
+  }
+  
+  .register-submit-button.MuiButton-root::before {
+    content: "";
+  
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -55%;
+  
+    width: 40%;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.38),
+        transparent
+      );
+  
+    transform: skewX(-20deg);
+  
+    transition: left 0.45s ease;
+  }
+  
+  .register-submit-button.MuiButton-root:hover {
+    background:
+      linear-gradient(
+        135deg,
+        #328ec5 0%,
+        #126aa4 45%,
+        #042845 100%
+      ) !important;
+  
+    transform: translateY(-2px);
+  
+    box-shadow:
+      0 14px 29px rgba(6, 47, 87, 0.31) !important;
+  }
+  
+  .register-submit-button.MuiButton-root:hover::before {
+    left: 120%;
+  }
+  
+  .register-submit-button.Mui-disabled {
+    color: #ffffff !important;
+  
+    background:
+      linear-gradient(
+        135deg,
+        #8da8bc,
+        #69859b
+      ) !important;
+  
+    box-shadow: none !important;
+  }
+  
+  /* =========================================================
+     GOOGLE VÀ DIVIDER
+     ========================================================= */
+  
+  .register-divider {
+    display: flex;
+    align-items: center;
+  
+    color: #94a3b8;
+  
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  
+  .register-divider::before,
+  .register-divider::after {
+    content: "";
+  
+    flex: 1;
+  
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .register-divider::before {
+    margin-right: 0.75rem;
+  }
+  
+  .register-divider::after {
+    margin-left: 0.75rem;
+  }
+  
+  .register-google-button {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+  
+    color: #334155;
+    background: #ffffff;
+  
+    border: 1px solid #dbe2ea;
+    border-radius: 0.7rem;
+  
+    font-size: 0.85rem;
+    font-weight: 700;
+  
+    cursor: pointer;
+  
+    box-shadow:
+      0 5px 14px rgba(15, 23, 42, 0.035);
+  
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+  
+  .register-google-button:hover {
+    color: var(--register-blue);
+    border-color: rgba(25, 118, 185, 0.4);
+  
+    transform: translateY(-1px);
+  
+    box-shadow:
+      0 9px 20px rgba(25, 118, 185, 0.09);
+  }
+  
+  .register-google-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+  }
+  
+  /* =========================================================
+     ĐĂNG NHẬP VÀ FOOTER
+     ========================================================= */
+  
+  .register-login-box {
+    margin-top: 1.35rem;
+    padding: 0.9rem 1rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  
+    color: #64748b;
+    background:
+      linear-gradient(
+        135deg,
+        rgba(25, 118, 185, 0.055),
+        rgba(215, 25, 32, 0.025)
+      );
+  
+    border: 1px solid rgba(25, 118, 185, 0.09);
+    border-radius: 0.75rem;
+  
+    font-size: 0.82rem;
+  }
+  
+  .register-login-box button {
+    padding: 0;
+  
+    color: var(--register-blue);
+    background: transparent;
+  
+    border: 0;
+  
+    font-size: inherit;
+    font-weight: 800;
+  
+    cursor: pointer;
+  }
+  
+  .register-login-box button:hover {
+    text-decoration: underline;
+  }
+  
+  .register-footer-links {
+    margin-top: 1.5rem;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  
+    color: #a0a9b7;
+  
+    font-size: 0.7rem;
+  }
+  
+  .register-footer-links button {
+    padding: 0;
+  
+    color: #8490a1;
+    background: transparent;
+  
+    border: 0;
+  
+    font-size: inherit;
+  
+    cursor: pointer;
+  }
+  
+  .register-footer-links button:hover {
+    color: var(--register-blue);
+  }
+  
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 1300px) and (min-width: 1100px) {
+    .register-banner {
+      width: 43%;
+      padding-right: 2.25rem;
+      padding-left: 2.25rem;
+    }
+  
+    .register-form-side {
+      width: 57%;
+    }
+  
+    .register-brand-frame {
+      width: 310px;
+      height: 82px;
+    }
+  
+    .register-banner-title {
+      font-size: 2.65rem;
     }
   }
   
-  /* BOX TRẮNG NỔI (CARD UI) */
-  .form-inner-card {
-    margin-top: auto;
-    margin-bottom: auto;
-    width: 100%;
-    max-width: 440px;
-    background-color: #FFFFFF;
-    padding: 2.5rem 2.25rem;
-    border-radius: 1.25rem;
-    box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.05), 0 8px 10px -6px rgba(244, 63, 94, 0.05);
-    border: 1px solid rgba(254, 205, 211, 0.7); /* Viền màu hồng rất nhẹ */
+  @media (max-width: 1099px) {
+    .register-page {
+      display: block;
+    }
+  
+    .register-form-side {
+      width: 100%;
+      padding: 4.8rem 1.2rem 2.5rem;
+    }
+  
+    .register-mobile-logo {
+      display: flex;
+    }
+  
+    .register-card-wrapper {
+      max-width: 680px;
+    }
   }
   
-  .form-header {
-    margin-bottom: 1.75rem;
+  @media (max-width: 700px) {
+    .register-form-side {
+      padding-right: 0.85rem;
+      padding-left: 0.85rem;
+    }
+  
+    .register-card {
+      padding: 2rem 1.35rem 1.6rem;
+  
+      border-radius: 1.2rem;
+    }
+  
+    .register-field-row {
+      grid-template-columns: 1fr;
+    }
+  
+    .register-mobile-logo-frame {
+      width: 270px;
+      height: 72px;
+    }
+  
+    .register-form-title {
+      font-size: 1.65rem;
+    }
   }
   
-  .form-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #0F172A;
-    letter-spacing: -0.025em;
+  @media (max-width: 420px) {
+    .register-form-side {
+      padding-right: 0.6rem;
+      padding-left: 0.6rem;
+    }
+  
+    .register-card {
+      padding-right: 1.05rem;
+      padding-left: 1.05rem;
+    }
+  
+    .register-mobile-logo-frame {
+      width: 230px;
+      height: 64px;
+    }
+  
+    .register-form-title {
+      font-size: 1.5rem;
+    }
+  
+    .register-login-box {
+      flex-direction: column;
+      gap: 0.15rem;
+    }
   }
   
-  .form-subtitle {
-    font-size: 0.875rem;
-    color: #64748B;
-    margin-top: 0.5rem;
+  @media (max-width: 350px) {
+    .register-mobile-logo-frame {
+      width: 205px;
+      height: 58px;
+    }
+  
+    .register-card {
+      padding-right: 0.85rem;
+      padding-left: 0.85rem;
+    }
   }
   
-  /* NÚT ĐĂNG NHẬP GOOGLE CHUẨN */
-  .google-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background-color: #FFFFFF;
-    color: #334155;
-    font-size: 0.875rem;
-    font-weight: 600;
-    border: 1px solid #CBD5E1;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: all 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    .register-page *,
+    .register-page *::before,
+    .register-page *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
-  
-  .google-btn:hover {
-    background-color: #F8FAFC;
-    border-color: #94A3B8;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Đường chia OR */
-  .divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    color: #94A3B8;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 1.25rem;
-    margin-bottom: 1.25rem;
-  }
-  
-  .divider::before, .divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #E2E8F0;
-  }
-  
-  .divider:not(:empty)::before { margin-right: .75rem; }
-  .divider:not(:empty)::after { margin-left: .75rem; }
-  
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-  
-  .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-  
-  .input-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #334155;
-  }
-  
-  .input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-  
-  .input-icon-left {
-    position: absolute;
-    left: 0.875rem;
-    color: #94A3B8;
-    display: flex;
-    align-items: center;
-  }
-  
-  .form-input {
-    width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
-    background-color: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    color: #0F172A;
-    transition: all 0.2s;
-  }
-  
-  .form-input::placeholder { color: #94A3B8; }
-  
-  .form-input:focus {
-    outline: none;
-    border-color: #031B33;
-    box-shadow: 0 0 0 1px #031B33;
-  }
-  
-  .input-wrapper-password .form-input { padding-right: 2.75rem; }
-  
-  .password-toggle-btn {
-    position: absolute;
-    right: 0.875rem;
-    color: #94A3B8;
-    cursor: pointer;
-    background: none;
-    border: none;
-    display: flex;
-    align-items: center;
-  }
-  
-  .password-toggle-btn:hover { color: #475569; }
-  
-  .password-options-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .forgot-password-link {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #031B33;
-    text-decoration: none;
-  }
-  
-  .forgot-password-link:hover { text-decoration: underline; }
-  
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    user-select: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #475569;
-  }
-  
-  .form-checkbox {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 0.25rem;
-    border-color: #CBD5E1;
-    accent-color: #031B33;
-    cursor: pointer;
-  }
-  
-  .submit-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background-color: #031B33;
-    color: #FFFFFF;
-    font-size: 0.875rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .submit-btn:hover { background-color: #0c2847; }
-  .submit-btn svg { transition: transform 0.2s; }
-  .submit-btn:hover svg { transform: translateX(4px); }
-  
-  .request-access-box {
-    text-align: center;
-    font-size: 0.875rem;
-    color: #64748B;
-    padding-top: 1.25rem;
-  }
-  
-  .request-link {
-    font-weight: 700;
-    color: #B45309;
-    text-decoration: none;
-  }
-  
-  .request-link:hover { text-decoration: underline; }
-  
-  .form-footer-links {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    font-size: 0.75rem;
-    color: #94A3B8;
-    margin-top: 2rem;
-  }
-  
-  .form-footer-links a {
-    color: #94A3B8;
-    text-decoration: none;
-  }
-  
-  .form-footer-links a:hover { color: #475569; }
-  
-  .system-status-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    font-size: 11px;
-    color: #94A3B8;
-    font-weight: 500;
-    padding-top: 1.5rem;
-  }
-  
-  .status-dot {
-    height: 0.375rem;
-    width: 0.375rem;
-    border-radius: 50%;
-    background-color: #10B981;
-    animation: pulse 2s infinite;
-  }
-  
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .5; }
-  }
-  

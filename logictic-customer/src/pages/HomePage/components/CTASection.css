@@ -1,0 +1,1143 @@
+/* =========================================================
+   CTA SECTION - VIỆT NAM LOGICTIC
+   ========================================================= */
+
+   .logistic-cta-section {
+    --cta-navy: #031b33;
+    --cta-navy-light: #07517f;
+    --cta-blue: #1976b9;
+    --cta-blue-light: #4bb4ef;
+    --cta-red: #d71920;
+    --cta-orange: #e6a83c;
+    --cta-green: #10b981;
+    --cta-white: #ffffff;
+    --cta-muted: #afc0d1;
+  
+    position: relative;
+    overflow: hidden;
+  
+    width: 100%;
+    padding: 100px 24px;
+  
+    color: var(--cta-white);
+  
+    background:
+      radial-gradient(
+        circle at 85% 12%,
+        rgba(75, 180, 239, 0.25),
+        transparent 30%
+      ),
+      radial-gradient(
+        circle at 8% 88%,
+        rgba(215, 25, 32, 0.1),
+        transparent 28%
+      ),
+      linear-gradient(
+        135deg,
+        #010d19 0%,
+        var(--cta-navy) 48%,
+        var(--cta-navy-light) 100%
+      );
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+  
+    isolation: isolate;
+  
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .logistic-cta-section *,
+  .logistic-cta-section *::before,
+  .logistic-cta-section *::after {
+    box-sizing: border-box;
+  }
+  
+  .logistic-cta-section button {
+    font-family: inherit;
+  }
+  
+  /* =========================================================
+     TRANG TRÍ NỀN
+     ========================================================= */
+  
+  .logistic-cta-pattern {
+    position: absolute;
+    inset: 0;
+    z-index: -3;
+  
+    opacity: 0.14;
+  
+    background-image:
+      linear-gradient(
+        rgba(255, 255, 255, 0.1) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.1) 1px,
+        transparent 1px
+      );
+  
+    background-size: 54px 54px;
+  
+    mask-image:
+      linear-gradient(
+        to right,
+        #000,
+        transparent 92%
+      );
+  
+    pointer-events: none;
+  }
+  
+  .logistic-cta-circle {
+    position: absolute;
+    z-index: -2;
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  .logistic-cta-circle--one {
+    top: -230px;
+    right: -180px;
+  
+    width: 540px;
+    height: 540px;
+  
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  
+    box-shadow:
+      0 0 0 75px rgba(255, 255, 255, 0.018),
+      0 0 0 150px rgba(255, 255, 255, 0.01);
+  }
+  
+  .logistic-cta-circle--two {
+    bottom: -240px;
+    left: -190px;
+  
+    width: 480px;
+    height: 480px;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(25, 118, 185, 0.18),
+        transparent 70%
+      );
+  
+    filter: blur(18px);
+  }
+  
+  /* =========================================================
+     CONTAINER
+     ========================================================= */
+  
+  .logistic-cta-container {
+    position: relative;
+    z-index: 2;
+  
+    width: 100%;
+    max-width: 1380px;
+    margin: 0 auto;
+  
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1.05fr)
+      minmax(430px, 0.95fr);
+  
+    align-items: center;
+    gap: clamp(60px, 8vw, 115px);
+  }
+  
+  /* =========================================================
+     NỘI DUNG
+     ========================================================= */
+  
+  .logistic-cta-content {
+    min-width: 0;
+  }
+  
+  /* =========================================================
+     LOGO
+     ========================================================= */
+  
+  .logistic-cta-logo {
+    width: fit-content;
+    margin: 0 0 27px;
+    padding: 0;
+  
+    display: block;
+  
+    background: transparent;
+    border: 0;
+  
+    cursor: pointer;
+  }
+  
+  .logistic-cta-logo-frame {
+    position: relative;
+    overflow: hidden;
+  
+    width: 310px;
+    height: 82px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.99),
+        rgba(245, 250, 255, 0.96)
+      );
+  
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 17px;
+  
+    box-shadow:
+      0 19px 40px rgba(0, 0, 0, 0.25);
+  
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  
+  .logistic-cta-logo-frame::after {
+    content: "";
+  
+    position: absolute;
+    right: 22px;
+    bottom: 6px;
+    left: 22px;
+  
+    height: 2px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        var(--cta-blue),
+        var(--cta-red),
+        var(--cta-orange),
+        transparent
+      );
+  
+    border-radius: 999px;
+  }
+  
+  .logistic-cta-logo-frame img {
+    display: block;
+  
+    width: 100%;
+    height: 100%;
+    padding: 6px 15px;
+  
+    object-fit: contain;
+    object-position: center;
+  
+    filter:
+      contrast(1.03)
+      saturate(1.06);
+  }
+  
+  .logistic-cta-logo:hover
+    .logistic-cta-logo-frame {
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 25px 48px rgba(0, 0, 0, 0.32);
+  }
+  
+  /* =========================================================
+     TIÊU ĐỀ
+     ========================================================= */
+  
+  .logistic-cta-eyebrow {
+    margin-bottom: 19px;
+    padding: 8px 13px;
+  
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  
+    color: #8dd5ff;
+    background: rgba(75, 180, 239, 0.09);
+  
+    border: 1px solid rgba(75, 180, 239, 0.18);
+    border-radius: 999px;
+  
+    font-size: 10px;
+    line-height: 1.4;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .logistic-cta-eyebrow-dot {
+    width: 8px;
+    height: 8px;
+  
+    background: var(--cta-orange);
+  
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 0 5px rgba(230, 168, 60, 0.1),
+      0 0 14px rgba(230, 168, 60, 0.5);
+  }
+  
+  .logistic-cta-title {
+    max-width: 800px;
+    margin: 0;
+  
+    color: #ffffff;
+  
+    font-size: clamp(39px, 4.7vw, 65px);
+    line-height: 1.06;
+    font-weight: 350;
+    letter-spacing: -0.047em;
+  }
+  
+  .logistic-cta-title strong {
+    margin-top: 7px;
+  
+    display: block;
+  
+    color: transparent;
+  
+    background:
+      linear-gradient(
+        90deg,
+        #ffffff 0%,
+        #7ed0ff 50%,
+        #f0b44e 100%
+      );
+  
+    background-clip: text;
+    -webkit-background-clip: text;
+  
+    font-weight: 850;
+  }
+  
+  .logistic-cta-description {
+    max-width: 690px;
+    margin: 25px 0 0;
+  
+    color: var(--cta-muted);
+  
+    font-size: 15px;
+    line-height: 1.8;
+    font-weight: 400;
+  }
+  
+  /* =========================================================
+     LỢI ÍCH
+     ========================================================= */
+  
+  .logistic-cta-benefits {
+    margin-top: 27px;
+  
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 21px;
+  }
+  
+  .logistic-cta-benefit {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  
+    color: rgba(255, 255, 255, 0.86);
+  
+    font-size: 11.5px;
+    line-height: 1.5;
+    font-weight: 650;
+  }
+  
+  .logistic-cta-benefit svg {
+    color: var(--cta-green);
+  
+    font-size: 15px;
+  
+    filter:
+      drop-shadow(
+        0 0 7px
+        rgba(16, 185, 129, 0.4)
+      );
+  }
+  
+  /* =========================================================
+     NÚT
+     ========================================================= */
+  
+  .logistic-cta-actions {
+    margin-top: 34px;
+  
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 13px;
+  }
+  
+  .logistic-cta-primary-button,
+  .logistic-cta-secondary-button {
+    min-height: 53px;
+    padding: 0 26px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  
+    border-radius: 999px;
+  
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 750;
+  
+    cursor: pointer;
+    outline: none;
+  
+    transition:
+      color 0.22s ease,
+      background-color 0.22s ease,
+      border-color 0.22s ease,
+      box-shadow 0.22s ease,
+      transform 0.22s ease;
+  }
+  
+  .logistic-cta-primary-button {
+    position: relative;
+    overflow: hidden;
+  
+    color: #ffffff;
+  
+    background:
+      linear-gradient(
+        135deg,
+        var(--cta-blue-light),
+        var(--cta-blue),
+        #075985
+      );
+  
+    border: 1px solid transparent;
+  
+    box-shadow:
+      0 13px 30px rgba(25, 118, 185, 0.34);
+  }
+  
+  .logistic-cta-primary-button::before {
+    content: "";
+  
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -60%;
+  
+    width: 42%;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.42),
+        transparent
+      );
+  
+    transform: skewX(-20deg);
+  
+    transition: left 0.48s ease;
+  }
+  
+  .logistic-cta-primary-button > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .logistic-cta-primary-button:hover {
+    transform: translateY(-3px);
+  
+    box-shadow:
+      0 18px 39px rgba(25, 118, 185, 0.46);
+  }
+  
+  .logistic-cta-primary-button:hover::before {
+    left: 125%;
+  }
+  
+  .logistic-cta-primary-button svg,
+  .logistic-cta-secondary-button svg {
+    transition: transform 0.22s ease;
+  }
+  
+  .logistic-cta-primary-button:hover svg,
+  .logistic-cta-secondary-button:hover svg {
+    transform: translateX(4px);
+  }
+  
+  .logistic-cta-secondary-button {
+    color: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.06);
+  
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .logistic-cta-secondary-button:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.11);
+    border-color: rgba(255, 255, 255, 0.23);
+  
+    transform: translateY(-2px);
+  }
+  
+  /* =========================================================
+     HỖ TRỢ
+     ========================================================= */
+  
+  .logistic-cta-support {
+    margin-top: 29px;
+  
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+  }
+  
+  .logistic-cta-support-icon {
+    width: 41px;
+    height: 41px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: #8cd5ff;
+    background: rgba(75, 180, 239, 0.09);
+  
+    border: 1px solid rgba(75, 180, 239, 0.16);
+    border-radius: 13px;
+  
+    font-size: 18px;
+  }
+  
+  .logistic-cta-support > span:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .logistic-cta-support small {
+    color: #71879c;
+  
+    font-size: 9px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  
+  .logistic-cta-support strong {
+    color: #ffffff;
+  
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 800;
+  }
+  
+  /* =========================================================
+     PHẦN MINH HỌA
+     ========================================================= */
+  
+  .logistic-cta-visual {
+    position: relative;
+  
+    min-height: 590px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .logistic-cta-orbit {
+    position: absolute;
+  
+    border: 1px solid rgba(75, 180, 239, 0.16);
+    border-radius: 50%;
+  
+    pointer-events: none;
+  
+    animation:
+      logisticCtaOrbit 22s linear infinite;
+  }
+  
+  .logistic-cta-orbit--outer {
+    width: 540px;
+    height: 540px;
+  }
+  
+  .logistic-cta-orbit--inner {
+    width: 420px;
+    height: 420px;
+  
+    border-style: dashed;
+  
+    animation-direction: reverse;
+    animation-duration: 17s;
+  }
+  
+  @keyframes logisticCtaOrbit {
+    from {
+      transform: rotate(0deg);
+    }
+  
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* =========================================================
+     CARD CHÍNH
+     ========================================================= */
+  
+  .logistic-cta-main-card {
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+  
+    width: min(100%, 380px);
+    min-height: 410px;
+    padding: 46px 34px 32px;
+  
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  
+    text-align: center;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.14),
+        rgba(255, 255, 255, 0.04)
+      );
+  
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 31px;
+  
+    box-shadow:
+      0 38px 75px rgba(0, 0, 0, 0.34);
+  
+    backdrop-filter: blur(19px);
+    -webkit-backdrop-filter: blur(19px);
+  
+    animation:
+      logisticCtaFloat 6s ease-in-out infinite;
+  }
+  
+  .logistic-cta-main-card::before {
+    content: "";
+  
+    position: absolute;
+    top: -140px;
+    right: -120px;
+  
+    width: 280px;
+    height: 280px;
+  
+    background:
+      radial-gradient(
+        circle,
+        rgba(75, 180, 239, 0.22),
+        transparent 70%
+      );
+  
+    border-radius: 50%;
+  
+    pointer-events: none;
+  }
+  
+  @keyframes logisticCtaFloat {
+    0%,
+    100% {
+      transform: translateY(0) rotate(1deg);
+    }
+  
+    50% {
+      transform: translateY(-12px) rotate(0deg);
+    }
+  }
+  
+  .logistic-cta-main-card-icon {
+    position: relative;
+    z-index: 2;
+  
+    width: 105px;
+    height: 105px;
+    margin-bottom: 25px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.17),
+        rgba(255, 255, 255, 0.07)
+      );
+  
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 29px;
+  
+    font-size: 51px;
+    line-height: 1;
+  
+    box-shadow:
+      0 22px 45px rgba(0, 0, 0, 0.22);
+  }
+  
+  .logistic-cta-main-card-label {
+    position: relative;
+    z-index: 2;
+  
+    margin-bottom: 11px;
+    padding: 7px 11px;
+  
+    color: #83d2ff;
+    background: rgba(75, 180, 239, 0.09);
+  
+    border: 1px solid rgba(75, 180, 239, 0.16);
+    border-radius: 999px;
+  
+    font-size: 8.5px;
+    line-height: 1.4;
+    font-weight: 850;
+    letter-spacing: 0.14em;
+  }
+  
+  .logistic-cta-main-card > strong {
+    position: relative;
+    z-index: 2;
+  
+    color: #ffffff;
+  
+    font-size: 24px;
+    line-height: 1.25;
+    font-weight: 850;
+    letter-spacing: -0.025em;
+  }
+  
+  .logistic-cta-main-card > p {
+    position: relative;
+    z-index: 2;
+  
+    margin: 15px 0 0;
+  
+    color: rgba(255, 255, 255, 0.64);
+  
+    font-size: 11.5px;
+    line-height: 1.7;
+  }
+  
+  .logistic-cta-main-card-status {
+    position: relative;
+    z-index: 2;
+  
+    width: 100%;
+    margin-top: 27px;
+    padding-top: 16px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  
+    color: rgba(255, 255, 255, 0.68);
+  
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  
+    font-size: 9.5px;
+    line-height: 1.4;
+    font-weight: 650;
+  }
+  
+  .logistic-cta-main-card-status > span {
+    width: 8px;
+    height: 8px;
+  
+    background: var(--cta-green);
+  
+    border-radius: 50%;
+  
+    box-shadow:
+      0 0 0 5px rgba(16, 185, 129, 0.1),
+      0 0 12px rgba(16, 185, 129, 0.65);
+  
+    animation:
+      logisticCtaStatus 2s ease-in-out infinite;
+  }
+  
+  @keyframes logisticCtaStatus {
+    0%,
+    100% {
+      opacity: 1;
+    }
+  
+    50% {
+      opacity: 0.45;
+    }
+  }
+  
+  /* =========================================================
+     CARD NỔI
+     ========================================================= */
+  
+  .logistic-cta-floating-card {
+    position: absolute;
+    z-index: 5;
+  
+    min-width: 185px;
+    padding: 13px 14px;
+  
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  
+    color: #26364a;
+    background: rgba(255, 255, 255, 0.94);
+  
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+  
+    box-shadow:
+      0 19px 40px rgba(0, 0, 0, 0.22);
+  
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  }
+  
+  .logistic-cta-floating-card--quote {
+    top: 14%;
+    right: -2%;
+  }
+  
+  .logistic-cta-floating-card--tracking {
+    bottom: 13%;
+    right: 1%;
+  }
+  
+  .logistic-cta-floating-card--warehouse {
+    top: 32%;
+    left: -7%;
+  }
+  
+  .logistic-cta-floating-card > span:first-child {
+    flex-shrink: 0;
+  
+    width: 38px;
+    height: 38px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    background: rgba(25, 118, 185, 0.08);
+  
+    border-radius: 12px;
+  
+    font-size: 19px;
+  }
+  
+  .logistic-cta-floating-card > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .logistic-cta-floating-card strong {
+    color: #172033;
+  
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: 850;
+  }
+  
+  .logistic-cta-floating-card small {
+    color: #718096;
+  
+    font-size: 8.5px;
+    line-height: 1.4;
+  }
+  
+  /* =========================================================
+     ACCESSIBILITY
+     ========================================================= */
+  
+  .logistic-cta-logo:focus-visible,
+  .logistic-cta-primary-button:focus-visible,
+  .logistic-cta-secondary-button:focus-visible {
+    outline: 3px solid rgba(75, 180, 239, 0.38);
+    outline-offset: 4px;
+  }
+  
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 1150px) {
+    .logistic-cta-section {
+      padding: 88px 22px;
+    }
+  
+    .logistic-cta-container {
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(390px, 0.9fr);
+  
+      gap: 55px;
+    }
+  
+    .logistic-cta-visual {
+      min-height: 550px;
+    }
+  
+    .logistic-cta-orbit--outer {
+      width: 480px;
+      height: 480px;
+    }
+  
+    .logistic-cta-orbit--inner {
+      width: 375px;
+      height: 375px;
+    }
+  }
+  
+  @media (max-width: 920px) {
+    .logistic-cta-container {
+      grid-template-columns: 1fr;
+      gap: 70px;
+    }
+  
+    .logistic-cta-content {
+      text-align: center;
+    }
+  
+    .logistic-cta-logo {
+      margin-right: auto;
+      margin-left: auto;
+    }
+  
+    .logistic-cta-description {
+      margin-right: auto;
+      margin-left: auto;
+    }
+  
+    .logistic-cta-benefits,
+    .logistic-cta-actions {
+      justify-content: center;
+    }
+  
+    .logistic-cta-visual {
+      width: 100%;
+      max-width: 650px;
+      min-height: 590px;
+      margin: 0 auto;
+    }
+  
+    .logistic-cta-floating-card--warehouse {
+      left: 2%;
+    }
+  
+    .logistic-cta-floating-card--quote {
+      right: 2%;
+    }
+  
+    .logistic-cta-floating-card--tracking {
+      right: 5%;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .logistic-cta-section {
+      padding: 66px 16px;
+    }
+  
+    .logistic-cta-logo-frame {
+      width: 270px;
+      height: 73px;
+    }
+  
+    .logistic-cta-eyebrow {
+      font-size: 8.5px;
+    }
+  
+    .logistic-cta-title {
+      font-size: 35px;
+    }
+  
+    .logistic-cta-description {
+      margin-top: 19px;
+  
+      font-size: 13.5px;
+      line-height: 1.72;
+    }
+  
+    .logistic-cta-benefits {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  
+    .logistic-cta-benefit {
+      justify-content: center;
+    }
+  
+    .logistic-cta-actions {
+      width: 100%;
+  
+      flex-direction: column;
+    }
+  
+    .logistic-cta-primary-button,
+    .logistic-cta-secondary-button {
+      width: 100%;
+      min-height: 50px;
+    }
+  
+    .logistic-cta-visual {
+      min-height: 500px;
+    }
+  
+    .logistic-cta-main-card {
+      width: min(80%, 340px);
+      min-height: 370px;
+      padding: 37px 25px 27px;
+    }
+  
+    .logistic-cta-main-card-icon {
+      width: 88px;
+      height: 88px;
+  
+      font-size: 42px;
+    }
+  
+    .logistic-cta-orbit--outer {
+      width: 400px;
+      height: 400px;
+    }
+  
+    .logistic-cta-orbit--inner {
+      width: 310px;
+      height: 310px;
+    }
+  
+    .logistic-cta-floating-card {
+      min-width: 150px;
+      padding: 10px 11px;
+  
+      border-radius: 13px;
+    }
+  
+    .logistic-cta-floating-card--quote {
+      top: 8%;
+      right: 0;
+    }
+  
+    .logistic-cta-floating-card--warehouse {
+      top: 30%;
+      left: 0;
+    }
+  
+    .logistic-cta-floating-card--tracking {
+      right: 0;
+      bottom: 5%;
+    }
+  
+    .logistic-cta-floating-card strong {
+      font-size: 9.5px;
+    }
+  
+    .logistic-cta-floating-card small {
+      font-size: 7.5px;
+    }
+  }
+  
+  @media (max-width: 430px) {
+    .logistic-cta-section {
+      padding-right: 11px;
+      padding-left: 11px;
+    }
+  
+    .logistic-cta-logo-frame {
+      width: 235px;
+      height: 65px;
+    }
+  
+    .logistic-cta-title {
+      font-size: 30px;
+    }
+  
+    .logistic-cta-visual {
+      min-height: 420px;
+    }
+  
+    .logistic-cta-main-card {
+      width: 250px;
+      min-height: 330px;
+    }
+  
+    .logistic-cta-main-card > strong {
+      font-size: 20px;
+    }
+  
+    .logistic-cta-orbit--outer {
+      width: 330px;
+      height: 330px;
+    }
+  
+    .logistic-cta-orbit--inner {
+      width: 255px;
+      height: 255px;
+    }
+  
+    .logistic-cta-floating-card--warehouse {
+      display: none;
+    }
+  
+    .logistic-cta-floating-card--quote {
+      top: 1%;
+    }
+  
+    .logistic-cta-floating-card--tracking {
+      bottom: 0;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .logistic-cta-section *,
+    .logistic-cta-section *::before,
+    .logistic-cta-section *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
