@@ -888,7 +888,7 @@ const ConsignmentListDetail = () => {
               )}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Địa chỉ nhận">
+            <Descriptions.Item label="Địa chỉ nhận hàng">
               {consignment.receiverAddress ||
                 "-"}
             </Descriptions.Item>
