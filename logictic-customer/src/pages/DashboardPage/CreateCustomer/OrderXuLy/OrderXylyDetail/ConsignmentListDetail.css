@@ -1,5 +1,5 @@
 /* =========================================================
-   CONSIGNMENT DETAIL – MODERN LOGISTICS UI
+   CONSIGNMENT DETAIL â€“ MODERN LOGISTICS UI
    ========================================================= */
 
    .consignment-detail-page {
@@ -76,7 +76,7 @@
       );
   }
   
-  /* Đồng bộ box-sizing */
+  /* Äá»“ng bá»™ box-sizing */
   
   .consignment-detail-page *,
   .consignment-detail-page *::before,
@@ -84,7 +84,7 @@
     box-sizing: border-box;
   }
   
-  /* Đồng bộ font cho input, button và thư viện UI */
+  /* Äá»“ng bá»™ font cho input, button vĂ  thÆ° viá»‡n UI */
   
   .consignment-detail-page button,
   .consignment-detail-page input,
@@ -2097,3 +2097,423 @@
       transform: none;
     }
   }
+
+/* =========================================================
+   UNIFIED TYPOGRAPHY
+   Äá»“ng bá»™ toĂ n bá»™ trang vá» má»™t há»‡ font Inter
+   Chá»‰ chá»‰nh font, khĂ´ng thay Ä‘á»•i bá»‘ cá»¥c hoáº·c mĂ u sáº¯c
+   ========================================================= */
+
+.consignment-detail-page {
+  --detail-font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+
+  --detail-font-size-xs: 12px;
+  --detail-font-size-sm: 13px;
+  --detail-font-size-base: 14px;
+  --detail-font-size-md: 15px;
+  --detail-font-size-lg: 16px;
+  --detail-font-size-xl: 18px;
+  --detail-font-size-2xl: 22px;
+
+  font-family: var(--detail-font-family);
+  font-size: var(--detail-font-size-base);
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Äá»“ng bá»™ font cho toĂ n bá»™ ná»™i dung vĂ  thÆ° viá»‡n UI */
+
+.consignment-detail-page :where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  strong,
+  small,
+  label,
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  option,
+  th,
+  td,
+  .MuiButton-root,
+  .MuiTypography-root,
+  .ant-table,
+  .ant-table-cell,
+  .ant-descriptions,
+  .ant-descriptions-item-label,
+  .ant-descriptions-item-content,
+  .ant-tag,
+  .ant-image-mask-info
+) {
+  font-family: var(--detail-font-family) !important;
+}
+
+/* TiĂªu Ä‘á» chĂ­nh */
+
+.detail-title-row h1 {
+  font-size: clamp(24px, 2vw, 30px);
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* Äiá»u hÆ°á»›ng vĂ  nĂºt */
+
+.detail-back-button,
+.detail-error-actions .MuiButton-root {
+  font-size: var(--detail-font-size-base) !important;
+  line-height: 1.4 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+.detail-navigation-text {
+  font-size: var(--detail-font-size-sm);
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Cáº£nh bĂ¡o */
+
+.detail-warning-message {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.6;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Badge tráº¡ng thĂ¡i */
+
+.detail-status-badge,
+.detail-inline-status,
+.quotation-status,
+.detail-descriptions .ant-tag,
+.detail-pending-value {
+  font-size: var(--detail-font-size-xs) !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Metadata Ä‘Æ¡n hĂ ng */
+
+.detail-order-metadata {
+  font-size: var(--detail-font-size-sm);
+  line-height: 1.55;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.detail-order-metadata strong {
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 700;
+}
+
+/* Thá»i gian táº¡o */
+
+.detail-created-time span {
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.detail-created-time strong {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.45;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Tháº» tá»•ng quan */
+
+.detail-summary-card span {
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.detail-summary-card strong {
+  font-size: var(--detail-font-size-xl);
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.detail-summary-card small {
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* TiĂªu Ä‘á» tá»«ng khu vá»±c */
+
+.detail-section-header h2 {
+  font-size: var(--detail-font-size-xl);
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.detail-section-header p {
+  font-size: var(--detail-font-size-sm);
+  line-height: 1.55;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Báº£ng mĂ´ táº£ */
+
+.detail-descriptions .ant-descriptions-item-label {
+  font-size: var(--detail-font-size-sm) !important;
+  line-height: 1.5 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+.detail-descriptions .ant-descriptions-item-content {
+  font-size: var(--detail-font-size-base) !important;
+  line-height: 1.6 !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+}
+
+.detail-descriptions a {
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 700;
+}
+
+/* ID cÅ©ng dĂ¹ng cĂ¹ng font vá»›i toĂ n trang */
+
+.detail-id-value {
+  font-family: var(--detail-font-family) !important;
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Báº£ng sáº£n pháº©m */
+
+.detail-product-table .ant-table-thead > tr > th {
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.detail-product-table .ant-table-tbody > tr > td {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.55;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.detail-product-name-cell strong {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.45;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.detail-product-name-cell span {
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.detail-dimension-text,
+.detail-money-value {
+  font-size: var(--detail-font-size-sm);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.detail-dimension-text {
+  font-weight: 500;
+}
+
+.detail-money-value {
+  font-weight: 800;
+}
+
+/* BĂ¡o giĂ¡ */
+
+.quotation-heading span {
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.quotation-heading strong {
+  font-size: var(--detail-font-size-md);
+  line-height: 1.45;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.quotation-price-list span {
+  font-size: var(--detail-font-size-sm);
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.quotation-price-list strong {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.45;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.quotation-total-row span {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.45;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.quotation-total-row strong {
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.quotation-time-grid span {
+  font-size: var(--detail-font-size-xs);
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.quotation-time-grid strong {
+  font-size: var(--detail-font-size-sm);
+  line-height: 1.5;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.quotation-empty {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.6;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Loading vĂ  lá»—i */
+
+.detail-loading-container strong {
+  font-size: var(--detail-font-size-lg);
+  line-height: 1.4;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.detail-loading-container span {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.55;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.detail-error-container h2 {
+  font-size: var(--detail-font-size-2xl);
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.detail-error-container p {
+  font-size: var(--detail-font-size-base);
+  line-height: 1.65;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.consignment-detail-page .ant-image-mask-info {
+  font-size: var(--detail-font-size-sm);
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Mobile váº«n dĂ¹ng cĂ¹ng há»‡ font */
+
+@media (max-width: 768px) {
+  .detail-title-row h1 {
+    font-size: 23px;
+  }
+
+  .detail-section-header h2 {
+    font-size: 17px;
+  }
+
+  .detail-descriptions .ant-descriptions-item-label {
+    font-size: var(--detail-font-size-xs) !important;
+  }
+
+  .detail-descriptions .ant-descriptions-item-content {
+    font-size: var(--detail-font-size-sm) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .detail-title-row h1 {
+    font-size: 21px;
+  }
+
+  .detail-section-header h2 {
+    font-size: var(--detail-font-size-lg);
+  }
+
+  .detail-section-header p {
+    font-size: var(--detail-font-size-xs);
+  }
+
+  .detail-status-badge,
+  .detail-inline-status,
+  .quotation-status {
+    font-size: var(--detail-font-size-xs) !important;
+  }
+
+  .detail-id-value {
+    font-size: var(--detail-font-size-xs);
+  }
+
+  .quotation-total-row strong {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 380px) {
+  .detail-title-row h1 {
+    font-size: 19px;
+  }
+}
