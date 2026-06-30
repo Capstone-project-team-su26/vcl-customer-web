@@ -284,15 +284,7 @@ export const BLOG_POSTS = [
     emoji: "📋",
     bg: "#fce4ec",
   },
-  {
-    title:
-      "Cập Nhật Bảng Giá Mua Hộ Và Ký Gửi Việt Nam Logictic",
-    category: "Bảng giá",
-    date: "01/06/2026",
-    read: "4 PHÚT ĐỌC",
-    emoji: "💰",
-    bg: "#e0f7fa",
-  },
+
 ];
 
 export const COUNTRIES = [
