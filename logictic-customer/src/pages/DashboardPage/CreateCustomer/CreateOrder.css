@@ -1,178 +1,467 @@
-.create-order-container {
-    max-width: 1400px; /* 🆕 Mở rộng độ rộng tối đa của vùng chứa */
+/* =========================================================
+   CREATE ORDER â€” TYPOGRAPHY & CARD UI
+   ========================================================= */
+
+   .create-order-container {
+    width: 100%;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 0.5rem;
+    padding: 0 0.75rem;
+    box-sizing: border-box;
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      Arial,
+      sans-serif;
+    color: #1e293b;
+    font-size: 16px;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
+  /* =========================================================
+     HEADER
+     ========================================================= */
+  
   .create-order-header {
-    margin-bottom: 2.5rem; /* 🆕 Tăng khoảng cách dưới tiêu đề */
+    margin-bottom: 2.5rem;
   }
   
   .create-order-header .main-title {
-    font-size: 24px; /* 🆕 Tăng kích thước chữ tiêu đề chính */
+    margin: 0 0 0.5rem;
+  
+    color: #0f172a;
+  
+    font-size: clamp(1.5rem, 1.2rem + 0.65vw, 2rem);
+    line-height: 1.25;
     font-weight: 800;
-    color: #1e293b;
-    margin: 0 0 8px 0;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.025em;
   }
   
   .create-order-header .subtitle {
-    font-size: 14px;
-    color: #64748b;
+    max-width: 720px;
     margin: 0;
+  
+    color: #64748b;
+  
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    font-weight: 400;
+    letter-spacing: 0;
   }
   
-  /* Chia lưới 2 cột rộng rãi */
+  /* =========================================================
+     SERVICES GRID
+     ========================================================= */
+  
   .services-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem; /* 🆕 Tăng khoảng cách giữa các hộp thoáng hơn hẳn */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
   }
   
-  /* Khung Card tổng thể */
+  /* =========================================================
+     SERVICE CARD
+     ========================================================= */
+  
   .service-card {
+    position: relative;
+  
+    min-width: 0;
+    min-height: 280px;
+    padding: 2.5rem;
+  
+    display: flex;
+    flex-direction: column;
+  
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 24px;
-    padding: 2.5rem; /* 🆕 Tăng không gian đệm bên trong ruột hộp rộng rãi hơn */
-    display: flex;
-    flex-direction: column;
-    position: relative;
+  
     box-sizing: border-box;
-    min-height: 280px; /* 🆕 Tăng chiều cao tối thiểu giúp hộp nhìn to và đẹp */
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s ease,
+      box-shadow 0.3s ease,
+      background-color 0.3s ease,
+      opacity 0.3s ease;
   }
   
-  /* ================= KHỐI DỊCH VỤ ĐANG HOẠT ĐỘNG ================= */
   .service-card.card-active {
     cursor: pointer;
   }
   
-  /* Hover ô số 1: Mua hộ (Viền màu xanh ngọc nguyên bản) */
+  .service-card.card-active:focus-visible {
+    outline: 3px solid rgba(245, 158, 11, 0.2);
+    outline-offset: 4px;
+  }
+  
   .service-card.card-active:nth-child(1) {
-    border: 1.5px solid #10b981; /* 🆕 Cho viền mặc định rõ hơn như ảnh mẫu của bạn */
+    border: 1.5px solid #10b981;
   }
+  
   .service-card.card-active:nth-child(1):hover {
-    box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
-    transform: translateY(-4px); /* 🆕 Hiệu ứng nổi nhẹ lên trên khi hover */
-  }
-  
-  /* Hover ô số 2: Ký gửi */
-  .service-card.card-active:nth-child(2):hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 12px 30px rgba(148, 163, 184, 0.12);
     transform: translateY(-4px);
+    box-shadow:
+      0 18px 40px rgba(16, 185, 129, 0.12),
+      0 4px 14px rgba(15, 23, 42, 0.05);
   }
   
-  /* ================= 🆕 KHỐI SẮP RA MẮT: LÀM MỜ LÊN CHUẨN ĐẸP ================= */
+  .service-card.card-active:nth-child(2):hover {
+    transform: translateY(-4px);
+    border-color: #cbd5e1;
+    box-shadow:
+      0 18px 40px rgba(148, 163, 184, 0.14),
+      0 4px 14px rgba(15, 23, 42, 0.05);
+  }
+  
+  /* =========================================================
+     DISABLED / COMING SOON CARD
+     ========================================================= */
+  
   .service-card.card-disabled {
-    opacity: 0.45; /* 🆕 Giảm độ mờ sâu xuống giúp phân biệt rõ rệt */
-    filter: grayscale(40%); /* 🆕 Giảm bớt độ bão hòa màu để tạo cảm giác "chưa kích hoạt" */
-    background-color: #f8fafc; /* 🆕 Đổi nền xám rất nhẹ tạo độ chìm */
-    cursor: not-allowed; /* Hiện icon cấm click */
-    border-style: dashed; /* 🆕 Viền nét đứt tạo điểm nhấn mỹ thuật */
+    opacity: 0.58;
+    filter: grayscale(35%);
+  
+    background-color: #f8fafc;
+    border-style: dashed;
+  
+    cursor: not-allowed;
+    user-select: none;
   }
   
-  /* Khung bọc Icon tròn */
+  .service-card.card-disabled .btn-action {
+    pointer-events: none;
+  }
+  
+  /* =========================================================
+     ICON
+     ========================================================= */
+  
   .svc-icon-wrapper {
     margin-bottom: 1.5rem;
+    line-height: 0;
   }
   
   .svc-icon {
-    font-size: 24px; /* 🆕 Tăng size icon cho cân xứng với hộp rộng */
-    padding: 12px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+  
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    border-radius: 14px;
+  
+    font-size: 1.5rem;
+    line-height: 1;
   }
   
-  /* Màu sắc của từng loại Icon */
-  .icon-green { background-color: #e6f4ea; color: #10b981; }
-  .icon-orange { background-color: #fff3e0; color: #f59e0b; }
-  .icon-purple { background-color: #f3e5f5; color: #a855f7; }
-  .icon-blue { background-color: #e3f2fd; color: #3b82f6; }
+  .icon-green {
+    color: #059669;
+    background-color: #ecfdf5;
+  }
   
-  /* Nội dung văn bản */
+  .icon-orange {
+    color: #d97706;
+    background-color: #fff7ed;
+  }
+  
+  .icon-purple {
+    color: #9333ea;
+    background-color: #faf5ff;
+  }
+  
+  .icon-blue {
+    color: #2563eb;
+    background-color: #eff6ff;
+  }
+  
+  /* =========================================================
+     CARD CONTENT
+     ========================================================= */
+  
   .svc-content {
     flex: 1;
+    min-width: 0;
   }
   
   .svc-title {
-    font-size: 18px; /* 🆕 Tăng size chữ tiêu đề dịch vụ */
-    font-weight: 700;
-    margin: 0 0 12px 0;
-    letter-spacing: 0.01em;
+    margin: 0 0 0.75rem;
+  
+    color: #1e293b;
+  
+    font-size: 1.125rem;
+    line-height: 1.4;
+    font-weight: 750;
+    letter-spacing: -0.012em;
+    overflow-wrap: anywhere;
   }
   
-  /* Màu tiêu đề riêng */
   .service-card:nth-child(1) .svc-title {
-    color: #f59e0b;
+    color: #d97706;
   }
+  
   .service-card:nth-child(2) .svc-title {
     color: #1e293b;
   }
   
   .svc-desc {
-    font-size: 13.5px; /* 🆕 Tăng nhẹ size chữ mô tả */
-    color: #64748b;
-    line-height: 1.6;
+    max-width: 58ch;
     margin: 0;
+  
+    color: #64748b;
+  
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    font-weight: 400;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
   }
   
-  /* Footer chứa nút bấm */
+  /* =========================================================
+     CARD FOOTER & BUTTONS
+     ========================================================= */
+  
   .svc-footer {
     margin-top: 2rem;
   }
   
   .btn-action {
-    border: none;
-    font-size: 13px;
-    font-weight: 700;
-    background: transparent;
-    padding: 0;
+    min-height: 40px;
+    padding: 0.5rem 0;
+  
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    letter-spacing: 0.04em;
-    transition: all 0.2s;
+    justify-content: center;
+    gap: 0.5rem;
+  
+    color: inherit;
+    background: transparent;
+    border: 0;
+  
+    font-family: inherit;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+  
+    cursor: pointer;
+  
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
   
-  /* Style nút Tiếp tục */
-  .btn-next {
-    color: #f59e0b;
+  .btn-action:focus-visible {
+    outline: 3px solid rgba(245, 158, 11, 0.2);
+    outline-offset: 3px;
+    border-radius: 8px;
   }
-  .btn-next:hover {
+  
+  .btn-next {
     color: #d97706;
   }
-  .arrow-next {
-    font-size: 12px;
-    transition: transform 0.2s;
+  
+  .btn-next:hover {
+    color: #b45309;
   }
+  
+  .arrow-next {
+    font-size: 0.75rem;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  
   .service-card.card-active:hover .arrow-next {
     transform: translateX(6px);
   }
   
-  /* Style nút Liên hệ tư vấn của khối sắp ra mắt */
   .btn-consult {
+    min-height: 42px;
+    padding: 0.65rem 1.25rem;
+  
+    color: #b45309;
     background-color: #fffbeb;
-    color: #f59e0b;
-    padding: 0.6rem 1.5rem; /* 🆕 Nới rộng nút tư vấn */
+    border: 1px solid #fde68a;
     border-radius: 10px;
+  
     cursor: pointer;
   }
+  
   .btn-consult:hover {
+    color: #92400e;
     background-color: #fef3c7;
+    border-color: #fcd34d;
   }
   
-  /* Tag Sắp ra mắt */
+  /* =========================================================
+     COMING SOON BADGE
+     ========================================================= */
+  
   .coming-soon-badge {
     position: absolute;
-    top: 2.5rem;
-    right: 2.5rem;
-    background-color: #f59e0b;
+    top: 2rem;
+    right: 2rem;
+  
+    min-height: 28px;
+    padding: 0.35rem 0.8rem;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
     color: #ffffff;
-    font-size: 11px;
+    background-color: #f59e0b;
+    border-radius: 999px;
+  
+    font-size: 0.75rem;
+    line-height: 1;
     font-weight: 700;
-    padding: 0.4rem 1.2rem;
-    border-radius: 8px;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+  
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  }
+  
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  
+  @media (max-width: 1024px) {
+    .services-grid {
+      gap: 1.5rem;
+    }
+  
+    .service-card {
+      min-height: 260px;
+      padding: 2rem;
+      border-radius: 20px;
+    }
+  
+    .coming-soon-badge {
+      top: 1.5rem;
+      right: 1.5rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .create-order-container {
+      padding: 0 0.5rem;
+    }
+  
+    .create-order-header {
+      margin-bottom: 1.75rem;
+    }
+  
+    .create-order-header .main-title {
+      font-size: 1.5rem;
+    }
+  
+    .create-order-header .subtitle {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+  
+    .services-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  
+    .service-card {
+      min-height: auto;
+      padding: 1.5rem;
+      border-radius: 18px;
+    }
+  
+    .svc-icon-wrapper {
+      margin-bottom: 1.25rem;
+    }
+  
+    .svc-title {
+      padding-right: 6.5rem;
+      font-size: 1.0625rem;
+    }
+  
+    .svc-desc {
+      font-size: 0.9375rem;
+    }
+  
+    .svc-footer {
+      margin-top: 1.5rem;
+    }
+  
+    .coming-soon-badge {
+      top: 1.25rem;
+      right: 1.25rem;
+  
+      min-height: 26px;
+      padding: 0.3rem 0.65rem;
+  
+      font-size: 0.6875rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .create-order-container {
+      padding: 0;
+    }
+  
+    .create-order-header .main-title {
+      font-size: 1.375rem;
+    }
+  
+    .service-card {
+      padding: 1.25rem;
+    }
+  
+    .svc-title {
+      padding-right: 0;
+      margin-top: 2.5rem;
+    }
+  
+    .coming-soon-badge {
+      top: 1.25rem;
+      left: 1.25rem;
+      right: auto;
+    }
+  
+    .btn-action,
+    .btn-consult {
+      width: 100%;
+    }
+  
+    .btn-consult {
+      justify-content: center;
+    }
+  }
+  
+  /* =========================================================
+     REDUCED MOTION
+     ========================================================= */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .service-card,
+    .btn-action,
+    .arrow-next {
+      transition: none;
+    }
+  
+    .service-card.card-active:hover {
+      transform: none;
+    }
   }

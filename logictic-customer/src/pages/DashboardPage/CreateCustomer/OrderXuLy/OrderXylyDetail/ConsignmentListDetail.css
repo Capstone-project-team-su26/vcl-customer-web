@@ -45,7 +45,17 @@
       -apple-system,
       BlinkMacSystemFont,
       "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      Arial,
       sans-serif;
+  
+    font-size: 16px;
+    line-height: 1.5;
+  
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   
     background:
       radial-gradient(
@@ -64,6 +74,27 @@
         var(--detail-background) 38%,
         #f7f9fc 100%
       );
+  }
+  
+  /* Đồng bộ box-sizing */
+  
+  .consignment-detail-page *,
+  .consignment-detail-page *::before,
+  .consignment-detail-page *::after {
+    box-sizing: border-box;
+  }
+  
+  /* Đồng bộ font cho input, button và thư viện UI */
+  
+  .consignment-detail-page button,
+  .consignment-detail-page input,
+  .consignment-detail-page textarea,
+  .consignment-detail-page select,
+  .consignment-detail-page .MuiButton-root,
+  .consignment-detail-page .ant-table,
+  .consignment-detail-page .ant-descriptions,
+  .consignment-detail-page .ant-tag {
+    font-family: inherit;
   }
   
   /* =========================================================
@@ -132,8 +163,8 @@
   }
   
   .detail-back-button {
-    min-height: 40px !important;
-    padding: 0 15px !important;
+    min-height: 42px !important;
+    padding: 0 16px !important;
   
     color: #334155 !important;
     background: rgba(255, 255, 255, 0.92) !important;
@@ -141,8 +172,11 @@
     border: 1px solid rgba(203, 213, 225, 0.95) !important;
     border-radius: 11px !important;
   
-    font-size: 13px !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
     font-weight: 700 !important;
+    letter-spacing: 0 !important;
     text-transform: none !important;
   
     box-shadow:
@@ -150,6 +184,7 @@
       0 7px 18px rgba(15, 23, 42, 0.045) !important;
   
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   
     transition:
       color 0.2s ease,
@@ -171,14 +206,21 @@
       0 10px 24px rgba(37, 99, 235, 0.1) !important;
   }
   
+  .detail-back-button:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.16);
+    outline-offset: 3px;
+  }
+  
   .detail-navigation-text {
     position: relative;
   
     padding-left: 15px;
   
     color: #94a3b8;
-    font-size: 12px;
-    font-weight: 650;
+  
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 600;
   }
   
   .detail-navigation-text::before {
@@ -204,9 +246,10 @@
   .detail-warning-message {
     max-width: 1500px;
     margin: 0 auto 16px;
-    padding: 12px 15px;
+    padding: 13px 15px;
   
     color: #92400e;
+  
     background:
       linear-gradient(
         135deg,
@@ -218,8 +261,9 @@
     border-left: 4px solid #f59e0b;
     border-radius: 11px;
   
-    font-size: 13px;
-    font-weight: 550;
+    font-size: 14px;
+    line-height: 1.6;
+    font-weight: 600;
   
     box-shadow: 0 6px 18px rgba(245, 158, 11, 0.08);
   }
@@ -380,20 +424,25 @@
     overflow: hidden;
   
     color: #0f172a;
-    font-size: clamp(23px, 2vw, 30px);
+  
+    font-size: clamp(24px, 2vw, 31px);
     line-height: 1.25;
-    font-weight: 850;
-    letter-spacing: -0.7px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
   
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   
+  /* =========================================================
+     STATUS BADGES
+     ========================================================= */
+  
   .detail-status-badge,
   .detail-inline-status,
   .quotation-status {
-    min-height: 26px;
-    padding: 4px 11px;
+    min-height: 28px;
+    padding: 5px 11px;
   
     display: inline-flex;
     align-items: center;
@@ -405,17 +454,21 @@
     border: 1px solid #bfdbfe;
     border-radius: 999px;
   
-    font-size: 10.5px;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: 0.2px;
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     white-space: nowrap;
   
     box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
   }
   
+  /* =========================================================
+     ORDER METADATA
+     ========================================================= */
+  
   .detail-order-metadata {
-    margin-top: 10px;
+    margin-top: 11px;
   
     display: flex;
     align-items: center;
@@ -423,7 +476,10 @@
     flex-wrap: wrap;
   
     color: #64748b;
-    font-size: 12px;
+  
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 400;
   }
   
   .detail-order-metadata span {
@@ -446,10 +502,14 @@
     white-space: nowrap;
   }
   
+  /* =========================================================
+     CREATED TIME
+     ========================================================= */
+  
   .detail-created-time {
     flex-shrink: 0;
-    min-width: 185px;
-    padding: 13px 16px;
+    min-width: 190px;
+    padding: 14px 16px;
   
     display: flex;
     flex-direction: column;
@@ -462,6 +522,7 @@
     border-radius: 13px;
   
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   
     box-shadow:
       0 4px 12px rgba(15, 23, 42, 0.04),
@@ -470,16 +531,20 @@
   
   .detail-created-time span {
     color: #94a3b8;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.45px;
+  
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
   }
   
   .detail-created-time strong {
     color: #1e293b;
-    font-size: 13.5px;
-    font-weight: 750;
+  
+    font-size: 14px;
+    line-height: 1.45;
+    font-weight: 700;
   }
   
   /* =========================================================
@@ -489,6 +554,7 @@
   .consignment-detail-page .status-pending-review,
   .consignment-detail-page .status-pending {
     color: #b45309 !important;
+  
     background:
       linear-gradient(
         135deg,
@@ -502,6 +568,7 @@
   .consignment-detail-page .status-approved,
   .consignment-detail-page .status-delivered {
     color: #047857 !important;
+  
     background:
       linear-gradient(
         135deg,
@@ -516,6 +583,7 @@
   .consignment-detail-page .status-cancelled,
   .consignment-detail-page .status-expired {
     color: #dc2626 !important;
+  
     background:
       linear-gradient(
         135deg,
@@ -528,6 +596,7 @@
   
   .consignment-detail-page .status-in-transit {
     color: #c2410c !important;
+  
     background:
       linear-gradient(
         135deg,
@@ -540,6 +609,7 @@
   
   .consignment-detail-page .status-draft {
     color: #475569 !important;
+  
     background:
       linear-gradient(
         135deg,
@@ -568,8 +638,8 @@
     overflow: hidden;
   
     min-width: 0;
-    min-height: 92px;
-    padding: 16px 17px;
+    min-height: 96px;
+    padding: 17px 18px;
   
     display: flex;
     flex-direction: column;
@@ -620,11 +690,11 @@
     content: "";
   
     position: absolute;
-    top: 16px;
+    top: 17px;
     left: 0;
   
     width: 3px;
-    height: 38px;
+    height: 40px;
   
     background:
       linear-gradient(
@@ -650,10 +720,11 @@
     overflow: hidden;
   
     color: #94a3b8;
-    font-size: 10.5px;
+  
+    font-size: 12px;
     line-height: 1.4;
-    font-weight: 800;
-    letter-spacing: 0.45px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   
     text-overflow: ellipsis;
@@ -664,9 +735,11 @@
     overflow: hidden;
   
     color: #1e293b;
-    font-size: 17px;
+  
+    font-size: 18px;
     line-height: 1.35;
-    font-weight: 850;
+    font-weight: 800;
+    letter-spacing: -0.015em;
   
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -676,8 +749,10 @@
     margin-left: 5px;
   
     color: #64748b;
-    font-size: 11px;
-    font-weight: 650;
+  
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 600;
   }
   
   /* =========================================================
@@ -727,8 +802,13 @@
       0 14px 34px rgba(15, 23, 42, 0.06);
   }
   
+  /* =========================================================
+     SECTION HEADER
+     ========================================================= */
+  
   .detail-section-header {
     position: relative;
+  
     margin-bottom: 17px;
     padding-bottom: 15px;
   
@@ -829,21 +909,24 @@
   }
   
   .detail-section-header h2 {
-    margin: 0 0 3px;
+    margin: 0 0 4px;
   
     color: #172033;
-    font-size: 16.5px;
+  
+    font-size: 18px;
     line-height: 1.35;
-    font-weight: 850;
-    letter-spacing: -0.15px;
+    font-weight: 800;
+    letter-spacing: -0.015em;
   }
   
   .detail-section-header p {
     margin: 0;
   
     color: #94a3b8;
-    font-size: 11.5px;
-    line-height: 1.5;
+  
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 400;
   }
   
   /* =========================================================
@@ -863,7 +946,7 @@
   
   .detail-descriptions .ant-descriptions-row > th,
   .detail-descriptions .ant-descriptions-row > td {
-    padding: 12px 14px !important;
+    padding: 13px 14px !important;
     border-color: #edf2f7 !important;
   }
   
@@ -879,23 +962,27 @@
         #f4f7fb
       ) !important;
   
-    font-size: 11.5px !important;
-    font-weight: 750 !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    font-weight: 700 !important;
   }
   
   .detail-descriptions .ant-descriptions-item-content {
     color: #263449 !important;
     background-color: #ffffff !important;
   
-    font-size: 12.5px !important;
-    line-height: 1.55;
-    font-weight: 550;
+    font-family: inherit !important;
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    font-weight: 500 !important;
   
     word-break: break-word;
   }
   
   .detail-descriptions a {
     color: #2563eb;
+  
     font-weight: 700;
     text-decoration: none;
   
@@ -907,17 +994,25 @@
     text-decoration: underline;
   }
   
+  .detail-descriptions a:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.14);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  
   .detail-descriptions .ant-tag {
-    min-height: 24px;
-    padding: 2px 9px;
+    min-height: 26px;
+    padding: 3px 9px;
   
     display: inline-flex;
     align-items: center;
   
     border-radius: 999px;
   
-    font-size: 10px;
-    font-weight: 800;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1.3;
+    font-weight: 700;
   }
   
   .detail-id-value {
@@ -930,23 +1025,26 @@
       "SFMono-Regular",
       Consolas,
       "Liberation Mono",
+      Menlo,
       monospace;
   
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 1.55;
   
     word-break: break-all;
   }
   
   .detail-pending-value {
-    padding: 4px 8px;
+    padding: 5px 8px;
   
     color: #c2410c;
     background-color: #fff7ed;
     border: 1px solid #fed7aa;
     border-radius: 6px;
   
-    font-size: 11px;
-    font-weight: 750;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 700;
   }
   
   /* =========================================================
@@ -967,6 +1065,8 @@
   .detail-product-table .ant-table {
     background: transparent;
     border-radius: 13px;
+  
+    font-family: inherit;
   }
   
   .detail-product-table .ant-table-container {
@@ -981,7 +1081,7 @@
   }
   
   .detail-product-table .ant-table-thead > tr > th {
-    padding: 13px 14px;
+    padding: 14px;
   
     color: #475569;
   
@@ -994,10 +1094,11 @@
   
     border-bottom: 1px solid #dfe7f1;
   
-    font-size: 10.5px;
+    font-family: inherit;
+    font-size: 12px;
     line-height: 1.4;
-    font-weight: 850;
-    letter-spacing: 0.25px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
     white-space: nowrap;
   }
@@ -1007,14 +1108,17 @@
   }
   
   .detail-product-table .ant-table-tbody > tr > td {
-    padding: 13px 14px;
+    padding: 14px;
   
     color: #475569;
     background-color: #ffffff;
   
     border-bottom-color: #edf2f7;
   
-    font-size: 12px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 400;
   
     transition: background-color 0.18s ease;
   }
@@ -1032,6 +1136,10 @@
     > td {
     border-bottom: 0;
   }
+  
+  /* =========================================================
+     PRODUCT IMAGE
+     ========================================================= */
   
   .detail-product-image {
     object-fit: cover;
@@ -1084,51 +1192,73 @@
     border-radius: 10px;
   }
   
+  /* =========================================================
+     PRODUCT INFORMATION
+     ========================================================= */
+  
   .detail-product-name-cell {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
   }
   
   .detail-product-name-cell strong {
     color: #253249;
-    font-size: 13px;
-    line-height: 1.4;
-    font-weight: 800;
+  
+    font-size: 14px;
+    line-height: 1.45;
+    font-weight: 700;
   }
   
   .detail-product-name-cell span {
     width: fit-content;
-    padding: 2px 7px;
+    min-height: 23px;
+    padding: 3px 8px;
+  
+    display: inline-flex;
+    align-items: center;
   
     color: #64748b;
     background-color: #f1f5f9;
     border-radius: 999px;
   
-    font-size: 10px;
-    font-weight: 650;
+    font-size: 12px;
+    line-height: 1.3;
+    font-weight: 600;
   }
   
   .detail-dimension-text {
     color: #475569;
+  
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 500;
     white-space: nowrap;
   }
   
   .detail-money-value {
     color: #ea580c;
+  
+    font-size: 13px;
+    line-height: 1.5;
     font-weight: 800;
     white-space: nowrap;
   }
   
+  /* =========================================================
+     PRODUCT LINK
+     ========================================================= */
+  
   .detail-product-link {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
   
     display: inline-flex;
     align-items: center;
     justify-content: center;
   
     color: #2563eb;
+  
     background:
       linear-gradient(
         145deg,
@@ -1138,6 +1268,8 @@
   
     border: 1px solid #bfdbfe;
     border-radius: 9px;
+  
+    text-decoration: none;
   
     box-shadow: 0 4px 10px rgba(37, 99, 235, 0.08);
   
@@ -1161,6 +1293,11 @@
     transform: translateY(-2px);
   
     box-shadow: 0 7px 16px rgba(37, 99, 235, 0.22);
+  }
+  
+  .detail-product-link:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.16);
+    outline-offset: 3px;
   }
   
   /* =========================================================
@@ -1222,17 +1359,25 @@
   
   .quotation-heading span {
     color: #94a3b8;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.35px;
+  
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
   
   .quotation-heading strong {
     color: #2f3c52;
-    font-size: 14px;
-    font-weight: 800;
+  
+    font-size: 15px;
+    line-height: 1.45;
+    font-weight: 700;
   }
+  
+  /* =========================================================
+     QUOTATION PRICE LIST
+     ========================================================= */
   
   .quotation-price-list {
     overflow: hidden;
@@ -1247,8 +1392,8 @@
   }
   
   .quotation-price-list > div {
-    min-height: 48px;
-    padding: 11px 14px;
+    min-height: 50px;
+    padding: 12px 14px;
   
     display: flex;
     align-items: center;
@@ -1270,21 +1415,26 @@
   
   .quotation-price-list span {
     color: #64748b;
-    font-size: 12px;
+  
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 500;
   }
   
   .quotation-price-list strong {
     color: #334155;
-    font-size: 13px;
-    font-weight: 750;
+  
+    font-size: 14px;
+    line-height: 1.45;
+    font-weight: 700;
     white-space: nowrap;
   }
   
   .quotation-price-list .quotation-total-row {
     position: relative;
   
-    padding-top: 14px;
-    padding-bottom: 14px;
+    padding-top: 15px;
+    padding-bottom: 15px;
   
     background:
       linear-gradient(
@@ -1306,16 +1456,24 @@
   
   .quotation-total-row span {
     color: #9a3412;
-    font-size: 12.5px;
+  
+    font-size: 14px;
+    line-height: 1.45;
     font-weight: 800;
   }
   
   .quotation-total-row strong {
     color: #ea580c;
-    font-size: 19px;
-    line-height: 1;
+  
+    font-size: 20px;
+    line-height: 1.2;
     font-weight: 900;
+    letter-spacing: -0.02em;
   }
+  
+  /* =========================================================
+     QUOTATION TIME
+     ========================================================= */
   
   .quotation-time-grid {
     margin-top: 13px;
@@ -1326,7 +1484,7 @@
   }
   
   .quotation-time-grid > div {
-    padding: 11px 12px;
+    padding: 12px;
   
     display: flex;
     flex-direction: column;
@@ -1345,20 +1503,25 @@
   
   .quotation-time-grid span {
     color: #94a3b8;
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 0.35px;
+  
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
   
   .quotation-time-grid strong {
     color: #475569;
-    font-size: 11.5px;
-    font-weight: 750;
+  
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 700;
   }
   
   .quotation-empty {
     min-height: 190px;
+    padding: 24px;
   
     display: flex;
     align-items: center;
@@ -1378,13 +1541,14 @@
     border: 1px dashed #cbd5e1;
     border-radius: 12px;
   
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.6;
     font-weight: 600;
     text-align: center;
   }
   
   /* =========================================================
-     LOADING
+     LOADING AND ERROR
      ========================================================= */
   
   .detail-loading-container,
@@ -1462,13 +1626,18 @@
   
   .detail-loading-container strong {
     color: #263449;
-    font-size: 16px;
+  
+    font-size: 17px;
+    line-height: 1.4;
     font-weight: 800;
   }
   
   .detail-loading-container span {
     color: #94a3b8;
-    font-size: 12px;
+  
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 400;
   }
   
   .detail-error-icon {
@@ -1486,8 +1655,11 @@
     margin: 0 0 8px;
   
     color: #263449;
-    font-size: 21px;
-    font-weight: 850;
+  
+    font-size: 22px;
+    line-height: 1.35;
+    font-weight: 800;
+    letter-spacing: -0.015em;
   }
   
   .detail-error-container p {
@@ -1495,8 +1667,10 @@
     margin: 0 0 20px;
   
     color: #94a3b8;
-    font-size: 13px;
-    line-height: 1.6;
+  
+    font-size: 14px;
+    line-height: 1.65;
+    font-weight: 400;
   }
   
   .detail-error-actions {
@@ -1505,12 +1679,15 @@
   }
   
   .detail-error-actions .MuiButton-root {
-    min-height: 41px;
+    min-height: 42px;
     padding: 0 18px;
   
     border-radius: 10px;
   
-    font-weight: 750;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 700;
     text-transform: none;
   }
   
@@ -1523,7 +1700,9 @@
   }
   
   .consignment-detail-page .ant-image-mask-info {
-    font-size: 11px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.4;
     font-weight: 700;
   }
   
@@ -1592,7 +1771,6 @@
   
     .detail-created-time {
       width: 100%;
-      box-sizing: border-box;
   
       align-items: flex-start;
     }
@@ -1639,8 +1817,10 @@
     }
   
     .detail-title-row h1 {
+      font-size: 23px;
+  
       white-space: normal;
-      word-break: break-word;
+      overflow-wrap: anywhere;
     }
   
     .detail-order-metadata {
@@ -1675,18 +1855,22 @@
       align-items: flex-start;
     }
   
+    .detail-section-header h2 {
+      font-size: 17px;
+    }
+  
     .detail-descriptions .ant-descriptions-item-label {
-      width: 125px;
+      width: 130px;
     }
   
     .detail-descriptions .ant-descriptions-row > th,
     .detail-descriptions .ant-descriptions-row > td {
-      padding: 11px 12px !important;
+      padding: 12px !important;
     }
   
     .detail-product-table .ant-table-thead > tr > th,
     .detail-product-table .ant-table-tbody > tr > td {
-      padding: 11px 12px;
+      padding: 12px;
     }
   }
   
@@ -1711,6 +1895,11 @@
       padding: 16px;
     }
   
+    .detail-hero-main {
+      width: 100%;
+      gap: 13px;
+    }
+  
     .detail-main-icon {
       width: 50px;
       height: 50px;
@@ -1724,7 +1913,13 @@
     }
   
     .detail-title-row h1 {
-      font-size: 20px;
+      font-size: 21px;
+    }
+  
+    .detail-status-badge,
+    .detail-inline-status,
+    .quotation-status {
+      font-size: 12px;
     }
   
     .detail-summary-grid {
@@ -1732,16 +1927,21 @@
     }
   
     .detail-summary-card {
-      min-height: 68px;
+      min-height: 72px;
   
       flex-direction: row;
       align-items: center;
       justify-content: space-between;
+      gap: 14px;
     }
   
     .detail-summary-card::after {
-      top: 15px;
-      height: 35px;
+      top: 16px;
+      height: 38px;
+    }
+  
+    .detail-summary-card span {
+      white-space: normal;
     }
   
     .detail-summary-card strong {
@@ -1751,7 +1951,11 @@
     }
   
     .detail-section-header h2 {
-      font-size: 15px;
+      font-size: 16px;
+    }
+  
+    .detail-section-header p {
+      font-size: 12.5px;
     }
   
     .detail-section-icon {
@@ -1760,14 +1964,22 @@
       flex-basis: 40px;
     }
   
-    .detail-descriptions .ant-descriptions-item-label {
-      width: 105px;
+    .detail-section-icon svg {
+      font-size: 20px;
+    }
   
-      font-size: 10.5px !important;
+    .detail-descriptions .ant-descriptions-item-label {
+      width: 110px;
+  
+      font-size: 12px !important;
     }
   
     .detail-descriptions .ant-descriptions-item-content {
-      font-size: 11.5px !important;
+      font-size: 12.5px !important;
+    }
+  
+    .detail-id-value {
+      font-size: 11.5px;
     }
   
     .quotation-heading {
@@ -1790,7 +2002,7 @@
     }
   
     .quotation-total-row strong {
-      font-size: 18px;
+      font-size: 19px;
     }
   
     .detail-loading-container,
@@ -1810,6 +2022,48 @@
   
     .detail-error-actions .MuiButton-root {
       width: 100%;
+    }
+  }
+  
+  /* =========================================================
+     VERY SMALL MOBILE
+     ========================================================= */
+  
+  @media (max-width: 380px) {
+    .consignment-detail-page {
+      padding: 8px;
+    }
+  
+    .detail-hero-section,
+    .detail-section-card {
+      padding: 14px;
+    }
+  
+    .detail-main-icon {
+      width: 46px;
+      height: 46px;
+      flex-basis: 46px;
+    }
+  
+    .detail-main-icon svg {
+      font-size: 23px;
+    }
+  
+    .detail-title-row h1 {
+      font-size: 19px;
+    }
+  
+    .detail-summary-card {
+      padding: 14px;
+    }
+  
+    .detail-descriptions .ant-descriptions-item-label {
+      width: 95px;
+    }
+  
+    .detail-descriptions .ant-descriptions-row > th,
+    .detail-descriptions .ant-descriptions-row > td {
+      padding: 10px !important;
     }
   }
   
@@ -1834,5 +2088,12 @@
     .detail-product-image,
     .detail-product-link {
       transition: none;
+    }
+  
+    .detail-summary-card:hover,
+    .detail-back-button:hover,
+    .detail-product-image:hover,
+    .detail-product-link:hover {
+      transform: none;
     }
   }
