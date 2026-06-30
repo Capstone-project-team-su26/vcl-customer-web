@@ -6,7 +6,7 @@ import VerifyOtp from "../pages/OTPPage/VerifyOtp";
 import ForgotPassword from "../pages/ForgotPasswordPage/ForgotPassword";
 import OTPForgot from "../pages/OTPForgotPage/OTPForgot";
 import NotFound from "../pages/NotFound";
-
+import LogisticsIntro from "../pages/Logistic/LogisticsIntro";
 // ⬇️ IMPORT CÁC COMPONENT LAYOUT VÀ MÀN HÌNH MỚI CỦA BẠN VÀO ĐÂY
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
 import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
@@ -23,7 +23,15 @@ const AppRouter = () => {
     <BrowserRouter>
       <Routes>
         {/* ================= CÁC ROUTE CƠ BẢN (KHÔNG DÙNG SIDEBAR) ================= */}
-        <Route path="/" element={<Home />} />
+        <Route
+  path="/"
+  element={<LogisticsIntro />}
+/>
+
+<Route
+  path="/home"
+  element={<Home />}
+/>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
