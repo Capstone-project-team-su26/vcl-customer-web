@@ -1,5 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  NavLink,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
 import {
   LogoutOutlined,
   AppstoreOutlined,
@@ -12,12 +22,14 @@ import {
   HistoryOutlined,
   DownOutlined,
   UpOutlined,
-  LeftOutlined,
   TransactionOutlined,
   SettingOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
+
 import { getUserProfileApi } from "../../api/Auth/authService";
+import logoImage from "../../assets/anhlogocap2.jpeg";
+
 import "./Sidebar.css";
 
 const parseSessionUser = () => {
@@ -26,35 +38,88 @@ const parseSessionUser = () => {
 
     if (userStr) {
       const user = JSON.parse(userStr);
+
       return {
-        id: user.userId || user.id || user.customerId || "",
-        fullName: user.fullName || user.name || user.userName || "Khách hàng",
-        phone: user.phone || sessionStorage.getItem("phone") || "",
+        id:
+          user.userId ||
+          user.id ||
+          user.customerId ||
+          "",
+        fullName:
+          user.fullName ||
+          user.name ||
+          user.userName ||
+          "Khách hàng",
+        phone:
+          user.phone ||
+          sessionStorage.getItem("phone") ||
+          "",
       };
     }
 
     return {
-      id: sessionStorage.getItem("id") || sessionStorage.getItem("customerId") || "",
-      fullName: sessionStorage.getItem("fullName") || "Khách hàng",
-      phone: sessionStorage.getItem("phone") || "",
+      id:
+        sessionStorage.getItem("id") ||
+        sessionStorage.getItem("customerId") ||
+        "",
+      fullName:
+        sessionStorage.getItem("fullName") ||
+        "Khách hàng",
+      phone:
+        sessionStorage.getItem("phone") ||
+        "",
     };
   } catch (error) {
-    console.error("Lỗi đọc session tại Sidebar:", error);
-    return { id: "", fullName: "Khách hàng", phone: "" };
+    console.error(
+      "Lỗi đọc session tại Sidebar:",
+      error
+    );
+
+    return {
+      id: "",
+      fullName: "Khách hàng",
+      phone: "",
+    };
   }
 };
 
 const syncSessionFromProfile = (profile) => {
   try {
-    const userStr = sessionStorage.getItem("user");
-    const currentUser = userStr ? JSON.parse(userStr) : {};
-    const merged = { ...currentUser, ...profile };
-    sessionStorage.setItem("user", JSON.stringify(merged));
+    const userStr =
+      sessionStorage.getItem("user");
 
-    if (profile.fullName) sessionStorage.setItem("fullName", profile.fullName);
-    if (profile.phone) sessionStorage.setItem("phone", profile.phone);
+    const currentUser = userStr
+      ? JSON.parse(userStr)
+      : {};
+
+    const merged = {
+      ...currentUser,
+      ...profile,
+    };
+
+    sessionStorage.setItem(
+      "user",
+      JSON.stringify(merged)
+    );
+
+    if (profile.fullName) {
+      sessionStorage.setItem(
+        "fullName",
+        profile.fullName
+      );
+    }
+
+    if (profile.phone) {
+      sessionStorage.setItem(
+        "phone",
+        profile.phone
+      );
+    }
   } catch (error) {
-    console.error("Lỗi đồng bộ session tại Sidebar:", error);
+    console.error(
+      "Lỗi đồng bộ session tại Sidebar:",
+      error
+    );
   }
 };
 
@@ -62,18 +127,22 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [userInfo, setUserInfo] = useState(parseSessionUser);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [userInfo, setUserInfo] =
+    useState(parseSessionUser);
 
-  const [openSubMenus, setOpenSubMenus] = useState({
-    khoHang: false,
-    lichSu: false,
-  });
+  const [loadingProfile, setLoadingProfile] =
+    useState(false);
+
+  const [openSubMenus, setOpenSubMenus] =
+    useState({
+      khoHang: false,
+      lichSu: false,
+    });
 
   const toggleSubMenu = (menuKey) => {
-    setOpenSubMenus((prev) => ({
-      ...prev,
-      [menuKey]: !prev[menuKey],
+    setOpenSubMenus((previousState) => ({
+      ...previousState,
+      [menuKey]: !previousState[menuKey],
     }));
   };
 
@@ -82,18 +151,32 @@ export default function Sidebar() {
 
     try {
       setLoadingProfile(true);
-      const profile = await getUserProfileApi();
+
+      const profile =
+        await getUserProfileApi();
 
       if (profile) {
         syncSessionFromProfile(profile);
+
         setUserInfo({
-          id: profile.userId || profile.id || profile.customerId || "",
-          fullName: profile.fullName || profile.name || profile.userName || "Khách hàng",
+          id:
+            profile.userId ||
+            profile.id ||
+            profile.customerId ||
+            "",
+          fullName:
+            profile.fullName ||
+            profile.name ||
+            profile.userName ||
+            "Khách hàng",
           phone: profile.phone || "",
         });
       }
     } catch (error) {
-      console.error("Lỗi lấy profile tại Sidebar:", error);
+      console.error(
+        "Lỗi lấy profile tại Sidebar:",
+        error
+      );
     } finally {
       setLoadingProfile(false);
     }
@@ -103,8 +186,17 @@ export default function Sidebar() {
     loadProfile();
   }, [location.pathname, loadProfile]);
 
-  const { id, fullName, phone } = userInfo;
-  const avatarLetter = fullName?.trim()?.charAt(0)?.toUpperCase() || "U";
+  const {
+    id,
+    fullName,
+    phone,
+  } = userInfo;
+
+  const avatarLetter =
+    fullName
+      ?.trim()
+      ?.charAt(0)
+      ?.toUpperCase() || "U";
 
   const phoneDisplay = loadingProfile
     ? "Đang tải..."
@@ -117,38 +209,60 @@ export default function Sidebar() {
   const handleLogout = () => {
     sessionStorage.clear();
     localStorage.clear();
-    navigate("/login", { replace: true });
+
+    navigate("/login", {
+      replace: true,
+    });
   };
 
   return (
     <aside className="sidebar-container">
       <div className="sidebar-fixed-top">
-        <div className="sidebar-header">
-          <div className="logo-box">
-            <span className="logo-subtitle">KHÁCH HÀNG</span>
-            <h1 className="logo-main-text">VCL-CUSTOMER</h1>
-          </div>
-
-          <button type="button" className="collapse-btn">
-            <LeftOutlined style={{ fontSize: "12px" }} />
-          </button>
-        </div>
+      <div className="sidebar-header">
+  <NavLink
+  
+    className="sidebar-brand-logo"
+    aria-label="Về trang chủ Việt Nam Logictic"
+    title="Việt Nam Logictic"
+  >
+    <img
+      src={logoImage}
+      alt="Logo Việt Nam Logictic"
+      className="sidebar-brand-logo__image"
+      width="1000"
+      height="400"
+      loading="eager"
+      decoding="async"
+      fetchPriority="high"
+      draggable="false"
+    />
+  </NavLink>
+</div>
 
         <NavLink
           to="/settings/profile-config"
           className={({ isActive }) =>
-            `profile-card ${isActive ? "profile-card-active" : ""}`
+            `profile-card ${
+              isActive
+                ? "profile-card-active"
+                : ""
+            }`
           }
           title="Xem và cập nhật hồ sơ"
         >
           <div className="avatar-wrapper">
-            <div className="avatar-circle">{avatarLetter}</div>
+            <div className="avatar-circle">
+              {avatarLetter}
+            </div>
+
             <span className="status-dot-online" />
           </div>
 
           <div className="profile-info">
             <div className="profile-name-row">
-              <span className="profile-name">{fullName}</span>
+              <span className="profile-name">
+                {fullName}
+              </span>
 
               <svg
                 className="verified-badge"
@@ -156,16 +270,14 @@ export default function Sidebar() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.5"
+                aria-hidden="true"
               >
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="m9 12 2 2 4-4" />
               </svg>
             </div>
 
-            <div
-              className="profile-id"
-              style={{ fontSize: "11px", color: "#8c8c8c", wordBreak: "break-all" }}
-            >
+            <div className="profile-id">
               {phoneDisplay}
             </div>
 
@@ -175,88 +287,162 @@ export default function Sidebar() {
             </div>
 
             <div className="profile-progress-bar">
-              <div className="progress-fill" style={{ width: "100%" }} />
+              <div
+                className="progress-fill"
+                style={{
+                  width: "100%",
+                }}
+              />
             </div>
           </div>
         </NavLink>
       </div>
 
       <div className="sidebar-scrollable-menu">
-        <div className="menu-section-label">QUẢN LÝ</div>
+        <div className="menu-section-label">
+          QUẢN LÝ
+        </div>
 
         <NavLink
           to="/customer/dashboard"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <AppstoreOutlined className="menu-icon" />
-          <span className="menu-text">Bảng điều khiển</span>
+
+          <span className="menu-text">
+            Bảng điều khiển
+          </span>
         </NavLink>
 
         <NavLink
           to="/create-order"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <PlusCircleOutlined className="menu-icon" />
-          <span className="menu-text">Tạo đơn hàng</span>
+
+          <span className="menu-text">
+            Tạo đơn hàng
+          </span>
         </NavLink>
 
         <NavLink
           to="/processing-orders"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <UnorderedListOutlined className="menu-icon" />
-          <span className="menu-text">Đơn đang xử lý</span>
+
+          <span className="menu-text">
+            Đơn đang xử lý
+          </span>
         </NavLink>
 
         <NavLink
           to="/receive-goods"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <DownloadOutlined className="menu-icon" />
-          <span className="menu-text">Nhận hàng</span>
+
+          <span className="menu-text">
+            Nhận hàng
+          </span>
         </NavLink>
 
         <NavLink
           to="/payment"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <CreditCardOutlined className="menu-icon" />
-          <span className="menu-text">Thanh toán vận chuyển</span>
+
+          <span className="menu-text">
+            Thanh toán vận chuyển
+          </span>
         </NavLink>
 
         <NavLink
           to="/waiting-packages"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <InboxOutlined className="menu-icon" />
-          <span className="menu-text">Kiện chờ nhận</span>
+
+          <span className="menu-text">
+            Kiện chờ nhận
+          </span>
         </NavLink>
 
         <div className="menu-item-dropdown">
-          <div
-            className={`menu-item ${openSubMenus.khoHang ? "submenu-parent-open" : ""}`}
-            onClick={() => toggleSubMenu("khoHang")}
+          <button
+            type="button"
+            className={`menu-item menu-item-button ${
+              openSubMenus.khoHang
+                ? "submenu-parent-open"
+                : ""
+            }`}
+            onClick={() =>
+              toggleSubMenu("khoHang")
+            }
+            aria-expanded={openSubMenus.khoHang}
           >
             <HomeOutlined className="menu-icon" />
-            <span className="menu-text">Theo dõi kho hàng</span>
+
+            <span className="menu-text">
+              Theo dõi kho hàng
+            </span>
+
             {openSubMenus.khoHang ? (
               <UpOutlined className="arrow-icon" />
             ) : (
               <DownOutlined className="arrow-icon" />
             )}
-          </div>
+          </button>
 
           {openSubMenus.khoHang && (
             <div className="submenu-list">
               <NavLink
                 to="/warehouse/inventory"
-                className={({ isActive }) => `submenu-item ${isActive ? "active-sub" : ""}`}
+                className={({ isActive }) =>
+                  `submenu-item ${
+                    isActive
+                      ? "active-sub"
+                      : ""
+                  }`
+                }
               >
                 Tồn kho tổng
               </NavLink>
+
               <NavLink
                 to="/warehouse/export"
-                className={({ isActive }) => `submenu-item ${isActive ? "active-sub" : ""}`}
+                className={({ isActive }) =>
+                  `submenu-item ${
+                    isActive
+                      ? "active-sub"
+                      : ""
+                  }`
+                }
               >
                 Xuất kho
               </NavLink>
@@ -264,33 +450,60 @@ export default function Sidebar() {
           )}
         </div>
 
-        <div className="menu-section-label">TRA CỨU & LỊCH SỬ</div>
+        <div className="menu-section-label">
+          TRA CỨU &amp; LỊCH SỬ
+        </div>
 
         <div className="menu-item-dropdown">
-          <div
-            className={`menu-item ${openSubMenus.lichSu ? "submenu-parent-open" : ""}`}
-            onClick={() => toggleSubMenu("lichSu")}
+          <button
+            type="button"
+            className={`menu-item menu-item-button ${
+              openSubMenus.lichSu
+                ? "submenu-parent-open"
+                : ""
+            }`}
+            onClick={() =>
+              toggleSubMenu("lichSu")
+            }
+            aria-expanded={openSubMenus.lichSu}
           >
             <HistoryOutlined className="menu-icon" />
-            <span className="menu-text">Lịch sử mua hàng</span>
+
+            <span className="menu-text">
+              Lịch sử mua hàng
+            </span>
+
             {openSubMenus.lichSu ? (
               <UpOutlined className="arrow-icon" />
             ) : (
               <DownOutlined className="arrow-icon" />
             )}
-          </div>
+          </button>
 
           {openSubMenus.lichSu && (
             <div className="submenu-list timeline-style">
               <NavLink
                 to="/history/buy-on-behalf"
-                className={({ isActive }) => `submenu-item ${isActive ? "active-sub" : ""}`}
+                className={({ isActive }) =>
+                  `submenu-item ${
+                    isActive
+                      ? "active-sub"
+                      : ""
+                  }`
+                }
               >
                 Mua hộ
               </NavLink>
+
               <NavLink
                 to="/history/consignment"
-                className={({ isActive }) => `submenu-item ${isActive ? "active-sub" : ""}`}
+                className={({ isActive }) =>
+                  `submenu-item ${
+                    isActive
+                      ? "active-sub"
+                      : ""
+                  }`
+                }
               >
                 Ký gửi
               </NavLink>
@@ -298,37 +511,66 @@ export default function Sidebar() {
           )}
         </div>
 
-        <div className="menu-section-label">TÀI CHÍNH</div>
+        <div className="menu-section-label">
+          TÀI CHÍNH
+        </div>
 
         <NavLink
           to="/financial/transaction-history"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <TransactionOutlined className="menu-icon" />
-          <span className="menu-text">Lịch sử giao dịch</span>
+
+          <span className="menu-text">
+            Lịch sử giao dịch
+          </span>
         </NavLink>
 
-        <div className="menu-section-label">CÀI ĐẶT</div>
+        <div className="menu-section-label">
+          CÀI ĐẶT
+        </div>
 
         <NavLink
           to="/settings/profile-config"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <SettingOutlined className="menu-icon" />
-          <span className="menu-text">Cấu hình tài khoản</span>
+
+          <span className="menu-text">
+            Cấu hình tài khoản
+          </span>
         </NavLink>
 
         <NavLink
-          to="/settings/services-policy"
-          className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+          to="/settings/chinh-sach-dich-vu"
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
         >
           <FileTextOutlined className="menu-icon" />
-          <span className="menu-text">Chính sách dịch vụ</span>
+
+          <span className="menu-text">
+            Chính sách dịch vụ
+          </span>
         </NavLink>
       </div>
 
       <div className="sidebar-fixed-bottom">
-        <button type="button" className="logout-button" onClick={handleLogout}>
+        <button
+          type="button"
+          className="logout-button"
+          onClick={handleLogout}
+        >
           <LogoutOutlined />
           <span>Đăng xuất</span>
         </button>

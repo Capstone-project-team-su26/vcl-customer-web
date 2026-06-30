@@ -15,23 +15,16 @@ import ConsigmentOrder from "../pages/DashboardPage/CreateCustomer/KiGuiHang/Con
 import ConsignmentList from "../pages/DashboardPage/CreateCustomer/OrderXuLy/ConsignmentList"; // Import
 import ProfileConfig from "../pages/SettingsPage/ProfileConfig";
 import ConsignmentListDetail from "../pages/DashboardPage/CreateCustomer/OrderXuLy/OrderXylyDetail/ConsignmentListDetail"; // Import
-
-
+import ServicePolicy from "../pages/DashboardPage/ServicePolicy";
 
 const AppRouter = () => {
   return (
     <BrowserRouter>
       <Routes>
         {/* ================= CÁC ROUTE CƠ BẢN (KHÔNG DÙNG SIDEBAR) ================= */}
-        <Route
-  path="/"
-  element={<LogisticsIntro />}
-/>
+        <Route path="/" element={<LogisticsIntro />} />
 
-<Route
-  path="/home"
-  element={<Home />}
-/>
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
@@ -39,20 +32,28 @@ const AppRouter = () => {
         <Route path="/otp-forgot" element={<OTPForgot />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
-     
+
         <Route element={<MainLayout />}>
           {/* Định nghĩa các URL con tương ứng với thẻ <NavLink to="..." /> ở Sidebar */}
           <Route path="/customer/dashboard" element={<Dashboard />} />
-   
+
           <Route path="/create-order" element={<CreateOrder />} />
-          <Route path="/create-order/consignment" element={<ConsigmentOrder />} />
-          <Route path="/processing-orders" element={<ConsignmentList />} /> 
+          <Route
+            path="/create-order/consignment"
+            element={<ConsigmentOrder />}
+          />
+          <Route path="/processing-orders" element={<ConsignmentList />} />
           <Route path="/settings/profile-config" element={<ProfileConfig />} />
           <Route
-  path="/consignments/:orderId"
-  element={<ConsignmentListDetail />}
-/>
+            path="/consignments/:orderId"
+            element={<ConsignmentListDetail />}
+          />
+              <Route
+          path="/settings/chinh-sach-dich-vu"
+          element={<ServicePolicy />}
+        />
         </Route>
+    
 
         {/* ================= ROUTE 404 ================= */}
         <Route path="*" element={<NotFound />} />
