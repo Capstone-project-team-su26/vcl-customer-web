@@ -50,12 +50,28 @@ export default function Home() {
     setShowPackageAnimation,
   ] = useState(enteredFromIntro);
 
-  const [homeIsRevealed, setHomeIsRevealed] =
-    useState(!enteredFromIntro);
+  const [
+    homeIsRevealed,
+    setHomeIsRevealed,
+  ] = useState(!enteredFromIntro);
 
+  /*
+    Theo dõi vị trí cuộn của trang.
+    Nút sẽ xuất hiện khi cuộn xuống trên 400px.
+  */
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 500);
+      const scrollElement =
+        document.scrollingElement ||
+        document.documentElement;
+
+      const currentScroll =
+        window.scrollY ||
+        scrollElement?.scrollTop ||
+        document.body.scrollTop ||
+        0;
+
+      setShowScrollTop(currentScroll > 400);
     };
 
     handleScroll();
@@ -68,28 +84,51 @@ export default function Home() {
       }
     );
 
+    document.addEventListener(
+      "scroll",
+      handleScroll,
+      {
+        passive: true,
+      }
+    );
+
     return () => {
       window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+
+      document.removeEventListener(
         "scroll",
         handleScroll
       );
     };
   }, []);
 
+  /*
+    Hiệu ứng mở kiện hàng khi chuyển từ Intro sang Home.
+  */
   useEffect(() => {
     if (!enteredFromIntro) {
       setHomeIsRevealed(true);
+      setShowPackageAnimation(false);
+
       return undefined;
     }
 
-    const previousOverflow =
+    const previousBodyOverflow =
       document.body.style.overflow;
 
+    const previousHtmlOverflow =
+      document.documentElement.style.overflow;
+
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow =
+      "hidden";
 
     /*
       Sau khi nắp thùng mở,
-      bắt đầu cho trang Home xuất hiện.
+      bắt đầu hiện nội dung trang Home.
     */
     const revealHomeTimer = window.setTimeout(
       () => {
@@ -99,18 +138,21 @@ export default function Home() {
     );
 
     /*
-      Kết thúc toàn bộ hiệu ứng mở thùng.
+      Kết thúc toàn bộ hiệu ứng kiện hàng.
     */
     const removePackageTimer = window.setTimeout(
       () => {
         setShowPackageAnimation(false);
 
         document.body.style.overflow =
-          previousOverflow;
+          previousBodyOverflow;
+
+        document.documentElement.style.overflow =
+          previousHtmlOverflow;
 
         /*
-          Xóa state fromIntro để reload hoặc quay lại
-          Home không chạy hiệu ứng lần nữa.
+          Xóa state fromIntro để khi tải lại Home
+          không chạy lại hiệu ứng mở kiện hàng.
         */
         navigate(location.pathname, {
           replace: true,
@@ -125,7 +167,10 @@ export default function Home() {
       window.clearTimeout(removePackageTimer);
 
       document.body.style.overflow =
-        previousOverflow;
+        previousBodyOverflow;
+
+      document.documentElement.style.overflow =
+        previousHtmlOverflow;
     };
   }, [
     enteredFromIntro,
@@ -134,180 +179,217 @@ export default function Home() {
   ]);
 
   const handleScrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: "smooth",
-    });
+    const scrollElement =
+      document.scrollingElement ||
+      document.documentElement;
+
+    try {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+
+    /*
+      Fallback cho một số trình duyệt hoặc layout
+      không cuộn trực tiếp bằng window.
+    */
+    if (scrollElement && window.scrollY === 0) {
+      scrollElement.scrollTo?.({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
+    }
   };
 
   return (
-    <div
-      className={`home-page-wrapper ${
-        homeIsRevealed
-          ? "home-page-wrapper--package-revealed"
-          : "home-page-wrapper--package-hidden"
-      }`}
-    >
-      {showPackageAnimation && (
-        <div
-          className="home-package-intro"
-          role="status"
-          aria-label="Đang mở kiện hàng"
-        >
+    <>
+      <div
+        className={`home-page-wrapper ${
+          homeIsRevealed
+            ? "home-page-wrapper--package-revealed"
+            : "home-page-wrapper--package-hidden"
+        }`}
+      >
+        {showPackageAnimation && (
           <div
-            className="home-package-intro__space"
-            aria-hidden="true"
+            className="home-package-intro"
+            role="status"
+            aria-label="Đang mở kiện hàng"
           >
-            <span />
-            <span />
-            <span />
-          </div>
-
-          <div
-            className="home-package-intro__particles"
-            aria-hidden="true"
-          >
-            {PACKAGE_PARTICLES.map(
-              (_, index) => (
-                <i
-                  key={index}
-                  style={{
-                    "--package-particle-angle": `${
-                      index * 20
-                    }deg`,
-                    "--package-particle-delay": `${
-                      (index % 6) * 0.05
-                    }s`,
-                    "--package-particle-distance": `${
-                      100 + (index % 4) * 25
-                    }px`,
-                  }}
-                />
-              )
-            )}
-          </div>
-
-          <div className="home-package-intro__stage">
             <div
-              className="home-package-intro__floor"
+              className="home-package-intro__space"
               aria-hidden="true"
-            />
+            >
+              <span />
+              <span />
+              <span />
+            </div>
 
             <div
-              className="home-package-intro__shadow"
+              className="home-package-intro__particles"
               aria-hidden="true"
-            />
+            >
+              {PACKAGE_PARTICLES.map(
+                (_, index) => (
+                  <i
+                    key={index}
+                    style={{
+                      "--package-particle-angle": `${
+                        index * 20
+                      }deg`,
 
-            <div className="home-package-intro__box">
-              <div className="home-package-intro__light">
-                <span />
-              </div>
+                      "--package-particle-delay": `${
+                        (index % 6) * 0.05
+                      }s`,
 
-              <div className="home-package-intro__brand">
-                <div className="home-package-intro__brand-mark">
-                  VN
+                      "--package-particle-distance": `${
+                        100 +
+                        (index % 4) * 25
+                      }px`,
+                    }}
+                  />
+                )
+              )}
+            </div>
+
+            <div className="home-package-intro__stage">
+              <div
+                className="home-package-intro__floor"
+                aria-hidden="true"
+              />
+
+              <div
+                className="home-package-intro__shadow"
+                aria-hidden="true"
+              />
+
+              <div className="home-package-intro__box">
+                <div className="home-package-intro__light">
+                  <span />
                 </div>
 
-                <div className="home-package-intro__brand-content">
-                  <small>
-                    KIỆN HÀNG ĐÃ VỀ ĐẾN
-                  </small>
+                <div className="home-package-intro__brand">
+                  <div className="home-package-intro__brand-mark">
+                    VN
+                  </div>
 
-                  <strong>{BRAND.name}</strong>
+                  <div className="home-package-intro__brand-content">
+                    <small>
+                      KIỆN HÀNG ĐÃ VỀ ĐẾN
+                    </small>
 
-                  <span>
-                    Mua hộ · Ký gửi · Vận chuyển
-                    quốc tế
-                  </span>
-                </div>
-              </div>
+                    <strong>
+                      {BRAND.name}
+                    </strong>
 
-              <div className="home-package-intro__box-body">
-                <div className="home-package-intro__box-inside" />
-
-                <div className="home-package-intro__flap home-package-intro__flap--back">
-                  <span>GLOBAL</span>
-                </div>
-
-                <div className="home-package-intro__flap home-package-intro__flap--left" />
-
-                <div className="home-package-intro__flap home-package-intro__flap--right" />
-
-                <div className="home-package-intro__flap home-package-intro__flap--front">
-                  <span>
-                    FRAGILE
-                  </span>
-                </div>
-
-                <div className="home-package-intro__box-front">
-                  <span className="home-package-intro__tape" />
-
-                  <div className="home-package-intro__shipping-label">
-                    <small>DESTINATION</small>
-                    <strong>VIỆT NAM</strong>
                     <span>
-                      INTERNATIONAL LOGISTICS
+                      Mua hộ · Ký gửi · Vận
+                      chuyển quốc tế
                     </span>
                   </div>
-
-                  <div className="home-package-intro__barcode">
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                  </div>
                 </div>
 
-                <div className="home-package-intro__box-left" />
+                <div className="home-package-intro__box-body">
+                  <div className="home-package-intro__box-inside" />
 
-                <div className="home-package-intro__box-right" />
+                  <div className="home-package-intro__flap home-package-intro__flap--back">
+                    <span>GLOBAL</span>
+                  </div>
+
+                  <div className="home-package-intro__flap home-package-intro__flap--left" />
+
+                  <div className="home-package-intro__flap home-package-intro__flap--right" />
+
+                  <div className="home-package-intro__flap home-package-intro__flap--front">
+                    <span>FRAGILE</span>
+                  </div>
+
+                  <div className="home-package-intro__box-front">
+                    <span className="home-package-intro__tape" />
+
+                    <div className="home-package-intro__shipping-label">
+                      <small>
+                        DESTINATION
+                      </small>
+
+                      <strong>
+                        VIỆT NAM
+                      </strong>
+
+                      <span>
+                        INTERNATIONAL LOGISTICS
+                      </span>
+                    </div>
+
+                    <div className="home-package-intro__barcode">
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                    </div>
+                  </div>
+
+                  <div className="home-package-intro__box-left" />
+
+                  <div className="home-package-intro__box-right" />
+                </div>
               </div>
-            </div>
 
-            <div className="home-package-intro__status">
-              <span className="home-package-intro__status-dot" />
+              <div className="home-package-intro__status">
+                <span className="home-package-intro__status-dot" />
 
-              <div>
-                <strong>Đang mở kiện hàng</strong>
-                <small>
-                  Chuẩn bị trải nghiệm dịch vụ
-                  logistics
-                </small>
+                <div>
+                  <strong>
+                    Đang mở kiện hàng
+                  </strong>
+
+                  <small>
+                    Chuẩn bị trải nghiệm dịch
+                    vụ logistics
+                  </small>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <Header />
+        <Header />
 
-      <main className="home-page-main">
-        <HeroCarousel />
-        <GlobalBrandSection />
-        <CommitmentsSection />
-        <ServicesSection />
-        <ProductsSection />
-        <AIAutomationSection />
-        <WhyChooseSection />
-        <StatsSection />
-        <AudienceSection />
-        <PartnersMarquee />
-        <BlogSection />
-        <CTASection />
-      </main>
+        <main className="home-page-main">
+          <HeroCarousel />
+          <GlobalBrandSection />
+          <CommitmentsSection />
+          <ServicesSection />
+          <ProductsSection />
+          <AIAutomationSection />
+          <WhyChooseSection />
+          <StatsSection />
+          <AudienceSection />
+          <PartnersMarquee />
+          <BlogSection />
+          <CTASection />
+        </main>
 
-      <HomeFooter />
+        <HomeFooter />
+      </div>
 
+      {/* Nằm ngoài wrapper có transform */}
       <button
         type="button"
         className={`home-scroll-top ${
-          showScrollTop ? "is-visible" : ""
+          showScrollTop
+            ? "is-visible"
+            : ""
         }`}
         onClick={handleScrollToTop}
         aria-label="Chuyển lên đầu trang"
@@ -321,7 +403,8 @@ export default function Home() {
         <ArrowUpOutlined />
       </button>
 
+      {/* Đưa ra ngoài để position fixed hoạt động đúng */}
       <FloatingChat />
-    </div>
+    </>
   );
 }
