@@ -1668,7 +1668,7 @@ export default function ConsignmentOrder() {
 
                     <div className="input-field-group">
                       <label className="field-label required-label">
-                        GIÁ TRỊ KHAI BÁO (VND)
+                        GIÁ TRỊ ĐƠN HÀNG (VND)
                       </label>
 
                       <input
