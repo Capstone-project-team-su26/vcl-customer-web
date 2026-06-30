@@ -96,38 +96,75 @@ export const COMMITMENTS = [
 export const PRODUCTS = [
   {
     title: "Thời trang và phụ kiện",
-    emoji: "👗",
+    desc: "Quần áo, giày dép, túi xách, đồng hồ và phụ kiện thời trang.",
+    emoji: "👕",
     bg: "#fce4ec",
   },
   {
-    title: "Mỹ phẩm và chăm sóc da",
-    emoji: "💄",
+    title: "Mỹ phẩm và chăm sóc cá nhân",
+    desc: "Mỹ phẩm, sản phẩm dưỡng da và đồ dùng chăm sóc cá nhân.",
+    emoji: "🧴",
     bg: "#f3e5f5",
   },
   {
-    title: "Điện tử và thiết bị số",
-    emoji: "📱",
+    title: "Điện tử và thiết bị công nghệ",
+    desc: "Điện thoại, máy tính, phụ kiện và thiết bị điện tử.",
+    emoji: "💻",
     bg: "#e3f2fd",
   },
   {
-    title: "Đồ sưu tầm và mô hình",
-    emoji: "🎎",
-    bg: "#fff3e0",
-  },
-  {
-    title: "Đồ gia dụng và gốm sứ",
-    emoji: "🏺",
-    bg: "#e8f5e9",
-  },
-  {
-    title: "Phụ tùng và linh kiện",
+    title: "Linh kiện và phụ tùng máy móc",
+    desc: "Linh kiện điện tử, phụ tùng ô tô, xe máy và máy móc.",
     emoji: "⚙️",
     bg: "#eceff1",
   },
   {
-    title: "Sách và ấn phẩm nghệ thuật",
+    title: "Đồ gia dụng và nội thất nhỏ",
+    desc: "Thiết bị nhà bếp, đồ trang trí và sản phẩm gia dụng.",
+    emoji: "🏠",
+    bg: "#e8f5e9",
+  },
+  {
+    title: "Đồ chơi và hàng sưu tầm",
+    desc: "Mô hình, đồ chơi, figure và các sản phẩm phiên bản giới hạn.",
+    emoji: "🧸",
+    bg: "#fff3e0",
+  },
+  {
+    title: "Sách và văn phòng phẩm",
+    desc: "Sách, tạp chí, tài liệu, tranh ảnh và dụng cụ văn phòng.",
     emoji: "📚",
     bg: "#fff8e1",
+  },
+  {
+    title: "Hàng tiêu dùng đóng gói",
+    desc: "Sản phẩm tiêu dùng và thực phẩm khô có bao bì, nhãn mác rõ ràng.",
+    emoji: "📦",
+    bg: "#e0f2f1",
+  },
+  {
+    title: "Thiết bị thể thao và dã ngoại",
+    desc: "Dụng cụ tập luyện, phụ kiện thể thao và đồ dùng dã ngoại.",
+    emoji: "🏕️",
+    bg: "#e8eaf6",
+  },
+  {
+    title: "Dụng cụ và thiết bị công nghiệp",
+    desc: "Dụng cụ cầm tay, thiết bị kỹ thuật và vật tư sản xuất.",
+    emoji: "🛠️",
+    bg: "#f1f8e9",
+  },
+  {
+    title: "Quà tặng và đồ thủ công",
+    desc: "Quà lưu niệm, đồ trang trí và các sản phẩm thủ công.",
+    emoji: "🎁",
+    bg: "#fce4ec",
+  },
+  {
+    title: "Hàng thương mại và hàng mẫu",
+    desc: "Hàng mẫu, hàng trưng bày và lô hàng phục vụ kinh doanh.",
+    emoji: "🚚",
+    bg: "#e3f2fd",
   },
 ];
 
