@@ -323,7 +323,7 @@ const ConsignmentList = () => {
       const searchableContent = [
         item.orderId,
         item.consignmentCode,
-        item.customerName,
+        item.itemNames,
         item.consignmentType,
         item.status,
         item.route,
@@ -891,7 +891,7 @@ const ConsignmentList = () => {
 
                           <div className="product-info">
                             <div className="customer-name">
-                              {item.customerName ||
+                              {item.itemNames ||
                                 "-"}
                             </div>
 

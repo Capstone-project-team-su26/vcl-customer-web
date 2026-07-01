@@ -176,6 +176,56 @@ const getStatusClassName = (status) => {
 };
 
 /**
+ * Tính khối lượng quy đổi:
+ * Dài × Rộng × Cao / 5000.
+ *
+ * Kích thước sử dụng đơn vị cm,
+ * kết quả trả về theo kg.
+ */
+const DIM_DIVISOR = 5000;
+
+/**
+ * Công thức DIM:
+ * Dài (cm) × Rộng (cm) × Cao (cm) / 5000
+ *
+ * Kết quả trả về theo kg.
+ */
+const calculateDimWeight = (
+  length,
+  width,
+  height
+) => {
+  const lengthValue = Number(length);
+  const widthValue = Number(width);
+  const heightValue = Number(height);
+
+  if (
+    !Number.isFinite(lengthValue) ||
+    !Number.isFinite(widthValue) ||
+    !Number.isFinite(heightValue) ||
+    lengthValue <= 0 ||
+    widthValue <= 0 ||
+    heightValue <= 0
+  ) {
+    return null;
+  }
+
+  return (
+    lengthValue *
+    widthValue *
+    heightValue
+  ) / DIM_DIVISOR;
+};
+
+const formatDimWeight = (value) => {
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  return value.toFixed(2);
+};
+
+/**
  * API có thể trả thời gian chứa nhiều hơn 3 chữ số
  * ở phần mili-giây, ví dụ:
  *
@@ -463,6 +513,38 @@ const ConsignmentListDetail = () => {
         ),
       },
       {
+        title: "DIM",
+        key: "dimensionalWeight",
+        width: 235,
+        render: (_, record) => {
+          const dimWeight =
+            calculateDimWeight(
+              record.length,
+              record.width,
+              record.height
+            );
+
+          if (dimWeight === null) {
+            return "-";
+          }
+
+          return (
+            <span className="detail-dimension-text">
+              {record.length} ×{" "}
+              {record.width} ×{" "}
+              {record.height} /{" "}
+              {DIM_DIVISOR} ={" "}
+              <strong>
+                {formatDimWeight(
+                  dimWeight
+                )}{" "}
+                kg
+              </strong>
+            </span>
+          );
+        },
+      },
+      {
         title: "Giá trị khai báo",
         dataIndex: "declaredValue",
         key: "declaredValue",
@@ -615,6 +697,24 @@ const ConsignmentListDetail = () => {
       (total, item) =>
         total +
         (Number(item.quantity) || 0),
+      0
+    );
+
+  const totalDimWeight =
+    items.reduce(
+      (total, item) => {
+        const dimWeight =
+          calculateDimWeight(
+            item.length,
+            item.width,
+            item.height
+          );
+
+        return (
+          total +
+          (dimWeight ?? 0)
+        );
+      },
       0
     );
 
@@ -779,6 +879,17 @@ const ConsignmentListDetail = () => {
             </small>
           </strong>
         </div>
+        <div className="detail-summary-card">
+          <span>
+            Tổng khối lượng DIM
+          </span>
+
+          <strong>
+            {totalDimWeight.toFixed(2)}
+
+            <small>kg</small>
+          </strong>
+        </div>
       </section>
 
       {/* Thông tin khách hàng và nhận hàng */}
@@ -940,7 +1051,7 @@ const ConsignmentListDetail = () => {
           dataSource={items}
           pagination={false}
           scroll={{
-            x: 1150,
+            x: 1380,
           }}
           locale={{
             emptyText:
