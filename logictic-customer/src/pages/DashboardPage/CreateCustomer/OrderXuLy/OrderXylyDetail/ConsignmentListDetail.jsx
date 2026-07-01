@@ -226,6 +226,27 @@ const formatDimWeight = (value) => {
 };
 
 /**
+ * Định dạng trọng lượng theo kiểu Việt Nam.
+ *
+ * Ví dụ:
+ * 0.5  => 0,5
+ * 1    => 1
+ * 1.25 => 1,25
+ */
+const formatWeight = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "0";
+  }
+
+  return new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  }).format(number);
+};
+
+/**
  * API có thể trả thời gian chứa nhiều hơn 3 chữ số
  * ở phần mili-giây, ví dụ:
  *
@@ -493,12 +514,39 @@ const ConsignmentListDetail = () => {
           quantity ?? 0,
       },
       {
-        title: "Trọng lượng",
+        title: "Tổng trọng lượng",
         dataIndex: "weight",
         key: "weight",
-        width: 125,
-        render: (weight) =>
-          `${weight ?? 0} kg`,
+        width: 165,
+        render: (weight, record) => {
+          const quantity =
+            Number(record.quantity) || 0;
+
+          const unitWeight =
+            Number(weight) || 0;
+
+          const itemTotalWeight =
+            quantity * unitWeight;
+
+          return (
+            <div className="detail-product-name-cell">
+              <strong>
+                {formatWeight(
+                  itemTotalWeight
+                )}{" "}
+                kg
+              </strong>
+
+              <span>
+                {quantity} ×{" "}
+                {formatWeight(
+                  unitWeight
+                )}{" "}
+                kg
+              </span>
+            </div>
+          );
+        },
       },
       {
         title: "Kích thước",
@@ -513,7 +561,7 @@ const ConsignmentListDetail = () => {
         ),
       },
       {
-        title: "DIM",
+        title: "DIM = ((Dài x Rộng x Cao) / 5000)",
         key: "dimensionalWeight",
         width: 235,
         render: (_, record) => {
@@ -545,7 +593,7 @@ const ConsignmentListDetail = () => {
         },
       },
       {
-        title: "Giá trị khai báo",
+        title: "Giá trị sản phẩm",
         dataIndex: "declaredValue",
         key: "declaredValue",
         width: 155,
@@ -700,6 +748,40 @@ const ConsignmentListDetail = () => {
       0
     );
 
+  /**
+   * Tổng trọng lượng thực của lô hàng:
+   *
+   * Tổng = Σ (số lượng × trọng lượng mỗi sản phẩm)
+   *
+   * Ví dụ:
+   * 2 sản phẩm × 0,5 kg = 1 kg.
+   */
+  const totalActualWeight =
+    items.reduce(
+      (total, item) => {
+        const quantity =
+          Number(item.quantity);
+
+        const unitWeight =
+          Number(item.weight);
+
+        if (
+          !Number.isFinite(quantity) ||
+          !Number.isFinite(unitWeight) ||
+          quantity <= 0 ||
+          unitWeight < 0
+        ) {
+          return total;
+        }
+
+        return (
+          total +
+          quantity * unitWeight
+        );
+      },
+      0
+    );
+
   const totalDimWeight =
     items.reduce(
       (total, item) => {
@@ -846,8 +928,9 @@ const ConsignmentListDetail = () => {
           </span>
 
           <strong>
-            {consignment.totalWeight ??
-              0}
+            {formatWeight(
+              totalActualWeight
+            )}
 
             <small>kg</small>
           </strong>
@@ -1051,7 +1134,7 @@ const ConsignmentListDetail = () => {
           dataSource={items}
           pagination={false}
           scroll={{
-            x: 1380,
+            x: 1420,
           }}
           locale={{
             emptyText:
