@@ -350,7 +350,20 @@ export default function Sidebar() {
             Đơn đang xử lý
           </span>
         </NavLink>
+        <NavLink
+          to="/check-orders"
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
+        >
+          <InboxOutlined className="menu-icon" />
 
+          <span className="menu-text">
+            Kiện chờ báo giá
+          </span>
+        </NavLink>
         <NavLink
           to="/receive-goods"
           className={({ isActive }) =>
@@ -381,20 +394,7 @@ export default function Sidebar() {
           </span>
         </NavLink>
 
-        <NavLink
-          to="/waiting-packages"
-          className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
-          }
-        >
-          <InboxOutlined className="menu-icon" />
-
-          <span className="menu-text">
-            Kiện chờ nhận
-          </span>
-        </NavLink>
+     
 
         <div className="menu-item-dropdown">
           <button

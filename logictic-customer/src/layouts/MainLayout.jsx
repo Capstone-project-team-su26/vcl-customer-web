@@ -14,6 +14,9 @@ export default function MainLayout() {
     if (path.includes("create-order")) return "TẠO ĐƠN HÀNG";
     if (path.includes("processing-orders")) return "ĐƠN ĐANG XỬ LÝ";
     if (path.includes("settings/profile-config")) return "CẤU HÌNH TÀI KHOẢN";
+    if (path.includes("settings/chinh-sach-dich-vu")) return "CHÍNH SÁCH DỊCH VỤ";
+    if (path.includes("check-orders")) return "KIỆN CHỜ BÁO GIÁ";
+    if (path.includes("quotations")) return "CHI TIẾT BÁO GIÁ";
     return "HỆ THỐNG";
   };
 

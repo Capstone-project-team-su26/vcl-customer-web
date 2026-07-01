@@ -16,6 +16,8 @@ import ConsignmentList from "../pages/DashboardPage/CreateCustomer/OrderXuLy/Con
 import ProfileConfig from "../pages/SettingsPage/ProfileConfig";
 import ConsignmentListDetail from "../pages/DashboardPage/CreateCustomer/OrderXuLy/OrderXylyDetail/ConsignmentListDetail"; // Import
 import ServicePolicy from "../pages/DashboardPage/ServicePolicy";
+import ConsignmentListCheck from "../pages/DashboardPage/CreateCustomer/CheckHang/ConsignmentListCheck"; // Import
+import QuotationDetail from "../pages/DashboardPage/CreateCustomer/CheckHang/QuotationDetail"; // Import
 
 const AppRouter = () => {
   return (
@@ -52,6 +54,14 @@ const AppRouter = () => {
           path="/settings/chinh-sach-dich-vu"
           element={<ServicePolicy />}
         />
+          <Route
+            path="/check-orders"
+            element={<ConsignmentListCheck />}
+          />
+          <Route
+            path="/quotations/:orderId"
+            element={<QuotationDetail />}
+          />
         </Route>
     
 

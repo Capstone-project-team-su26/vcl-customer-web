@@ -26,7 +26,12 @@ import { Switch } from "antd";
 import "./ConsignmentOrder.css";
 
 import AuthNotify from "../../../../utils/AuthNotify";
-import { createConsignmentApi } from "../../../../api/OrderApi/consignmentApi";
+import {
+  createConsignmentApi,
+  createDeliveryAddressApi,
+  deleteDeliveryAddressApi,
+  getDeliveryAddressesApi,
+} from "../../../../api/OrderApi/consignmentApi";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -140,6 +145,136 @@ const sanitizeDecimal = (rawValue) => {
   }
 
   return value;
+};
+
+
+const normalizeDeliveryAddress = (
+  addressItem,
+  index = 0
+) => {
+  if (!addressItem) {
+    return null;
+  }
+
+  if (typeof addressItem === "string") {
+    const normalizedAddress =
+      addressItem.trim();
+
+    if (!normalizedAddress) {
+      return null;
+    }
+
+    return {
+      id: `address-${index}-${normalizedAddress}`,
+      apiId: "",
+      receiverName: "",
+      receiverPhone: "",
+      address: normalizedAddress,
+      isDefault: false,
+    };
+  }
+
+  const address = String(
+    addressItem.address ||
+      addressItem.receiverAddress ||
+      addressItem.fullAddress ||
+      addressItem.deliveryAddress ||
+      ""
+  ).trim();
+
+  if (!address) {
+    return null;
+  }
+
+  const apiId = String(
+    addressItem.deliveryAddressId ||
+      addressItem.addressId ||
+      addressItem.id ||
+      ""
+  ).trim();
+
+  return {
+    id:
+      apiId ||
+      `address-${index}-${address}`,
+
+    apiId,
+
+    receiverName: String(
+      addressItem.receiverName ||
+        addressItem.fullName ||
+        addressItem.name ||
+        ""
+    ).trim(),
+
+    receiverPhone: String(
+      addressItem.receiverPhone ||
+        addressItem.phone ||
+        addressItem.phoneNumber ||
+        ""
+    )
+      .replace(/\D/g, "")
+      .slice(0, 10),
+
+    address,
+
+    isDefault: Boolean(
+      addressItem.isDefault
+    ),
+  };
+};
+
+const normalizeDeliveryAddressList = (
+  apiResult
+) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.results,
+    apiResult?.addresses,
+    apiResult?.deliveryAddresses,
+    apiResult?.data?.items,
+    apiResult?.data?.results,
+    apiResult?.data?.addresses,
+    apiResult?.data
+      ?.deliveryAddresses,
+  ];
+
+  const rawList = candidates.find(
+    Array.isArray
+  );
+
+  if (!rawList) {
+    return [];
+  }
+
+  return rawList
+    .map(normalizeDeliveryAddress)
+    .filter(Boolean);
+};
+
+const getApiErrorMessage = (
+  error,
+  fallbackMessage
+) => {
+  const responseData =
+    error?.response?.data;
+
+  if (
+    typeof responseData === "string" &&
+    responseData.trim()
+  ) {
+    return responseData;
+  }
+
+  return (
+    responseData?.message ||
+    responseData?.title ||
+    responseData?.error ||
+    error?.message ||
+    fallbackMessage
+  );
 };
 
 const extractUploadedImageUrl = (uploadResult) => {
@@ -412,6 +547,21 @@ export default function ConsignmentOrder() {
     useState([]);
 
   const [
+    isLoadingAddresses,
+    setIsLoadingAddresses,
+  ] = useState(true);
+
+  const [
+    isSavingAddress,
+    setIsSavingAddress,
+  ] = useState(false);
+
+  const [
+    deletingAddressId,
+    setDeletingAddressId,
+  ] = useState("");
+
+  const [
     selectedDeliveryAddress,
     setSelectedDeliveryAddress,
   ] = useState("");
@@ -447,6 +597,93 @@ export default function ConsignmentOrder() {
     packageErrors,
     setPackageErrors,
   ] = useState({});
+
+  useEffect(() => {
+    const controller =
+      new AbortController();
+
+    const loadDeliveryAddresses =
+      async () => {
+        try {
+          setIsLoadingAddresses(
+            true
+          );
+
+          const result =
+            await getDeliveryAddressesApi({
+              signal:
+                controller.signal,
+            });
+
+          const normalizedAddresses =
+            normalizeDeliveryAddressList(
+              result
+            );
+
+          setAddressList(
+            normalizedAddresses
+          );
+
+          const defaultAddress =
+            normalizedAddresses.find(
+              (addressItem) =>
+                addressItem.isDefault
+            );
+
+          if (defaultAddress) {
+            /*
+             * Chỉ chọn địa chỉ mặc định.
+             * Không tự động ghi đè tên và số điện thoại,
+             * để người dùng vẫn nhập hai trường này bình thường.
+             */
+            setSelectedDeliveryAddress(
+              defaultAddress.address
+            );
+
+            clearFormError(
+              "selectedDeliveryAddress"
+            );
+          }
+        } catch (error) {
+          if (
+            error?.code !==
+              "ERR_CANCELED" &&
+            error?.name !==
+              "CanceledError" &&
+            error?.name !==
+              "AbortError"
+          ) {
+            console.error(
+              "Lỗi tải địa chỉ nhận hàng:",
+              error
+            );
+
+            AuthNotify.error(
+              "Không tải được địa chỉ",
+              getApiErrorMessage(
+                error,
+                "Không thể tải danh sách địa chỉ nhận hàng."
+              )
+            );
+          }
+        } finally {
+          if (
+            !controller.signal
+              .aborted
+          ) {
+            setIsLoadingAddresses(
+              false
+            );
+          }
+        }
+      };
+
+    loadDeliveryAddresses();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     packagesRef.current = packages;
@@ -540,82 +777,388 @@ export default function ConsignmentOrder() {
 
   /* ================= ADDRESS ================= */
 
-  const handleSaveAddress = () => {
-    const trimmedAddress =
-      newAddressInput.trim();
+  const handleSaveAddress =
+    async () => {
+      if (
+        isSubmitting ||
+        isSavingAddress
+      ) {
+        return;
+      }
 
-    if (!trimmedAddress) {
-      setNewAddressError(
-        "Vui lòng nhập địa chỉ nhận hàng."
-      );
+      const trimmedName =
+        receiverName.trim();
 
-      return;
-    }
+      const normalizedPhone =
+        receiverPhone
+          .replace(/\D/g, "")
+          .slice(0, 10);
 
-    const addressExists =
-      addressList.some(
-        (address) =>
-          address
-            .trim()
-            .toLowerCase() ===
-          trimmedAddress.toLowerCase()
-      );
+      const trimmedAddress =
+        newAddressInput.trim();
 
-    if (addressExists) {
-      setNewAddressError(
-        "Địa chỉ này đã có trong danh sách."
-      );
+      let hasReceiverError =
+        false;
 
-      return;
-    }
+      if (!trimmedName) {
+        setFormErrors(
+          (previous) => ({
+            ...previous,
+            receiverName:
+              "Vui lòng nhập tên người nhận.",
+          })
+        );
 
-    setAddressList((previous) => [
-      ...previous,
-      trimmedAddress,
-    ]);
+        hasReceiverError =
+          true;
+      } else if (
+        trimmedName.length < 2
+      ) {
+        setFormErrors(
+          (previous) => ({
+            ...previous,
+            receiverName:
+              "Tên người nhận phải có ít nhất 2 ký tự.",
+          })
+        );
 
-    setSelectedDeliveryAddress(
-      trimmedAddress
-    );
+        hasReceiverError =
+          true;
+      }
 
-    setNewAddressInput("");
-    setNewAddressError("");
-    setIsAddingAddress(false);
+      if (
+        !/^0\d{9}$/.test(
+          normalizedPhone
+        )
+      ) {
+        setFormErrors(
+          (previous) => ({
+            ...previous,
+            receiverPhone:
+              "Số điện thoại phải có 10 số và bắt đầu bằng số 0.",
+          })
+        );
 
-    clearFormError(
-      "selectedDeliveryAddress"
-    );
+        hasReceiverError =
+          true;
+      }
 
-    AuthNotify.success(
-      "Đã thêm địa chỉ",
-      "Địa chỉ nhận hàng mới đã được lưu."
-    );
-  };
+      if (hasReceiverError) {
+        setNewAddressError(
+          "Vui lòng kiểm tra tên và số điện thoại người nhận."
+        );
+
+        scrollToFirstError();
+
+        return;
+      }
+
+      if (!trimmedAddress) {
+        setNewAddressError(
+          "Vui lòng nhập địa chỉ nhận hàng."
+        );
+
+        return;
+      }
+
+      const addressExists =
+        addressList.some(
+          (addressItem) =>
+            addressItem.address
+              .trim()
+              .toLowerCase() ===
+            trimmedAddress.toLowerCase()
+        );
+
+      if (addressExists) {
+        setNewAddressError(
+          "Địa chỉ này đã có trong danh sách."
+        );
+
+        return;
+      }
+
+      try {
+        setIsSavingAddress(
+          true
+        );
+
+        setNewAddressError(
+          ""
+        );
+
+        const requestPayload = {
+          receiverName:
+            trimmedName,
+
+          receiverPhone:
+            normalizedPhone,
+
+          address:
+            trimmedAddress,
+
+          isDefault: true,
+        };
+
+        const createdResult =
+          await createDeliveryAddressApi(
+            requestPayload
+          );
+
+        let refreshedAddresses =
+          [];
+
+        try {
+          const listResult =
+            await getDeliveryAddressesApi();
+
+          refreshedAddresses =
+            normalizeDeliveryAddressList(
+              listResult
+            );
+        } catch (
+          refreshError
+        ) {
+          console.error(
+            "Đã tạo địa chỉ nhưng không tải lại được danh sách:",
+            refreshError
+          );
+        }
+
+        if (
+          refreshedAddresses.length ===
+          0
+        ) {
+          const normalizedCreated =
+            normalizeDeliveryAddress(
+              createdResult?.data ||
+                createdResult,
+              addressList.length
+            );
+
+          refreshedAddresses = [
+            ...addressList,
+
+            normalizedCreated || {
+              id: createUniqueId(),
+              ...requestPayload,
+            },
+          ];
+        }
+
+        setAddressList(
+          refreshedAddresses
+        );
+
+        const createdAddress =
+          refreshedAddresses.find(
+            (addressItem) =>
+              addressItem.address
+                .trim()
+                .toLowerCase() ===
+              trimmedAddress.toLowerCase()
+          );
+
+        setSelectedDeliveryAddress(
+          createdAddress?.address ||
+            trimmedAddress
+        );
+
+        /*
+         * Giữ nguyên tên và số điện thoại đang nhập.
+         * Việc tạo/chọn địa chỉ không được tự động thay đổi
+         * hai trường thông tin người nhận.
+         */
+        setNewAddressInput("");
+        setNewAddressError("");
+        setIsAddingAddress(false);
+
+        clearFormError(
+          "receiverName"
+        );
+
+        clearFormError(
+          "receiverPhone"
+        );
+
+        clearFormError(
+          "selectedDeliveryAddress"
+        );
+
+        AuthNotify.success(
+          "Đã thêm địa chỉ",
+          "Địa chỉ nhận hàng mới đã được lưu trên hệ thống."
+        );
+      } catch (error) {
+        console.error(
+          "Lỗi tạo địa chỉ nhận hàng:",
+          error
+        );
+
+        const errorMessage =
+          getApiErrorMessage(
+            error,
+            "Không thể lưu địa chỉ nhận hàng."
+          );
+
+        setNewAddressError(
+          errorMessage
+        );
+
+        AuthNotify.error(
+          "Lưu địa chỉ thất bại",
+          errorMessage
+        );
+      } finally {
+        setIsSavingAddress(
+          false
+        );
+      }
+    };
 
   const handleCancelAddAddress = () => {
+    if (isSavingAddress) {
+      return;
+    }
+
     setNewAddressInput("");
     setNewAddressError("");
     setIsAddingAddress(false);
   };
 
   const handleSelectAddress = (
-    address
+    addressItem
   ) => {
     if (
       isSubmitting ||
-      !address?.trim()
+      isSavingAddress ||
+      !addressItem?.address?.trim()
     ) {
       return;
     }
 
+    /*
+     * Chỉ thay đổi địa chỉ được chọn.
+     * Tên người nhận và số điện thoại vẫn là hai ô nhập độc lập.
+     */
     setSelectedDeliveryAddress(
-      address
+      addressItem.address
     );
 
     clearFormError(
       "selectedDeliveryAddress"
     );
   };
+
+  const handleDeleteAddress =
+    async (
+      event,
+      addressItem
+    ) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (
+        isSubmitting ||
+        isSavingAddress ||
+        deletingAddressId
+      ) {
+        return;
+      }
+
+      const addressId =
+        String(
+          addressItem?.apiId ||
+            ""
+        ).trim();
+
+      if (!addressId) {
+        AuthNotify.error(
+          "Không thể xóa địa chỉ",
+          "Địa chỉ này không có ID hợp lệ từ hệ thống. Vui lòng tải lại trang."
+        );
+
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          `Bạn có chắc muốn xóa địa chỉ "${addressItem.address}" không?`
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setDeletingAddressId(
+          addressId
+        );
+
+        await deleteDeliveryAddressApi(
+          addressId
+        );
+
+        const remainingAddresses =
+          addressList.filter(
+            (item) =>
+              item.apiId !==
+              addressId
+          );
+
+        setAddressList(
+          remainingAddresses
+        );
+
+        if (
+          selectedDeliveryAddress ===
+          addressItem.address
+        ) {
+          const nextAddress =
+            remainingAddresses.find(
+              (item) =>
+                item.isDefault
+            ) ||
+            remainingAddresses[0];
+
+          setSelectedDeliveryAddress(
+            nextAddress?.address ||
+              ""
+          );
+
+          if (nextAddress) {
+            clearFormError(
+              "selectedDeliveryAddress"
+            );
+          }
+        }
+
+        AuthNotify.success(
+          "Đã xóa địa chỉ",
+          "Địa chỉ nhận hàng đã được xóa khỏi hệ thống."
+        );
+      } catch (error) {
+        console.error(
+          "Lỗi xóa địa chỉ nhận hàng:",
+          error
+        );
+
+        const errorMessage =
+          getApiErrorMessage(
+            error,
+            "Không thể xóa địa chỉ nhận hàng."
+          );
+
+        AuthNotify.error(
+          "Xóa địa chỉ thất bại",
+          errorMessage
+        );
+      } finally {
+        setDeletingAddressId(
+          ""
+        );
+      }
+    };
 
   const handleReceiverPhoneChange = (
     event
@@ -1754,7 +2297,12 @@ export default function ConsignmentOrder() {
                   <button
                     type="button"
                     disabled={
-                      isSubmitting
+                      isSubmitting ||
+                      isLoadingAddresses ||
+                      isSavingAddress ||
+                      Boolean(
+                        deletingAddressId
+                      )
                     }
                     className="btn-add-address"
                     onClick={() => {
@@ -1772,8 +2320,19 @@ export default function ConsignmentOrder() {
                     THÊM ĐỊA CHỈ NHẬN HÀNG
                   </button>
 
-                  {addressList.length >
-                  0 ? (
+                  {isLoadingAddresses ? (
+                    <div className="address-empty-message">
+                      <LoadingOutlined
+                        spin
+                      />
+
+                      <span>
+                        Đang tải danh sách
+                        địa chỉ...
+                      </span>
+                    </div>
+                  ) : addressList.length >
+                    0 ? (
                     <div
                       className={[
                         "address-scroll-container",
@@ -1789,63 +2348,153 @@ export default function ConsignmentOrder() {
                     >
                       {addressList.map(
                         (
-                          address,
+                          addressItem,
                           index
-                        ) => (
-                          <div
-                            key={`${address}-${index}`}
-                            role="button"
-                            tabIndex={
-                              0
-                            }
-                            className={[
-                              "address-item-clickable",
+                        ) => {
+                          const isSelected =
+                            selectedDeliveryAddress ===
+                            addressItem.address;
 
-                              selectedDeliveryAddress ===
-                              address
-                                ? "is-active"
-                                : "",
-                            ]
-                              .filter(
-                                Boolean
-                              )
-                              .join(
-                                " "
-                              )}
-                            onClick={() =>
-                              handleSelectAddress(
-                                address
-                              )
-                            }
-                            onKeyDown={(
-                              event
-                            ) => {
-                              if (
-                                event.key ===
-                                  "Enter" ||
-                                event.key ===
+                          const isDeleting =
+                            deletingAddressId ===
+                            addressItem.apiId;
+
+                          const canDelete =
+                            Boolean(
+                              addressItem.apiId
+                            );
+
+                          return (
+                            <div
+                              key={
+                                addressItem.id ||
+                                `${addressItem.address}-${index}`
+                              }
+                              role="button"
+                              tabIndex={0}
+                              aria-pressed={
+                                isSelected
+                              }
+                              className={[
+                                "address-item-clickable",
+
+                                isSelected
+                                  ? "is-active"
+                                  : "",
+
+                                isDeleting
+                                  ? "is-deleting"
+                                  : "",
+                              ]
+                                .filter(
+                                  Boolean
+                                )
+                                .join(
                                   " "
-                              ) {
-                                event.preventDefault();
-
+                                )}
+                              onClick={() =>
                                 handleSelectAddress(
-                                  address
-                                );
+                                  addressItem
+                                )
                               }
-                            }}
-                          >
-                            <span className="address-text-truncate">
-                              {
-                                address
-                              }
-                            </span>
+                              onKeyDown={(
+                                event
+                              ) => {
+                                if (
+                                  event.target
+                                    .closest?.(
+                                      "button"
+                                    )
+                                ) {
+                                  return;
+                                }
 
-                            {selectedDeliveryAddress ===
-                              address && (
-                              <CheckOutlined className="check-active-icon" />
-                            )}
-                          </div>
-                        )
+                                if (
+                                  event.key ===
+                                    "Enter" ||
+                                  event.key ===
+                                    " "
+                                ) {
+                                  event.preventDefault();
+
+                                  handleSelectAddress(
+                                    addressItem
+                                  );
+                                }
+                              }}
+                            >
+                              <span className="address-text-truncate">
+                                <strong>
+                                  {
+                                    addressItem.address
+                                  }
+                                </strong>
+
+                                {(addressItem.receiverName ||
+                                  addressItem.receiverPhone) && (
+                                  <small>
+                                    {addressItem.receiverName ||
+                                      "Người nhận"}
+
+                                    {addressItem.receiverPhone
+                                      ? ` • ${addressItem.receiverPhone}`
+                                      : ""}
+                                  </small>
+                                )}
+                              </span>
+
+                              {addressItem.isDefault && (
+                                <span className="address-default-badge">
+                                  Mặc định
+                                </span>
+                              )}
+
+                              {isSelected && (
+                                <CheckOutlined className="check-active-icon" />
+                              )}
+
+                              <button
+                                type="button"
+                                className="btn-delete-address"
+                                title={
+                                  canDelete
+                                    ? "Xóa địa chỉ"
+                                    : "Không thể xóa địa chỉ chưa có ID"
+                                }
+                                aria-label={`Xóa địa chỉ ${addressItem.address}`}
+                                disabled={
+                                  !canDelete ||
+                                  isSubmitting ||
+                                  isSavingAddress ||
+                                  Boolean(
+                                    deletingAddressId
+                                  )
+                                }
+                                onClick={(
+                                  event
+                                ) =>
+                                  handleDeleteAddress(
+                                    event,
+                                    addressItem
+                                  )
+                                }
+                                onKeyDown={(
+                                  event
+                                ) =>
+                                  event.stopPropagation()
+                                }
+                              >
+                                {isDeleting ? (
+                                  <LoadingOutlined
+                                    spin
+                                  />
+                                ) : (
+                                  <DeleteOutlined />
+                                )}
+                              </button>
+                            </div>
+                          );
+                        }
                       )}
                     </div>
                   ) : (
@@ -1877,7 +2526,8 @@ export default function ConsignmentOrder() {
                   <input
                     type="text"
                     disabled={
-                      isSubmitting
+                      isSubmitting ||
+                      isSavingAddress
                     }
                     aria-invalid={Boolean(
                       newAddressError
@@ -1903,7 +2553,8 @@ export default function ConsignmentOrder() {
                     onKeyDown={(event) => {
                       if (
                         event.key ===
-                        "Enter"
+                          "Enter" &&
+                        !isSavingAddress
                       ) {
                         event.preventDefault();
 
@@ -1922,7 +2573,8 @@ export default function ConsignmentOrder() {
                     <button
                       type="button"
                       disabled={
-                        isSubmitting
+                        isSubmitting ||
+                        isSavingAddress
                       }
                       className="btn-inline-cancel"
                       onClick={
@@ -1935,16 +2587,29 @@ export default function ConsignmentOrder() {
                     <button
                       type="button"
                       disabled={
-                        isSubmitting
+                        isSubmitting ||
+                        isSavingAddress
                       }
                       className="btn-inline-save"
                       onClick={
                         handleSaveAddress
                       }
                     >
-                      <CheckOutlined />
+                      {isSavingAddress ? (
+                        <>
+                          <LoadingOutlined
+                            spin
+                          />
 
-                      Lưu địa chỉ
+                          Đang lưu...
+                        </>
+                      ) : (
+                        <>
+                          <CheckOutlined />
+
+                          Lưu địa chỉ
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
