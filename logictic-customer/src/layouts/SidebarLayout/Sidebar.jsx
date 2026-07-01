@@ -218,9 +218,9 @@ export default function Sidebar() {
   return (
     <aside className="sidebar-container">
       <div className="sidebar-fixed-top">
-        <div>
-          <p> Customer</p>
-          </div>
+      <div className="sidebar-customer-label">
+  CUSTOMER
+</div>
       <div className="sidebar-header">
   <NavLink
   
