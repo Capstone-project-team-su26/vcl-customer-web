@@ -27,10 +27,11 @@ import "./ConsignmentOrder.css";
 
 import AuthNotify from "../../../../utils/AuthNotify";
 import { createConsignmentApi } from "../../../../api/OrderApi/consignmentApi";
-import { uploadPackageImage } from "../../../../api/OrderApi/imageUploadApi";
-import { compressImage } from "../../../../utils/compressImage";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const UPLOAD_IMAGE_API_URL =
+  "https://api-vcl.purintech.id.vn/api/uploads/image";
 
 const ROUTE_OPTIONS = [
   {
@@ -109,25 +110,16 @@ const createEmptyFormErrors = () => ({
   selectedDeliveryAddress: "",
 });
 
-/**
- * Chặn số âm, dấu cộng và ký hiệu số khoa học.
- */
 const preventInvalidNumberKeys = (event) => {
   if (["-", "+", "e", "E"].includes(event.key)) {
     event.preventDefault();
   }
 };
 
-/**
- * Chỉ giữ số nguyên không âm.
- */
 const sanitizeInteger = (rawValue) => {
   return String(rawValue ?? "").replace(/\D/g, "");
 };
 
-/**
- * Chỉ giữ số thập phân không âm và tối đa một dấu chấm.
- */
 const sanitizeDecimal = (rawValue) => {
   let value = String(rawValue ?? "")
     .replace(",", ".")
@@ -150,6 +142,216 @@ const sanitizeDecimal = (rawValue) => {
   return value;
 };
 
+const extractUploadedImageUrl = (uploadResult) => {
+  const candidates = [
+    uploadResult,
+    uploadResult?.url,
+    uploadResult?.imageUrl,
+    uploadResult?.fileUrl,
+    uploadResult?.path,
+    uploadResult?.secureUrl,
+    uploadResult?.data,
+    uploadResult?.data?.url,
+    uploadResult?.data?.imageUrl,
+    uploadResult?.data?.fileUrl,
+    uploadResult?.data?.path,
+    uploadResult?.data?.secureUrl,
+    uploadResult?.data?.data,
+    uploadResult?.data?.data?.url,
+    uploadResult?.data?.data?.imageUrl,
+    uploadResult?.data?.data?.fileUrl,
+  ];
+
+  const imageUrl = candidates.find(
+    (candidate) =>
+      typeof candidate === "string" &&
+      candidate.trim()
+  );
+
+  return imageUrl?.trim() || "";
+};
+
+/**
+ * Upload ảnh trực tiếp bằng fetch.
+ *
+ * Không dùng axiosInstance.
+ * Không tự đặt Content-Type.
+ * Trình duyệt sẽ tự tạo multipart/form-data kèm boundary.
+ */
+const uploadImageDirectly = async (inputFile) => {
+  if (!inputFile) {
+    throw new Error(
+      "Không tìm thấy ảnh cần tải lên."
+    );
+  }
+
+  let file = inputFile;
+
+  if (
+    typeof File !== "undefined" &&
+    !(inputFile instanceof File) &&
+    typeof Blob !== "undefined" &&
+    inputFile instanceof Blob
+  ) {
+    const mimeType =
+      inputFile.type || "image/jpeg";
+
+    const extension =
+      mimeType === "image/png"
+        ? "png"
+        : mimeType === "image/webp"
+          ? "webp"
+          : "jpg";
+
+    file = new File(
+      [inputFile],
+      `upload-${Date.now()}.${extension}`,
+      {
+        type: mimeType,
+      }
+    );
+  }
+
+  if (
+    typeof File === "undefined" ||
+    !(file instanceof File)
+  ) {
+    throw new Error(
+      "File ảnh không hợp lệ."
+    );
+  }
+
+  if (!file.type?.startsWith("image/")) {
+    throw new Error(
+      "File được chọn không phải là hình ảnh."
+    );
+  }
+
+  if (file.size > MAX_IMAGE_SIZE) {
+    throw new Error(
+      "Dung lượng ảnh không được vượt quá 5MB."
+    );
+  }
+
+  const token =
+    sessionStorage.getItem("accessToken") ||
+    localStorage.getItem("accessToken");
+
+  if (!token) {
+    throw new Error(
+      "Không tìm thấy token đăng nhập. Vui lòng đăng nhập lại."
+    );
+  }
+
+  const formData = new FormData();
+
+  formData.append(
+    "file",
+    file,
+    file.name || `image-${Date.now()}.jpg`
+  );
+
+  let response;
+
+  try {
+    response = await fetch(
+      UPLOAD_IMAGE_API_URL,
+      {
+        method: "POST",
+
+        headers: {
+          Accept: "text/plain",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: formData,
+      }
+    );
+  } catch (networkError) {
+    console.error(
+      "Không thể kết nối API upload ảnh:",
+      networkError
+    );
+
+    throw new Error(
+      "Không thể kết nối đến máy chủ upload ảnh."
+    );
+  }
+
+  const responseText =
+    await response.text();
+
+  let responseData = responseText;
+
+  if (responseText) {
+    try {
+      responseData =
+        JSON.parse(responseText);
+    } catch {
+      responseData = responseText;
+    }
+  }
+
+  if (!response.ok) {
+    console.error(
+      "UPLOAD IMAGE FAILED:",
+      {
+        status: response.status,
+        statusText: response.statusText,
+        responseData,
+      }
+    );
+
+    if (response.status === 401) {
+      sessionStorage.removeItem(
+        "accessToken"
+      );
+
+      localStorage.removeItem(
+        "accessToken"
+      );
+
+      window.location.href = "/login";
+
+      throw new Error(
+        "Phiên đăng nhập đã hết hạn."
+      );
+    }
+
+    if (response.status === 403) {
+      throw new Error(
+        "Bạn không có quyền tải ảnh lên."
+      );
+    }
+
+    if (response.status === 413) {
+      throw new Error(
+        "Dung lượng ảnh vượt quá giới hạn của máy chủ."
+      );
+    }
+
+    if (response.status === 415) {
+      throw new Error(
+        "Máy chủ không chấp nhận định dạng ảnh này. Hãy dùng JPG hoặc PNG."
+      );
+    }
+
+    const serverMessage =
+      typeof responseData === "string"
+        ? responseData
+        : responseData?.message ||
+          responseData?.title ||
+          responseData?.error;
+
+    throw new Error(
+      serverMessage ||
+        `Upload ảnh thất bại (${response.status}).`
+    );
+  }
+
+  return responseData;
+};
+
 const FieldError = ({ message }) => {
   if (!message) {
     return null;
@@ -158,6 +360,7 @@ const FieldError = ({ message }) => {
   return (
     <div className="field-error-message">
       <ExclamationCircleOutlined />
+
       <span>{message}</span>
     </div>
   );
@@ -165,84 +368,105 @@ const FieldError = ({ message }) => {
 
 export default function ConsignmentOrder() {
   const navigate = useNavigate();
+
   const fileInputRefs = useRef({});
   const packagesRef = useRef([]);
 
   const [inspectPackage, setInspectPackage] =
     useState(true);
 
-  const [activeLightboxImg, setActiveLightboxImg] =
-    useState(null);
+  const [
+    activeLightboxImg,
+    setActiveLightboxImg,
+  ] = useState(null);
 
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
-  const [submitMessage, setSubmitMessage] = useState(
+  const [
+    submitMessage,
+    setSubmitMessage,
+  ] = useState(
     "Đang chuẩn bị tạo đơn..."
   );
 
-  /*
-   * Để trống ban đầu nhằm bắt buộc người dùng chọn.
-   */
-  const [route, setRoute] = useState("");
-  const [shippingOption, setShippingOption] =
+  const [route, setRoute] =
     useState("");
 
-  const [receiverName, setReceiverName] =
-    useState("");
+  const [
+    shippingOption,
+    setShippingOption,
+  ] = useState("");
 
-  const [receiverPhone, setReceiverPhone] =
-    useState("");
+  const [
+    receiverName,
+    setReceiverName,
+  ] = useState("");
 
-  /*
-   * Không để [""] vì sẽ tạo ra một địa chỉ rỗng.
-   */
-  const [addressList, setAddressList] = useState([]);
+  const [
+    receiverPhone,
+    setReceiverPhone,
+  ] = useState("");
+
+  const [addressList, setAddressList] =
+    useState([]);
 
   const [
     selectedDeliveryAddress,
     setSelectedDeliveryAddress,
   ] = useState("");
 
-  const [isAddingAddress, setIsAddingAddress] =
-    useState(false);
+  const [
+    isAddingAddress,
+    setIsAddingAddress,
+  ] = useState(false);
 
-  const [newAddressInput, setNewAddressInput] =
-    useState("");
+  const [
+    newAddressInput,
+    setNewAddressInput,
+  ] = useState("");
 
-  const [newAddressError, setNewAddressError] =
-    useState("");
+  const [
+    newAddressError,
+    setNewAddressError,
+  ] = useState("");
 
-  const [packages, setPackages] = useState([
-    createEmptyPackage(),
-  ]);
+  const [packages, setPackages] =
+    useState([
+      createEmptyPackage(),
+    ]);
 
-  const [formErrors, setFormErrors] = useState(
+  const [
+    formErrors,
+    setFormErrors,
+  ] = useState(
     createEmptyFormErrors
   );
 
-  const [packageErrors, setPackageErrors] =
-    useState({});
+  const [
+    packageErrors,
+    setPackageErrors,
+  ] = useState({});
 
-  /*
-   * Giữ danh sách package mới nhất để dọn preview URL
-   * khi component bị unmount.
-   */
   useEffect(() => {
     packagesRef.current = packages;
   }, [packages]);
 
   useEffect(() => {
     return () => {
-      packagesRef.current.forEach((pkg) => {
-        pkg.images.forEach((image) => {
-          if (image.previewUrl) {
-            URL.revokeObjectURL(
-              image.previewUrl
-            );
-          }
-        });
-      });
+      packagesRef.current.forEach(
+        (pkg) => {
+          pkg.images.forEach(
+            (image) => {
+              if (image.previewUrl) {
+                URL.revokeObjectURL(
+                  image.previewUrl
+                );
+              }
+            }
+          );
+        }
+      );
     };
   }, []);
 
@@ -252,7 +476,9 @@ export default function ConsignmentOrder() {
   ) => {
     return [
       baseClassName,
-      errorMessage ? "input-has-error" : "",
+      errorMessage
+        ? "input-has-error"
+        : "",
     ]
       .filter(Boolean)
       .join(" ");
@@ -271,6 +497,7 @@ export default function ConsignmentOrder() {
   ) => {
     setPackageErrors((previous) => ({
       ...previous,
+
       [packageId]: {
         ...(previous[packageId] || {}),
         [field]: "",
@@ -285,6 +512,7 @@ export default function ConsignmentOrder() {
   ) => {
     setPackageErrors((previous) => ({
       ...previous,
+
       [packageId]: {
         ...(previous[packageId] || {}),
         [field]: message,
@@ -310,9 +538,7 @@ export default function ConsignmentOrder() {
     }, 100);
   };
 
-  /* =======================================================
-     ADDRESS
-     ======================================================= */
+  /* ================= ADDRESS ================= */
 
   const handleSaveAddress = () => {
     const trimmedAddress =
@@ -322,19 +548,24 @@ export default function ConsignmentOrder() {
       setNewAddressError(
         "Vui lòng nhập địa chỉ nhận hàng."
       );
+
       return;
     }
 
-    const addressExists = addressList.some(
-      (address) =>
-        address.trim().toLowerCase() ===
-        trimmedAddress.toLowerCase()
-    );
+    const addressExists =
+      addressList.some(
+        (address) =>
+          address
+            .trim()
+            .toLowerCase() ===
+          trimmedAddress.toLowerCase()
+      );
 
     if (addressExists) {
       setNewAddressError(
         "Địa chỉ này đã có trong danh sách."
       );
+
       return;
     }
 
@@ -343,7 +574,10 @@ export default function ConsignmentOrder() {
       trimmedAddress,
     ]);
 
-    setSelectedDeliveryAddress(trimmedAddress);
+    setSelectedDeliveryAddress(
+      trimmedAddress
+    );
+
     setNewAddressInput("");
     setNewAddressError("");
     setIsAddingAddress(false);
@@ -364,29 +598,55 @@ export default function ConsignmentOrder() {
     setIsAddingAddress(false);
   };
 
-  const handleSelectAddress = (address) => {
-    if (isSubmitting || !address?.trim()) {
+  const handleSelectAddress = (
+    address
+  ) => {
+    if (
+      isSubmitting ||
+      !address?.trim()
+    ) {
       return;
     }
 
-    setSelectedDeliveryAddress(address);
+    setSelectedDeliveryAddress(
+      address
+    );
+
     clearFormError(
       "selectedDeliveryAddress"
     );
   };
 
-  const handleReceiverPhoneChange = (event) => {
-    const digitsOnly = event.target.value
-      .replace(/\D/g, "")
-      .slice(0, 10);
+  const handleReceiverPhoneChange = (
+    event
+  ) => {
+    const digitsOnly =
+      event.target.value
+        .replace(/\D/g, "")
+        .slice(0, 10);
 
     setReceiverPhone(digitsOnly);
-    clearFormError("receiverPhone");
-  };
 
-  /* =======================================================
-     PACKAGE INPUT
-     ======================================================= */
+    clearFormError(
+      "receiverPhone"
+    );
+  };
+  const formatVnd = (value) => {
+    const digits = String(value ?? "").replace(/\D/g, "");
+  
+    if (!digits) {
+      return "";
+    }
+  
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+  
+  const handleMoneyKeyDown = (event) => {
+    if (["-", "+", "e", "E", ",", "."].includes(event.key)) {
+      event.preventDefault();
+    }
+  };
+  /* ================= PACKAGE INPUT ================= */
 
   const handleInputChange = (
     packageId,
@@ -404,7 +664,10 @@ export default function ConsignmentOrder() {
       )
     );
 
-    clearPackageError(packageId, field);
+    clearPackageError(
+      packageId,
+      field
+    );
   };
 
   const handleIntegerChange = (
@@ -440,9 +703,12 @@ export default function ConsignmentOrder() {
       return;
     }
 
-    let normalizedValue = rawValue;
+    let normalizedValue =
+      rawValue;
 
-    if (normalizedValue.endsWith(".")) {
+    if (
+      normalizedValue.endsWith(".")
+    ) {
       normalizedValue =
         normalizedValue.slice(0, -1);
     }
@@ -459,9 +725,7 @@ export default function ConsignmentOrder() {
     }
   };
 
-  /* =======================================================
-     VALIDATION
-     ======================================================= */
+  /* ================= VALIDATION ================= */
 
   const validateForm = () => {
     const nextFormErrors =
@@ -496,13 +760,17 @@ export default function ConsignmentOrder() {
       nextFormErrors.receiverPhone =
         "Vui lòng nhập số điện thoại.";
     } else if (
-      !/^0\d{9}$/.test(normalizedPhone)
+      !/^0\d{9}$/.test(
+        normalizedPhone
+      )
     ) {
       nextFormErrors.receiverPhone =
         "Số điện thoại phải có 10 số và bắt đầu bằng số 0.";
     }
 
-    if (!selectedDeliveryAddress.trim()) {
+    if (
+      !selectedDeliveryAddress.trim()
+    ) {
       nextFormErrors.selectedDeliveryAddress =
         "Vui lòng thêm và chọn địa chỉ nhận hàng.";
     }
@@ -520,7 +788,8 @@ export default function ConsignmentOrder() {
           "Vui lòng chọn loại hàng hóa.";
       }
 
-      const quantity = Number(pkg.quantity);
+      const quantity =
+        Number(pkg.quantity);
 
       if (pkg.quantity === "") {
         errors.quantity =
@@ -533,22 +802,26 @@ export default function ConsignmentOrder() {
           "Số lượng phải là số nguyên từ 1 trở lên.";
       }
 
-      const declaredValue = Number(
-        pkg.declaredValue
-      );
+      const declaredValue =
+        Number(pkg.declaredValue);
 
-      if (pkg.declaredValue === "") {
+      if (
+        pkg.declaredValue === ""
+      ) {
         errors.declaredValue =
           "Vui lòng nhập giá trị khai báo.";
       } else if (
-        !Number.isFinite(declaredValue) ||
+        !Number.isFinite(
+          declaredValue
+        ) ||
         declaredValue < 0
       ) {
         errors.declaredValue =
           "Giá trị khai báo không được là số âm.";
       }
 
-      const weight = Number(pkg.weight);
+      const weight =
+        Number(pkg.weight);
 
       if (pkg.weight === "") {
         errors.weight =
@@ -561,7 +834,8 @@ export default function ConsignmentOrder() {
           "Cân nặng phải lớn hơn 0.";
       }
 
-      const length = Number(pkg.length);
+      const length =
+        Number(pkg.length);
 
       if (pkg.length === "") {
         errors.length =
@@ -574,7 +848,8 @@ export default function ConsignmentOrder() {
           "Chiều dài phải lớn hơn 0.";
       }
 
-      const width = Number(pkg.width);
+      const width =
+        Number(pkg.width);
 
       if (pkg.width === "") {
         errors.width =
@@ -587,7 +862,8 @@ export default function ConsignmentOrder() {
           "Chiều rộng phải lớn hơn 0.";
       }
 
-      const height = Number(pkg.height);
+      const height =
+        Number(pkg.height);
 
       if (pkg.height === "") {
         errors.height =
@@ -613,40 +889,52 @@ export default function ConsignmentOrder() {
           "Vui lòng tải ít nhất 1 ảnh sản phẩm.";
       }
 
-      nextPackageErrors[pkg.id] = errors;
+      nextPackageErrors[pkg.id] =
+        errors;
     });
 
     setFormErrors(nextFormErrors);
-    setPackageErrors(nextPackageErrors);
 
-    const hasFormError = Object.values(
-      nextFormErrors
-    ).some(Boolean);
-
-    const hasPackageError = Object.values(
+    setPackageErrors(
       nextPackageErrors
-    ).some((errors) =>
-      Object.values(errors).some(Boolean)
     );
 
-    if (hasFormError || hasPackageError) {
+    const hasFormError =
+      Object.values(
+        nextFormErrors
+      ).some(Boolean);
+
+    const hasPackageError =
+      Object.values(
+        nextPackageErrors
+      ).some((errors) =>
+        Object.values(
+          errors
+        ).some(Boolean)
+      );
+
+    if (
+      hasFormError ||
+      hasPackageError
+    ) {
       AuthNotify.warning(
         "Thông tin chưa đầy đủ",
         "Vui lòng kiểm tra các trường được đánh dấu màu đỏ."
       );
 
       scrollToFirstError();
+
       return false;
     }
 
     return true;
   };
 
-  /* =======================================================
-     IMAGE
-     ======================================================= */
+  /* ================= IMAGE ================= */
 
-  const handleDropzoneClick = (packageId) => {
+  const handleDropzoneClick = (
+    packageId
+  ) => {
     if (isSubmitting) {
       return;
     }
@@ -668,10 +956,13 @@ export default function ConsignmentOrder() {
       return;
     }
 
-    const invalidFile = files.find(
-      (file) =>
-        !file.type.startsWith("image/")
-    );
+    const invalidFile =
+      files.find(
+        (file) =>
+          !file.type.startsWith(
+            "image/"
+          )
+      );
 
     if (invalidFile) {
       AuthNotify.warning(
@@ -680,13 +971,37 @@ export default function ConsignmentOrder() {
       );
 
       event.target.value = "";
+
       return;
     }
 
-    const oversizedFile = files.find(
-      (file) =>
-        file.size > MAX_IMAGE_SIZE
-    );
+    const unsupportedFile =
+      files.find(
+        (file) =>
+          ![
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+          ].includes(file.type)
+      );
+
+    if (unsupportedFile) {
+      AuthNotify.warning(
+        "Định dạng không hỗ trợ",
+        `Ảnh "${unsupportedFile.name}" không phải JPG, PNG hoặc WEBP.`
+      );
+
+      event.target.value = "";
+
+      return;
+    }
+
+    const oversizedFile =
+      files.find(
+        (file) =>
+          file.size >
+          MAX_IMAGE_SIZE
+      );
 
     if (oversizedFile) {
       AuthNotify.warning(
@@ -695,23 +1010,25 @@ export default function ConsignmentOrder() {
       );
 
       event.target.value = "";
+
       return;
     }
 
-    const newImageObjects = files.map(
-      (file) => ({
+    const newImageObjects =
+      files.map((file) => ({
         id: createUniqueId(),
         fileObj: file,
+
         previewUrl:
           URL.createObjectURL(file),
-      })
-    );
+      }));
 
     setPackages((previous) =>
       previous.map((pkg) =>
         pkg.id === packageId
           ? {
               ...pkg,
+
               images: [
                 ...pkg.images,
                 ...newImageObjects,
@@ -748,7 +1065,9 @@ export default function ConsignmentOrder() {
 
     setPackages((previous) =>
       previous.map((pkg) => {
-        if (pkg.id !== packageId) {
+        if (
+          pkg.id !== packageId
+        ) {
           return pkg;
         }
 
@@ -758,7 +1077,9 @@ export default function ConsignmentOrder() {
               image.id !== targetId
           );
 
-        if (remainingImages.length === 0) {
+        if (
+          remainingImages.length === 0
+        ) {
           setPackageFieldError(
             packageId,
             "images",
@@ -774,29 +1095,34 @@ export default function ConsignmentOrder() {
     );
 
     if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+      URL.revokeObjectURL(
+        previewUrl
+      );
     }
 
     if (
-      activeLightboxImg === previewUrl
+      activeLightboxImg ===
+      previewUrl
     ) {
       setActiveLightboxImg(null);
     }
   };
 
-  const revokePackageImages = (pkg) => {
-    pkg.images.forEach((image) => {
-      if (image.previewUrl) {
-        URL.revokeObjectURL(
-          image.previewUrl
-        );
+  const revokePackageImages = (
+    pkg
+  ) => {
+    pkg.images.forEach(
+      (image) => {
+        if (image.previewUrl) {
+          URL.revokeObjectURL(
+            image.previewUrl
+          );
+        }
       }
-    });
+    );
   };
 
-  /* =======================================================
-     PACKAGE ACTIONS
-     ======================================================= */
+  /* ================= PACKAGE ACTIONS ================= */
 
   const handleAddPackage = () => {
     if (isSubmitting) {
@@ -821,234 +1147,309 @@ export default function ConsignmentOrder() {
         "Không thể xóa",
         "Yêu cầu phải có tối thiểu 1 kiện hàng."
       );
+
       return;
     }
 
-    const targetPackage = packages.find(
-      (pkg) => pkg.id === packageId
-    );
+    const targetPackage =
+      packages.find(
+        (pkg) =>
+          pkg.id === packageId
+      );
 
     if (targetPackage) {
-      revokePackageImages(targetPackage);
+      revokePackageImages(
+        targetPackage
+      );
     }
 
     setPackages((previous) =>
       previous.filter(
-        (pkg) => pkg.id !== packageId
+        (pkg) =>
+          pkg.id !== packageId
       )
     );
 
-    setPackageErrors((previous) => {
-      const nextErrors = {
-        ...previous,
-      };
+    setPackageErrors(
+      (previous) => {
+        const nextErrors = {
+          ...previous,
+        };
 
-      delete nextErrors[packageId];
+        delete nextErrors[
+          packageId
+        ];
 
-      return nextErrors;
-    });
+        return nextErrors;
+      }
+    );
 
     delete fileInputRefs.current[
       packageId
     ];
   };
 
-  /* =======================================================
-     SUBMIT
-     ======================================================= */
+  /* ================= SUBMIT ================= */
 
-  const handleCreateOrder = async () => {
-    if (isSubmitting) {
-      return;
-    }
-
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      const unifiedNote =
-        packages
-          .map((pkg) => pkg.note.trim())
-          .filter(Boolean)
-          .join(", ") || "Hàng ký gửi";
-
-      const items = [];
-
-      for (
-        let index = 0;
-        index < packages.length;
-        index += 1
-      ) {
-        const pkg = packages[index];
-
-        setSubmitMessage(
-          `Đang xử lý ảnh kiện ${
-            index + 1
-          }/${packages.length}...`
-        );
-
-        let referenceUrl = null;
-
-        try {
-          const firstImage =
-            pkg.images[0];
-
-          const compressedFile =
-            await compressImage(
-              firstImage.fileObj
-            );
-
-          referenceUrl =
-            await uploadPackageImage(
-              compressedFile
-            );
-        } catch (uploadError) {
-          console.error(
-            "Upload ảnh thất bại:",
-            uploadError
-          );
-
-          throw new Error(
-            `Không upload được ảnh kiện ${
-              index + 1
-            }. Vui lòng thử lại hoặc chọn ảnh khác.`
-          );
-        }
-
-        items.push({
-          productName:
-            pkg.productName.trim(),
-
-          productType: pkg.productType,
-
-          quantity: Number(pkg.quantity),
-
-          weight: Number(pkg.weight),
-
-          width: Number(pkg.width),
-
-          height: Number(pkg.height),
-
-          length: Number(pkg.length),
-
-          declaredValue: Number(
-            pkg.declaredValue
-          ),
-
-          referenceUrl,
-
-          domesticTrackingCode:
-            pkg.trackingCode.trim() ||
-            null,
-        });
+  const handleCreateOrder =
+    async () => {
+      if (isSubmitting) {
+        return;
       }
 
-      setSubmitMessage(
-        "Đang gửi yêu cầu tạo đơn ký gửi..."
-      );
+      if (!validateForm()) {
+        return;
+      }
 
-      const orderPayload = {
-        route,
-        shippingOption,
+      try {
+        setIsSubmitting(true);
 
-        receiverName:
-          receiverName.trim(),
+        const unifiedNote =
+          packages
+            .map((pkg) =>
+              pkg.note.trim()
+            )
+            .filter(Boolean)
+            .join(", ") ||
+          "Hàng ký gửi";
 
-        receiverPhone:
-          receiverPhone.trim(),
+        const items = [];
 
-        receiverAddress:
-          selectedDeliveryAddress.trim(),
+        for (
+          let index = 0;
+          index < packages.length;
+          index += 1
+        ) {
+          const pkg =
+            packages[index];
 
-        requiresInspection:
-          Boolean(inspectPackage),
+          setSubmitMessage(
+            `Đang xử lý ảnh kiện ${
+              index + 1
+            }/${packages.length}...`
+          );
 
-        note: unifiedNote,
-        items,
-      };
+          let referenceUrl = null;
 
-      const result =
-        await createConsignmentApi(
+          try {
+            const firstImage =
+              pkg.images[0];
+
+            if (
+              !firstImage?.fileObj
+            ) {
+              throw new Error(
+                "Không tìm thấy file ảnh cần upload."
+              );
+            }
+
+            const uploadResult =
+              await uploadImageDirectly(
+                firstImage.fileObj
+              );
+
+            referenceUrl =
+              extractUploadedImageUrl(
+                uploadResult
+              );
+
+            if (!referenceUrl) {
+              console.error(
+                "Kết quả API upload ảnh không hợp lệ:",
+                uploadResult
+              );
+
+              throw new Error(
+                "API upload ảnh không trả về đường dẫn ảnh hợp lệ."
+              );
+            }
+          } catch (uploadError) {
+            console.error(
+              "Upload ảnh thất bại:",
+              uploadError
+            );
+
+            throw new Error(
+              `Không upload được ảnh kiện ${
+                index + 1
+              }. ${
+                uploadError?.message ||
+                "Vui lòng thử lại hoặc chọn ảnh khác."
+              }`
+            );
+          }
+
+          items.push({
+            productName:
+              pkg.productName.trim(),
+
+            productType:
+              pkg.productType,
+
+            quantity:
+              Number(pkg.quantity),
+
+            weight:
+              Number(pkg.weight),
+
+            width:
+              Number(pkg.width),
+
+            height:
+              Number(pkg.height),
+
+            length:
+              Number(pkg.length),
+
+            declaredValue:
+              Number(
+                pkg.declaredValue
+              ),
+
+            referenceUrl,
+
+            domesticTrackingCode:
+              pkg.trackingCode.trim() ||
+              null,
+          });
+        }
+
+        setSubmitMessage(
+          "Đang gửi yêu cầu tạo đơn ký gửi..."
+        );
+
+        const orderPayload = {
+          route,
+          shippingOption,
+
+          receiverName:
+            receiverName.trim(),
+
+          receiverPhone:
+            receiverPhone.trim(),
+
+          receiverAddress:
+            selectedDeliveryAddress.trim(),
+
+          requiresInspection:
+            Boolean(
+              inspectPackage
+            ),
+
+          note: unifiedNote,
+
+          items,
+        };
+
+        console.log(
+          "CREATE CONSIGNMENT PAYLOAD:",
           orderPayload
         );
 
-      if (!result) {
-        throw new Error(
-          "Máy chủ không trả về kết quả tạo đơn."
+        const result =
+          await createConsignmentApi(
+            orderPayload
+          );
+
+        if (!result) {
+          throw new Error(
+            "Máy chủ không trả về kết quả tạo đơn."
+          );
+        }
+
+        AuthNotify.success(
+          "Tạo đơn thành công",
+          "Đơn hàng ký gửi đã được tiếp nhận."
+        );
+
+        navigate(
+          "/processing-orders"
+        );
+      } catch (error) {
+        console.error(
+          "Lỗi tạo đơn ký gửi:",
+          error
+        );
+
+        const backendErrors =
+          error.response?.data
+            ?.errors;
+
+        const status =
+          error.response?.status;
+
+        let errorMessage =
+          "Không thể tạo đơn ký gửi. Vui lòng thử lại.";
+
+        if (
+          error.message
+            ?.toLowerCase()
+            .includes("upload")
+        ) {
+          errorMessage =
+            error.message;
+        } else if (
+          backendErrors
+        ) {
+          errorMessage =
+            Object.entries(
+              backendErrors
+            )
+              .map(
+                ([key, value]) => {
+                  const messages =
+                    Array.isArray(
+                      value
+                    )
+                      ? value.join(", ")
+                      : String(value);
+
+                  return `${key}: ${messages}`;
+                }
+              )
+              .join(" | ");
+        } else if (
+          error.response?.data
+            ?.message
+        ) {
+          errorMessage =
+            error.response.data.message;
+        } else if (
+          typeof error.response
+            ?.data === "string"
+        ) {
+          errorMessage =
+            error.response.data;
+        } else if (
+          error.message
+        ) {
+          errorMessage =
+            error.message;
+        } else if (
+          status === 500
+        ) {
+          errorMessage =
+            "Máy chủ xử lý thất bại. Vui lòng kiểm tra lại thông tin và ảnh sản phẩm.";
+        }
+
+        AuthNotify.error(
+          "Giao dịch thất bại",
+          errorMessage
+        );
+      } finally {
+        setIsSubmitting(false);
+
+        setSubmitMessage(
+          "Đang chuẩn bị tạo đơn..."
         );
       }
-
-      AuthNotify.success(
-        "Tạo đơn thành công",
-        "Đơn hàng ký gửi đã được tiếp nhận."
-      );
-
-      navigate("/processing-orders");
-    } catch (error) {
-      console.error(
-        "Lỗi tạo đơn ký gửi:",
-        error
-      );
-
-      const backendErrors =
-        error.response?.data?.errors;
-
-      const status =
-        error.response?.status;
-
-      let errorMessage =
-        "Không thể tạo đơn ký gửi. Vui lòng thử lại.";
-
-      if (
-        error.message
-          ?.toLowerCase()
-          .includes("upload")
-      ) {
-        errorMessage = error.message;
-      } else if (backendErrors) {
-        errorMessage = Object.entries(
-          backendErrors
-        )
-          .map(([key, value]) => {
-            const messages =
-              Array.isArray(value)
-                ? value.join(", ")
-                : String(value);
-
-            return `${key}: ${messages}`;
-          })
-          .join(" | ");
-      } else if (
-        error.response?.data?.message
-      ) {
-        errorMessage =
-          error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else if (status === 500) {
-        errorMessage =
-          "Máy chủ xử lý thất bại. Vui lòng kiểm tra lại thông tin và ảnh sản phẩm.";
-      }
-
-      AuthNotify.error(
-        "Giao dịch thất bại",
-        errorMessage
-      );
-    } finally {
-      setIsSubmitting(false);
-      setSubmitMessage(
-        "Đang chuẩn bị tạo đơn..."
-      );
-    }
-  };
+    };
 
   return (
     <div
       className={[
         "consignment-container",
+
         isSubmitting
           ? "consignment-is-submitting"
           : "",
@@ -1076,11 +1477,13 @@ export default function ConsignmentOrder() {
         }}
       >
         <LeftOutlined className="back-icon" />
+
         <span>QUAY LẠI</span>
       </div>
 
       <div className="consignment-layout-grid">
         {/* CỘT TRÁI */}
+
         <div className="layout-left-fixed-sidebar">
           <div className="page-header-title-box">
             <div className="title-icon-orange">
@@ -1118,6 +1521,7 @@ export default function ConsignmentOrder() {
 
             <div className="title-text-group">
               <h2>KÝ GỬI HÀNG HÓA</h2>
+
               <p>TẠO ĐƠN HÀNG MỚI</p>
             </div>
           </div>
@@ -1127,15 +1531,16 @@ export default function ConsignmentOrder() {
               <div className="input-field-group">
                 <label className="field-label required-label">
                   <EnvironmentOutlined />
+
                   TUYẾN HÀNG
                 </label>
 
                 <select
                   value={route}
                   disabled={isSubmitting}
-                  aria-invalid={
-                    Boolean(formErrors.route)
-                  }
+                  aria-invalid={Boolean(
+                    formErrors.route
+                  )}
                   className={getFieldClassName(
                     "custom-select",
                     formErrors.route
@@ -1145,7 +1550,9 @@ export default function ConsignmentOrder() {
                       event.target.value
                     );
 
-                    clearFormError("route");
+                    clearFormError(
+                      "route"
+                    );
                   }}
                 >
                   <option value="">
@@ -1155,8 +1562,12 @@ export default function ConsignmentOrder() {
                   {ROUTE_OPTIONS.map(
                     (option) => (
                       <option
-                        key={option.value}
-                        value={option.value}
+                        key={
+                          option.value
+                        }
+                        value={
+                          option.value
+                        }
                       >
                         {option.label}
                       </option>
@@ -1165,7 +1576,9 @@ export default function ConsignmentOrder() {
                 </select>
 
                 <FieldError
-                  message={formErrors.route}
+                  message={
+                    formErrors.route
+                  }
                 />
               </div>
             </div>
@@ -1174,12 +1587,17 @@ export default function ConsignmentOrder() {
               <div className="input-field-group">
                 <label className="field-label required-label">
                   <EnvironmentOutlined />
+
                   HÌNH THỨC VẬN CHUYỂN
                 </label>
 
                 <select
-                  value={shippingOption}
-                  disabled={isSubmitting}
+                  value={
+                    shippingOption
+                  }
+                  disabled={
+                    isSubmitting
+                  }
                   aria-invalid={Boolean(
                     formErrors.shippingOption
                   )}
@@ -1204,8 +1622,12 @@ export default function ConsignmentOrder() {
                   {SHIPPING_OPTIONS.map(
                     (option) => (
                       <option
-                        key={option.value}
-                        value={option.value}
+                        key={
+                          option.value
+                        }
+                        value={
+                          option.value
+                        }
                       >
                         {option.label}
                       </option>
@@ -1234,7 +1656,9 @@ export default function ConsignmentOrder() {
 
                 <input
                   type="text"
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting
+                  }
                   aria-invalid={Boolean(
                     formErrors.receiverName
                   )}
@@ -1271,7 +1695,9 @@ export default function ConsignmentOrder() {
                   type="text"
                   inputMode="numeric"
                   maxLength={10}
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting
+                  }
                   aria-invalid={Boolean(
                     formErrors.receiverPhone
                   )}
@@ -1297,6 +1723,7 @@ export default function ConsignmentOrder() {
             <div className="left-inner-section border-top-dash">
               <label className="field-label">
                 <EnvironmentOutlined />
+
                 ĐỊA CHỈ ĐANG CHỌN
               </label>
 
@@ -1326,53 +1753,78 @@ export default function ConsignmentOrder() {
                 <>
                   <button
                     type="button"
-                    disabled={isSubmitting}
+                    disabled={
+                      isSubmitting
+                    }
                     className="btn-add-address"
                     onClick={() => {
-                      setIsAddingAddress(true);
-                      setNewAddressError("");
+                      setIsAddingAddress(
+                        true
+                      );
+
+                      setNewAddressError(
+                        ""
+                      );
                     }}
                   >
                     <PlusOutlined />
+
                     THÊM ĐỊA CHỈ NHẬN HÀNG
                   </button>
 
-                  {addressList.length > 0 ? (
+                  {addressList.length >
+                  0 ? (
                     <div
                       className={[
                         "address-scroll-container",
+
                         formErrors.selectedDeliveryAddress
                           ? "address-list-has-error"
                           : "",
                       ]
-                        .filter(Boolean)
+                        .filter(
+                          Boolean
+                        )
                         .join(" ")}
                     >
                       {addressList.map(
-                        (address, index) => (
+                        (
+                          address,
+                          index
+                        ) => (
                           <div
                             key={`${address}-${index}`}
                             role="button"
-                            tabIndex={0}
+                            tabIndex={
+                              0
+                            }
                             className={[
                               "address-item-clickable",
+
                               selectedDeliveryAddress ===
                               address
                                 ? "is-active"
                                 : "",
                             ]
-                              .filter(Boolean)
-                              .join(" ")}
+                              .filter(
+                                Boolean
+                              )
+                              .join(
+                                " "
+                              )}
                             onClick={() =>
                               handleSelectAddress(
                                 address
                               )
                             }
-                            onKeyDown={(event) => {
+                            onKeyDown={(
+                              event
+                            ) => {
                               if (
                                 event.key ===
                                   "Enter" ||
-                                event.key === " "
+                                event.key ===
+                                  " "
                               ) {
                                 event.preventDefault();
 
@@ -1383,7 +1835,9 @@ export default function ConsignmentOrder() {
                             }}
                           >
                             <span className="address-text-truncate">
-                              {address}
+                              {
+                                address
+                              }
                             </span>
 
                             {selectedDeliveryAddress ===
@@ -1398,11 +1852,14 @@ export default function ConsignmentOrder() {
                     <div
                       className={[
                         "address-empty-message",
+
                         formErrors.selectedDeliveryAddress
                           ? "address-list-has-error"
                           : "",
                       ]
-                        .filter(Boolean)
+                        .filter(
+                          Boolean
+                        )
                         .join(" ")}
                     >
                       Chưa có địa chỉ nhận
@@ -1419,7 +1876,9 @@ export default function ConsignmentOrder() {
 
                   <input
                     type="text"
-                    disabled={isSubmitting}
+                    disabled={
+                      isSubmitting
+                    }
                     aria-invalid={Boolean(
                       newAddressError
                     )}
@@ -1428,32 +1887,43 @@ export default function ConsignmentOrder() {
                       newAddressError
                     )}
                     placeholder="Nhập địa chỉ nhận hàng..."
-                    value={newAddressInput}
+                    value={
+                      newAddressInput
+                    }
                     onChange={(event) => {
                       setNewAddressInput(
-                        event.target.value
+                        event.target
+                          .value
                       );
 
-                      setNewAddressError("");
+                      setNewAddressError(
+                        ""
+                      );
                     }}
                     onKeyDown={(event) => {
                       if (
-                        event.key === "Enter"
+                        event.key ===
+                        "Enter"
                       ) {
                         event.preventDefault();
+
                         handleSaveAddress();
                       }
                     }}
                   />
 
                   <FieldError
-                    message={newAddressError}
+                    message={
+                      newAddressError
+                    }
                   />
 
                   <div className="inline-form-actions">
                     <button
                       type="button"
-                      disabled={isSubmitting}
+                      disabled={
+                        isSubmitting
+                      }
                       className="btn-inline-cancel"
                       onClick={
                         handleCancelAddAddress
@@ -1464,11 +1934,16 @@ export default function ConsignmentOrder() {
 
                     <button
                       type="button"
-                      disabled={isSubmitting}
+                      disabled={
+                        isSubmitting
+                      }
                       className="btn-inline-save"
-                      onClick={handleSaveAddress}
+                      onClick={
+                        handleSaveAddress
+                      }
                     >
                       <CheckOutlined />
+
                       Lưu địa chỉ
                     </button>
                   </div>
@@ -1482,7 +1957,9 @@ export default function ConsignmentOrder() {
               </div>
 
               <div className="toggle-text-info">
-                <h4>YÊU CẦU KIỂM HÀNG</h4>
+                <h4>
+                  YÊU CẦU KIỂM HÀNG
+                </h4>
 
                 <p>
                   Khai mở kiểm đếm số lượng
@@ -1491,526 +1968,635 @@ export default function ConsignmentOrder() {
               </div>
 
               <Switch
-                checked={inspectPackage}
-                disabled={isSubmitting}
-                onChange={setInspectPackage}
+                checked={
+                  inspectPackage
+                }
+                disabled={
+                  isSubmitting
+                }
+                onChange={
+                  setInspectPackage
+                }
               />
             </div>
           </div>
         </div>
 
         {/* CỘT PHẢI */}
+
         <div className="layout-right-scrollable-form">
           <div className="scrollable-content-wrapper">
-            {packages.map((pkg, index) => {
-              const errors =
-                packageErrors[pkg.id] || {};
+            {packages.map(
+              (pkg, index) => {
+                const errors =
+                  packageErrors[
+                    pkg.id
+                  ] || {};
 
-              return (
-                <div
-                  key={pkg.id}
-                  className="form-main-card"
-                  style={{
-                    marginBottom: "1.5rem",
-                  }}
-                >
-                  <div className="form-step-header">
-                    <div className="step-header-left">
-                      <div className="step-number-circle">
-                        {index + 1}
+                return (
+                  <div
+                    key={pkg.id}
+                    className="form-main-card"
+                    style={{
+                      marginBottom:
+                        "1.5rem",
+                    }}
+                  >
+                    <div className="form-step-header">
+                      <div className="step-header-left">
+                        <div className="step-number-circle">
+                          {index +
+                            1}
+                        </div>
+
+                        <h3>
+                          THÔNG TIN SẢN
+                          PHẨM KIỆN THỨ{" "}
+                          {index + 1}
+                        </h3>
                       </div>
 
-                      <h3>
-                        THÔNG TIN SẢN PHẨM
-                        KIỆN THỨ {index + 1}
-                      </h3>
+                      {packages.length >
+                        1 && (
+                        <button
+                          type="button"
+                          disabled={
+                            isSubmitting
+                          }
+                          className="btn-delete-package"
+                          onClick={() =>
+                            handleDeletePackage(
+                              pkg.id
+                            )
+                          }
+                        >
+                          <DeleteOutlined />
+
+                          Xóa kiện
+                        </button>
+                      )}
                     </div>
 
-                    {packages.length > 1 && (
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        className="btn-delete-package"
-                        onClick={() =>
-                          handleDeletePackage(
-                            pkg.id
-                          )
-                        }
-                      >
-                        <DeleteOutlined />
-                        Xóa kiện
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="form-row-2col">
-                    <div className="input-field-group">
-                      <label className="field-label required-label">
-                        TÊN SẢN PHẨM
-                      </label>
-
-                      <input
-                        type="text"
-                        disabled={isSubmitting}
-                        placeholder="Nhập tên sản phẩm..."
-                        aria-invalid={Boolean(
-                          errors.productName
-                        )}
-                        className={getFieldClassName(
-                          "custom-input",
-                          errors.productName
-                        )}
-                        value={pkg.productName}
-                        onChange={(event) =>
-                          handleInputChange(
-                            pkg.id,
-                            "productName",
-                            event.target.value
-                          )
-                        }
-                      />
-
-                      <FieldError
-                        message={
-                          errors.productName
-                        }
-                      />
-                    </div>
-
-                    <div className="input-field-group">
-                      <label className="field-label required-label">
-                        LOẠI HÀNG HÓA
-                      </label>
-
-                      <select
-                        disabled={isSubmitting}
-                        aria-invalid={Boolean(
-                          errors.productType
-                        )}
-                        className={getFieldClassName(
-                          "custom-select",
-                          errors.productType
-                        )}
-                        value={pkg.productType}
-                        onChange={(event) =>
-                          handleInputChange(
-                            pkg.id,
-                            "productType",
-                            event.target.value
-                          )
-                        }
-                      >
-                        <option value="">
-                          -- Chọn loại hàng hóa --
-                        </option>
-
-                        {PRODUCT_TYPE_OPTIONS.map(
-                          (option) => (
-                            <option
-                              key={
-                                option.value
-                              }
-                              value={
-                                option.value
-                              }
-                            >
-                              {option.label}
-                            </option>
-                          )
-                        )}
-                      </select>
-
-                      <FieldError
-                        message={
-                          errors.productType
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row-2col">
-                    <div className="input-field-group">
-                      <label className="field-label required-label">
-                        SỐ LƯỢNG
-                      </label>
-
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        disabled={isSubmitting}
-                        placeholder="Nhập số lượng sản phẩm..."
-                        aria-invalid={Boolean(
-                          errors.quantity
-                        )}
-                        className={getFieldClassName(
-                          "custom-input",
-                          errors.quantity
-                        )}
-                        value={pkg.quantity}
-                        onKeyDown={
-                          preventInvalidNumberKeys
-                        }
-                        onChange={(event) =>
-                          handleIntegerChange(
-                            pkg.id,
-                            "quantity",
-                            event.target.value
-                          )
-                        }
-                      />
-
-                      <FieldError
-                        message={
-                          errors.quantity
-                        }
-                      />
-                    </div>
-
-                    <div className="input-field-group">
-                      <label className="field-label required-label">
-                        GIÁ TRỊ ĐƠN HÀNG (VND)
-                      </label>
-
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        disabled={isSubmitting}
-                        placeholder="Nhập giá trị khai báo..."
-                        aria-invalid={Boolean(
-                          errors.declaredValue
-                        )}
-                        className={getFieldClassName(
-                          "custom-input",
-                          errors.declaredValue
-                        )}
-                        value={
-                          pkg.declaredValue
-                        }
-                        onKeyDown={
-                          preventInvalidNumberKeys
-                        }
-                        onChange={(event) =>
-                          handleDecimalChange(
-                            pkg.id,
-                            "declaredValue",
-                            event.target.value
-                          )
-                        }
-                        onBlur={(event) =>
-                          handleDecimalBlur(
-                            pkg.id,
-                            "declaredValue",
-                            event.target.value
-                          )
-                        }
-                      />
-
-                      <FieldError
-                        message={
-                          errors.declaredValue
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row-4col">
-                    {[
-                      {
-                        field: "weight",
-                        label: "CÂN NẶNG (KG)",
-                        placeholder:
-                          "Nhập cân nặng...",
-                      },
-                      {
-                        field: "length",
-                        label: "DÀI (CM)",
-                        placeholder:
-                          "Nhập chiều dài...",
-                      },
-                      {
-                        field: "width",
-                        label: "RỘNG (CM)",
-                        placeholder:
-                          "Nhập chiều rộng...",
-                      },
-                      {
-                        field: "height",
-                        label: "CAO (CM)",
-                        placeholder:
-                          "Nhập chiều cao...",
-                      },
-                    ].map((fieldItem) => (
-                      <div
-                        key={fieldItem.field}
-                        className="input-field-group"
-                      >
+                    <div className="form-row-2col">
+                      <div className="input-field-group">
                         <label className="field-label required-label">
-                          {fieldItem.label}
+                          TÊN SẢN PHẨM
                         </label>
 
                         <input
                           type="text"
-                          inputMode="decimal"
-                          disabled={isSubmitting}
-                          placeholder={
-                            fieldItem.placeholder
+                          disabled={
+                            isSubmitting
                           }
+                          placeholder="Nhập tên sản phẩm..."
                           aria-invalid={Boolean(
-                            errors[
-                              fieldItem.field
-                            ]
+                            errors.productName
                           )}
                           className={getFieldClassName(
                             "custom-input",
-                            errors[
-                              fieldItem.field
-                            ]
+                            errors.productName
                           )}
                           value={
-                            pkg[
-                              fieldItem.field
-                            ]
+                            pkg.productName
                           }
-                          onKeyDown={
-                            preventInvalidNumberKeys
-                          }
-                          onChange={(event) =>
-                            handleDecimalChange(
+                          onChange={(
+                            event
+                          ) =>
+                            handleInputChange(
                               pkg.id,
-                              fieldItem.field,
-                              event.target.value
-                            )
-                          }
-                          onBlur={(event) =>
-                            handleDecimalBlur(
-                              pkg.id,
-                              fieldItem.field,
-                              event.target.value
+                              "productName",
+                              event
+                                .target
+                                .value
                             )
                           }
                         />
 
                         <FieldError
                           message={
-                            errors[
-                              fieldItem.field
-                            ]
+                            errors.productName
                           }
                         />
                       </div>
-                    ))}
-                  </div>
 
-                  <div
-                    className="input-field-group"
-                    style={{
-                      marginBottom: "1.25rem",
-                    }}
-                  >
-                    <label className="field-label">
-                      MÃ VẬN ĐƠN NỘI ĐỊA
-                      (DOMESTIC TRACKING CODE)
-                    </label>
+                      <div className="input-field-group">
+                        <label className="field-label required-label">
+                          LOẠI HÀNG HÓA
+                        </label>
 
-                    <input
-                      type="text"
-                      disabled={isSubmitting}
-                      placeholder="Bỏ trống nếu chưa có mã..."
-                      className="custom-input"
-                      value={pkg.trackingCode}
-                      onChange={(event) =>
-                        handleInputChange(
-                          pkg.id,
-                          "trackingCode",
-                          event.target.value
-                        )
-                      }
-                    />
-                  </div>
+                        <select
+                          disabled={
+                            isSubmitting
+                          }
+                          aria-invalid={Boolean(
+                            errors.productType
+                          )}
+                          className={getFieldClassName(
+                            "custom-select",
+                            errors.productType
+                          )}
+                          value={
+                            pkg.productType
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            handleInputChange(
+                              pkg.id,
+                              "productType",
+                              event
+                                .target
+                                .value
+                            )
+                          }
+                        >
+                          <option value="">
+                            -- Chọn loại hàng
+                            hóa --
+                          </option>
 
-                  <div className="input-field-group">
-                    <label className="field-label required-label">
-                      GHI CHÚ KIỆN HÀNG
-                    </label>
+                          {PRODUCT_TYPE_OPTIONS.map(
+                            (
+                              option
+                            ) => (
+                              <option
+                                key={
+                                  option.value
+                                }
+                                value={
+                                  option.value
+                                }
+                              >
+                                {
+                                  option.label
+                                }
+                              </option>
+                            )
+                          )}
+                        </select>
 
-                    <textarea
-                      disabled={isSubmitting}
-                      placeholder="Mô tả đặc điểm, ghi chú bổ sung cho kiện hàng..."
-                      aria-invalid={Boolean(
-                        errors.note
-                      )}
-                      className={getFieldClassName(
-                        "custom-textarea",
-                        errors.note
-                      )}
-                      rows={2}
-                      value={pkg.note}
-                      onChange={(event) =>
-                        handleInputChange(
-                          pkg.id,
-                          "note",
-                          event.target.value
-                        )
-                      }
-                    />
-
-                    <FieldError
-                      message={errors.note}
-                    />
-                  </div>
-
-                  <div className="input-field-group package-image-section">
-                    <label className="field-label required-label">
-                      ẢNH SẢN PHẨM KIỆN{" "}
-                      {index + 1}
-                    </label>
-
-                    <input
-                      type="file"
-                      ref={(element) => {
-                        fileInputRefs.current[
-                          pkg.id
-                        ] = element;
-                      }}
-                      multiple
-                      accept="image/jpeg,image/png,image/webp"
-                      disabled={isSubmitting}
-                      style={{
-                        display: "none",
-                      }}
-                      onChange={(event) =>
-                        handleFileChange(
-                          pkg.id,
-                          event
-                        )
-                      }
-                    />
-
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      aria-disabled={isSubmitting}
-                      className={[
-                        "upload-dropzone-box-clickable",
-                        errors.images
-                          ? "upload-has-error"
-                          : "",
-                        isSubmitting
-                          ? "upload-is-disabled"
-                          : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      onClick={() =>
-                        handleDropzoneClick(
-                          pkg.id
-                        )
-                      }
-                      onKeyDown={(event) => {
-                        if (
-                          event.key ===
-                            "Enter" ||
-                          event.key === " "
-                        ) {
-                          event.preventDefault();
-
-                          handleDropzoneClick(
-                            pkg.id
-                          );
-                        }
-                      }}
-                    >
-                      <CloudUploadOutlined className="upload-big-icon" />
-
-                      <span className="upload-main-text">
-                        Bấm để chọn ảnh cho
-                        kiện hàng này
-                      </span>
-
-                      <span className="upload-sub-text">
-                        Hỗ trợ JPG, PNG, WEBP
-                        — tối đa 5MB/ảnh
-                      </span>
+                        <FieldError
+                          message={
+                            errors.productType
+                          }
+                        />
+                      </div>
                     </div>
 
-                    <FieldError
-                      message={errors.images}
-                    />
+                    <div className="form-row-2col">
+                      <div className="input-field-group">
+                        <label className="field-label required-label">
+                          SỐ LƯỢNG
+                        </label>
 
-                    {pkg.images.length > 0 && (
-                      <div className="image-previews-grid animation-fade-in">
-                        {pkg.images.map(
-                          (image) => (
-                            <div
-                              key={image.id}
-                              className="preview-image-item"
-                              onClick={() =>
-                                setActiveLightboxImg(
-                                  image.previewUrl
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          disabled={
+                            isSubmitting
+                          }
+                          placeholder="Nhập số lượng sản phẩm..."
+                          aria-invalid={Boolean(
+                            errors.quantity
+                          )}
+                          className={getFieldClassName(
+                            "custom-input",
+                            errors.quantity
+                          )}
+                          value={
+                            pkg.quantity
+                          }
+                          onKeyDown={
+                            preventInvalidNumberKeys
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            handleIntegerChange(
+                              pkg.id,
+                              "quantity",
+                              event
+                                .target
+                                .value
+                            )
+                          }
+                        />
+
+                        <FieldError
+                          message={
+                            errors.quantity
+                          }
+                        />
+                      </div>
+
+                      <div className="input-field-group">
+  <label className="field-label required-label">
+    GIÁ TRỊ SẢN PHẨM (VND)
+  </label>
+
+  <input
+    type="text"
+    inputMode="numeric"
+    disabled={isSubmitting}
+    placeholder="Ví dụ: 1.500.000"
+    aria-invalid={Boolean(errors.declaredValue)}
+    className={getFieldClassName(
+      "custom-input",
+      errors.declaredValue
+    )}
+    value={formatVnd(pkg.declaredValue)}
+    onKeyDown={handleMoneyKeyDown}
+    onChange={(event) => {
+      const rawValue = event.target.value.replace(/\D/g, "");
+
+      handleInputChange(
+        pkg.id,
+        "declaredValue",
+        rawValue
+      );
+    }}
+  />
+
+  <FieldError message={errors.declaredValue} />
+</div>
+                    </div>
+
+                    <div className="form-row-4col">
+                      {[
+                        {
+                          field:
+                            "weight",
+                          label:
+                            "CÂN NẶNG (KG)",
+                          placeholder:
+                            "Nhập cân nặng...",
+                        },
+                        {
+                          field:
+                            "length",
+                          label:
+                            "DÀI (CM)",
+                          placeholder:
+                            "Nhập chiều dài...",
+                        },
+                        {
+                          field:
+                            "width",
+                          label:
+                            "RỘNG (CM)",
+                          placeholder:
+                            "Nhập chiều rộng...",
+                        },
+                        {
+                          field:
+                            "height",
+                          label:
+                            "CAO (CM)",
+                          placeholder:
+                            "Nhập chiều cao...",
+                        },
+                      ].map(
+                        (fieldItem) => (
+                          <div
+                            key={
+                              fieldItem.field
+                            }
+                            className="input-field-group"
+                          >
+                            <label className="field-label required-label">
+                              {
+                                fieldItem.label
+                              }
+                            </label>
+
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              disabled={
+                                isSubmitting
+                              }
+                              placeholder={
+                                fieldItem.placeholder
+                              }
+                              aria-invalid={Boolean(
+                                errors[
+                                  fieldItem
+                                    .field
+                                ]
+                              )}
+                              className={getFieldClassName(
+                                "custom-input",
+                                errors[
+                                  fieldItem
+                                    .field
+                                ]
+                              )}
+                              value={
+                                pkg[
+                                  fieldItem
+                                    .field
+                                ]
+                              }
+                              onKeyDown={
+                                preventInvalidNumberKeys
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                handleDecimalChange(
+                                  pkg.id,
+                                  fieldItem.field,
+                                  event
+                                    .target
+                                    .value
                                 )
                               }
-                            >
-                              <img
-                                src={
-                                  image.previewUrl
-                                }
-                                alt={`Kiện ${
-                                  index + 1
-                                }`}
-                              />
+                              onBlur={(
+                                event
+                              ) =>
+                                handleDecimalBlur(
+                                  pkg.id,
+                                  fieldItem.field,
+                                  event
+                                    .target
+                                    .value
+                                )
+                              }
+                            />
 
-                              <button
-                                type="button"
-                                disabled={
-                                  isSubmitting
+                            <FieldError
+                              message={
+                                errors[
+                                  fieldItem
+                                    .field
+                                ]
+                              }
+                            />
+                          </div>
+                        )
+                      )}
+                    </div>
+
+                    <div
+                      className="input-field-group"
+                      style={{
+                        marginBottom:
+                          "1.25rem",
+                      }}
+                    >
+                      <label className="field-label">
+                        MÃ VẬN ĐƠN NỘI ĐỊA
+                        (DOMESTIC TRACKING
+                        CODE)
+                      </label>
+
+                      <input
+                        type="text"
+                        disabled={
+                          isSubmitting
+                        }
+                        placeholder="Bỏ trống nếu chưa có mã..."
+                        className="custom-input"
+                        value={
+                          pkg.trackingCode
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          handleInputChange(
+                            pkg.id,
+                            "trackingCode",
+                            event.target
+                              .value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="input-field-group">
+                      <label className="field-label required-label">
+                        GHI CHÚ KIỆN HÀNG
+                      </label>
+
+                      <textarea
+                        disabled={
+                          isSubmitting
+                        }
+                        placeholder="Mô tả đặc điểm, ghi chú bổ sung cho kiện hàng..."
+                        aria-invalid={Boolean(
+                          errors.note
+                        )}
+                        className={getFieldClassName(
+                          "custom-textarea",
+                          errors.note
+                        )}
+                        rows={2}
+                        value={pkg.note}
+                        onChange={(
+                          event
+                        ) =>
+                          handleInputChange(
+                            pkg.id,
+                            "note",
+                            event.target
+                              .value
+                          )
+                        }
+                      />
+
+                      <FieldError
+                        message={
+                          errors.note
+                        }
+                      />
+                    </div>
+
+                    <div className="input-field-group package-image-section">
+                      <label className="field-label required-label">
+                        ẢNH SẢN PHẨM KIỆN{" "}
+                        {index + 1}
+                      </label>
+
+                      <input
+                        type="file"
+                        ref={(element) => {
+                          fileInputRefs.current[
+                            pkg.id
+                          ] = element;
+                        }}
+                        multiple
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={
+                          isSubmitting
+                        }
+                        style={{
+                          display:
+                            "none",
+                        }}
+                        onChange={(
+                          event
+                        ) =>
+                          handleFileChange(
+                            pkg.id,
+                            event
+                          )
+                        }
+                      />
+
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-disabled={
+                          isSubmitting
+                        }
+                        className={[
+                          "upload-dropzone-box-clickable",
+
+                          errors.images
+                            ? "upload-has-error"
+                            : "",
+
+                          isSubmitting
+                            ? "upload-is-disabled"
+                            : "",
+                        ]
+                          .filter(
+                            Boolean
+                          )
+                          .join(" ")}
+                        onClick={() =>
+                          handleDropzoneClick(
+                            pkg.id
+                          )
+                        }
+                        onKeyDown={(
+                          event
+                        ) => {
+                          if (
+                            event.key ===
+                              "Enter" ||
+                            event.key ===
+                              " "
+                          ) {
+                            event.preventDefault();
+
+                            handleDropzoneClick(
+                              pkg.id
+                            );
+                          }
+                        }}
+                      >
+                        <CloudUploadOutlined className="upload-big-icon" />
+
+                        <span className="upload-main-text">
+                          Bấm để chọn ảnh
+                          cho kiện hàng này
+                        </span>
+
+                        <span className="upload-sub-text">
+                          Hỗ trợ JPG, PNG,
+                          WEBP — tối đa
+                          5MB/ảnh
+                        </span>
+                      </div>
+
+                      <FieldError
+                        message={
+                          errors.images
+                        }
+                      />
+
+                      {pkg.images.length >
+                        0 && (
+                        <div className="image-previews-grid animation-fade-in">
+                          {pkg.images.map(
+                            (image) => (
+                              <div
+                                key={
+                                  image.id
                                 }
-                                className="btn-remove-preview-img"
-                                onClick={(event) =>
-                                  handleRemoveImage(
-                                    event,
-                                    pkg.id,
-                                    image.id,
+                                className="preview-image-item"
+                                onClick={() =>
+                                  setActiveLightboxImg(
                                     image.previewUrl
                                   )
                                 }
                               >
-                                <CloseOutlined />
-                              </button>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
+                                <img
+                                  src={
+                                    image.previewUrl
+                                  }
+                                  alt={`Kiện ${
+                                    index +
+                                    1
+                                  }`}
+                                />
+
+                                <button
+                                  type="button"
+                                  disabled={
+                                    isSubmitting
+                                  }
+                                  className="btn-remove-preview-img"
+                                  onClick={(
+                                    event
+                                  ) =>
+                                    handleRemoveImage(
+                                      event,
+                                      pkg.id,
+                                      image.id,
+                                      image.previewUrl
+                                    )
+                                  }
+                                >
+                                  <CloseOutlined />
+                                </button>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
 
             <div
               role="button"
               tabIndex={0}
-              aria-disabled={isSubmitting}
+              aria-disabled={
+                isSubmitting
+              }
               className={[
                 "add-package-dashed-trigger",
+
                 isSubmitting
                   ? "add-package-disabled"
                   : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
-              onClick={handleAddPackage}
+              onClick={
+                handleAddPackage
+              }
               onKeyDown={(event) => {
                 if (
-                  event.key === "Enter" ||
+                  event.key ===
+                    "Enter" ||
                   event.key === " "
                 ) {
                   event.preventDefault();
+
                   handleAddPackage();
                 }
               }}
             >
               <PlusCircleOutlined className="plus-dashed-icon" />
-              <span>THÊM KIỆN HÀNG MỚI</span>
+
+              <span>
+                THÊM KIỆN HÀNG MỚI
+              </span>
             </div>
 
             <div className="sticky-action-notice-bar">
@@ -2018,23 +2604,33 @@ export default function ConsignmentOrder() {
                 <InfoCircleOutlined className="info-notice-icon" />
 
                 <p>
-                  <strong>LƯU Ý:</strong>{" "}
+                  <strong>
+                    LƯU Ý:
+                  </strong>{" "}
                   Đơn hàng sẽ được nhân viên
-                  VCL kiểm tra và xác nhận lại
-                  thông tin trước khi xử lý.
+                  VCL kiểm tra và xác nhận
+                  lại thông tin trước khi xử
+                  lý.
                 </p>
               </div>
 
               <button
                 type="button"
                 className="btn-final-submit-order"
-                onClick={handleCreateOrder}
-                disabled={isSubmitting}
-                aria-busy={isSubmitting}
+                onClick={
+                  handleCreateOrder
+                }
+                disabled={
+                  isSubmitting
+                }
+                aria-busy={
+                  isSubmitting
+                }
               >
                 {isSubmitting ? (
                   <>
                     <LoadingOutlined spin />
+
                     ĐANG TẠO ĐƠN...
                   </>
                 ) : (
@@ -2057,7 +2653,9 @@ export default function ConsignmentOrder() {
               <LoadingOutlined spin />
             </div>
 
-            <h3>ĐANG TẠO ĐƠN KÝ GỬI</h3>
+            <h3>
+              ĐANG TẠO ĐƠN KÝ GỬI
+            </h3>
 
             <p>{submitMessage}</p>
 
