@@ -10,7 +10,7 @@ import {
     EnvironmentFilled,
   } from "@ant-design/icons";
   
-  import { BRAND } from "../../pages/HomePage/data/homeData";
+  import { BRAND } from "../../utils/data/homeData";
   import "./LogisticsIntro.css";
   
   const INTRO_STORAGE_KEY =

@@ -4,7 +4,7 @@ import { ArrowRightOutlined } from "@ant-design/icons";
 import {
   BRAND,
   COMMITMENTS,
-} from "../data/homeData";
+} from "../../../pages/HomePage/data/homeData";
 
 import "./CommitmentsSection.css";
 

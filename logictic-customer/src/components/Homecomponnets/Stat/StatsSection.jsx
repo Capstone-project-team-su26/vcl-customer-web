@@ -6,7 +6,7 @@ import {
   TeamOutlined,
 } from "@ant-design/icons";
 
-import { BRAND, STATS } from "../data/homeData";
+import { BRAND, STATS } from "../../../utils/data/homeData";
 import "./StatsSection.css";
 
 const STAT_ICONS = [

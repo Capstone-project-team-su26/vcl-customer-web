@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRightOutlined } from "@ant-design/icons";
 
 import aiImg from "../../../assets/ai.jpeg";
-import { BRAND, AI_FEATURES } from "../data/homeData";
+import { BRAND, AI_FEATURES } from "../../../utils/data/homeData";
 
 import "./AIAutomationSection.css";
 

@@ -13,21 +13,21 @@ import { ArrowUpOutlined } from "@ant-design/icons";
 import Header from "../../layouts/HeaderLayout/Headeer";
 import HeroCarousel from "../../layouts/CarouselLayput/HeroCarousel";
 
-import GlobalBrandSection from "./components/GlobalBrandSection";
-import CommitmentsSection from "./components/CommitmentsSection";
-import ServicesSection from "./components/ServicesSection";
-import ProductsSection from "./components/ProductsSection";
-import AIAutomationSection from "./components/AIAutomationSection";
-import WhyChooseSection from "./components/WhyChooseSection";
-import StatsSection from "./components/StatsSection";
-import AudienceSection from "./components/AudienceSection";
-import PartnersMarquee from "./components/PartnersMarquee";
-import BlogSection from "./components/BlogSection";
-import CTASection from "./components/CTASection";
-import HomeFooter from "./components/HomeFooter";
-import FloatingChat from "./components/FloatingChat";
+import GlobalBrandSection from "../../components/Homecomponnets/GlobalBrand/GlobalBrandSection";
+import CommitmentsSection from "../../components/Homecomponnets/AIAutomation/AIAutomationSection";
+import ServicesSection from "../../components/Homecomponnets/Service/ServicesSection";
+import ProductsSection from "../../components/Homecomponnets/Product/ProductsSection";
+import AIAutomationSection from "../../components/Homecomponnets/AIAutomation/AIAutomationSection";
+import WhyChooseSection from "../../components/Homecomponnets/WhyChoose/WhyChooseSection";
+import StatsSection from "../../components/Homecomponnets/Stat/StatsSection";
+import AudienceSection from "../../components/Homecomponnets/Audience/AudienceSection";
+import PartnersMarquee from "../../components/Homecomponnets/Partners/PartnersMarquee";
+import BlogSection from "../../components/Homecomponnets/Blog/BlogSection";
+import CTASection from "../../components/Homecomponnets/CTA/CTASection";
+import HomeFooter from "../../layouts/HomeFooter/HomeFooter";
+import FloatingChat from "../../components/Homecomponnets/Floating/FloatingChat";
 
-import { BRAND } from "./data/homeData";
+import { BRAND } from "../../utils/data/homeData";
 
 import "./Home.css";
 

@@ -5,7 +5,7 @@ import {
   CheckOutlined,
 } from "@ant-design/icons";
 
-import { BRAND, SERVICES } from "../data/homeData";
+import { BRAND, SERVICES } from "../../../utils/data/homeData";
 import "./ServicesSection.css";
 
 export default function ServicesSection() {

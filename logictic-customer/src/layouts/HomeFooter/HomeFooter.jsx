@@ -9,7 +9,7 @@ import {
   WhatsAppOutlined,
 } from "@ant-design/icons";
 
-import { BRAND } from "../data/homeData";
+import { BRAND } from "../../utils/data/homeData";
 import "./HomeFooter.css";
 
 const SERVICE_LINKS = [

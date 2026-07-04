@@ -6,7 +6,7 @@ import {
   ClockCircleOutlined,
 } from "@ant-design/icons";
 
-import { BLOG_POSTS } from "../data/homeData";
+import { BLOG_POSTS } from "../../../utils/data/homeData";
 import "./BlogSection.css";
 
 export default function BlogSection() {

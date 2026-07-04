@@ -1,5 +1,5 @@
 import React from "react";
-import { PARTNERS } from "../data/homeData";
+import { PARTNERS } from "../../../utils/data/homeData";
 
 import "./PartnersMarquee.css";
 

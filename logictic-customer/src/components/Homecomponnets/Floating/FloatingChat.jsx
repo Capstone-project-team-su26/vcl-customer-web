@@ -8,7 +8,7 @@ import {
   SendOutlined,
 } from "@ant-design/icons";
 
-import { BRAND } from "../data/homeData";
+import { BRAND, COUNTRIES } from "../../../utils/data/homeData";
 import "./FloatingChat.css";
 
 const QUICK_MESSAGES = [

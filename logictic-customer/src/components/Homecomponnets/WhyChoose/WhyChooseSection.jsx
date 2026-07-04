@@ -5,7 +5,7 @@ import {
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 
-import { BRAND, WHY_CHOOSE } from "../data/homeData";
+import { BRAND, WHY_CHOOSE } from "../../../utils/data/homeData";
 import "./WhyChooseSection.css";
 
 export default function WhyChooseSection() {

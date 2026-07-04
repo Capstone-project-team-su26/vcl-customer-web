@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowRightOutlined } from "@ant-design/icons";
 
-import { BRAND, AUDIENCE } from "../data/homeData";
+import { BRAND, AUDIENCE } from "../../../utils/data/homeData";
 import "./AudienceSection.css";
 
 export default function AudienceSection() {

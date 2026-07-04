@@ -5,7 +5,7 @@ import {
   CheckCircleFilled,
 } from "@ant-design/icons";
 
-import { PRODUCTS } from "../data/homeData";
+import { PRODUCTS } from "../../../utils/data/homeData";
 import "./ProductsSection.css";
 
 function rotateProducts(products, offset) {

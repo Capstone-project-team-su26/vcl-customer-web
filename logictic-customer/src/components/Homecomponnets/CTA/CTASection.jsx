@@ -6,7 +6,7 @@ import {
 } from "@ant-design/icons";
 
 import brandLogo from "../../../assets/anhlogocap2.jpeg";
-import { BRAND } from "../data/homeData";
+import { BRAND } from "../../../utils/data/homeData";
 
 import "./CTASection.css";
 

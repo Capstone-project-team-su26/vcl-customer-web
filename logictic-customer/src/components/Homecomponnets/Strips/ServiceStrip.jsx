@@ -4,7 +4,7 @@ import {
   InboxOutlined,
 } from "@ant-design/icons";
 
-import { SERVICE_TABS } from "../data/homeData";
+import { SERVICE_TABS } from "../../../pages/HomePage/data/homeData";
 import "./ServiceStrip.css";
 
 const SERVICE_ICONS = {
