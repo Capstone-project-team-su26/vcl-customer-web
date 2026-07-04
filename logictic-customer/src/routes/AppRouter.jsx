@@ -18,6 +18,7 @@ import ConsignmentListDetail from "../pages/DashboardPage/CreateCustomer/OrderXu
 import ServicePolicy from "../pages/DashboardPage/ServicePoli/ServicePolicy";
 import ConsignmentListCheck from "../pages/DashboardPage/CreateCustomer/CheckHang/ConsignmentListCheck"; // Import
 import QuotationDetail from "../pages/DashboardPage/CreateCustomer/CheckHang/CheckHangDetail/QuotationDetail"; // Import
+import ConsignmentBuyOrder from "../pages/DashboardPage/CreateCustomer/BuyOrder/ConsignmentBuyOrder"; // Import
 
 const AppRouter = () => {
   return (
@@ -44,6 +45,7 @@ const AppRouter = () => {
             path="/create-order/consignment"
             element={<ConsigmentOrder />}
           />
+         
           <Route path="/processing-orders" element={<ConsignmentList />} />
           <Route path="/settings/profile-config" element={<ProfileConfig />} />
           <Route
@@ -61,6 +63,10 @@ const AppRouter = () => {
           <Route
             path="/quotations/:orderId"
             element={<QuotationDetail />}
+          />
+           <Route
+            path="/create-order/buy-orders"
+            element={<ConsignmentBuyOrder />}
           />
         </Route>
     

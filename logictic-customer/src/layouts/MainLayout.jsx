@@ -17,6 +17,7 @@ export default function MainLayout() {
     if (path.includes("settings/chinh-sach-dich-vu")) return "CHÍNH SÁCH DỊCH VỤ";
     if (path.includes("check-orders")) return "KIỆN CHỜ BÁO GIÁ";
     if (path.includes("quotations")) return "CHI TIẾT BÁO GIÁ";
+    if (path.includes("create-order/buy-orders")) return "TẠO ĐƠN HÀNG MUA HỘ";
     return "HỆ THỐNG";
   };
 

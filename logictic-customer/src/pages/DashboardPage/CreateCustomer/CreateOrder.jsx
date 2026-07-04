@@ -24,7 +24,7 @@ export default function CreateOrder() {
       title: "MUA HỘ HÀNG",
       desc: "VCL thay bạn mua hàng từ các website nước ngoài và vận chuyển về Việt Nam.",
       icon: <ShoppingOutlined className="svc-icon icon-green" />,
-      path: "/create-order/buy-on-behalf",
+      path: "/create-order/buy-orders",
     },
     {
       id: "ky-gui",
