@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import {
   DatePicker,
   Input,
+  Select,
   Space,
   message,
 } from "antd";
@@ -28,21 +29,13 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SearchIcon from "@mui/icons-material/Search";
 
 import { getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
+import { getConsignmentStatusesApi } from "../../../../api/OrderApi/consignmentStatusApi";
 import "./ConsignmentList.css";
 
 const { RangePicker } = DatePicker;
 
 const DEFAULT_PAGE_SIZE = 5;
 const API_PAGE_SIZE = 100;
-
-const STATUS_LABELS = {
-  PENDING_REVIEW: "CHỜ XÁC NHẬN",
-  APPROVED: "ĐÃ DUYỆT",
-  REJECTED: "ĐÃ TỪ CHỐI",
-  CANCELLED: "ĐÃ HỦY",
-  IN_TRANSIT: "ĐANG VẬN CHUYỂN",
-  DELIVERED: "ĐÃ GIAO",
-};
 
 /* =========================================================
    HELPER FUNCTIONS
@@ -54,6 +47,69 @@ const normalizeText = (value) => {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+};
+
+const formatStatusCode = (status) =>
+  String(status || "")
+    .trim()
+    .replaceAll("_", " ");
+
+const normalizeStatusOptions = (apiResult) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.results,
+    apiResult?.statuses,
+    apiResult?.data?.items,
+    apiResult?.data?.results,
+    apiResult?.data?.statuses,
+  ];
+
+  const rawStatuses =
+    candidates.find(Array.isArray) || [];
+
+  return rawStatuses
+    .map((item) => {
+      if (
+        typeof item === "string" ||
+        typeof item === "number"
+      ) {
+        const value = String(item).trim();
+
+        return {
+          value,
+          label: formatStatusCode(value),
+        };
+      }
+
+      const value = String(
+        item?.value ||
+          item?.code ||
+          item?.status ||
+          item?.statusCode ||
+          item?.id ||
+          ""
+      ).trim();
+
+      const label = String(
+        item?.label ||
+          item?.name ||
+          item?.displayName ||
+          item?.statusName ||
+          item?.description ||
+          formatStatusCode(value)
+      ).trim();
+
+      return {
+        value,
+        label,
+      };
+    })
+    .filter(
+      (option) =>
+        option.value && option.label
+    );
 };
 
 /**
@@ -102,10 +158,17 @@ const ConsignmentList = () => {
   const [searchInput, setSearchInput] = useState("");
   const [dateRangeInput, setDateRangeInput] =
     useState(null);
+  const [statusInput, setStatusInput] = useState("");
+
+  const [statusOptions, setStatusOptions] =
+    useState([]);
+  const [loadingStatuses, setLoadingStatuses] =
+    useState(false);
 
   const [appliedFilters, setAppliedFilters] = useState({
     search: "",
     dateRange: null,
+    status: "",
   });
 
   const [pageNumber, setPageNumber] = useState(1);
@@ -118,11 +181,11 @@ const ConsignmentList = () => {
   const fetchAllConsignments = useCallback(
     async (signal) => {
       const firstResponse =
-        await getConsignmentsApi({
-          pageNumber: 1,
-          pageSize: API_PAGE_SIZE,
-          signal,
-        });
+        await getConsignmentsApi(
+          1,
+          API_PAGE_SIZE,
+          { signal }
+        );
 
       const firstPageData = firstResponse?.data;
 
@@ -156,11 +219,11 @@ const ConsignmentList = () => {
           length: totalApiPages - 1,
         },
         (_, index) =>
-          getConsignmentsApi({
-            pageNumber: index + 2,
-            pageSize: actualApiPageSize,
-            signal,
-          })
+          getConsignmentsApi(
+            index + 2,
+            actualApiPageSize,
+            { signal }
+          )
       );
 
       const remainingResponses =
@@ -230,6 +293,68 @@ const ConsignmentList = () => {
       controller.abort();
     };
   }, [fetchConsignments, refreshKey]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchStatuses = async () => {
+      try {
+        setLoadingStatuses(true);
+
+        const result =
+          await getConsignmentStatusesApi({
+            signal: controller.signal,
+          });
+
+        setStatusOptions(
+          normalizeStatusOptions(result)
+        );
+      } catch (error) {
+        if (
+          axios.isCancel(error) ||
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "CanceledError" ||
+          error?.name === "AbortError"
+        ) {
+          return;
+        }
+
+        console.error(
+          "Lỗi khi lấy danh sách trạng thái:",
+          error
+        );
+
+        message.error(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Không thể tải danh sách trạng thái."
+        );
+
+        setStatusOptions([]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingStatuses(false);
+        }
+      }
+    };
+
+    fetchStatuses();
+
+    return () => {
+      controller.abort();
+    };
+  }, [refreshKey]);
+
+  const statusLabelMap = useMemo(() => {
+    return new Map(
+      statusOptions.map((option) => [
+        String(option.value)
+          .trim()
+          .toUpperCase(),
+        option.label,
+      ])
+    );
+  }, [statusOptions]);
 
   /* =========================================================
      DATE RANGE
@@ -322,7 +447,12 @@ const ConsignmentList = () => {
     return consignments.filter((item) => {
       const searchableContent = [
         item.orderId,
+        item.orderCode,
         item.consignmentCode,
+        item.trackingCode,
+        item.domesticTrackingCode,
+        item.waybillCode,
+        item.shipmentCode,
         item.itemNames,
         item.consignmentType,
         item.status,
@@ -355,10 +485,20 @@ const ConsignmentList = () => {
         (createdDate !== null &&
           createdDate <= endDate);
 
+      const matchesStatus =
+        !appliedFilters.status ||
+        String(item.status || "")
+          .trim()
+          .toUpperCase() ===
+          String(appliedFilters.status)
+            .trim()
+            .toUpperCase();
+
       return (
         matchesSearch &&
         matchesStartDate &&
-        matchesEndDate
+        matchesEndDate &&
+        matchesStatus
       );
     });
   }, [consignments, appliedFilters]);
@@ -435,6 +575,7 @@ const ConsignmentList = () => {
     setAppliedFilters({
       search: searchInput.trim(),
       dateRange: selectedDateRange,
+      status: statusInput,
     });
 
     setPageNumber(1);
@@ -443,10 +584,12 @@ const ConsignmentList = () => {
   const handleResetClick = () => {
     setSearchInput("");
     setDateRangeInput(null);
+    setStatusInput("");
 
     setAppliedFilters({
       search: "",
       dateRange: null,
+      status: "",
     });
 
     setPageNumber(1);
@@ -516,8 +659,8 @@ const ConsignmentList = () => {
       .toUpperCase();
 
     return (
-      STATUS_LABELS[normalizedStatus] ||
-      normalizedStatus ||
+      statusLabelMap.get(normalizedStatus) ||
+      formatStatusCode(normalizedStatus) ||
       "-"
     );
   };
@@ -549,45 +692,38 @@ const ConsignmentList = () => {
     return type || "-";
   };
 
-  const getDisplayCode = (item) => {
-    if (item.consignmentCode?.trim()) {
-      return item.consignmentCode.trim();
-    }
+  /**
+   * Chỉ lấy mã vận đơn do Backend trả về.
+   * Không tự cắt orderId hoặc tạo mã KG-/DH- ở Frontend.
+   */
+  const getTrackingCode = (item) => {
+    const trackingCode =
+      item?.consignmentCode ||
+      item?.trackingCode ||
+      item?.domesticTrackingCode ||
+      item?.waybillCode ||
+      item?.shipmentCode;
 
-    const shortId = item.orderId
-      ? item.orderId
-          .slice(0, 7)
-          .toUpperCase()
-      : "UNKNOWN";
-
-    return `KG-${shortId}`;
+    return String(trackingCode || "").trim() || "-";
   };
 
-  const getShortOrderId = (orderId) => {
-    if (!orderId) {
-      return "DH-UNKNOWN";
-    }
+  /**
+   * Mã đơn cũng sử dụng nguyên giá trị Backend trả về.
+   */
+  const getOrderCode = (item) => {
+    const orderCode =
+      item?.orderCode ||
+      item?.orderId;
 
-    return `DH-${orderId
-      .slice(0, 7)
-      .toUpperCase()}`;
+    return String(orderCode || "").trim() || "-";
   };
 
   const hasActiveFilter = Boolean(
     appliedFilters.search ||
+      appliedFilters.status ||
       (appliedFilters.dateRange?.[0] &&
         appliedFilters.dateRange?.[1])
   );
-
-  const appliedStartDate =
-    appliedFilters.dateRange?.[0]?.format(
-      "DD/MM/YYYY"
-    );
-
-  const appliedEndDate =
-    appliedFilters.dateRange?.[1]?.format(
-      "DD/MM/YYYY"
-    );
 
   /* =========================================================
      RENDER
@@ -654,6 +790,26 @@ const ConsignmentList = () => {
               inputReadOnly
               className="filter-date-picker"
             />
+
+            <Select
+              value={
+                statusInput || undefined
+              }
+              options={statusOptions}
+              loading={loadingStatuses}
+              disabled={loadingStatuses}
+              placeholder="Chọn trạng thái"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              className="filter-status-select"
+              style={{
+                minWidth: 220,
+              }}
+              onChange={(value) =>
+                setStatusInput(value || "")
+              }
+            />
           </Space>
         </div>
 
@@ -662,7 +818,9 @@ const ConsignmentList = () => {
             variant="contained"
             startIcon={<FilterAltIcon />}
             onClick={handleFilterClick}
-            disabled={loading}
+            disabled={
+              loading || loadingStatuses
+            }
             className="filter-submit-button"
           >
             BỘ LỌC
@@ -673,61 +831,15 @@ const ConsignmentList = () => {
             color="inherit"
             startIcon={<AutorenewIcon />}
             onClick={handleResetClick}
-            disabled={loading}
+            disabled={
+              loading || loadingStatuses
+            }
             className="filter-reset-button"
           >
             LÀM MỚI
           </Button>
         </div>
       </div>
-
-      {hasActiveFilter && (
-        <div className="active-filter-summary">
-          <div className="active-filter-content">
-            <FilterAltIcon />
-
-            <span>
-              Đang hiển thị{" "}
-              <strong>
-                {filteredConsignments.length}
-              </strong>{" "}
-              kết quả phù hợp
-              {appliedFilters.search && (
-                <>
-                  {" "}
-                  với từ khóa “
-                  <strong>
-                    {appliedFilters.search}
-                  </strong>
-                  ”
-                </>
-              )}
-              {appliedStartDate &&
-                appliedEndDate && (
-                  <>
-                    {" "}
-                    trong khoảng{" "}
-                    <strong>
-                      {appliedStartDate}
-                    </strong>{" "}
-                    đến{" "}
-                    <strong>
-                      {appliedEndDate}
-                    </strong>
-                  </>
-                )}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            className="clear-filter-link"
-            onClick={handleResetClick}
-          >
-            Xóa bộ lọc
-          </button>
-        </div>
-      )}
 
       {loading ? (
         <div className="vcl-loading-box">
@@ -798,14 +910,14 @@ const ConsignmentList = () => {
                           item
                         )
                       }
-                      aria-label={`Xem chi tiết lô hàng ${getDisplayCode(
+                      aria-label={`Xem chi tiết lô hàng ${getTrackingCode(
                         item
                       )}`}
                     >
                       <div className="card-header">
                         <div className="header-left">
                           <span className="order-code">
-                            {getDisplayCode(
+                            {getTrackingCode(
                               item
                             )}
                           </span>
@@ -896,18 +1008,16 @@ const ConsignmentList = () => {
                             </div>
 
                             <div className="sku-tag">
-                              {getShortOrderId(
-                                item.orderId
-                              )}
+                              Mã đơn: {getOrderCode(item)}
                             </div>
 
                             <div className="receiver-phone">
-                              {item.receiverPhone ||
+                              SĐT: {item.receiverPhone ||
                                 "-"}
                             </div>
 
                             <div className="receiver-address">
-                              {item.receiverAddress ||
+                             Địa Chỉ: {item.receiverAddress ||
                                 "-"}
                             </div>
                           </div>

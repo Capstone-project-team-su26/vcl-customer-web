@@ -35,7 +35,11 @@ import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
-import { getConsignmentDetailApi } from "../../../../../api/OrderApi/consignmentApi";
+import {
+  getConsignmentDetailApi,
+  getProductTypesApi,
+} from "../../../../../api/OrderApi/consignmentApi";
+import { getConsignmentStatusesApi } from "../../../../../api/OrderApi/consignmentStatusApi";
 
 import "./ConsignmentListDetail.css";
 
@@ -43,63 +47,72 @@ import "./ConsignmentListDetail.css";
    LOẠI SẢN PHẨM
    ========================================================= */
 
-const PRODUCT_TYPE_OPTIONS = [
-  {
-    value: "Electronics",
-    label: "Electronics (Thiết bị điện tử)",
-  },
-  {
-    value: "Accessories",
-    label: "Accessories (Phụ kiện)",
-  },
-  {
-    value: "Clothes",
-    label: "Clothes (Quần áo / Giày dép)",
-  },
-  {
-    value: "Cosmetics",
-    label: "Cosmetics (Mỹ phẩm)",
-  },
-  {
-    value: "Others",
-    label: "Others (Khác)",
-  },
-];
-
-const PRODUCT_TYPE_LABEL_MAP = Object.fromEntries(
-  PRODUCT_TYPE_OPTIONS.map((option) => [
-    option.value.toLowerCase(),
-    option.label,
-  ])
-);
-
-const getProductTypeLabel = (productType) => {
-  const normalizedProductType = String(productType || "")
+const normalizeProductType = (productType) =>
+  String(productType || "")
     .trim()
     .toLowerCase();
 
-  if (!normalizedProductType) {
-    return "-";
-  }
+const normalizeProductTypeOptions = (apiResult) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.productTypes,
+    apiResult?.data?.items,
+    apiResult?.data?.productTypes,
+  ];
 
-  return (
-    PRODUCT_TYPE_LABEL_MAP[normalizedProductType] ||
-    productType
-  );
+  const rawProductTypes =
+    candidates.find(Array.isArray) || [];
+
+  return rawProductTypes
+    .map((item) => {
+      if (
+        typeof item === "string" ||
+        typeof item === "number"
+      ) {
+        const value = String(item).trim();
+
+        return {
+          value,
+          label: value,
+        };
+      }
+
+      const value = String(
+        item?.value ||
+          item?.code ||
+          item?.productType ||
+          item?.productTypeCode ||
+          item?.productTypeId ||
+          item?.id ||
+          ""
+      ).trim();
+
+      const label = String(
+        item?.label ||
+          item?.name ||
+          item?.displayName ||
+          item?.productTypeName ||
+          item?.description ||
+          value
+      ).trim();
+
+      return {
+        value,
+        label,
+      };
+    })
+    .filter(
+      (option) =>
+        option.value &&
+        option.label
+    );
 };
 
 /* =========================================================
    TRẠNG THÁI ĐƠN HÀNG
    ========================================================= */
-
-const STATUS_LABELS = {
-  PENDING_REVIEW: "CHỜ XÁC NHẬN",
-  APPROVED: "ĐÃ DUYỆT",
-  REJECTED: "ĐÃ TỪ CHỐI",
-  CANCELLED: "ĐÃ HỦY",
-  IN_TRANSIT: "ĐANG VẬN CHUYỂN",
-  DELIVERED: "ĐÃ GIAO",
-};
 
 const QUOTATION_STATUS_LABELS = {
   DRAFT: "BẢN NHÁP",
@@ -124,14 +137,72 @@ const normalizeStatus = (status) => {
     .toUpperCase();
 };
 
-const getStatusLabel = (status) => {
+const formatStatusCode = (status) => {
   const normalizedStatus = normalizeStatus(status);
 
-  return (
-    STATUS_LABELS[normalizedStatus] ||
-    normalizedStatus ||
-    "-"
-  );
+  if (!normalizedStatus) {
+    return "-";
+  }
+
+  return normalizedStatus
+    .replaceAll("_", " ")
+    .replaceAll("-", " ");
+};
+
+const normalizeStatusOptions = (apiResult) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.statuses,
+    apiResult?.data?.items,
+    apiResult?.data?.statuses,
+  ];
+
+  const rawStatuses =
+    candidates.find(Array.isArray) || [];
+
+  return rawStatuses
+    .map((item) => {
+      if (
+        typeof item === "string" ||
+        typeof item === "number"
+      ) {
+        const value = normalizeStatus(item);
+
+        return {
+          value,
+          label: formatStatusCode(value),
+        };
+      }
+
+      const value = normalizeStatus(
+        item?.value ||
+          item?.code ||
+          item?.status ||
+          item?.statusCode ||
+          item?.id
+      );
+
+      const label = String(
+        item?.label ||
+          item?.name ||
+          item?.displayName ||
+          item?.statusName ||
+          item?.description ||
+          formatStatusCode(value)
+      ).trim();
+
+      return {
+        value,
+        label,
+      };
+    })
+    .filter(
+      (option) =>
+        option.value &&
+        option.label
+    );
 };
 
 const getQuotationStatusLabel = (status) => {
@@ -295,15 +366,16 @@ const formatMoney = (value) => {
 };
 
 const getDisplayCode = (consignment) => {
-  if (consignment?.consignmentCode?.trim()) {
-    return consignment.consignmentCode.trim();
-  }
+  const code =
+    consignment?.consignmentCode ||
+    consignment?.trackingCode ||
+    consignment?.waybillCode ||
+    consignment?.shipmentCode;
 
-  const shortOrderId = consignment?.orderId
-    ? consignment.orderId.slice(0, 8).toUpperCase()
-    : "UNKNOWN";
-
-  return `KG-${shortOrderId}`;
+  return (
+    String(code || "").trim() ||
+    "Chưa được cấp mã"
+  );
 };
 
 /* =========================================================
@@ -332,6 +404,14 @@ const ConsignmentListDetail = () => {
   const [errorMessage, setErrorMessage] =
     useState("");
 
+  const [statusOptions, setStatusOptions] =
+    useState([]);
+
+  const [
+    productTypeOptions,
+    setProductTypeOptions,
+  ] = useState([]);
+
   /* =======================================================
      LẤY CHI TIẾT KÝ GỬI
      ======================================================= */
@@ -352,15 +432,38 @@ const ConsignmentListDetail = () => {
         setLoading(true);
         setErrorMessage("");
 
-        const response =
-          await getConsignmentDetailApi(
+        const [
+          detailResult,
+          statusesResult,
+          productTypesResult,
+        ] = await Promise.allSettled([
+          getConsignmentDetailApi(
             orderId,
             {
               signal,
             }
-          );
+          ),
+          getConsignmentStatusesApi({
+            signal,
+          }),
+          getProductTypesApi({
+            signal,
+          }),
+        ]);
 
-        const responseData = response?.data;
+        if (
+          detailResult.status ===
+          "rejected"
+        ) {
+          throw detailResult.reason;
+        }
+
+        const detailResponse =
+          detailResult.value;
+
+        const responseData =
+          detailResponse?.data ||
+          detailResponse;
 
         if (!responseData) {
           throw new Error(
@@ -369,6 +472,50 @@ const ConsignmentListDetail = () => {
         }
 
         setConsignment(responseData);
+
+        if (
+          statusesResult.status ===
+          "fulfilled"
+        ) {
+          setStatusOptions(
+            normalizeStatusOptions(
+              statusesResult.value
+            )
+          );
+        } else if (
+          !axios.isCancel(
+            statusesResult.reason
+          ) &&
+          statusesResult.reason?.code !==
+            "ERR_CANCELED"
+        ) {
+          console.error(
+            "Lỗi khi lấy danh sách trạng thái:",
+            statusesResult.reason
+          );
+        }
+
+        if (
+          productTypesResult.status ===
+          "fulfilled"
+        ) {
+          setProductTypeOptions(
+            normalizeProductTypeOptions(
+              productTypesResult.value
+            )
+          );
+        } else if (
+          !axios.isCancel(
+            productTypesResult.reason
+          ) &&
+          productTypesResult.reason?.code !==
+            "ERR_CANCELED"
+        ) {
+          console.error(
+            "Lỗi khi lấy danh sách loại sản phẩm:",
+            productTypesResult.reason
+          );
+        }
       } catch (error) {
         if (
           axios.isCancel(error) ||
@@ -431,6 +578,71 @@ const ConsignmentListDetail = () => {
   const handleBack = () => {
     navigate(-1);
   };
+
+  const statusLabelMap = useMemo(
+    () =>
+      new Map(
+        statusOptions.map((option) => [
+          normalizeStatus(option.value),
+          option.label,
+        ])
+      ),
+    [statusOptions]
+  );
+
+  const getStatusLabel = useCallback(
+    (status) => {
+      const normalizedStatus =
+        normalizeStatus(status);
+
+      return (
+        statusLabelMap.get(
+          normalizedStatus
+        ) ||
+        formatStatusCode(
+          normalizedStatus
+        ) ||
+        "-"
+      );
+    },
+    [statusLabelMap]
+  );
+
+  const productTypeLabelMap = useMemo(
+    () =>
+      new Map(
+        productTypeOptions.map(
+          (option) => [
+            normalizeProductType(
+              option.value
+            ),
+            option.label,
+          ]
+        )
+      ),
+    [productTypeOptions]
+  );
+
+  const getProductTypeLabel = useCallback(
+    (productType) => {
+      const normalizedProductType =
+        normalizeProductType(
+          productType
+        );
+
+      if (!normalizedProductType) {
+        return "-";
+      }
+
+      return (
+        productTypeLabelMap.get(
+          normalizedProductType
+        ) ||
+        String(productType).trim()
+      );
+    },
+    [productTypeLabelMap]
+  );
 
   /* =======================================================
      CỘT BẢNG SẢN PHẨM
@@ -638,7 +850,7 @@ const ConsignmentListDetail = () => {
           ) : null,
       },
     ],
-    []
+    [getProductTypeLabel]
   );
 
   /* =======================================================
