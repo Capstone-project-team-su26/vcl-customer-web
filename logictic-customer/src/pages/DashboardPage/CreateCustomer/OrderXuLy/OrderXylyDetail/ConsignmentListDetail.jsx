@@ -19,14 +19,13 @@ import {
   Image,
   Table,
   Tag,
-  message,
 } from "antd";
 
 import {
   Button,
   CircularProgress,
 } from "@mui/material";
-
+import AuthNotify from "../../../../../utils/AuthNotify";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PersonIcon from "@mui/icons-material/Person";
@@ -34,14 +33,18 @@ import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 
 import {
   getConsignmentDetailApi,
   getProductTypesApi,
+  cancelConsignmentApi,
 } from "../../../../../api/OrderApi/consignmentApi";
 import { getConsignmentStatusesApi } from "../../../../../api/OrderApi/consignmentStatusApi";
 
 import "./ConsignmentListDetail.css";
+
+
 
 /* =========================================================
    LOẠI SẢN PHẨM
@@ -246,21 +249,9 @@ const getStatusClassName = (status) => {
     .replaceAll("_", "-");
 };
 
-/**
- * Tính khối lượng quy đổi:
- * Dài × Rộng × Cao / 5000.
- *
- * Kích thước sử dụng đơn vị cm,
- * kết quả trả về theo kg.
- */
+
 const DIM_DIVISOR = 5000;
 
-/**
- * Công thức DIM:
- * Dài (cm) × Rộng (cm) × Cao (cm) / 5000
- *
- * Kết quả trả về theo kg.
- */
 const calculateDimWeight = (
   length,
   width,
@@ -378,6 +369,32 @@ const getDisplayCode = (consignment) => {
   );
 };
 
+
+
+
+const getApiErrorMessage = (
+  error,
+  fallbackMessage = "Đã xảy ra lỗi."
+) => {
+  const responseData =
+    error?.response?.data;
+
+  if (
+    typeof responseData === "string" &&
+    responseData.trim()
+  ) {
+    return responseData;
+  }
+
+  return (
+    responseData?.message ||
+    responseData?.title ||
+    responseData?.error ||
+    error?.message ||
+    fallbackMessage
+  );
+};
+
 /* =========================================================
    COMPONENT
    ========================================================= */
@@ -411,6 +428,22 @@ const ConsignmentListDetail = () => {
     productTypeOptions,
     setProductTypeOptions,
   ] = useState([]);
+
+  const [
+    isCancelModalOpen,
+    setIsCancelModalOpen,
+  ] = useState(false);
+
+  const [cancelReason, setCancelReason] =
+    useState("");
+
+  const [
+    cancelReasonError,
+    setCancelReasonError,
+  ] = useState("");
+
+  const [isCancelling, setIsCancelling] =
+    useState(false);
 
   /* =======================================================
      LẤY CHI TIẾT KÝ GỬI
@@ -547,7 +580,10 @@ const ConsignmentListDetail = () => {
           setConsignment(null);
         }
 
-        message.error(apiMessage);
+        AuthNotify.error(
+          "Không tải được dữ liệu",
+          apiMessage
+        );
       } finally {
         if (!signal?.aborted) {
           setLoading(false);
@@ -577,6 +613,146 @@ const ConsignmentListDetail = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleOpenCancelModal = () => {
+    if (!consignment || !orderId) {
+      AuthNotify.error(
+        "Không thể hủy đơn",
+        "Không tìm thấy thông tin đơn hàng để hủy."
+      );
+      return;
+    }
+
+    if (
+      normalizeStatus(
+        consignment.status
+      ) === "CANCELLED"
+    ) {
+      AuthNotify.warning(
+        "Đơn đã được hủy",
+        "Đơn ký gửi này đã được hủy trước đó."
+      );
+      return;
+    }
+
+    setCancelReason("");
+    setCancelReasonError("");
+    setIsCancelModalOpen(true);
+  };
+
+  const handleCloseCancelModal = () => {
+    if (isCancelling) {
+      return;
+    }
+
+    setIsCancelModalOpen(false);
+    setCancelReason("");
+    setCancelReasonError("");
+  };
+
+  const handleCancelConsignment = async () => {
+    const reason = cancelReason.trim();
+
+    if (!reason) {
+      const validationMessage =
+        "Vui lòng nhập lý do hủy đơn.";
+
+      setCancelReasonError(
+        validationMessage
+      );
+
+      AuthNotify.warning(
+        "Thiếu lý do hủy",
+        validationMessage
+      );
+
+      return;
+    }
+
+    if (reason.length < 5) {
+      const validationMessage =
+        "Lý do hủy phải có ít nhất 5 ký tự.";
+
+      setCancelReasonError(
+        validationMessage
+      );
+
+      AuthNotify.warning(
+        "Lý do chưa hợp lệ",
+        validationMessage
+      );
+
+      return;
+    }
+
+    try {
+      setIsCancelling(true);
+      setCancelReasonError("");
+
+      await cancelConsignmentApi(
+        orderId,
+        reason
+      );
+
+      setIsCancelModalOpen(false);
+      setCancelReason("");
+
+      AuthNotify.success(
+        "Hủy đơn thành công",
+        "Đơn ký gửi đã được hủy trên hệ thống."
+      );
+
+      const refreshController =
+        new AbortController();
+
+      await fetchConsignmentDetail(
+        refreshController.signal
+      );
+    } catch (error) {
+      if (
+        axios.isCancel(error) ||
+        error?.code === "ERR_CANCELED" ||
+        error?.name === "AbortError"
+      ) {
+        return;
+      }
+
+      const responseStatus =
+        error?.response?.status;
+
+      const apiMessage =
+        getApiErrorMessage(
+          error,
+          "Không thể hủy đơn ký gửi."
+        );
+
+      setCancelReasonError(apiMessage);
+
+      if (responseStatus === 401) {
+        sessionStorage.removeItem(
+          "accessToken"
+        );
+        localStorage.removeItem(
+          "accessToken"
+        );
+
+        AuthNotify.error(
+          "Phiên đăng nhập hết hạn",
+          "Vui lòng đăng nhập lại để tiếp tục."
+        );
+
+        navigate("/login");
+        return;
+      }
+
+      AuthNotify.error(
+        "Hủy đơn thất bại",
+        apiMessage
+      );
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   const statusLabelMap = useMemo(
@@ -935,6 +1111,11 @@ const ConsignmentListDetail = () => {
       consignment.status
     );
 
+  const isAlreadyCancelled =
+    normalizeStatus(
+      consignment.status
+    ) === "CANCELLED";
+
   const quotationStatusClass =
     getStatusClassName(
       consignment.quotation?.status
@@ -1036,6 +1217,7 @@ const ConsignmentListDetail = () => {
         <span className="detail-navigation-text">
           Danh sách ký gửi / Chi tiết
         </span>
+
       </div>
 
       {/* Cảnh báo khi chỉ có dữ liệu tóm tắt */}
@@ -1546,6 +1728,167 @@ const ConsignmentListDetail = () => {
           )}
         </section>
       </div>
+
+
+      {/* Hủy đơn ở cuối trang */}
+      <section className="detail-cancel-bottom-section">
+        <div className="detail-cancel-bottom-content">
+          <h3>Hủy yêu cầu ký gửi</h3>
+
+          <p>
+            Nhấn Hủy đơn, nhập lý do và xác nhận. Hệ thống sẽ
+            hiển thị thông báo ngay sau khi Backend xử lý yêu cầu.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="detail-cancel-order-button"
+          disabled={
+            isCancelling ||
+            isAlreadyCancelled
+          }
+          onClick={handleOpenCancelModal}
+        >
+          {isCancelling ? (
+            <>
+              <CircularProgress
+                size={16}
+                color="inherit"
+              />
+              Đang hủy...
+            </>
+          ) : isAlreadyCancelled ? (
+            <>
+              <CancelOutlinedIcon fontSize="small" />
+              Đã hủy
+            </>
+          ) : (
+            <>
+              <CancelOutlinedIcon fontSize="small" />
+              Hủy đơn
+            </>
+          )}
+        </button>
+      </section>
+
+      {isCancelModalOpen && (
+        <div
+          className="cancel-order-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              handleCloseCancelModal();
+            }
+          }}
+        >
+          <div
+            className="cancel-order-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-order-title"
+          >
+            <div className="cancel-order-modal-icon">
+              <CancelOutlinedIcon />
+            </div>
+
+            <div className="cancel-order-modal-content">
+              <h2 id="cancel-order-title">
+                Hủy đơn ký gửi
+              </h2>
+
+              <p>
+                Đơn hàng sau khi hủy sẽ không
+                thể tiếp tục xử lý. Vui lòng
+                nhập lý do hủy.
+              </p>
+
+              <label
+                htmlFor="cancel-reason"
+                className="cancel-order-label"
+              >
+                Lý do hủy
+              </label>
+
+              <textarea
+                id="cancel-reason"
+                rows={4}
+                maxLength={500}
+                value={cancelReason}
+                disabled={isCancelling}
+                placeholder="Ví dụ: Tôi nhập sai thông tin đơn hàng..."
+                className={[
+                  "cancel-order-textarea",
+                  cancelReasonError &&
+                    "has-error",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onChange={(event) => {
+                  setCancelReason(
+                    event.target.value
+                  );
+
+                  if (cancelReasonError) {
+                    setCancelReasonError("");
+                  }
+                }}
+              />
+
+              <div className="cancel-order-counter">
+                {cancelReason.length}/500
+              </div>
+
+              {cancelReasonError && (
+                <div className="cancel-order-error">
+                  {cancelReasonError}
+                </div>
+              )}
+            </div>
+
+            <div className="cancel-order-modal-actions">
+              <button
+                type="button"
+                className="cancel-order-close-button"
+                disabled={isCancelling}
+                onClick={handleCloseCancelModal}
+              >
+                Quay lại
+              </button>
+
+              <button
+                type="button"
+                className="cancel-order-confirm-button"
+                disabled={
+                  isCancelling ||
+                  cancelReason.trim().length < 5
+                }
+                onClick={
+                  handleCancelConsignment
+                }
+              >
+                {isCancelling ? (
+                  <>
+                    <CircularProgress
+                      size={16}
+                      color="inherit"
+                    />
+                    Đang hủy...
+                  </>
+                ) : (
+                  <>
+                    <CancelOutlinedIcon fontSize="small" />
+                    Xác nhận hủy
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

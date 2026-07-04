@@ -321,3 +321,48 @@ export const getProductTypesApi = async (options = {}) => {
     throw error;
   }
 };
+export const cancelConsignmentApi = async (
+  orderId,
+  cancelReason,
+  options = {}
+) => {
+  const normalizedOrderId = String(orderId || "").trim();
+  const normalizedReason = String(cancelReason || "").trim();
+
+  if (!normalizedOrderId) {
+    throw new Error("Order ID không hợp lệ.");
+  }
+
+  if (!normalizedReason) {
+    throw new Error("Vui lòng nhập lý do hủy đơn.");
+  }
+
+  try {
+    const response = await axiosInstance.put(
+      `/api/orders/consignments/${encodeURIComponent(
+        normalizedOrderId
+      )}/cancel`,
+      {
+        cancelReason: normalizedReason,
+      },
+      {
+        signal: getSignal(options),
+        headers: {
+          Accept: "text/plain, application/json",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi hủy đơn ký gửi:",
+        error?.response?.data || error?.message
+      );
+    }
+
+    throw error;
+  }
+};
