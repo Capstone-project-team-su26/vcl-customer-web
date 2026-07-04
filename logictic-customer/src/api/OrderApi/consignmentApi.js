@@ -366,3 +366,82 @@ export const cancelConsignmentApi = async (
     throw error;
   }
 };
+
+export const updateConsignmentStatusApi = async (
+  orderId,
+  status,
+  rejectionReason = "",
+  options = {}
+) => {
+  const normalizedOrderId = String(
+    orderId || ""
+  ).trim();
+
+  const normalizedStatus = String(
+    status || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const normalizedRejectionReason = String(
+    rejectionReason || ""
+  ).trim();
+
+  if (!normalizedOrderId) {
+    throw new Error(
+      "Không tìm thấy mã đơn hàng."
+    );
+  }
+
+  if (!normalizedStatus) {
+    throw new Error(
+      "Vui lòng chọn trạng thái đơn hàng."
+    );
+  }
+
+  if (
+    normalizedStatus === "REJECTED" &&
+    !normalizedRejectionReason
+  ) {
+    throw new Error(
+      "Vui lòng nhập lý do từ chối."
+    );
+  }
+
+  try {
+    const response =
+      await axiosInstance.put(
+        `/api/orders/consignments/${encodeURIComponent(
+          normalizedOrderId
+        )}/status`,
+        {
+          status: normalizedStatus,
+          rejectionReason:
+            normalizedStatus === "REJECTED"
+              ? normalizedRejectionReason
+              : "",
+        },
+        {
+          signal: getSignal(options),
+          headers: {
+            Accept:
+              "text/plain, application/json",
+            "Content-Type":
+              "application/json",
+          },
+        }
+      );
+
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi cập nhật trạng thái đơn ký gửi:",
+        error?.response?.data ||
+          error?.message
+      );
+    }
+
+    throw error;
+  }
+};

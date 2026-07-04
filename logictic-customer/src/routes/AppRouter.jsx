@@ -17,7 +17,7 @@ import ProfileConfig from "../pages/SettingsPage/ProfileConfig";
 import ConsignmentListDetail from "../pages/DashboardPage/CreateCustomer/OrderXuLy/OrderXylyDetail/ConsignmentListDetail"; // Import
 import ServicePolicy from "../pages/DashboardPage/ServicePoli/ServicePolicy";
 import ConsignmentListCheck from "../pages/DashboardPage/CreateCustomer/CheckHang/ConsignmentListCheck"; // Import
-import QuotationDetail from "../pages/DashboardPage/CreateCustomer/CheckHang/QuotationDetail"; // Import
+import QuotationDetail from "../pages/DashboardPage/CreateCustomer/CheckHang/CheckHangDetail/QuotationDetail"; // Import
 
 const AppRouter = () => {
   return (
