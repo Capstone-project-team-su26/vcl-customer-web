@@ -1,10 +1,6 @@
 import axios from "axios";
 
-/*
- * Axios riêng chỉ dùng để upload ảnh.
- * Không sử dụng axiosInstance chung vì axiosInstance
- * có thể đang đặt Content-Type là application/json.
- */
+
 const uploadAxios = axios.create({
   baseURL: "https://api-vcl.purintech.id.vn",
   headers: {
@@ -12,7 +8,7 @@ const uploadAxios = axios.create({
   },
 });
 
-/* ================= REQUEST INTERCEPTOR ================= */
+
 
 uploadAxios.interceptors.request.use(
   (config) => {
@@ -24,10 +20,7 @@ uploadAxios.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    /*
-     * Không tự đặt Content-Type: multipart/form-data.
-     * Trình duyệt sẽ tự tạo Content-Type kèm boundary.
-     */
+  
     if (typeof config.headers?.delete === "function") {
       config.headers.delete("Content-Type");
       config.headers.delete("content-type");

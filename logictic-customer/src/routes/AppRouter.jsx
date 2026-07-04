@@ -15,7 +15,7 @@ import ConsigmentOrder from "../pages/DashboardPage/CreateCustomer/KiGuiHang/Con
 import ConsignmentList from "../pages/DashboardPage/CreateCustomer/OrderXuLy/ConsignmentList"; // Import
 import ProfileConfig from "../pages/SettingsPage/ProfileConfig";
 import ConsignmentListDetail from "../pages/DashboardPage/CreateCustomer/OrderXuLy/OrderXylyDetail/ConsignmentListDetail"; // Import
-import ServicePolicy from "../pages/DashboardPage/ServicePolicy";
+import ServicePolicy from "../pages/DashboardPage/ServicePoli/ServicePolicy";
 import ConsignmentListCheck from "../pages/DashboardPage/CreateCustomer/CheckHang/ConsignmentListCheck"; // Import
 import QuotationDetail from "../pages/DashboardPage/CreateCustomer/CheckHang/QuotationDetail"; // Import
 
