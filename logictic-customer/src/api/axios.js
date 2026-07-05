@@ -1,63 +1,81 @@
 import axios from "axios";
 
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, 
-  headers: {
-    "Accept": "text/plain, application/json",
-    "Content-Type": "application/json"
-  }
-});
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-console.log("API URL:", import.meta.env.VITE_API_URL);
+console.log("API BASE URL:", API_BASE_URL);
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "Không tìm thấy VITE_API_BASE_URL. Hãy cấu hình biến môi trường trên Vercel và redeploy."
+  );
+}
+
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL.replace(/\/+$/, ""),
+  timeout: 30000,
+  headers: {
+    Accept: "text/plain, application/json",
+    "Content-Type": "application/json",
+  },
+});
 
 /* ================= REQUEST INTERCEPTOR ================= */
 
-axiosInstance.interceptors.request.use((config) => {
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token =
+      sessionStorage.getItem("accessToken") ||
+      localStorage.getItem("accessToken");
 
-  const token =
-    sessionStorage.getItem("accessToken") ||
-    localStorage.getItem("accessToken");
+    const requestUrl = config.url || "";
+    const isLoginRequest = requestUrl
+      .toLowerCase()
+      .includes("/auth/login");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+    // Không gửi token cũ khi đăng nhập
+    if (token && !isLoginRequest) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
+    }
 
-  console.log("====== API REQUEST ======");
-  console.log("URL:", config.baseURL + config.url);
-  console.log("TOKEN:", token);
+    const fullUrl = `${config.baseURL || ""}${requestUrl}`;
 
-  return config;
+    console.log("====== API REQUEST ======");
+    console.log("METHOD:", config.method?.toUpperCase());
+    console.log("URL:", fullUrl);
 
-});
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 /* ================= RESPONSE INTERCEPTOR ================= */
 
 axiosInstance.interceptors.response.use(
-
   (response) => response,
 
   (error) => {
-
-    console.error("API ERROR:", error?.response || error);
+    console.error("API ERROR:", {
+      status: error?.response?.status,
+      data: error?.response?.data,
+      url: error?.config?.url,
+      message: error?.message,
+    });
 
     const status = error?.response?.status;
-    const requestUrl = error?.config?.url;
+    const requestUrl = error?.config?.url?.toLowerCase() || "";
+    const isLoginRequest = requestUrl.includes("/auth/login");
 
-    /* nếu token hết hạn */
+    if (status === 401 && !isLoginRequest) {
+      sessionStorage.removeItem("accessToken");
+      localStorage.removeItem("accessToken");
 
-    if (status === 401 && !requestUrl?.includes("login")) {
-
-      sessionStorage.clear();
-      localStorage.clear();
-
-      window.location.href = "/login";
-
+      window.location.replace("/login");
     }
 
     return Promise.reject(error);
-
   }
-
 );
 
 export default axiosInstance;
