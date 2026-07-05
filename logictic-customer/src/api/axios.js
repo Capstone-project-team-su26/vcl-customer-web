@@ -1,14 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.trim() ||
+  "https://api-vcl.purintech.id.vn";
 
 console.log("API BASE URL:", API_BASE_URL);
-
-if (!API_BASE_URL) {
-  throw new Error(
-    "Không tìm thấy VITE_API_BASE_URL. Hãy cấu hình biến môi trường trên Vercel và redeploy."
-  );
-}
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL.replace(/\/+$/, ""),
@@ -27,10 +23,8 @@ axiosInstance.interceptors.request.use(
       sessionStorage.getItem("accessToken") ||
       localStorage.getItem("accessToken");
 
-    const requestUrl = config.url || "";
-    const isLoginRequest = requestUrl
-      .toLowerCase()
-      .includes("/auth/login");
+    const requestUrl = config.url?.toLowerCase() || "";
+    const isLoginRequest = requestUrl.includes("/auth/login");
 
     // Không gửi token cũ khi đăng nhập
     if (token && !isLoginRequest) {
@@ -39,11 +33,12 @@ axiosInstance.interceptors.request.use(
       delete config.headers.Authorization;
     }
 
-    const fullUrl = `${config.baseURL || ""}${requestUrl}`;
-
     console.log("====== API REQUEST ======");
     console.log("METHOD:", config.method?.toUpperCase());
-    console.log("URL:", fullUrl);
+    console.log(
+      "URL:",
+      `${config.baseURL || ""}${config.url || ""}`
+    );
 
     return config;
   },
@@ -64,8 +59,11 @@ axiosInstance.interceptors.response.use(
     });
 
     const status = error?.response?.status;
-    const requestUrl = error?.config?.url?.toLowerCase() || "";
-    const isLoginRequest = requestUrl.includes("/auth/login");
+    const requestUrl =
+      error?.config?.url?.toLowerCase() || "";
+
+    const isLoginRequest =
+      requestUrl.includes("/auth/login");
 
     if (status === 401 && !isLoginRequest) {
       sessionStorage.removeItem("accessToken");
