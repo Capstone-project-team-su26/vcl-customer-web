@@ -27,7 +27,7 @@ const services = [
   {
     label: "Ký gửi hàng hóa",
     description: "Vận chuyển hàng về Việt Nam an toàn",
-    path: "/dich-vu/ky-gui",
+    path: "/consignment-service",
   },
 ];
 

@@ -7,6 +7,11 @@ import ForgotPassword from "../pages/ForgotPasswordPage/ForgotPassword";
 import OTPForgot from "../pages/OTPForgotPage/OTPForgot";
 import NotFound from "../pages/NotFound";
 import LogisticsIntro from "../pages/Logistic/LogisticsIntro";
+ 
+//Home
+import ConsignmentService from "../pages/HomePage/DichVu/KiGui/ConsignmentService";
+
+
 // ⬇️ IMPORT CÁC COMPONENT LAYOUT VÀ MÀN HÌNH MỚI CỦA BẠN VÀO ĐÂY
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
 import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
@@ -33,6 +38,7 @@ const AppRouter = () => {
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/otp-forgot" element={<OTPForgot />} />
+        <Route path="/consignment-service" element={<ConsignmentService />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 
