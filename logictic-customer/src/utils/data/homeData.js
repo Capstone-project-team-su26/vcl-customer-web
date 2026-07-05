@@ -2,8 +2,8 @@ export const BRAND = {
   name: "Việt Nam Logictic",
   fullName: "Việt Nam Logictic",
   tagline: "Vận chuyển xuyên biên giới, an tâm trọn hành trình",
-  email: "support@vcl.vn",
-  hotline: "+84 961 538 114",
+  email: "support@vietnamlogictic.vn",
+  hotline: "+84 833183077",
   address: "65 Đ. 9, Hiệp Bình Phước, Thủ Đức, TP.HCM",
 };
 

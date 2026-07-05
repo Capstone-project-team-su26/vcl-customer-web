@@ -12,6 +12,10 @@ import {
   UserAddOutlined,
   MenuOutlined,
   CloseOutlined,
+  DollarOutlined,
+  SafetyCertificateOutlined,
+  ReadOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 
 const services = [
@@ -27,43 +31,202 @@ const services = [
   },
 ];
 
+const pricingItems = [
+  {
+    label: "Bảng giá mua hộ",
+    description: "Chi phí mua hộ hàng hóa quốc tế",
+    path: "/bang-gia/mua-ho",
+  },
+  {
+    label: "Bảng giá ký gửi",
+    description: "Chi phí ký gửi và vận chuyển hàng hóa",
+    path: "/bang-gia/ky-gui",
+  },
+  {
+    label: "Phí vận chuyển quốc tế",
+    description: "Tra cứu phí vận chuyển theo tuyến và cân nặng",
+    path: "/bang-gia/van-chuyen-quoc-te",
+  },
+  {
+    label: "Phí dịch vụ & phụ phí",
+    description: "Thông tin các khoản phí phát sinh",
+    path: "/bang-gia/phi-dich-vu",
+  },
+  {
+    label: "Công cụ tính giá",
+    description: "Ước tính nhanh chi phí đơn hàng",
+    path: "/bang-gia/tinh-gia",
+  },
+];
+
+const policyItems = [
+  {
+    label: "Quy định chung",
+    description: "Các quy định áp dụng khi sử dụng dịch vụ",
+    path: "/chinh-sach/quy-dinh-chung",
+  },
+  {
+    label: "Chính sách Vận chuyển",
+    description: "Quy định về tiếp nhận và vận chuyển hàng hóa",
+    path: "/chinh-sach/van-chuyen",
+  },
+  {
+    label: "Chính sách Thanh toán",
+    description: "Phương thức, thời hạn và quy trình thanh toán",
+    path: "/chinh-sach/thanh-toan",
+  },
+  {
+    label: "Chính sách Hủy đơn & Hoàn tiền",
+    description: "Điều kiện hủy đơn và xử lý hoàn tiền",
+    path: "/chinh-sach/huy-don-hoan-tien",
+  },
+  {
+    label: "Chính sách Bảo hiểm Hàng hóa",
+    description: "Quyền lợi và phạm vi bảo hiểm hàng hóa",
+    path: "/chinh-sach/bao-hiem-hang-hoa",
+  },
+  {
+    label: "Chính sách Miễn trừ Trách nhiệm",
+    description: "Các trường hợp được miễn trừ trách nhiệm",
+    path: "/chinh-sach/mien-tru-trach-nhiem",
+  },
+  {
+    label: "Chính sách Bảo mật",
+    description: "Quy định thu thập và bảo vệ dữ liệu khách hàng",
+    path: "/chinh-sach/bao-mat",
+  },
+  {
+    label: "Chính sách Đặt hàng",
+    description: "Quy trình và điều kiện tạo đơn hàng",
+    path: "/chinh-sach/dat-hang",
+  },
+];
+
+const guideItems = [
+  {
+    label: "Hướng dẫn mua hộ",
+    description: "Các bước tạo yêu cầu mua hộ hàng hóa",
+    path: "/huong-dan/mua-ho",
+  },
+  {
+    label: "Hướng dẫn ký gửi",
+    description: "Cách tạo yêu cầu ký gửi hàng hóa",
+    path: "/huong-dan/ky-gui",
+  },
+  {
+    label: "Hướng dẫn tạo đơn hàng",
+    description: "Quy trình tạo và xác nhận đơn hàng",
+    path: "/huong-dan/tao-don-hang",
+  },
+  {
+    label: "Hướng dẫn thanh toán",
+    description: "Cách thanh toán và xác nhận giao dịch",
+    path: "/huong-dan/thanh-toan",
+  },
+  {
+    label: "Hướng dẫn theo dõi đơn hàng",
+    description: "Kiểm tra trạng thái và hành trình đơn hàng",
+    path: "/huong-dan/theo-doi-don-hang",
+  },
+  {
+    label: "Hướng dẫn khiếu nại",
+    description: "Quy trình gửi và xử lý yêu cầu khiếu nại",
+    path: "/huong-dan/khieu-nai",
+  },
+];
+
+const blogItems = [
+  {
+    label: "Tin tức Logistics",
+    description: "Thông tin mới nhất về thị trường logistics",
+    path: "/blog/tin-tuc-logistics",
+  },
+  {
+    label: "Kinh nghiệm mua hàng quốc tế",
+    description: "Mẹo mua hàng an toàn và tiết kiệm",
+    path: "/blog/kinh-nghiem-mua-hang",
+  },
+  {
+    label: "Hướng dẫn nhập hàng",
+    description: "Kiến thức nhập hàng dành cho cá nhân và doanh nghiệp",
+    path: "/blog/huong-dan-nhap-hang",
+  },
+  {
+    label: "Kiến thức vận chuyển",
+    description: "Giải đáp các vấn đề về vận chuyển hàng hóa",
+    path: "/blog/kien-thuc-van-chuyen",
+  },
+  {
+    label: "Ưu đãi & Thông báo",
+    description: "Chương trình ưu đãi và thông báo hệ thống",
+    path: "/blog/uu-dai-thong-bao",
+  },
+];
+
 const navItems = [
   {
+    key: "about",
     label: "Về chúng tôi",
     path: "/gioi-thieu",
   },
   {
+    key: "services",
+    label: "Dịch vụ",
+    path: "/dich-vu",
+    title: "Dịch vụ của chúng tôi",
+    subtitle: "Giải pháp mua hộ và vận chuyển tối ưu",
+    items: services,
+    icon: FileTextOutlined,
+  },
+  {
+    key: "pricing",
     label: "Bảng giá",
     path: "/bang-gia",
-    hasArrow: true,
+    title: "Bảng giá dịch vụ",
+    subtitle: "Thông tin chi phí rõ ràng và minh bạch",
+    items: pricingItems,
+    icon: DollarOutlined,
   },
   {
+    key: "policy",
     label: "Chính sách",
     path: "/chinh-sach",
-    hasArrow: true,
+    title: "Chính sách & Quy định",
+    subtitle: "Các điều khoản áp dụng khi sử dụng dịch vụ",
+    items: policyItems,
+    icon: SafetyCertificateOutlined,
   },
   {
+    key: "guide",
     label: "Hướng dẫn",
     path: "/huong-dan",
-    hasArrow: true,
+    title: "Trung tâm hướng dẫn",
+    subtitle: "Hướng dẫn sử dụng dịch vụ từng bước",
+    items: guideItems,
+    icon: BookOutlined,
   },
   {
+    key: "blog",
     label: "Blog",
     path: "/blog",
-    hasArrow: true,
+    title: "Blog Logistics",
+    subtitle: "Kiến thức, kinh nghiệm và tin tức hữu ích",
+    items: blogItems,
+    icon: ReadOutlined,
   },
   {
+    key: "contact",
     label: "Liên hệ",
     path: "/lien-he",
   },
 ];
 
 const Header = () => {
-  const [showService, setShowService] = useState(false);
+  const [openDesktopMenu, setOpenDesktopMenu] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showMobileService, setShowMobileService] = useState(false);
+  const [openMobileMenu, setOpenMobileMenu] = useState(null);
 
-  const dropdownRef = useRef(null);
+  const desktopNavRef = useRef(null);
   const headerRef = useRef(null);
 
   const navigate = useNavigate();
@@ -80,12 +243,10 @@ const Header = () => {
     );
   };
 
-  const isServiceActive = location.pathname.startsWith("/dich-vu");
-
   const closeAllMenus = () => {
-    setShowService(false);
+    setOpenDesktopMenu(null);
     setShowMobileMenu(false);
-    setShowMobileService(false);
+    setOpenMobileMenu(null);
   };
 
   const handleNavigate = (path) => {
@@ -93,23 +254,27 @@ const Header = () => {
     navigate(path);
   };
 
-  const handleServiceToggle = () => {
-    setShowService((current) => !current);
+  const handleDesktopMenuToggle = (key) => {
+    setOpenDesktopMenu((current) => (current === key ? null : key));
   };
 
   const handleMobileMenuToggle = () => {
     setShowMobileMenu((current) => !current);
-    setShowService(false);
-    setShowMobileService(false);
+    setOpenDesktopMenu(null);
+    setOpenMobileMenu(null);
+  };
+
+  const handleMobileDropdownToggle = (key) => {
+    setOpenMobileMenu((current) => (current === key ? null : key));
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
+        desktopNavRef.current &&
+        !desktopNavRef.current.contains(event.target)
       ) {
-        setShowService(false);
+        setOpenDesktopMenu(null);
       }
 
       if (
@@ -117,7 +282,7 @@ const Header = () => {
         !headerRef.current.contains(event.target)
       ) {
         setShowMobileMenu(false);
-        setShowMobileService(false);
+        setOpenMobileMenu(null);
       }
     };
 
@@ -140,7 +305,7 @@ const Header = () => {
     const handleResize = () => {
       if (window.innerWidth > 1260) {
         setShowMobileMenu(false);
-        setShowMobileService(false);
+        setOpenMobileMenu(null);
       }
     };
 
@@ -161,7 +326,6 @@ const Header = () => {
       <div className="header-decoration header-decoration-red" />
 
       <div className="header-container">
-        {/* Logo */}
         <button
           type="button"
           className="logo-button"
@@ -178,110 +342,92 @@ const Header = () => {
           </span>
         </button>
 
-        {/* Menu desktop */}
-        <nav className="nav-menu" aria-label="Điều hướng chính">
-          <button
-            type="button"
-            className={`nav-item ${
-              isActive(navItems[0].path) ? "active" : ""
-            }`}
-            onClick={() => handleNavigate(navItems[0].path)}
-            aria-current={
-              isActive(navItems[0].path) ? "page" : undefined
+        <nav
+          ref={desktopNavRef}
+          className="nav-menu"
+          aria-label="Điều hướng chính"
+        >
+          {navItems.map((item) => {
+            const hasDropdown = Array.isArray(item.items);
+            const isOpen = openDesktopMenu === item.key;
+            const ItemIcon = item.icon || FileTextOutlined;
+
+            if (!hasDropdown) {
+              return (
+                <button
+                  type="button"
+                  key={item.key}
+                  className={`nav-item ${isActive(item.path) ? "active" : ""}`}
+                  onClick={() => handleNavigate(item.path)}
+                  aria-current={isActive(item.path) ? "page" : undefined}
+                >
+                  {item.label}
+                </button>
+              );
             }
-          >
-            {navItems[0].label}
-          </button>
 
-          {/* Dropdown dịch vụ */}
-          <div
-            ref={dropdownRef}
-            className={`menu-dropdown ${
-              showService || isServiceActive ? "active" : ""
-            }`}
-          >
-            <button
-              type="button"
-              className="nav-item service-trigger"
-              onClick={handleServiceToggle}
-              aria-haspopup="menu"
-              aria-expanded={showService}
-            >
-              <span>Dịch vụ</span>
-
-              <DownOutlined
-                className={`icon-down ${
-                  showService ? "rotate" : ""
+            return (
+              <div
+                key={item.key}
+                className={`menu-dropdown ${
+                  isOpen || isActive(item.path) ? "active" : ""
                 }`}
-              />
-            </button>
+              >
+                <button
+                  type="button"
+                  className="nav-item service-trigger"
+                  onClick={() => handleDesktopMenuToggle(item.key)}
+                  aria-haspopup="menu"
+                  aria-expanded={isOpen}
+                >
+                  <span>{item.label}</span>
+                  <DownOutlined
+                    className={`icon-down ${isOpen ? "rotate" : ""}`}
+                  />
+                </button>
 
-            {showService && (
-              <div className="service-dropdown" role="menu">
-                <div className="dropdown-header">
-                  <span className="dropdown-label">
-                    Dịch vụ của chúng tôi
-                  </span>
-
-                  <span className="dropdown-description">
-                    Giải pháp mua hộ và vận chuyển tối ưu
-                  </span>
-                </div>
-
-                <div className="service-list">
-                  {services.map((service) => (
-                    <button
-                      type="button"
-                      key={service.path}
-                      className={`service-item ${
-                        isActive(service.path) ? "active" : ""
-                      }`}
-                      onClick={() =>
-                        handleNavigate(service.path)
-                      }
-                      role="menuitem"
-                    >
-                      <span className="service-icon">
-                        <FileTextOutlined />
+                {isOpen && (
+                  <div className="service-dropdown" role="menu">
+                    <div className="dropdown-header">
+                      <span className="dropdown-label">{item.title}</span>
+                      <span className="dropdown-description">
+                        {item.subtitle}
                       </span>
+                    </div>
 
-                      <span className="service-content">
-                        <strong>{service.label}</strong>
-                        <small>{service.description}</small>
-                      </span>
+                    <div className="service-list">
+                      {item.items.map((subItem) => (
+                        <button
+                          type="button"
+                          key={subItem.path}
+                          className={`service-item ${
+                            isActive(subItem.path) ? "active" : ""
+                          }`}
+                          onClick={() => handleNavigate(subItem.path)}
+                          role="menuitem"
+                        >
+                          <span className="service-icon">
+                            <ItemIcon />
+                          </span>
 
-                      <span className="service-arrow">
-                        <RightOutlined />
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                          <span className="service-content">
+                            <strong>{subItem.label}</strong>
+                            <small>{subItem.description}</small>
+                          </span>
+
+                          <span className="service-arrow">
+                            <RightOutlined />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          {navItems.slice(1).map((item) => (
-            <button
-              type="button"
-              key={item.path}
-              className={`nav-item ${
-                isActive(item.path) ? "active" : ""
-              }`}
-              onClick={() => handleNavigate(item.path)}
-              aria-current={
-                isActive(item.path) ? "page" : undefined
-              }
-            >
-              <span>{item.label}</span>
-
-              {item.hasArrow && (
-                <DownOutlined className="icon-down nav-static-arrow" />
-              )}
-            </button>
-          ))}
+            );
+          })}
         </nav>
 
-        {/* Hành động desktop */}
         <div className="header-actions">
           <button
             type="button"
@@ -320,109 +466,88 @@ const Header = () => {
           </button>
         </div>
 
-        {/* Nút mở menu mobile */}
         <button
           type="button"
-          className={`mobile-menu-button ${
-            showMobileMenu ? "is-open" : ""
-          }`}
+          className={`mobile-menu-button ${showMobileMenu ? "is-open" : ""}`}
           onClick={handleMobileMenuToggle}
-          aria-label={
-            showMobileMenu ? "Đóng menu" : "Mở menu"
-          }
+          aria-label={showMobileMenu ? "Đóng menu" : "Mở menu"}
           aria-expanded={showMobileMenu}
         >
-          {showMobileMenu ? (
-            <CloseOutlined />
-          ) : (
-            <MenuOutlined />
-          )}
+          {showMobileMenu ? <CloseOutlined /> : <MenuOutlined />}
         </button>
       </div>
 
-      {/* Menu mobile */}
       {showMobileMenu && (
         <div className="mobile-menu">
           <div className="mobile-menu-inner">
-            <button
-              type="button"
-              className={`mobile-nav-item ${
-                isActive(navItems[0].path) ? "active" : ""
-              }`}
-              onClick={() =>
-                handleNavigate(navItems[0].path)
+            {navItems.map((item) => {
+              const hasDropdown = Array.isArray(item.items);
+              const isOpen = openMobileMenu === item.key;
+              const ItemIcon = item.icon || FileTextOutlined;
+
+              if (!hasDropdown) {
+                return (
+                  <button
+                    type="button"
+                    key={item.key}
+                    className={`mobile-nav-item ${
+                      isActive(item.path) ? "active" : ""
+                    }`}
+                    onClick={() => handleNavigate(item.path)}
+                  >
+                    <span>{item.label}</span>
+                    <RightOutlined />
+                  </button>
+                );
               }
-            >
-              <span>{navItems[0].label}</span>
-              <RightOutlined />
-            </button>
 
-            <div
-              className={`mobile-service-block ${
-                showMobileService ? "active" : ""
-              }`}
-            >
-              <button
-                type="button"
-                className={`mobile-nav-item mobile-service-trigger ${
-                  isServiceActive ? "active" : ""
-                }`}
-                onClick={() =>
-                  setShowMobileService((current) => !current)
-                }
-                aria-expanded={showMobileService}
-              >
-                <span>Dịch vụ</span>
+              return (
+                <div
+                  key={item.key}
+                  className={`mobile-service-block ${isOpen ? "active" : ""}`}
+                >
+                  <button
+                    type="button"
+                    className={`mobile-nav-item mobile-service-trigger ${
+                      isActive(item.path) ? "active" : ""
+                    }`}
+                    onClick={() => handleMobileDropdownToggle(item.key)}
+                    aria-expanded={isOpen}
+                  >
+                    <span>{item.label}</span>
+                    <DownOutlined
+                      className={`icon-down ${isOpen ? "rotate" : ""}`}
+                    />
+                  </button>
 
-                <DownOutlined
-                  className={`icon-down ${
-                    showMobileService ? "rotate" : ""
-                  }`}
-                />
-              </button>
+                  {isOpen && (
+                    <div className="mobile-service-list">
+                      {item.items.map((subItem) => (
+                        <button
+                          type="button"
+                          key={subItem.path}
+                          className={`mobile-service-item ${
+                            isActive(subItem.path) ? "active" : ""
+                          }`}
+                          onClick={() => handleNavigate(subItem.path)}
+                        >
+                          <span className="mobile-service-icon">
+                            <ItemIcon />
+                          </span>
 
-              {showMobileService && (
-                <div className="mobile-service-list">
-                  {services.map((service) => (
-                    <button
-                      type="button"
-                      key={service.path}
-                      className={`mobile-service-item ${
-                        isActive(service.path) ? "active" : ""
-                      }`}
-                      onClick={() =>
-                        handleNavigate(service.path)
-                      }
-                    >
-                      <span className="mobile-service-icon">
-                        <FileTextOutlined />
-                      </span>
+                          <span className="mobile-service-content">
+                            <strong>{subItem.label}</strong>
+                            <small>{subItem.description}</small>
+                          </span>
 
-                      <span className="mobile-service-content">
-                        <strong>{service.label}</strong>
-                        <small>{service.description}</small>
-                      </span>
-
-                      <RightOutlined />
-                    </button>
-                  ))}
+                          <RightOutlined />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {navItems.slice(1).map((item) => (
-              <button
-                type="button"
-                key={item.path}
-                className={`mobile-nav-item ${
-                  isActive(item.path) ? "active" : ""
-                }`}
-                onClick={() => handleNavigate(item.path)}
-              >
-                <span>{item.label}</span>
-                <RightOutlined />
-              </button>
-            ))}
+              );
+            })}
 
             <div className="mobile-actions">
               <button

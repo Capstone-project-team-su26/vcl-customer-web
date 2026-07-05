@@ -859,7 +859,7 @@ export default function FloatingChat() {
 
             <span>
               Hỗ trợ trực tuyến bằng
-              Gemini AI
+              Việt Nam Logictic AI
             </span>
           </footer>
         </section>
