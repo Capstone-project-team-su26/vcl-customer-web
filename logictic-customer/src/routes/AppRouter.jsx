@@ -8,9 +8,12 @@ import OTPForgot from "../pages/OTPForgotPage/OTPForgot";
 import NotFound from "../pages/NotFound";
 import LogisticsIntro from "../pages/Logistic/LogisticsIntro";
  
-//Home
+//Trang chủ chứa các dịch vụ
+//Dịch vụ KiGui và Mua hộ
 import ConsignmentService from "../pages/HomePage/DichVu/KiGui/ConsignmentService";
 import BuyForMeService from "../pages/HomePage/DichVu/MuaHo/BuyForMeService";
+//Bang giá 
+
 
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
