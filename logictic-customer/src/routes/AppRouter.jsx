@@ -14,6 +14,10 @@ import ConsignmentService from "../pages/HomePage/DichVu/KiGui/ConsignmentServic
 import BuyForMeService from "../pages/HomePage/DichVu/MuaHo/BuyForMeService";
 //Bang giá 
 import BuyForMePricing from "../pages/HomePage/BangGia/BangGiaMuaHo/BuyForMePricing";
+import ConsignmentPricing from "../pages/HomePage/BangGia/BangGiaKiGui/ConsignmentPricing";
+import PricingCalculator from "../pages/HomePage/BangGia/CongThucGia/PricingCalculator";
+import ServiceFeesPricing from "../pages/HomePage/BangGia/PhDichVu/ServiceFeesPricing";
+import InternationalShippingPricing from "../pages/HomePage/BangGia/PhiVanChuyen/InternationalShippingPricing";
 
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
@@ -44,6 +48,16 @@ const AppRouter = () => {
         <Route path="/consignment-service" element={<ConsignmentService />} />
         <Route path="/buy-for-me-service" element={<BuyForMeService />} />
         <Route path="/buy-for-me-pricing" element={<BuyForMePricing />} />
+        <Route path="/consignment-pricing" element={<ConsignmentPricing />} />
+        <Route path="/pricing-calculator" element={<PricingCalculator />} />
+        <Route
+          path="/service-fees-pricing"
+          element={<ServiceFeesPricing />}
+        />
+        <Route
+          path="/international-shipping-pricing"
+          element={<InternationalShippingPricing />}
+        />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 

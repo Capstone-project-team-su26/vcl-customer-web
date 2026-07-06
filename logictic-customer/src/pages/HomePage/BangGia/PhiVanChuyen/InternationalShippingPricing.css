@@ -1,0 +1,122 @@
+
+:root {
+  --is-primary: #1557c0;
+  --is-primary-dark: #0b2d62;
+  --is-accent: #ef3340;
+  --is-text: #172033;
+  --is-muted: #718096;
+  --is-border: #e2e8f0;
+  --is-shadow: 0 24px 70px rgba(15, 32, 63, 0.12);
+}
+
+.international-shipping-page,
+.international-shipping-page * { box-sizing: border-box; }
+
+.international-shipping-page {
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--is-text);
+  background: #fff;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.international-shipping-container { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+.international-shipping-hero {
+  position: relative;
+  padding: 64px 0 96px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 84% 10%, rgba(69,139,255,.32), transparent 30%),
+    radial-gradient(circle at 8% 90%, rgba(239,51,64,.2), transparent 26%),
+    linear-gradient(135deg, #061832 0%, #0b2e62 48%, #0e4c9c 100%);
+}
+.international-shipping-hero::before {
+  content:""; position:absolute; inset:0; opacity:.13; pointer-events:none;
+  background-image: linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px);
+  background-size:48px 48px;
+}
+.international-shipping-hero__inner { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) 430px; gap:64px; align-items:center; }
+.international-shipping-breadcrumb { display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin-bottom:30px; color:rgba(255,255,255,.68); font-size:14px; }
+.international-shipping-breadcrumb button { border:0; padding:0; background:transparent; color:inherit; cursor:pointer; }
+.international-shipping-breadcrumb button:hover, .international-shipping-breadcrumb strong { color:#fff; }
+.international-shipping-eyebrow { width:fit-content; display:inline-flex; align-items:center; gap:9px; padding:9px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#dbeafe; font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+.international-shipping-hero h1 { max-width:780px; margin:22px 0 20px; color:#fff; font-size:clamp(42px,5.6vw,72px); line-height:1.02; letter-spacing:-.055em; }
+.international-shipping-hero h1 span { display:block; color:#93c5fd; }
+.international-shipping-hero p { max-width:650px; margin:0; color:rgba(239,246,255,.82); font-size:17px; line-height:1.8; }
+.international-shipping-hero__actions { display:flex; flex-wrap:wrap; gap:14px; margin-top:34px; }
+.international-shipping-btn { min-height:52px; display:inline-flex; align-items:center; justify-content:center; gap:10px; border:1px solid transparent; border-radius:15px; padding:0 22px; font-weight:900; cursor:pointer; transition:.22s ease; }
+.international-shipping-btn:hover { transform:translateY(-2px); }
+.international-shipping-btn--primary { color:#fff; background:linear-gradient(135deg,#ef3340,#f97316); box-shadow:0 18px 38px rgba(239,51,64,.28); }
+.international-shipping-btn--secondary { color:#fff; background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.24); }
+.international-shipping-btn--light { color:var(--is-primary-dark); background:#fff; box-shadow:0 16px 35px rgba(0,25,70,.2); }
+.international-shipping-btn--full { width:100%; margin-top:18px; }
+.international-shipping-hero__card, .international-shipping-summary-card { padding:28px; border-radius:30px; color:var(--is-text); background:rgba(255,255,255,.96); box-shadow:0 34px 90px rgba(0,18,55,.34); }
+.international-shipping-hero__card > span, .international-shipping-summary-card > span { width:58px; height:58px; display:grid; place-items:center; border-radius:19px; color:#fff; background:linear-gradient(135deg,#1557c0,#0b2d62); font-size:27px; margin-bottom:18px; }
+.international-shipping-hero__card small, .international-shipping-summary-card small { display:block; color:var(--is-muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.international-shipping-hero__card strong, .international-shipping-summary-card strong { display:block; margin-top:7px; font-size:28px; letter-spacing:-.03em; }
+.international-shipping-hero__card p, .international-shipping-summary-card p { margin:14px 0 0; color:var(--is-muted); font-size:14px; line-height:1.65; }
+
+.international-shipping-section { padding:92px 0; }
+.international-shipping-heading { max-width:760px; margin-bottom:42px; }
+.international-shipping-heading--center { margin-left:auto; margin-right:auto; text-align:center; }
+.international-shipping-heading > span, .international-shipping-kicker { display:inline-flex; margin-bottom:12px; color:var(--is-primary); font-size:12px; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+.international-shipping-heading h2, .international-shipping-calculator-copy h2 { margin:0; color:#14213a; font-size:clamp(32px,4vw,48px); line-height:1.14; letter-spacing:-.04em; }
+.international-shipping-heading p, .international-shipping-calculator-copy > p { margin:16px 0 0; color:var(--is-muted); font-size:16px; line-height:1.75; }
+
+.international-shipping-grid, .international-shipping-tips__grid, .international-shipping-note-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.international-shipping-card, .international-shipping-tips article, .international-shipping-note-grid article { padding:26px; border:1px solid var(--is-border); border-radius:26px; background:#fff; box-shadow:0 12px 35px rgba(15,32,63,.06); transition:.24s ease; }
+.international-shipping-card:hover { transform:translateY(-7px); border-color:rgba(21,87,192,.32); box-shadow:var(--is-shadow); }
+
+.international-shipping-calculator-section { color:#fff; background:radial-gradient(circle at 12% 15%, rgba(69,139,255,.25), transparent 28%), linear-gradient(135deg,#061832 0%,#0b2e62 55%,#0e4c9c 100%); }
+.international-shipping-calculator-layout { display:grid; grid-template-columns:minmax(0,.82fr) minmax(520px,1.18fr); gap:70px; align-items:center; }
+.international-shipping-calculator-copy h2 { color:#fff; margin:18px 0 16px; }
+.international-shipping-calculator-copy > p { color:rgba(239,246,255,.78); }
+.international-shipping-note { display:flex; gap:14px; margin-top:28px; padding:18px; border-radius:18px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.08); }
+.international-shipping-note > span { color:#fbbf24; font-size:22px; }
+.international-shipping-note p { margin:0; color:rgba(239,246,255,.76); line-height:1.65; }
+.international-shipping-calculator-card { padding:30px; border-radius:30px; color:var(--is-text); background:#fff; box-shadow:0 34px 90px rgba(0,18,55,.35); }
+.international-shipping-calculator-card__head { display:flex; justify-content:space-between; gap:20px; margin-bottom:24px; }
+.international-shipping-calculator-card__head span { display:block; color:var(--is-primary); font-size:11px; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+.international-shipping-calculator-card__head h3 { margin:6px 0 0; font-size:24px; }
+.international-shipping-calculator-card__head button { height:38px; border:0; border-radius:12px; padding:0 12px; display:inline-flex; align-items:center; gap:7px; color:var(--is-muted); background:#f1f5f9; font-size:12px; font-weight:900; cursor:pointer; }
+.international-shipping-form-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.international-shipping-field { display:grid; gap:8px; }
+.international-shipping-field--full { grid-column:1/-1; }
+.international-shipping-field span { color:#334155; font-size:12px; font-weight:900; }
+.international-shipping-field input, .international-shipping-field select { width:100%; height:48px; border:1px solid #dce3ed; border-radius:13px; padding:0 14px; outline:none; color:#172033; background:#fff; font-weight:700; }
+.international-shipping-field input:focus, .international-shipping-field select:focus { border-color:var(--is-primary); box-shadow:0 0 0 4px rgba(21,87,192,.1); }
+.international-shipping-result { margin-top:20px; padding:20px; border-radius:20px; background:#f7f9fc; border:1px solid #e1e8f1; }
+.international-shipping-result > div { display:flex; justify-content:space-between; gap:18px; padding:9px 0; color:var(--is-muted); font-size:13px; }
+.international-shipping-result strong { color:#172033; text-align:right; }
+.international-shipping-result__total { margin-top:10px; padding-top:16px!important; border-top:1px dashed #cbd5e1; }
+.international-shipping-result__total span { color:#172033; font-weight:900; }
+.international-shipping-result__total strong { color:var(--is-accent); font-size:24px; }
+
+.international-shipping-cta { padding:72px 0; color:#fff; background:linear-gradient(135deg,#0b2d62,#1557c0 65%,#ef3340); }
+.international-shipping-cta__inner { display:flex; justify-content:space-between; align-items:center; gap:40px; }
+.international-shipping-cta span { color:#bfdbfe; font-size:12px; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+.international-shipping-cta h2 { max-width:760px; margin:10px 0 0; font-size:clamp(30px,4vw,46px); line-height:1.12; letter-spacing:-.04em; }
+.international-shipping-cta p { max-width:700px; margin:15px 0 0; color:rgba(255,255,255,.78); line-height:1.7; }
+
+@media (max-width:1100px) {
+  .international-shipping-hero__inner, .international-shipping-calculator-layout { grid-template-columns:1fr; }
+  .international-shipping-grid, .international-shipping-tips__grid, .international-shipping-note-grid { grid-template-columns:repeat(2,1fr); }
+  .international-shipping-hero__card, .international-shipping-summary-card { max-width:520px; }
+}
+@media (max-width:720px) {
+  .international-shipping-container { width:min(100% - 28px,1180px); }
+  .international-shipping-hero { padding:42px 0 70px; }
+  .international-shipping-hero h1 { font-size:40px; }
+  .international-shipping-hero__actions, .international-shipping-cta__inner { flex-direction:column; align-items:stretch; }
+  .international-shipping-btn { width:100%; }
+  .international-shipping-section { padding:68px 0; }
+  .international-shipping-grid, .international-shipping-tips__grid, .international-shipping-note-grid, .international-shipping-form-grid { grid-template-columns:1fr; }
+  .international-shipping-field--full { grid-column:auto; }
+  .international-shipping-calculator-card { padding:22px; border-radius:22px; }
+  .international-shipping-calculator-card__head { flex-direction:column; }
+  .international-shipping-result > div { flex-direction:column; gap:5px; }
+  .international-shipping-result strong { text-align:left; }
+}
+
+.international-shipping-grid{grid-template-columns:repeat(4,1fr)}.international-route-card__head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:22px}.international-route-card__head>span{width:54px;height:54px;display:grid;place-items:center;border-radius:18px;color:var(--is-primary);background:#eaf3ff;font-size:24px}.international-route-card__head strong{padding:7px 10px;border-radius:999px;color:var(--is-accent);background:#fff1f2;font-size:11px}.international-route-card h3{margin:0;color:#172033;font-size:20px;line-height:1.35}.international-route-card p{margin:12px 0 18px;color:var(--is-muted);line-height:1.65}.international-route-methods{display:grid;gap:10px;margin-top:auto}.international-route-methods div{padding:13px;border-radius:16px;background:#f7f9fc}.international-route-methods span,.international-route-methods small{display:block;color:var(--is-muted);font-size:12px}.international-route-methods strong{display:block;margin:5px 0;color:var(--is-primary-dark)}.international-route-card button{min-height:46px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;border:0;border-radius:14px;padding:0 14px;color:var(--is-primary);background:#f0f7ff;font-weight:900;cursor:pointer}.international-route-card button:hover{color:#fff;background:var(--is-primary)}@media(max-width:1100px){.international-shipping-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:720px){.international-shipping-grid{grid-template-columns:1fr}}

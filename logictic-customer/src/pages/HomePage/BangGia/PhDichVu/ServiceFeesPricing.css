@@ -1,0 +1,122 @@
+
+:root {
+  --sf-primary: #1557c0;
+  --sf-primary-dark: #0b2d62;
+  --sf-accent: #ef3340;
+  --sf-text: #172033;
+  --sf-muted: #718096;
+  --sf-border: #e2e8f0;
+  --sf-shadow: 0 24px 70px rgba(15, 32, 63, 0.12);
+}
+
+.service-fees-page,
+.service-fees-page * { box-sizing: border-box; }
+
+.service-fees-page {
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--sf-text);
+  background: #fff;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.service-fees-container { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+.service-fees-hero {
+  position: relative;
+  padding: 64px 0 96px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 84% 10%, rgba(69,139,255,.32), transparent 30%),
+    radial-gradient(circle at 8% 90%, rgba(239,51,64,.2), transparent 26%),
+    linear-gradient(135deg, #061832 0%, #0b2e62 48%, #0e4c9c 100%);
+}
+.service-fees-hero::before {
+  content:""; position:absolute; inset:0; opacity:.13; pointer-events:none;
+  background-image: linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px);
+  background-size:48px 48px;
+}
+.service-fees-hero__inner { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) 430px; gap:64px; align-items:center; }
+.service-fees-breadcrumb { display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin-bottom:30px; color:rgba(255,255,255,.68); font-size:14px; }
+.service-fees-breadcrumb button { border:0; padding:0; background:transparent; color:inherit; cursor:pointer; }
+.service-fees-breadcrumb button:hover, .service-fees-breadcrumb strong { color:#fff; }
+.service-fees-eyebrow { width:fit-content; display:inline-flex; align-items:center; gap:9px; padding:9px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#dbeafe; font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+.service-fees-hero h1 { max-width:780px; margin:22px 0 20px; color:#fff; font-size:clamp(42px,5.6vw,72px); line-height:1.02; letter-spacing:-.055em; }
+.service-fees-hero h1 span { display:block; color:#93c5fd; }
+.service-fees-hero p { max-width:650px; margin:0; color:rgba(239,246,255,.82); font-size:17px; line-height:1.8; }
+.service-fees-hero__actions { display:flex; flex-wrap:wrap; gap:14px; margin-top:34px; }
+.service-fees-btn { min-height:52px; display:inline-flex; align-items:center; justify-content:center; gap:10px; border:1px solid transparent; border-radius:15px; padding:0 22px; font-weight:900; cursor:pointer; transition:.22s ease; }
+.service-fees-btn:hover { transform:translateY(-2px); }
+.service-fees-btn--primary { color:#fff; background:linear-gradient(135deg,#ef3340,#f97316); box-shadow:0 18px 38px rgba(239,51,64,.28); }
+.service-fees-btn--secondary { color:#fff; background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.24); }
+.service-fees-btn--light { color:var(--sf-primary-dark); background:#fff; box-shadow:0 16px 35px rgba(0,25,70,.2); }
+.service-fees-btn--full { width:100%; margin-top:18px; }
+.service-fees-hero__card, .service-fees-summary-card { padding:28px; border-radius:30px; color:var(--sf-text); background:rgba(255,255,255,.96); box-shadow:0 34px 90px rgba(0,18,55,.34); }
+.service-fees-hero__card > span, .service-fees-summary-card > span { width:58px; height:58px; display:grid; place-items:center; border-radius:19px; color:#fff; background:linear-gradient(135deg,#1557c0,#0b2d62); font-size:27px; margin-bottom:18px; }
+.service-fees-hero__card small, .service-fees-summary-card small { display:block; color:var(--sf-muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.service-fees-hero__card strong, .service-fees-summary-card strong { display:block; margin-top:7px; font-size:28px; letter-spacing:-.03em; }
+.service-fees-hero__card p, .service-fees-summary-card p { margin:14px 0 0; color:var(--sf-muted); font-size:14px; line-height:1.65; }
+
+.service-fees-section { padding:92px 0; }
+.service-fees-heading { max-width:760px; margin-bottom:42px; }
+.service-fees-heading--center { margin-left:auto; margin-right:auto; text-align:center; }
+.service-fees-heading > span, .service-fees-kicker { display:inline-flex; margin-bottom:12px; color:var(--sf-primary); font-size:12px; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+.service-fees-heading h2, .service-fees-calculator-copy h2 { margin:0; color:#14213a; font-size:clamp(32px,4vw,48px); line-height:1.14; letter-spacing:-.04em; }
+.service-fees-heading p, .service-fees-calculator-copy > p { margin:16px 0 0; color:var(--sf-muted); font-size:16px; line-height:1.75; }
+
+.service-fees-grid, .service-fees-tips__grid, .service-fees-note-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.service-fees-card, .service-fees-tips article, .service-fees-note-grid article { padding:26px; border:1px solid var(--sf-border); border-radius:26px; background:#fff; box-shadow:0 12px 35px rgba(15,32,63,.06); transition:.24s ease; }
+.service-fees-card:hover { transform:translateY(-7px); border-color:rgba(21,87,192,.32); box-shadow:var(--sf-shadow); }
+
+.service-fees-calculator-section { color:#fff; background:radial-gradient(circle at 12% 15%, rgba(69,139,255,.25), transparent 28%), linear-gradient(135deg,#061832 0%,#0b2e62 55%,#0e4c9c 100%); }
+.service-fees-calculator-layout { display:grid; grid-template-columns:minmax(0,.82fr) minmax(520px,1.18fr); gap:70px; align-items:center; }
+.service-fees-calculator-copy h2 { color:#fff; margin:18px 0 16px; }
+.service-fees-calculator-copy > p { color:rgba(239,246,255,.78); }
+.service-fees-note { display:flex; gap:14px; margin-top:28px; padding:18px; border-radius:18px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.08); }
+.service-fees-note > span { color:#fbbf24; font-size:22px; }
+.service-fees-note p { margin:0; color:rgba(239,246,255,.76); line-height:1.65; }
+.service-fees-calculator-card { padding:30px; border-radius:30px; color:var(--sf-text); background:#fff; box-shadow:0 34px 90px rgba(0,18,55,.35); }
+.service-fees-calculator-card__head { display:flex; justify-content:space-between; gap:20px; margin-bottom:24px; }
+.service-fees-calculator-card__head span { display:block; color:var(--sf-primary); font-size:11px; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+.service-fees-calculator-card__head h3 { margin:6px 0 0; font-size:24px; }
+.service-fees-calculator-card__head button { height:38px; border:0; border-radius:12px; padding:0 12px; display:inline-flex; align-items:center; gap:7px; color:var(--sf-muted); background:#f1f5f9; font-size:12px; font-weight:900; cursor:pointer; }
+.service-fees-form-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.service-fees-field { display:grid; gap:8px; }
+.service-fees-field--full { grid-column:1/-1; }
+.service-fees-field span { color:#334155; font-size:12px; font-weight:900; }
+.service-fees-field input, .service-fees-field select { width:100%; height:48px; border:1px solid #dce3ed; border-radius:13px; padding:0 14px; outline:none; color:#172033; background:#fff; font-weight:700; }
+.service-fees-field input:focus, .service-fees-field select:focus { border-color:var(--sf-primary); box-shadow:0 0 0 4px rgba(21,87,192,.1); }
+.service-fees-result { margin-top:20px; padding:20px; border-radius:20px; background:#f7f9fc; border:1px solid #e1e8f1; }
+.service-fees-result > div { display:flex; justify-content:space-between; gap:18px; padding:9px 0; color:var(--sf-muted); font-size:13px; }
+.service-fees-result strong { color:#172033; text-align:right; }
+.service-fees-result__total { margin-top:10px; padding-top:16px!important; border-top:1px dashed #cbd5e1; }
+.service-fees-result__total span { color:#172033; font-weight:900; }
+.service-fees-result__total strong { color:var(--sf-accent); font-size:24px; }
+
+.service-fees-cta { padding:72px 0; color:#fff; background:linear-gradient(135deg,#0b2d62,#1557c0 65%,#ef3340); }
+.service-fees-cta__inner { display:flex; justify-content:space-between; align-items:center; gap:40px; }
+.service-fees-cta span { color:#bfdbfe; font-size:12px; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+.service-fees-cta h2 { max-width:760px; margin:10px 0 0; font-size:clamp(30px,4vw,46px); line-height:1.12; letter-spacing:-.04em; }
+.service-fees-cta p { max-width:700px; margin:15px 0 0; color:rgba(255,255,255,.78); line-height:1.7; }
+
+@media (max-width:1100px) {
+  .service-fees-hero__inner, .service-fees-calculator-layout { grid-template-columns:1fr; }
+  .service-fees-grid, .service-fees-tips__grid, .service-fees-note-grid { grid-template-columns:repeat(2,1fr); }
+  .service-fees-hero__card, .service-fees-summary-card { max-width:520px; }
+}
+@media (max-width:720px) {
+  .service-fees-container { width:min(100% - 28px,1180px); }
+  .service-fees-hero { padding:42px 0 70px; }
+  .service-fees-hero h1 { font-size:40px; }
+  .service-fees-hero__actions, .service-fees-cta__inner { flex-direction:column; align-items:stretch; }
+  .service-fees-btn { width:100%; }
+  .service-fees-section { padding:68px 0; }
+  .service-fees-grid, .service-fees-tips__grid, .service-fees-note-grid, .service-fees-form-grid { grid-template-columns:1fr; }
+  .service-fees-field--full { grid-column:auto; }
+  .service-fees-calculator-card { padding:22px; border-radius:22px; }
+  .service-fees-calculator-card__head { flex-direction:column; }
+  .service-fees-result > div { flex-direction:column; gap:5px; }
+  .service-fees-result strong { text-align:left; }
+}
+
+.service-fees-grid{grid-template-columns:repeat(3,1fr)}.service-fees-card__head{display:flex;gap:16px;margin-bottom:22px}.service-fees-card__head>span{width:54px;height:54px;display:grid;place-items:center;border-radius:18px;color:var(--sf-primary);background:#eaf3ff;font-size:24px;flex:0 0 auto}.service-fees-card__head h3{margin:0;color:#172033;font-size:21px}.service-fees-card__head p{margin:8px 0 0;color:var(--sf-muted);line-height:1.6}.service-fees-card__items{display:grid;gap:12px}.service-fees-card__items div{padding:14px;border-radius:16px;background:#f7f9fc}.service-fees-card__items span,.service-fees-card__items small{display:block;color:var(--sf-muted);font-size:12px}.service-fees-card__items strong{display:block;margin:5px 0;color:var(--sf-primary-dark)}.service-fees-options{display:grid;gap:12px;margin-top:18px}.service-fees-options label{display:flex;gap:12px;padding:15px;border-radius:16px;background:#f7fbff;border:1px solid #dce7f4;cursor:pointer}.service-fees-options input{margin-top:3px;accent-color:var(--sf-primary)}.service-fees-options strong,.service-fees-options small{display:block}.service-fees-options small{margin-top:4px;color:var(--sf-muted);font-size:12px}@media(max-width:1100px){.service-fees-grid{grid-template-columns:1fr}}

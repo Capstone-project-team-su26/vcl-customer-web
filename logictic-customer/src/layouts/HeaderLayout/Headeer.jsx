@@ -40,22 +40,22 @@ const pricingItems = [
   {
     label: "Bảng giá ký gửi",
     description: "Chi phí ký gửi và vận chuyển hàng hóa",
-    path: "/bang-gia/ky-gui",
+    path: "/consignment-pricing",
   },
   {
     label: "Phí vận chuyển quốc tế",
     description: "Tra cứu phí vận chuyển theo tuyến và cân nặng",
-    path: "/bang-gia/van-chuyen-quoc-te",
+    path: "/international-shipping-pricing",
   },
   {
     label: "Phí dịch vụ & phụ phí",
     description: "Thông tin các khoản phí phát sinh",
-    path: "/bang-gia/phi-dich-vu",
+    path: "/service-fees-pricing",
   },
   {
     label: "Công cụ tính giá",
     description: "Ước tính nhanh chi phí đơn hàng",
-    path: "/bang-gia/tinh-gia",
+    path: "/pricing-calculator",
   },
 ];
 
