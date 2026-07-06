@@ -35,7 +35,7 @@ const pricingItems = [
   {
     label: "Bảng giá mua hộ",
     description: "Chi phí mua hộ hàng hóa quốc tế",
-    path: "/bang-gia/mua-ho",
+    path: "/buy-for-me-pricing",
   },
   {
     label: "Bảng giá ký gửi",

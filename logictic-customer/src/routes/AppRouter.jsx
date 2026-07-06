@@ -13,7 +13,7 @@ import LogisticsIntro from "../pages/Logistic/LogisticsIntro";
 import ConsignmentService from "../pages/HomePage/DichVu/KiGui/ConsignmentService";
 import BuyForMeService from "../pages/HomePage/DichVu/MuaHo/BuyForMeService";
 //Bang giá 
-
+import BuyForMePricing from "../pages/HomePage/BangGia/BangGiaMuaHo/BuyForMePricing";
 
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
@@ -43,6 +43,7 @@ const AppRouter = () => {
         <Route path="/otp-forgot" element={<OTPForgot />} />
         <Route path="/consignment-service" element={<ConsignmentService />} />
         <Route path="/buy-for-me-service" element={<BuyForMeService />} />
+        <Route path="/buy-for-me-pricing" element={<BuyForMePricing />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 
