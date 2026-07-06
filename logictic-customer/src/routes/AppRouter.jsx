@@ -46,10 +46,11 @@ import ImportGuideBlog from "../pages/HomePage/BlogPage/NhapHang/ImportGuideBlog
 import ShippingKnowledgeBlog from "../pages/HomePage/BlogPage/KienThucVanChuyen/ShippingKnowledgeBlog";
 import OffersAnnouncementsBlog from "../pages/HomePage/BlogPage/UuDaiVaThongBao/OffersAnnouncementsBlog";
 
-//Liên hệ & báo giá, về chúng tôi
+//Liên hệ & báo giá, về chúng tôi, tra cứu
 import ContactUs from "../pages/HomePage/LienHe/Contact";
 import QuotationPage from "../pages/HomePage/BaoGia/QuotationPage";
 import AboutUs from "../pages/HomePage/VeChungToi/AboutUs";
+import OrderLookup from "../pages/HomePage/TraCuu/OrderLookup";
 
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
@@ -130,6 +131,7 @@ const AppRouter = () => {
         <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/quotation-page" element={<QuotationPage />} />
         <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/order-lookup" element={<OrderLookup />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 

@@ -441,7 +441,7 @@ const Header = () => {
           <button
             type="button"
             className="action-link"
-            onClick={() => handleNavigate("/tra-cuu")}
+            onClick={() => handleNavigate("/order-lookup")}
           >
             <SearchOutlined className="action-icon" />
             <span>Tra cứu</span>
