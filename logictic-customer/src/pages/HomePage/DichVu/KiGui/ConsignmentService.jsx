@@ -327,7 +327,7 @@ const ConsignmentService = () => {
 
   return (
     <>
-      {/* Xóa Header ở đây nếu dự án đã render Header trong App hoặc Layout chung. */}
+
       <Header />
 
       <main className="consignment-page">
@@ -355,7 +355,7 @@ const ConsignmentService = () => {
               </span>
 
               <h1>
-                Bạn tự mua hàng,
+                Bạn tự kí gửi,
                 <span> chúng tôi lo hành trình về Việt Nam.</span>
               </h1>
 

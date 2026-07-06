@@ -10,9 +10,9 @@ import LogisticsIntro from "../pages/Logistic/LogisticsIntro";
  
 //Home
 import ConsignmentService from "../pages/HomePage/DichVu/KiGui/ConsignmentService";
+import BuyForMeService from "../pages/HomePage/DichVu/MuaHo/BuyForMeService";
 
-
-// ⬇️ IMPORT CÁC COMPONENT LAYOUT VÀ MÀN HÌNH MỚI CỦA BẠN VÀO ĐÂY
+//Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
 import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
 import CreateOrder from "../pages/DashboardPage/CreateCustomer/CreateOrder";
@@ -39,6 +39,7 @@ const AppRouter = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/otp-forgot" element={<OTPForgot />} />
         <Route path="/consignment-service" element={<ConsignmentService />} />
+        <Route path="/buy-for-me-service" element={<BuyForMeService />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 

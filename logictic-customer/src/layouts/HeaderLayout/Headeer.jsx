@@ -22,7 +22,7 @@ const services = [
   {
     label: "Dịch vụ mua hộ",
     description: "Đặt mua hàng quốc tế nhanh chóng",
-    path: "/dich-vu/mua-ho",
+    path: "/buy-for-me-service",
   },
   {
     label: "Ký gửi hàng hóa",
