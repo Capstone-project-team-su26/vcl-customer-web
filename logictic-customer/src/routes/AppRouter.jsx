@@ -7,17 +7,29 @@ import ForgotPassword from "../pages/ForgotPasswordPage/ForgotPassword";
 import OTPForgot from "../pages/OTPForgotPage/OTPForgot";
 import NotFound from "../pages/NotFound";
 import LogisticsIntro from "../pages/Logistic/LogisticsIntro";
- 
+
 //Trang chủ chứa các dịch vụ
+
 //Dịch vụ KiGui và Mua hộ
 import ConsignmentService from "../pages/HomePage/DichVu/KiGui/ConsignmentService";
 import BuyForMeService from "../pages/HomePage/DichVu/MuaHo/BuyForMeService";
-//Bang giá 
+
+//Bang giá
 import BuyForMePricing from "../pages/HomePage/BangGia/BangGiaMuaHo/BuyForMePricing";
 import ConsignmentPricing from "../pages/HomePage/BangGia/BangGiaKiGui/ConsignmentPricing";
 import PricingCalculator from "../pages/HomePage/BangGia/CongThucGia/PricingCalculator";
 import ServiceFeesPricing from "../pages/HomePage/BangGia/PhDichVu/ServiceFeesPricing";
 import InternationalShippingPricing from "../pages/HomePage/BangGia/PhiVanChuyen/InternationalShippingPricing";
+
+// chính sách
+import GeneralRulesPolicy from "../pages/HomePage/ChinhSach/QuyDinhChung/GeneralRulesPolicy";
+import ShippingPolicy from "../pages/HomePage/ChinhSach/VanChuyen/ShippingPolicy";
+import PaymentPolicy from "../pages/HomePage/ChinhSach/ThanhToan/PaymentPolicy";
+import CancellationRefundPolicy from "../pages/HomePage/ChinhSach/HuyDonVaHoanTien/CancellationRefundPolicy";
+import CargoInsurancePolicy from "../pages/HomePage/ChinhSach/BaoHiemHang/CargoInsurancePolicy";
+import LiabilityDisclaimerPolicy from "../pages/HomePage/ChinhSach/MienTruTrachNhiem/LiabilityDisclaimerPolicy";
+import PrivacyPolicy from "../pages/HomePage/ChinhSach/BaoMat/PrivacyPolicy";
+import OrderingPolicy from "../pages/HomePage/ChinhSach/DatHang/OrderingPolicy";
 
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
@@ -50,14 +62,28 @@ const AppRouter = () => {
         <Route path="/buy-for-me-pricing" element={<BuyForMePricing />} />
         <Route path="/consignment-pricing" element={<ConsignmentPricing />} />
         <Route path="/pricing-calculator" element={<PricingCalculator />} />
-        <Route
-          path="/service-fees-pricing"
-          element={<ServiceFeesPricing />}
-        />
+        <Route path="/service-fees-pricing" element={<ServiceFeesPricing />} />
         <Route
           path="/international-shipping-pricing"
           element={<InternationalShippingPricing />}
         />
+        <Route path="/general-rules-policy" element={<GeneralRulesPolicy />} />
+        <Route path="/shipping-policy" element={<ShippingPolicy />} />
+        <Route path="/payment-policy" element={<PaymentPolicy />} />
+        <Route
+          path="/cancellation-refund-policy"
+          element={<CancellationRefundPolicy />}
+        />
+        <Route
+          path="/cargo-insurance-policy"
+          element={<CargoInsurancePolicy />}
+        />
+        <Route
+          path="/liability-disclaimer-policy"
+          element={<LiabilityDisclaimerPolicy />}
+        />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/ordering-policy" element={<OrderingPolicy />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 
@@ -70,31 +96,24 @@ const AppRouter = () => {
             path="/create-order/consignment"
             element={<ConsigmentOrder />}
           />
-         
+
           <Route path="/processing-orders" element={<ConsignmentList />} />
           <Route path="/settings/profile-config" element={<ProfileConfig />} />
           <Route
             path="/consignments/:orderId"
             element={<ConsignmentListDetail />}
           />
-              <Route
-          path="/settings/chinh-sach-dich-vu"
-          element={<ServicePolicy />}
-        />
           <Route
-            path="/check-orders"
-            element={<ConsignmentListCheck />}
+            path="/settings/chinh-sach-dich-vu"
+            element={<ServicePolicy />}
           />
+          <Route path="/check-orders" element={<ConsignmentListCheck />} />
+          <Route path="/quotations/:orderId" element={<QuotationDetail />} />
           <Route
-            path="/quotations/:orderId"
-            element={<QuotationDetail />}
-          />
-           <Route
             path="/create-order/buy-orders"
             element={<ConsignmentBuyOrder />}
           />
         </Route>
-    
 
         {/* ================= ROUTE 404 ================= */}
         <Route path="*" element={<NotFound />} />

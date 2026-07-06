@@ -63,42 +63,42 @@ const policyItems = [
   {
     label: "Quy định chung",
     description: "Các quy định áp dụng khi sử dụng dịch vụ",
-    path: "/chinh-sach/quy-dinh-chung",
+    path: "/general-rules-policy",
   },
   {
     label: "Chính sách Vận chuyển",
     description: "Quy định về tiếp nhận và vận chuyển hàng hóa",
-    path: "/chinh-sach/van-chuyen",
+    path: "/shipping-policy",
   },
   {
     label: "Chính sách Thanh toán",
     description: "Phương thức, thời hạn và quy trình thanh toán",
-    path: "/chinh-sach/thanh-toan",
+    path: "/payment-policy",
   },
   {
     label: "Chính sách Hủy đơn & Hoàn tiền",
     description: "Điều kiện hủy đơn và xử lý hoàn tiền",
-    path: "/chinh-sach/huy-don-hoan-tien",
+    path: "/cancellation-refund-policy",
   },
   {
     label: "Chính sách Bảo hiểm Hàng hóa",
     description: "Quyền lợi và phạm vi bảo hiểm hàng hóa",
-    path: "/chinh-sach/bao-hiem-hang-hoa",
+    path: "/cargo-insurance-policy",
   },
   {
     label: "Chính sách Miễn trừ Trách nhiệm",
     description: "Các trường hợp được miễn trừ trách nhiệm",
-    path: "/chinh-sach/mien-tru-trach-nhiem",
+    path: "/liability-disclaimer-policy",
   },
   {
     label: "Chính sách Bảo mật",
     description: "Quy định thu thập và bảo vệ dữ liệu khách hàng",
-    path: "/chinh-sach/bao-mat",
+    path: "/privacy-policy",
   },
   {
     label: "Chính sách Đặt hàng",
     description: "Quy trình và điều kiện tạo đơn hàng",
-    path: "/chinh-sach/dat-hang",
+    path: "/ordering-policy",
   },
 ];
 
