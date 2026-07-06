@@ -46,8 +46,9 @@ import ImportGuideBlog from "../pages/HomePage/BlogPage/NhapHang/ImportGuideBlog
 import ShippingKnowledgeBlog from "../pages/HomePage/BlogPage/KienThucVanChuyen/ShippingKnowledgeBlog";
 import OffersAnnouncementsBlog from "../pages/HomePage/BlogPage/UuDaiVaThongBao/OffersAnnouncementsBlog";
 
-//Liên hệ
+//Liên hệ & báo giá
 import ContactUs from "../pages/HomePage/LienHe/Contact";
+import QuotationPage from "../pages/HomePage/BaoGia/QuotationPage";
 
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
@@ -126,6 +127,7 @@ const AppRouter = () => {
         />  
         
         <Route path="/contact-us" element={<ContactUs />} />
+        <Route path="/quotation-page" element={<QuotationPage />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 

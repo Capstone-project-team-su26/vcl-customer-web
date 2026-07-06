@@ -432,7 +432,7 @@ const Header = () => {
           <button
             type="button"
             className="quote-btn"
-            onClick={() => handleNavigate("/bao-gia")}
+            onClick={() => handleNavigate("/quotation-page")}
           >
             <FileTextOutlined className="action-icon" />
             <span>Báo giá</span>
