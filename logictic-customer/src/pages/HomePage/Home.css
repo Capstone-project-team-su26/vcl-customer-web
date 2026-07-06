@@ -1446,3 +1446,150 @@
       transition-duration: 0.01ms !important;
     }
   }
+  /* =========================================================
+   SCROLL TO TOP BUTTON
+   ========================================================= */
+
+.home-scroll-top {
+  position: fixed;
+  right: 28px;
+  bottom: 104px;
+  z-index: 99990;
+
+  width: 54px;
+  height: 54px;
+
+  display: inline-grid;
+  place-items: center;
+
+  padding: 0;
+  margin: 0;
+
+  border: 0;
+  outline: 0;
+  border-radius: 50%;
+
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.45), transparent 32%),
+    linear-gradient(135deg, #1557c0 0%, #0ea5e9 100%);
+
+  box-shadow:
+    0 18px 42px rgba(21, 87, 192, 0.34),
+    0 8px 18px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+
+  cursor: pointer;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translate3d(0, 18px, 0) scale(0.86);
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+
+.home-scroll-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.home-scroll-top:hover {
+  transform: translate3d(0, -5px, 0) scale(1.04);
+  box-shadow:
+    0 24px 52px rgba(21, 87, 192, 0.42),
+    0 10px 24px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.home-scroll-top:active {
+  transform: translate3d(0, -2px, 0) scale(0.96);
+}
+
+.home-scroll-top__icon {
+  position: relative;
+  z-index: 2;
+
+  display: block;
+
+  width: 20px;
+  height: 20px;
+
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1;
+
+  pointer-events: none;
+}
+
+.home-scroll-top__ring {
+  position: absolute;
+  inset: -7px;
+  z-index: 1;
+
+  border-radius: inherit;
+  border: 1px solid rgba(14, 165, 233, 0.42);
+
+  opacity: 0.75;
+
+  animation: homeScrollTopRing 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.home-scroll-top__ring::before {
+  content: "";
+
+  position: absolute;
+  inset: 6px;
+
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+@keyframes homeScrollTopRing {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.75;
+  }
+
+  70% {
+    transform: scale(1.16);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.16);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-scroll-top {
+    right: 18px;
+    bottom: 92px;
+
+    width: 48px;
+    height: 48px;
+  }
+
+  .home-scroll-top__icon {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  .home-scroll-top {
+    right: 14px;
+    bottom: 84px;
+
+    width: 46px;
+    height: 46px;
+  }
+}

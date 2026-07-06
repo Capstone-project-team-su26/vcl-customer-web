@@ -385,23 +385,16 @@ export default function Home() {
 
       {/* Nằm ngoài wrapper có transform */}
       <button
-        type="button"
-        className={`home-scroll-top ${
-          showScrollTop
-            ? "is-visible"
-            : ""
-        }`}
-        onClick={handleScrollToTop}
-        aria-label="Chuyển lên đầu trang"
-        title="Lên đầu trang"
-      >
-        <span
-          className="home-scroll-top__ring"
-          aria-hidden="true"
-        />
+  type="button"
+  className={`home-scroll-top ${showScrollTop ? "is-visible" : ""}`}
+  onClick={handleScrollToTop}
+  aria-label="Chuyển lên đầu trang"
+  title="Lên đầu trang"
+>
+  <span className="home-scroll-top__ring" aria-hidden="true" />
 
-        <ArrowUpOutlined />
-      </button>
+  <ArrowUpOutlined className="home-scroll-top__icon" />
+</button>
 
       {/* Đưa ra ngoài để position fixed hoạt động đúng */}
       <FloatingChat />
