@@ -39,6 +39,16 @@ import PaymentGuide from "../pages/HomePage/HuongDan/HDThanhToan/PaymentGuide";
 import OrderTrackingGuide from "../pages/HomePage/HuongDan/HDCheckDon/OrderTrackingGuide";
 import ComplaintGuide from "../pages/HomePage/HuongDan/ReportOrder/ComplaintGuide";
 
+//Blog
+import LogisticsNewsBlog from "../pages/HomePage/BlogPage/News/LogisticsNewsBlog";
+import InternationalShoppingExperienceBlog from "../pages/HomePage/BlogPage/KinhNghiemOrder/InternationalShoppingExperienceBlog";
+import ImportGuideBlog from "../pages/HomePage/BlogPage/NhapHang/ImportGuideBlog";
+import ShippingKnowledgeBlog from "../pages/HomePage/BlogPage/KienThucVanChuyen/ShippingKnowledgeBlog";
+import OffersAnnouncementsBlog from "../pages/HomePage/BlogPage/UuDaiVaThongBao/OffersAnnouncementsBlog";
+
+//Liên hệ
+import ContactUs from "../pages/HomePage/LienHe/Contact";
+
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
 import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
@@ -99,6 +109,23 @@ const AppRouter = () => {
         <Route path="/payment-guide" element={<PaymentGuide />} />
         <Route path="/order-tracking-guide" element={<OrderTrackingGuide />} />
         <Route path="/complaint-guide" element={<ComplaintGuide />} />
+
+        <Route path="/logistics-news-blog" element={<LogisticsNewsBlog />} />
+        <Route
+          path="/international-shopping-experience-blog"
+          element={<InternationalShoppingExperienceBlog />}
+        />
+        <Route path="/import-guide-blog" element={<ImportGuideBlog />} />
+        <Route
+          path="/shipping-knowledge-blog"
+          element={<ShippingKnowledgeBlog />}
+        />
+        <Route
+          path="/offers-announcements-blog"
+          element={<OffersAnnouncementsBlog />}
+        />  
+        
+        <Route path="/contact-us" element={<ContactUs />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 

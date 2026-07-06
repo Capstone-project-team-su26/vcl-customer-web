@@ -139,27 +139,27 @@ const blogItems = [
   {
     label: "Tin tức Logistics",
     description: "Thông tin mới nhất về thị trường logistics",
-    path: "/blog/tin-tuc-logistics",
+    path: "/logistics-news-blog",
   },
   {
     label: "Kinh nghiệm mua hàng quốc tế",
     description: "Mẹo mua hàng an toàn và tiết kiệm",
-    path: "/blog/kinh-nghiem-mua-hang",
+    path: "/international-shopping-experience-blog",
   },
   {
     label: "Hướng dẫn nhập hàng",
     description: "Kiến thức nhập hàng dành cho cá nhân và doanh nghiệp",
-    path: "/blog/huong-dan-nhap-hang",
+    path: "/import-guide-blog",
   },
   {
     label: "Kiến thức vận chuyển",
     description: "Giải đáp các vấn đề về vận chuyển hàng hóa",
-    path: "/blog/kien-thuc-van-chuyen",
+    path: "/shipping-knowledge-blog",
   },
   {
     label: "Ưu đãi & Thông báo",
     description: "Chương trình ưu đãi và thông báo hệ thống",
-    path: "/blog/uu-dai-thong-bao",
+    path: "/offers-announcements-blog",
   },
 ];
 
@@ -217,7 +217,7 @@ const navItems = [
   {
     key: "contact",
     label: "Liên hệ",
-    path: "/lien-he",
+    path: "/contact-us",
   },
 ];
 
