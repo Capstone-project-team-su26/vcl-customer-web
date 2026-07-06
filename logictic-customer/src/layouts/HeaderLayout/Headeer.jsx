@@ -167,7 +167,7 @@ const navItems = [
   {
     key: "about",
     label: "Về chúng tôi",
-    path: "/gioi-thieu",
+    path: "/about-us",
   },
   {
     key: "services",
