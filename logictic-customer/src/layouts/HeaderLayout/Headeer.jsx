@@ -106,32 +106,32 @@ const guideItems = [
   {
     label: "Hướng dẫn mua hộ",
     description: "Các bước tạo yêu cầu mua hộ hàng hóa",
-    path: "/huong-dan/mua-ho",
+    path: "/buy-for-me-guide",
   },
   {
     label: "Hướng dẫn ký gửi",
     description: "Cách tạo yêu cầu ký gửi hàng hóa",
-    path: "/huong-dan/ky-gui",
+    path: "/consignment-guide",
   },
   {
     label: "Hướng dẫn tạo đơn hàng",
     description: "Quy trình tạo và xác nhận đơn hàng",
-    path: "/huong-dan/tao-don-hang",
+    path: "/create-order-guide",
   },
   {
     label: "Hướng dẫn thanh toán",
     description: "Cách thanh toán và xác nhận giao dịch",
-    path: "/huong-dan/thanh-toan",
+    path: "/payment-guide",
   },
   {
     label: "Hướng dẫn theo dõi đơn hàng",
     description: "Kiểm tra trạng thái và hành trình đơn hàng",
-    path: "/huong-dan/theo-doi-don-hang",
+    path: "/order-tracking-guide",
   },
   {
     label: "Hướng dẫn khiếu nại",
     description: "Quy trình gửi và xử lý yêu cầu khiếu nại",
-    path: "/huong-dan/khieu-nai",
+    path: "/complaint-guide",
   },
 ];
 

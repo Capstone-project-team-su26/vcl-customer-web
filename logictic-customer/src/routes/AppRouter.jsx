@@ -31,6 +31,14 @@ import LiabilityDisclaimerPolicy from "../pages/HomePage/ChinhSach/MienTruTrachN
 import PrivacyPolicy from "../pages/HomePage/ChinhSach/BaoMat/PrivacyPolicy";
 import OrderingPolicy from "../pages/HomePage/ChinhSach/DatHang/OrderingPolicy";
 
+//Hướng dân 
+import BuyForMeGuide from "../pages/HomePage/HuongDan/HDMuaHo/BuyForMeGuide";
+import ConsignmentGuide from "../pages/HomePage/HuongDan/HDKiGui/ConsignmentGuide";
+import CreateOrderGuide from "../pages/HomePage/HuongDan/TaoDonHang/CreateOrderGuide";
+import PaymentGuide from "../pages/HomePage/HuongDan/HDThanhToan/PaymentGuide";
+import OrderTrackingGuide from "../pages/HomePage/HuongDan/HDCheckDon/OrderTrackingGuide";
+import ComplaintGuide from "../pages/HomePage/HuongDan/ReportOrder/ComplaintGuide";
+
 //Layput chính sau khi dăng nhập
 import MainLayout from "../layouts/MainLayout"; // Bạn nhớ chỉnh lại đường dẫn file cho đúng cấu trúc folder của bạn nhé
 import Dashboard from "../pages/DashboardPage/DashboardCusstomer/Dashboard";
@@ -84,6 +92,13 @@ const AppRouter = () => {
         />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/ordering-policy" element={<OrderingPolicy />} />
+
+        <Route path="/buy-for-me-guide" element={<BuyForMeGuide />} />
+        <Route path="/consignment-guide" element={<ConsignmentGuide />} />
+        <Route path="/create-order-guide" element={<CreateOrderGuide />} />
+        <Route path="/payment-guide" element={<PaymentGuide />} />
+        <Route path="/order-tracking-guide" element={<OrderTrackingGuide />} />
+        <Route path="/complaint-guide" element={<ComplaintGuide />} />
 
         {/* ================= CÁC ROUTE KHÁCH HÀNG (SỬ DỤNG CHUNG SIDEBAR LAYOUT) ================= */}
 
