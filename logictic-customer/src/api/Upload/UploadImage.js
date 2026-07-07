@@ -1,8 +1,17 @@
 import axios from "axios";
 
+const UPLOAD_API_BASE_URL =
+  import.meta.env.VITE_UPLOAD_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL;
+
+if (!UPLOAD_API_BASE_URL) {
+  throw new Error(
+    "Không tìm thấy VITE_UPLOAD_API_BASE_URL hoặc VITE_API_BASE_URL. Hãy cấu hình biến môi trường."
+  );
+}
 
 const uploadAxios = axios.create({
-  baseURL: "https://api-vcl.purintech.id.vn",
+  baseURL: UPLOAD_API_BASE_URL,
   headers: {
     Accept: "text/plain",
   },

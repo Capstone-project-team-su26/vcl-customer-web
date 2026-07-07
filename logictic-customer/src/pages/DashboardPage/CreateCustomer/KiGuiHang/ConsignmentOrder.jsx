@@ -20,7 +20,7 @@ import {
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import { Switch } from "antd";
-
+import uploadImage from "../../../../api/Upload/UploadImage";
 import "./ConsignmentOrder.css";
 import AuthNotify from "../../../../utils/AuthNotify";
 import {
@@ -33,9 +33,13 @@ import {
   getProductTypesApi,
 } from "../../../../api/OrderApi/consignmentApi";
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const UPLOAD_IMAGE_API_URL =
-  "https://api-vcl.purintech.id.vn/api/uploads/image";
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
 const PACKAGE_NUMBER_FIELDS = [
   {
@@ -305,86 +309,20 @@ const extractUploadedImageUrl = (result) => {
   );
 };
 
-const uploadImageDirectly = async (file) => {
-  if (!(file instanceof File)) {
-    throw new Error("File ảnh không hợp lệ.");
-  }
-
-  if (
-    !["image/jpeg", "image/png", "image/webp"].includes(file.type)
-  ) {
+const uploadPackageImage = async (file) => {
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.");
   }
-
+  
   if (file.size > MAX_IMAGE_SIZE) {
     throw new Error("Dung lượng ảnh không được vượt quá 5MB.");
   }
 
-  const token =
-    sessionStorage.getItem("accessToken") ||
-    localStorage.getItem("accessToken");
-
-  if (!token) {
-    throw new Error(
-      "Không tìm thấy token đăng nhập. Vui lòng đăng nhập lại."
-    );
-  }
-
-  const formData = new FormData();
-  formData.append("file", file, file.name);
-
-  let response;
-
-  try {
-    response = await fetch(UPLOAD_IMAGE_API_URL, {
-      method: "POST",
-      headers: {
-        Accept: "text/plain",
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-  } catch {
-    throw new Error("Không thể kết nối đến máy chủ upload ảnh.");
-  }
-
-  const responseText = await response.text();
-  let responseData = responseText;
-
-  if (responseText) {
-    try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = responseText;
-    }
-  }
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      sessionStorage.removeItem("accessToken");
-      localStorage.removeItem("accessToken");
-      window.location.href = "/login";
-      throw new Error("Phiên đăng nhập đã hết hạn.");
-    }
-
-    const serverMessage =
-      typeof responseData === "string"
-        ? responseData
-        : responseData?.message ||
-          responseData?.title ||
-          responseData?.error;
-
-    throw new Error(
-      serverMessage || `Upload ảnh thất bại (${response.status}).`
-    );
-  }
-
-  const imageUrl = extractUploadedImageUrl(responseData);
+  const uploadResult = await uploadImage(file);
+  const imageUrl = extractUploadedImageUrl(uploadResult);
 
   if (!imageUrl) {
-    throw new Error(
-      "API upload ảnh không trả về đường dẫn ảnh hợp lệ."
-    );
+    throw new Error("API upload ảnh không trả về đường dẫn ảnh hợp lệ.");
   }
 
   return imageUrl;
@@ -1036,12 +974,9 @@ export default function ConsignmentOrder() {
     }
 
     const invalidFile = files.find(
-      (file) =>
-        !["image/jpeg", "image/png", "image/webp"].includes(
-          file.type
-        )
+      (file) => !ACCEPTED_IMAGE_TYPES.includes(file.type)
     );
-
+    
     if (invalidFile) {
       AuthNotify.warning(
         "File không hợp lệ",
@@ -1049,11 +984,11 @@ export default function ConsignmentOrder() {
       );
       return;
     }
-
+    
     const oversizedFile = files.find(
       (file) => file.size > MAX_IMAGE_SIZE
     );
-
+    
     if (oversizedFile) {
       AuthNotify.warning(
         "Ảnh quá lớn",
@@ -1183,7 +1118,7 @@ export default function ConsignmentOrder() {
           `Đang upload ảnh kiện ${index + 1}/${packages.length}...`
         );
 
-        const referenceUrl = await uploadImageDirectly(
+        const referenceUrl = await uploadPackageImage(
           pkg.images[0].fileObj
         );
 
