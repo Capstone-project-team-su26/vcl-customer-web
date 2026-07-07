@@ -12,7 +12,6 @@ import { useNavigate } from "react-router-dom";
 import {
   DatePicker,
   Input,
-  Select,
   Space,
   message,
 } from "antd";
@@ -23,7 +22,6 @@ import {
   Pagination,
 } from "@mui/material";
 
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SearchIcon from "@mui/icons-material/Search";
@@ -112,6 +110,48 @@ const normalizeStatusOptions = (apiResult) => {
     );
 };
 
+const PENDING_APPROVAL_STATUS_KEYWORDS = [
+  "cho duyet",
+  "cho_duyet",
+  "cho-duyet",
+  "chờ duyệt",
+  "pending approval",
+  "pending_approval",
+  "pending-approval",
+  "approval pending",
+  "awaiting approval",
+  "awaiting_approval",
+  "waiting approval",
+  "waiting_for_approval",
+  "wait for approval",
+  "wait_for_approval",
+];
+
+const isPendingApprovalStatus = (
+  status,
+  statusLabelMap = new Map()
+) => {
+  const rawStatus = String(status || "").trim();
+
+  if (!rawStatus) {
+    return false;
+  }
+
+  const normalizedStatusKey = rawStatus.toUpperCase();
+  const statusLabel =
+    statusLabelMap.get(normalizedStatusKey) || "";
+
+  const searchableStatus = normalizeText(
+    `${rawStatus} ${formatStatusCode(rawStatus)} ${statusLabel}`
+  ).replace(/\s+/g, " " );
+
+  return PENDING_APPROVAL_STATUS_KEYWORDS.some((keyword) =>
+    searchableStatus.includes(
+      normalizeText(keyword).replace(/\s+/g, " " )
+    )
+  );
+};
+
 /**
  * Lấy phần YYYY-MM-DD từ ngày API.
  *
@@ -158,18 +198,10 @@ const ConsignmentList = () => {
   const [searchInput, setSearchInput] = useState("");
   const [dateRangeInput, setDateRangeInput] =
     useState(null);
-  const [statusInput, setStatusInput] = useState("");
-
   const [statusOptions, setStatusOptions] =
     useState([]);
   const [loadingStatuses, setLoadingStatuses] =
     useState(false);
-
-  const [appliedFilters, setAppliedFilters] = useState({
-    search: "",
-    dateRange: null,
-    status: "",
-  });
 
   const [pageNumber, setPageNumber] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -391,6 +423,7 @@ const ConsignmentList = () => {
       !dates[1]
     ) {
       setDateRangeInput(null);
+      setPageNumber(1);
       return;
     }
 
@@ -411,6 +444,7 @@ const ConsignmentList = () => {
         startDate,
         startDate,
       ]);
+      setPageNumber(1);
 
       return;
     }
@@ -419,6 +453,7 @@ const ConsignmentList = () => {
       startDate,
       endDate,
     ]);
+    setPageNumber(1);
   };
 
   /* =========================================================
@@ -426,25 +461,33 @@ const ConsignmentList = () => {
      ========================================================= */
 
   const filteredConsignments = useMemo(() => {
-    const normalizedSearch = normalizeText(
-      appliedFilters.search
-    );
+    const normalizedSearch = normalizeText(searchInput);
 
     /*
      * Chuyển RangePicker về chuỗi YYYY-MM-DD.
      * Không dùng giờ để tránh lệch múi giờ.
      */
     const startDate =
-      appliedFilters.dateRange?.[0]?.format(
+      dateRangeInput?.[0]?.format(
         "YYYY-MM-DD"
       ) || null;
 
     const endDate =
-      appliedFilters.dateRange?.[1]?.format(
+      dateRangeInput?.[1]?.format(
         "YYYY-MM-DD"
       ) || null;
 
     return consignments.filter((item) => {
+      const matchesPendingApprovalStatus =
+        isPendingApprovalStatus(
+          item.status,
+          statusLabelMap
+        );
+
+      if (!matchesPendingApprovalStatus) {
+        return false;
+      }
+
       const searchableContent = [
         item.orderId,
         item.orderCode,
@@ -485,23 +528,18 @@ const ConsignmentList = () => {
         (createdDate !== null &&
           createdDate <= endDate);
 
-      const matchesStatus =
-        !appliedFilters.status ||
-        String(item.status || "")
-          .trim()
-          .toUpperCase() ===
-          String(appliedFilters.status)
-            .trim()
-            .toUpperCase();
-
       return (
         matchesSearch &&
         matchesStartDate &&
-        matchesEndDate &&
-        matchesStatus
+        matchesEndDate
       );
     });
-  }, [consignments, appliedFilters]);
+  }, [
+    consignments,
+    dateRangeInput,
+    searchInput,
+    statusLabelMap,
+  ]);
 
   /* =========================================================
      CLIENT PAGINATION
@@ -538,60 +576,14 @@ const ConsignmentList = () => {
      EVENT HANDLERS
      ========================================================= */
 
-  const handleFilterClick = () => {
-    let selectedDateRange = null;
-
-    if (
-      Array.isArray(dateRangeInput) &&
-      dateRangeInput[0] &&
-      dateRangeInput[1]
-    ) {
-      const startDate = dayjs(
-        dateRangeInput[0]
-      ).startOf("day");
-
-      const endDate = dayjs(
-        dateRangeInput[1]
-      ).startOf("day");
-
-      /*
-       * Kiểm tra lại để xử lý trường hợp người dùng
-       * nhập ngày trực tiếp bằng bàn phím.
-       */
-      if (endDate.isBefore(startDate, "day")) {
-        message.warning(
-          "Ngày kết thúc không được nhỏ hơn ngày bắt đầu."
-        );
-
-        return;
-      }
-
-      selectedDateRange = [
-        startDate,
-        endDate,
-      ];
-    }
-
-    setAppliedFilters({
-      search: searchInput.trim(),
-      dateRange: selectedDateRange,
-      status: statusInput,
-    });
-
+  const handleSearchChange = (event) => {
+    setSearchInput(event.target.value);
     setPageNumber(1);
   };
 
   const handleResetClick = () => {
     setSearchInput("");
     setDateRangeInput(null);
-    setStatusInput("");
-
-    setAppliedFilters({
-      search: "",
-      dateRange: null,
-      status: "",
-    });
-
     setPageNumber(1);
 
     setRefreshKey(
@@ -719,10 +711,9 @@ const ConsignmentList = () => {
   };
 
   const hasActiveFilter = Boolean(
-    appliedFilters.search ||
-      appliedFilters.status ||
-      (appliedFilters.dateRange?.[0] &&
-        appliedFilters.dateRange?.[1])
+    searchInput.trim() ||
+      (dateRangeInput?.[0] &&
+        dateRangeInput?.[1])
   );
 
   /* =========================================================
@@ -748,7 +739,7 @@ const ConsignmentList = () => {
             {filteredConsignments.length}
           </strong>
 
-          <span>Lô hàng</span>
+          <span>Lô hàng chờ duyệt</span>
         </div>
       </div>
 
@@ -761,13 +752,9 @@ const ConsignmentList = () => {
               }
               placeholder="Tìm mã đơn, khách hàng, người nhận..."
               value={searchInput}
-              onChange={(event) =>
-                setSearchInput(
-                  event.target.value
-                )
-              }
-              onPressEnter={
-                handleFilterClick
+              onChange={handleSearchChange}
+              onPressEnter={() =>
+                setPageNumber(1)
               }
               allowClear
               className="filter-search-input"
@@ -790,42 +777,10 @@ const ConsignmentList = () => {
               inputReadOnly
               className="filter-date-picker"
             />
-
-            <Select
-              value={
-                statusInput || undefined
-              }
-              options={statusOptions}
-              loading={loadingStatuses}
-              disabled={loadingStatuses}
-              placeholder="Chọn trạng thái"
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              className="filter-status-select"
-              style={{
-                minWidth: 220,
-              }}
-              onChange={(value) =>
-                setStatusInput(value || "")
-              }
-            />
           </Space>
         </div>
 
         <div className="filter-actions">
-          <Button
-            variant="contained"
-            startIcon={<FilterAltIcon />}
-            onClick={handleFilterClick}
-            disabled={
-              loading || loadingStatuses
-            }
-            className="filter-submit-button"
-          >
-            BỘ LỌC
-          </Button>
-
           <Button
             variant="outlined"
             color="inherit"
@@ -861,12 +816,12 @@ const ConsignmentList = () => {
                 </div>
 
                 <h3>
-                  Không tìm thấy lô hàng
+                  Không tìm thấy lô hàng chờ duyệt
                 </h3>
 
                 <p>
-                  Hãy thay đổi từ khóa hoặc
-                  khoảng ngày tìm kiếm.
+                  Hãy thay đổi từ khóa,
+                  khoảng ngày tìm kiếm hoặc làm mới dữ liệu.
                 </p>
 
                 {hasActiveFilter && (

@@ -13,7 +13,6 @@ import { useNavigate } from "react-router-dom";
 import {
   DatePicker,
   Input,
-  Select,
   Space,
 } from "antd";
 
@@ -23,7 +22,6 @@ import {
   Pagination,
 } from "@mui/material";
 
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SearchIcon from "@mui/icons-material/Search";
@@ -95,6 +93,70 @@ const formatStatusCode = (status) => {
   return normalizedStatus
     .replaceAll("_", " ")
     .replaceAll("-", " ");
+};
+
+const QUOTATION_SENT_STATUS_KEYWORDS = [
+  "da gui bao gia",
+  "da_gui_bao_gia",
+  "da-gui-bao-gia",
+  "đã gửi báo giá",
+  "sent quotation",
+  "sent_quotation",
+  "sent-quotation",
+  "quotation sent",
+  "quotation_sent",
+  "quotation-sent",
+  "quote sent",
+  "quote_sent",
+  "quote-sent",
+  "sent quotation to customer",
+  "sent_quotation_to_customer",
+  "quotation_sent_to_customer",
+  "customer quotation sent",
+  "customer_quotation_sent",
+  "da bao gia",
+  "da_bao_gia",
+  "da-bao-gia",
+  "đã báo giá",
+  "quoted",
+  "price quoted",
+  "price_quoted",
+];
+
+const isQuotationSentStatus = (
+  status,
+  statusLabelMap = new Map()
+) => {
+  const rawStatus = String(status || "").trim();
+
+  if (!rawStatus) {
+    return false;
+  }
+
+  const normalizedStatusKey =
+    normalizeStatus(rawStatus);
+
+  const statusLabel =
+    statusLabelMap.get(
+      normalizedStatusKey
+    ) || "";
+
+  const searchableStatus =
+    normalizeText(
+      `${rawStatus} ${formatStatusCode(
+        rawStatus
+      )} ${statusLabel}`
+    ).replace(/\s+/g, " ");
+
+  return QUOTATION_SENT_STATUS_KEYWORDS.some(
+    (keyword) =>
+      searchableStatus.includes(
+        normalizeText(keyword).replace(
+          /\s+/g,
+          " "
+        )
+      )
+  );
 };
 
 const findArrayFromResult = (
@@ -297,23 +359,9 @@ const ConsignmentList = () => {
   ] = useState("");
 
   const [
-    statusInput,
-    setStatusInput,
-  ] = useState("");
-
-  const [
     dateRangeInput,
     setDateRangeInput,
   ] = useState(null);
-
-  const [
-    appliedFilters,
-    setAppliedFilters,
-  ] = useState({
-    search: "",
-    status: "",
-    dateRange: null,
-  });
 
   const [
     pageNumber,
@@ -632,6 +680,7 @@ const ConsignmentList = () => {
       !dates[1]
     ) {
       setDateRangeInput(null);
+      setPageNumber(1);
       return;
     }
 
@@ -658,6 +707,7 @@ const ConsignmentList = () => {
         startDate,
         startDate,
       ]);
+      setPageNumber(1);
 
       return;
     }
@@ -666,6 +716,7 @@ const ConsignmentList = () => {
       startDate,
       endDate,
     ]);
+    setPageNumber(1);
   };
 
   /* =========================================================
@@ -675,27 +726,30 @@ const ConsignmentList = () => {
   const filteredConsignments =
     useMemo(() => {
       const normalizedSearch =
-        normalizeText(
-          appliedFilters.search
-        );
-
-      const normalizedStatusFilter =
-        normalizeStatus(
-          appliedFilters.status
-        );
+        normalizeText(searchInput);
 
       const startDate =
-        appliedFilters.dateRange?.[0]?.format(
+        dateRangeInput?.[0]?.format(
           "YYYY-MM-DD"
         ) || null;
 
       const endDate =
-        appliedFilters.dateRange?.[1]?.format(
+        dateRangeInput?.[1]?.format(
           "YYYY-MM-DD"
         ) || null;
 
       return consignments.filter(
         (item) => {
+          const matchesQuotationSent =
+            isQuotationSentStatus(
+              item.status,
+              statusLabelMap
+            );
+
+          if (!matchesQuotationSent) {
+            return false;
+          }
+
           const searchableContent = [
             item.orderId,
             item.orderCode,
@@ -722,13 +776,6 @@ const ConsignmentList = () => {
               normalizedSearch
             );
 
-          const matchesStatus =
-            !normalizedStatusFilter ||
-            normalizeStatus(
-              item.status
-            ) ===
-              normalizedStatusFilter;
-
           const createdDate =
             getApiDateOnly(
               item.createdAt
@@ -748,7 +795,6 @@ const ConsignmentList = () => {
 
           return (
             matchesSearch &&
-            matchesStatus &&
             matchesStartDate &&
             matchesEndDate
           );
@@ -756,7 +802,9 @@ const ConsignmentList = () => {
       );
     }, [
       consignments,
-      appliedFilters,
+      dateRangeInput,
+      searchInput,
+      statusLabelMap,
     ]);
 
   /* =========================================================
@@ -802,74 +850,16 @@ const ConsignmentList = () => {
      EVENTS
      ========================================================= */
 
-  const handleFilterClick = () => {
-    let selectedDateRange =
-      null;
-
-    if (
-      Array.isArray(
-        dateRangeInput
-      ) &&
-      dateRangeInput[0] &&
-      dateRangeInput[1]
-    ) {
-      const startDate = dayjs(
-        dateRangeInput[0]
-      ).startOf("day");
-
-      const endDate = dayjs(
-        dateRangeInput[1]
-      ).startOf("day");
-
-      if (
-        endDate.isBefore(
-          startDate,
-          "day"
-        )
-      ) {
-        AuthNotify.warning(
-          "Khoảng ngày không hợp lệ",
-          "Ngày kết thúc không được nhỏ hơn ngày bắt đầu."
-        );
-
-        return;
-      }
-
-      selectedDateRange = [
-        startDate,
-        endDate,
-      ];
-    }
-
-    setAppliedFilters({
-      search:
-        searchInput.trim(),
-      status: statusInput,
-      dateRange:
-        selectedDateRange,
-    });
-
+  const handleSearchChange = (event) => {
+    setSearchInput(event.target.value);
     setPageNumber(1);
-
-    AuthNotify.success(
-      "Đã áp dụng bộ lọc",
-      "Danh sách đã được lọc theo điều kiện bạn chọn."
-    );
   };
 
   const handleResetClick = () => {
     manualRefreshRef.current = true;
 
     setSearchInput("");
-    setStatusInput("");
     setDateRangeInput(null);
-
-    setAppliedFilters({
-      search: "",
-      status: "",
-      dateRange: null,
-    });
-
     setPageNumber(1);
 
     setRefreshKey(
@@ -944,12 +934,9 @@ const ConsignmentList = () => {
 
   const hasActiveFilter =
     Boolean(
-      appliedFilters.search ||
-        appliedFilters.status ||
-        (appliedFilters
-          .dateRange?.[0] &&
-          appliedFilters
-            .dateRange?.[1])
+      searchInput.trim() ||
+        (dateRangeInput?.[0] &&
+          dateRangeInput?.[1])
     );
 
   /* =========================================================
@@ -996,41 +983,11 @@ const ConsignmentList = () => {
               value={searchInput}
               allowClear
               className="filter-search-input"
-              onChange={(event) =>
-                setSearchInput(
-                  event.target.value
-                )
-              }
-              onPressEnter={
-                handleFilterClick
+              onChange={
+                handleSearchChange
               }
             />
 
-            <Select
-              value={
-                statusInput ||
-                undefined
-              }
-              options={
-                statusOptions
-              }
-              loading={
-                loadingStatuses
-              }
-              disabled={
-                loadingStatuses
-              }
-              placeholder="Chọn trạng thái"
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              className="filter-status-select"
-              onChange={(value) =>
-                setStatusInput(
-                  value || ""
-                )
-              }
-            />
 
             <RangePicker
               value={
@@ -1055,19 +1012,6 @@ const ConsignmentList = () => {
         </div>
 
         <div className="filter-actions">
-          <Button
-            variant="contained"
-            startIcon={
-              <FilterAltIcon />
-            }
-            onClick={
-              handleFilterClick
-            }
-            disabled={loading}
-            className="filter-submit-button"
-          >
-            BỘ LỌC
-          </Button>
 
           <Button
             variant="outlined"
@@ -1078,7 +1022,7 @@ const ConsignmentList = () => {
             onClick={
               handleResetClick
             }
-            disabled={loading}
+            disabled={loading || loadingStatuses}
             className="filter-reset-button"
           >
             LÀM MỚI
@@ -1113,9 +1057,8 @@ const ConsignmentList = () => {
                 </h3>
 
                 <p>
-                  Hãy thay đổi từ khóa,
-                  trạng thái hoặc khoảng
-                  ngày tìm kiếm.
+                  Hãy thay đổi từ khóa
+                  hoặc khoảng ngày tìm kiếm.
                 </p>
 
                 {hasActiveFilter && (
