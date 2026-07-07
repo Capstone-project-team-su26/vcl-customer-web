@@ -133,10 +133,11 @@ export default function Sidebar() {
   const [loadingProfile, setLoadingProfile] =
     useState(false);
 
-  const [openSubMenus, setOpenSubMenus] =
-    useState({
-      khoHang: false,
+    const [openSubMenus, setOpenSubMenus] = useState({
       lichSu: false,
+      khoHang: false,
+      donDangXuLy: false,
+      kienChoBaoGia: false,
     });
 
   const toggleSubMenu = (menuKey) => {
@@ -336,34 +337,118 @@ export default function Sidebar() {
           </span>
         </NavLink>
 
-        <NavLink
-          to="/processing-orders"
-          className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
-          }
-        >
-          <UnorderedListOutlined className="menu-icon" />
+        <div className="menu-item-dropdown">
+  <button
+    type="button"
+    className={`menu-item menu-item-button ${
+      openSubMenus.donDangXuLy
+        ? "submenu-parent-open"
+        : ""
+    }`}
+    onClick={() =>
+      toggleSubMenu("donDangXuLy")
+    }
+    aria-expanded={openSubMenus.donDangXuLy}
+  >
+    <UnorderedListOutlined className="menu-icon" />
 
-          <span className="menu-text">
-            Đơn đang xử lý
-          </span>
-        </NavLink>
-        <NavLink
-          to="/check-orders"
-          className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
-          }
-        >
-          <InboxOutlined className="menu-icon" />
+    <span className="menu-text">
+      Đơn đang xử lý
+    </span>
 
-          <span className="menu-text">
-            Kiện chờ báo giá
-          </span>
-        </NavLink>
+    {openSubMenus.donDangXuLy ? (
+      <UpOutlined className="arrow-icon" />
+    ) : (
+      <DownOutlined className="arrow-icon" />
+    )}
+  </button>
+
+  {openSubMenus.donDangXuLy && (
+    <div className="submenu-list timeline-style">
+      <NavLink
+        to="/processing-orders/buy-on-behalf"
+        className={({ isActive }) =>
+          `submenu-item ${
+            isActive
+              ? "active-sub"
+              : ""
+          }`
+        }
+      >
+        Xử lý mua hộ
+      </NavLink>
+
+      <NavLink
+        to="/processing-orders"
+        className={({ isActive }) =>
+          `submenu-item ${
+            isActive
+              ? "active-sub"
+              : ""
+          }`
+        }
+      >
+        Xử lý ký gửi
+      </NavLink>
+    </div>
+  )}
+</div>
+<div className="menu-item-dropdown">
+  <button
+    type="button"
+    className={`menu-item menu-item-button ${
+      openSubMenus.kienChoBaoGia
+        ? "submenu-parent-open"
+        : ""
+    }`}
+    onClick={() =>
+      toggleSubMenu("kienChoBaoGia")
+    }
+    aria-expanded={openSubMenus.kienChoBaoGia}
+  >
+    <InboxOutlined className="menu-icon" />
+
+    <span className="menu-text">
+      Kiện chờ báo giá
+    </span>
+
+    {openSubMenus.kienChoBaoGia ? (
+      <UpOutlined className="arrow-icon" />
+    ) : (
+      <DownOutlined className="arrow-icon" />
+    )}
+  </button>
+
+  {openSubMenus.kienChoBaoGia && (
+    <div className="submenu-list timeline-style">
+      <NavLink
+        to="/check-orders/buy-on-behalf"
+        className={({ isActive }) =>
+          `submenu-item ${
+            isActive
+              ? "active-sub"
+              : ""
+          }`
+        }
+      >
+        Báo giá mua hộ
+      </NavLink>
+
+      <NavLink
+        to="/check-orders"
+        className={({ isActive }) =>
+          `submenu-item ${
+            isActive
+              ? "active-sub"
+              : ""
+          }`
+        }
+      >
+        Báo giá ký gửi
+      </NavLink>
+    </div>
+  )}
+</div>
         <NavLink
           to="/receive-goods"
           className={({ isActive }) =>
@@ -395,64 +480,62 @@ export default function Sidebar() {
         </NavLink>
 
      
-
         <div className="menu-item-dropdown">
-          <button
-            type="button"
-            className={`menu-item menu-item-button ${
-              openSubMenus.khoHang
-                ? "submenu-parent-open"
-                : ""
-            }`}
-            onClick={() =>
-              toggleSubMenu("khoHang")
-            }
-            aria-expanded={openSubMenus.khoHang}
-          >
-            <HomeOutlined className="menu-icon" />
+  <button
+    type="button"
+    className={`menu-item menu-item-button ${
+      openSubMenus.khoHang
+        ? "submenu-parent-open"
+        : ""
+    }`}
+    onClick={() =>
+      toggleSubMenu("khoHang")
+    }
+    aria-expanded={openSubMenus.khoHang}
+  >
+    <HomeOutlined className="menu-icon" />
 
-            <span className="menu-text">
-              Theo dõi kho hàng
-            </span>
+    <span className="menu-text">
+      Theo dõi kho hàng
+    </span>
 
-            {openSubMenus.khoHang ? (
-              <UpOutlined className="arrow-icon" />
-            ) : (
-              <DownOutlined className="arrow-icon" />
-            )}
-          </button>
+    {openSubMenus.khoHang ? (
+      <UpOutlined className="arrow-icon" />
+    ) : (
+      <DownOutlined className="arrow-icon" />
+    )}
+  </button>
 
-          {openSubMenus.khoHang && (
-            <div className="submenu-list">
-              <NavLink
-                to="/warehouse/inventory"
-                className={({ isActive }) =>
-                  `submenu-item ${
-                    isActive
-                      ? "active-sub"
-                      : ""
-                  }`
-                }
-              >
-                Tồn kho tổng
-              </NavLink>
+  {openSubMenus.khoHang && (
+    <div className="submenu-list timeline-style">
+      <NavLink
+        to="/warehouse/inventory"
+        className={({ isActive }) =>
+          `submenu-item ${
+            isActive
+              ? "active-sub"
+              : ""
+          }`
+        }
+      >
+        Tồn kho tổng
+      </NavLink>
 
-              <NavLink
-                to="/warehouse/export"
-                className={({ isActive }) =>
-                  `submenu-item ${
-                    isActive
-                      ? "active-sub"
-                      : ""
-                  }`
-                }
-              >
-                Xuất kho
-              </NavLink>
-            </div>
-          )}
-        </div>
-
+      <NavLink
+        to="/warehouse/export"
+        className={({ isActive }) =>
+          `submenu-item ${
+            isActive
+              ? "active-sub"
+              : ""
+          }`
+        }
+      >
+        Xuất kho
+      </NavLink>
+    </div>
+  )}
+</div>
         <div className="menu-section-label">
           TRA CỨU &amp; LỊCH SỬ
         </div>
