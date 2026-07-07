@@ -366,7 +366,7 @@ export default function Sidebar() {
   {openSubMenus.donDangXuLy && (
     <div className="submenu-list timeline-style">
       <NavLink
-        to="/processing-orders/buy-on-behalf"
+        to="/processing-orders/purchase-requests"
         className={({ isActive }) =>
           `submenu-item ${
             isActive

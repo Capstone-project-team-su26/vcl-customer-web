@@ -64,6 +64,8 @@ import ServicePolicy from "../pages/DashboardPage/ServicePoli/ServicePolicy";
 import ConsignmentListCheck from "../pages/DashboardPage/CreateCustomer/CheckHang/ConsignmentListCheck"; // Import
 import QuotationDetail from "../pages/DashboardPage/CreateCustomer/CheckHang/CheckHangDetail/QuotationDetail"; // Import
 import ConsignmentBuyOrder from "../pages/DashboardPage/CreateCustomer/BuyOrder/ConsignmentBuyOrder"; // Import
+import PurchaseRequestPendingList from "../pages/DashboardPage/CreateCustomer/BuyOrderXuLy/PurchaseRequestPendingList"; // Import
+import PurchaseRequestDetail from "../pages/DashboardPage/CreateCustomer/BuyOrderXuLy/BuyOrderXuLyDetail/PurchaseRequestDetail"; // Import
 
 const AppRouter = () => {
   return (
@@ -160,7 +162,18 @@ const AppRouter = () => {
           <Route
             path="/create-order/buy-orders"
             element={<ConsignmentBuyOrder />}
+
           />
+          <Route
+            path="/processing-orders/purchase-requests"
+            element={<PurchaseRequestPendingList />} />
+
+          <Route
+            path="/processing-orders/purchase-requests/:requestId"
+            element={<PurchaseRequestDetail />}
+          />
+
+
         </Route>
 
         {/* ================= ROUTE 404 ================= */}
