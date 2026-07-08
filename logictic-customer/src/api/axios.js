@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.trim() ||
-  "https://api-vcl.purintech.id.vn";
+  "https://api-vcl.zushin.io.vn";
 
 console.log("API BASE URL:", API_BASE_URL);
 
