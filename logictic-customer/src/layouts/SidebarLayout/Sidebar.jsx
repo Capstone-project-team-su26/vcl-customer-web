@@ -26,7 +26,9 @@ import {
   SettingOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
-
+import {
+  CustomerServiceOutlined,
+} from "@ant-design/icons";
 import { getUserProfileApi } from "../../api/Auth/authService";
 import logoImage from "../../assets/anhlogocap2.jpeg";
 
@@ -536,6 +538,27 @@ export default function Sidebar() {
     </div>
   )}
 </div>
+
+<div className="menu-section-label">
+          TIN NHẮN
+        </div>
+
+        <NavLink
+          to="/customer-service-chat"
+          className={({ isActive }) =>
+            `menu-item ${
+              isActive ? "active" : ""
+            }`
+          }
+        >
+          <CustomerServiceOutlined className="menu-icon" />
+
+          <span className="menu-text">
+            Trò chuyện với CSKH
+          </span>
+        </NavLink>
+
+
         <div className="menu-section-label">
           TRA CỨU &amp; LỊCH SỬ
         </div>

@@ -66,6 +66,7 @@ import QuotationDetail from "../pages/DashboardPage/CreateCustomer/CheckHang/Che
 import ConsignmentBuyOrder from "../pages/DashboardPage/CreateCustomer/BuyOrder/ConsignmentBuyOrder"; // Import
 import PurchaseRequestPendingList from "../pages/DashboardPage/CreateCustomer/BuyOrderXuLy/PurchaseRequestPendingList"; // Import
 import PurchaseRequestDetail from "../pages/DashboardPage/CreateCustomer/BuyOrderXuLy/BuyOrderXuLyDetail/PurchaseRequestDetail"; // Import
+import CustomerServiceChat from "../pages/DashboardPage/Chat/CustomerServiceChat"; // Import
 
 const AppRouter = () => {
   return (
@@ -172,6 +173,7 @@ const AppRouter = () => {
             path="/processing-orders/purchase-requests/:requestId"
             element={<PurchaseRequestDetail />}
           />
+          <Route path="/customer-service-chat" element={<CustomerServiceChat />} />
 
 
         </Route>
