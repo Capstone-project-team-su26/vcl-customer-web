@@ -6,7 +6,7 @@
   flex-direction: column;
 }
 
-/* NÄ‚ÂT QUAY LĂ¡Âº I */
+/* NĂ„â€Ă‚ÂT QUAY LÄ‚Â¡Ă‚Âº I */
 .back-navigation {
   display: inline-flex;
   align-items: center;
@@ -26,7 +26,7 @@
   font-size: 10px;
 }
 
-/* GRID LAYOUT CHIA Ă„ÂÄ‚â€I */
+/* GRID LAYOUT CHIA Ä‚â€Ă‚ÂĂ„â€Ă¢â‚¬ÂI */
 .consignment-layout-grid {
   display: grid;
   grid-template-columns: 340px 1fr;
@@ -35,7 +35,7 @@
   min-height: 0;
 }
 
-/* ================= CĂ¡Â»ËœT TRÄ‚ÂI CĂ¡Â»Â Ă„ÂĂ¡Â»ÂNH ================= */
+/* ================= CÄ‚Â¡Ă‚Â»Ă‹Å“T TRĂ„â€Ă‚ÂI CÄ‚Â¡Ă‚Â»Ă‚Â Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‚ÂNH ================= */
 .layout-left-fixed-sidebar {
   display: flex;
   flex-direction: column;
@@ -87,7 +87,7 @@
   border-top: 1px dashed #e2e8f0;
 }
 
-/* THÄ‚â‚¬NH PHĂ¡ÂºÂ¦N BOX Ă„ÂĂ¡Â»ÂA CHĂ¡Â»Ë† TĂ„Â¨NH */
+/* THĂ„â€Ă¢â€Â¬NH PHÄ‚Â¡Ă‚ÂºĂ‚Â¦N BOX Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‚ÂA CHÄ‚Â¡Ă‚Â»Ă‹â€  TÄ‚â€Ă‚Â¨NH */
 .static-display-box {
   width: 100%;
   min-height: 40px;
@@ -244,7 +244,7 @@
   line-height: 1.3;
 }
 
-/* ================= CĂ¡Â»ËœT PHĂ¡ÂºÂ¢I CUĂ¡Â»ËœN KIĂ¡Â»â€ N HÄ‚â‚¬NG ================= */
+/* ================= CÄ‚Â¡Ă‚Â»Ă‹Å“T PHÄ‚Â¡Ă‚ÂºĂ‚Â¢I CUÄ‚Â¡Ă‚Â»Ă‹Å“N KIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N HĂ„â€Ă¢â€Â¬NG ================= */
 .layout-right-scrollable-form {
   height: 100%;
   overflow-y: auto;
@@ -418,7 +418,7 @@
   color: #94a3b8;
 }
 
-/* THĂ†Â¯ VIĂ¡Â»â€ N LĂ†Â¯Ă¡Â»ÂI GALLERY Ă¡ÂºÂ¢NH ASPECT RATIO 1/1 CHUĂ¡ÂºÂ¨N Ă„ÂĂ¡ÂºÂ¸P */
+/* THÄ‚â€ Ă‚Â¯ VIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N LÄ‚â€ Ă‚Â¯Ä‚Â¡Ă‚Â»Ă‚ÂI GALLERY Ä‚Â¡Ă‚ÂºĂ‚Â¢NH ASPECT RATIO 1/1 CHUÄ‚Â¡Ă‚ÂºĂ‚Â¨N Ä‚â€Ă‚ÂÄ‚Â¡Ă‚ÂºĂ‚Â¸P */
 .image-previews-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
@@ -467,7 +467,7 @@
   background-color: #ef4444;
 }
 
-/* NÄ‚ÂT THÄ‚ÂM KIĂ¡Â»â€ N HÄ‚â‚¬NG */
+/* NĂ„â€Ă‚ÂT THĂ„â€Ă‚ÂM KIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N HĂ„â€Ă¢â€Â¬NG */
 .add-package-dashed-trigger {
   width: 100%;
   border: 2px dashed #cbd5e1;
@@ -497,7 +497,7 @@
   color: #475569;
 }
 
-/* THANH LĂ†Â¯U Ä‚Â PHÄ‚ÂA Ă„ÂÄ‚ÂY */
+/* THANH LÄ‚â€ Ă‚Â¯U Ă„â€Ă‚Â PHĂ„â€Ă‚ÂA Ä‚â€Ă‚ÂĂ„â€Ă‚ÂY */
 .sticky-action-notice-bar {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -548,7 +548,7 @@
   background-color: #f59e0b;
 }
 
-/* ================= OVERLAY PHÄ‚â€œNG TO / THU NHĂ¡Â»Â LIGHTBOX TĂ¡Â»Â° Ă„ÂĂ¡Â»ËœNG ================= */
+/* ================= OVERLAY PHĂ„â€Ă¢â‚¬Å“NG TO / THU NHÄ‚Â¡Ă‚Â»Ă‚Â LIGHTBOX TÄ‚Â¡Ă‚Â»Ă‚Â° Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‹Å“NG ================= */
 .lightbox-overlay-modal {
   position: fixed;
   top: 0;
@@ -589,7 +589,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Animations hiĂ¡Â»â€¡u Ă¡Â»Â©ng mĂ†Â°Ă¡Â»Â£t */
+/* Animations hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡u Ä‚Â¡Ă‚Â»Ă‚Â©ng mÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă‚Â£t */
 .animate-zoom-in {
   animation: zoomIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -800,7 +800,7 @@
     margin-right: 7px;
   }
   
-  /* Ă¡ÂºÂ¨n nÄ‚Âºt tĂ„Æ’ng giĂ¡ÂºÂ£m mĂ¡ÂºÂ·c Ă„â€˜Ă¡Â»â€¹nh cĂ¡Â»Â§a input number */
+  /* Ä‚Â¡Ă‚ÂºĂ‚Â¨n nĂ„â€Ă‚Âºt tÄ‚â€Ă†â€™ng giÄ‚Â¡Ă‚ÂºĂ‚Â£m mÄ‚Â¡Ă‚ÂºĂ‚Â·c Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¹nh cÄ‚Â¡Ă‚Â»Ă‚Â§a input number */
   
   .custom-input[type="number"]::-webkit-inner-spin-button,
   .custom-input[type="number"]::-webkit-outer-spin-button {
@@ -1079,9 +1079,9 @@
   }
 
 /* =========================================================
-   TYPOGRAPHY SYSTEM Ă¢â‚¬â€ WEB UI
-   ChuĂ¡ÂºÂ©n hÄ‚Â³a font, kÄ‚Â­ch thĂ†Â°Ă¡Â»â€ºc, Ă„â€˜Ă¡Â»â„¢ Ă„â€˜Ă¡ÂºÂ­m vÄ‚  khĂ¡ÂºÂ£ nĂ„Æ’ng Ă„â€˜Ă¡Â»Âc.
-   GiĂ¡Â»Â¯ nguyÄ‚Âªn toÄ‚ n bĂ¡Â»â„¢ layout, mÄ‚ u sĂ¡ÂºÂ¯c vÄ‚  hÄ‚ nh vi hiĂ¡Â»â€¡n tĂ¡ÂºÂ¡i.
+   TYPOGRAPHY SYSTEM Ä‚Â¢Ă¢â€Â¬Ă¢â‚¬Â WEB UI
+   ChuÄ‚Â¡Ă‚ÂºĂ‚Â©n hĂ„â€Ă‚Â³a font, kĂ„â€Ă‚Â­ch thÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă¢â‚¬Âºc, Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â€Â¢ Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚ÂºĂ‚Â­m vĂ„â€  khÄ‚Â¡Ă‚ÂºĂ‚Â£ nÄ‚â€Ă†â€™ng Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Âc.
+   GiÄ‚Â¡Ă‚Â»Ă‚Â¯ nguyĂ„â€Ă‚Âªn toĂ„â€ n bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ layout, mĂ„â€ u sÄ‚Â¡Ă‚ÂºĂ‚Â¯c vĂ„â€  hĂ„â€ nh vi hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n tÄ‚Â¡Ă‚ÂºĂ‚Â¡i.
    ========================================================= */
 
 .consignment-container {
@@ -1121,7 +1121,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Ă„ÂiĂ¡Â»Âu hĂ†Â°Ă¡Â»â€ºng */
+/* Ä‚â€Ă‚ÂiÄ‚Â¡Ă‚Â»Ă‚Âu hÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă¢â‚¬Âºng */
 .back-navigation {
   font-size: 13px;
   font-weight: 600;
@@ -1134,7 +1134,7 @@
   line-height: 1;
 }
 
-/* TiÄ‚Âªu Ă„â€˜Ă¡Â»Â trang */
+/* TiĂ„â€Ă‚Âªu Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Â trang */
 .title-text-group h2 {
   font-size: var(--font-size-page-title);
   font-weight: 700;
@@ -1150,7 +1150,7 @@
   letter-spacing: 0;
 }
 
-/* NĂ¡Â»â„¢i dung vÄ‚  Ă„â€˜Ă¡Â»â€¹a chĂ¡Â»â€° */
+/* NÄ‚Â¡Ă‚Â»Ă¢â€Â¢i dung vĂ„â€  Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¹a chÄ‚Â¡Ă‚Â»Ă¢â‚¬Â° */
 .static-display-box {
   font-size: 14px;
   font-weight: 500;
@@ -1520,7 +1520,7 @@
 }
 
 
-/* NÄ‚Âºt bĂ¡ÂºÂ¥m */
+/* NĂ„â€Ă‚Âºt bÄ‚Â¡Ă‚ÂºĂ‚Â¥m */
 .btn-add-address,
 .btn-inline-save,
 .btn-inline-cancel,
@@ -1573,7 +1573,7 @@
   line-height: 1.5;
 }
 
-/* Header tĂ¡Â»Â«ng kiĂ¡Â»â€¡n hÄ‚ ng */
+/* Header tÄ‚Â¡Ă‚Â»Ă‚Â«ng kiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n hĂ„â€ ng */
 .step-number-circle {
   font-size: 12px;
   font-weight: 700;
@@ -1587,7 +1587,7 @@
   letter-spacing: -0.01em;
 }
 
-/* Label vÄ‚  trĂ†Â°Ă¡Â»Âng nhĂ¡ÂºÂ­p liĂ¡Â»â€¡u */
+/* Label vĂ„â€  trÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă‚Âng nhÄ‚Â¡Ă‚ÂºĂ‚Â­p liÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡u */
 .field-label {
   font-size: var(--font-size-label);
   font-weight: 600;
@@ -1636,7 +1636,7 @@
   font-weight: 400;
 }
 
-/* Khu vĂ¡Â»Â±c tĂ¡ÂºÂ£i Ă¡ÂºÂ£nh */
+/* Khu vÄ‚Â¡Ă‚Â»Ă‚Â±c tÄ‚Â¡Ă‚ÂºĂ‚Â£i Ä‚Â¡Ă‚ÂºĂ‚Â£nh */
 .upload-main-text {
   font-size: 14px;
   font-weight: 600;
@@ -1655,7 +1655,7 @@
   line-height: 1;
 }
 
-/* Thanh lĂ†Â°u Ä‚Â½ vÄ‚  lightbox */
+/* Thanh lÄ‚â€ Ă‚Â°u Ă„â€Ă‚Â½ vĂ„â€  lightbox */
 .notice-left-message p {
   font-size: 13px;
   font-weight: 400;
@@ -1708,7 +1708,7 @@
   line-height: 1.45;
 }
 
-/* TrĂ¡ÂºÂ¡ng thÄ‚Â¡i disabled vĂ¡ÂºÂ«n dĂ¡Â»â€¦ Ă„â€˜Ă¡Â»Âc */
+/* TrÄ‚Â¡Ă‚ÂºĂ‚Â¡ng thĂ„â€Ă‚Â¡i disabled vÄ‚Â¡Ă‚ÂºĂ‚Â«n dÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¦ Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Âc */
 .consignment-container :where(input, textarea, select, button):disabled {
   font-weight: inherit;
 }
@@ -1727,7 +1727,7 @@
   .custom-input,
   .custom-select,
   .custom-textarea {
-    /* TrÄ‚Â¡nh trÄ‚Â¬nh duyĂ¡Â»â€¡t iOS tĂ¡Â»Â± phÄ‚Â³ng to khi focus */
+    /* TrĂ„â€Ă‚Â¡nh trĂ„â€Ă‚Â¬nh duyÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡t iOS tÄ‚Â¡Ă‚Â»Ă‚Â± phĂ„â€Ă‚Â³ng to khi focus */
     font-size: 16px;
   }
 
@@ -1832,4 +1832,401 @@
 }
 .back-navigation {
   margin-bottom: 20px;
+}
+
+
+/* =========================================================
+   FINAL FIX â€” ADDRESS SELECT + SCROLL LOCK SAFE
+   Scope chá»‰ trong ConsignmentOrder
+   ========================================================= */
+
+.consignment-container {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.consignment-container,
+.consignment-container * {
+  box-sizing: border-box;
+}
+
+.consignment-layout-grid {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.layout-left-fixed-sidebar,
+.layout-right-scrollable-form {
+  min-height: 0;
+}
+
+.layout-left-fixed-sidebar {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.layout-left-fixed-sidebar::-webkit-scrollbar,
+.layout-right-scrollable-form::-webkit-scrollbar,
+.address-scroll-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.layout-left-fixed-sidebar::-webkit-scrollbar-track,
+.layout-right-scrollable-form::-webkit-scrollbar-track,
+.address-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.layout-left-fixed-sidebar::-webkit-scrollbar-thumb,
+.layout-right-scrollable-form::-webkit-scrollbar-thumb,
+.address-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.layout-left-fixed-sidebar::-webkit-scrollbar-thumb:hover,
+.layout-right-scrollable-form::-webkit-scrollbar-thumb:hover,
+.address-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.layout-right-scrollable-form {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 6px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollable-content-wrapper {
+  min-width: 0;
+  padding-bottom: 32px;
+}
+
+.left-unified-wrapper-box,
+.form-main-card,
+.sticky-action-notice-bar {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.add-address-inline-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, #ffffff, #fffdf7);
+  border: 1px solid #fde68a;
+  border-radius: 16px;
+  box-shadow:
+    0 8px 22px rgba(180, 83, 9, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.add-address-inline-form .input-field-group {
+  gap: 6px;
+}
+
+.add-address-inline-form .field-label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.add-address-inline-form .custom-input,
+.add-address-inline-form .custom-select {
+  min-height: 42px;
+  height: 42px;
+  border-radius: 11px;
+  border-color: #e2e8f0;
+  background-color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.add-address-inline-form .custom-input:hover,
+.add-address-inline-form .custom-select:hover {
+  border-color: #fbbf24;
+}
+
+.add-address-inline-form .custom-input:focus,
+.add-address-inline-form .custom-select:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+}
+
+.add-address-inline-form .custom-input:disabled,
+.add-address-inline-form .custom-select:disabled {
+  color: #94a3b8;
+  background-color: #f8fafc;
+  cursor: not-allowed;
+}
+
+.selected-address-preview {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #92400e;
+  background:
+    linear-gradient(135deg, #fffbeb, #fff7ed);
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.selected-address-preview .anticon {
+  margin-top: 2px;
+  color: #f59e0b;
+  flex: 0 0 auto;
+}
+
+.selected-address-preview span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.inline-form-actions {
+  margin-top: 2px;
+}
+
+.btn-inline-save,
+.btn-inline-cancel {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+}
+
+.btn-inline-save {
+  background:
+    linear-gradient(135deg, #f59e0b, #f97316);
+  color: #ffffff;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  box-shadow: 0 8px 18px rgba(249, 115, 22, 0.18);
+}
+
+.btn-inline-save:hover:not(:disabled) {
+  background:
+    linear-gradient(135deg, #d97706, #ea580c);
+  transform: translateY(-1px);
+}
+
+.btn-inline-cancel:hover:not(:disabled) {
+  color: #334155;
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.btn-add-address {
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.btn-add-address:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(245, 158, 11, 0.12);
+}
+
+.address-scroll-container {
+  max-height: 260px;
+}
+
+.address-item-clickable {
+  min-width: 0;
+}
+
+.address-text-truncate {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.static-display-box.address-received-highlight {
+  align-items: flex-start;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+
+.custom-input.input-has-error,
+.custom-select.input-has-error,
+.custom-textarea.input-has-error,
+.static-display-box.input-has-error {
+  border-color: #ef4444 !important;
+  background-color: #fffafa !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.field-error-message {
+  min-height: 16px;
+}
+
+.form-row-2col,
+.form-row-4col {
+  min-width: 0;
+}
+
+.custom-input,
+.custom-select,
+.custom-textarea {
+  max-width: 100%;
+}
+
+.custom-textarea {
+  min-height: 92px;
+}
+
+/* KhĂ´ng cho pháº§n upload/image lĂ m vá»¡ ngang layout */
+.package-image-section,
+.image-previews-grid,
+.preview-image-item,
+.upload-dropzone-box-clickable {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Sticky bar Ä‘áº¹p vĂ  khĂ´ng trĂ n */
+.sticky-action-notice-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 12;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Loading overlay giá»¯ nguyĂªn trong mĂ n hĂ¬nh */
+.create-order-loading-overlay {
+  position: fixed;
+  inset: 0;
+}
+
+/* Responsive */
+@media (max-width: 1180px) {
+  .consignment-layout-grid {
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .form-row-4col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 920px) {
+  .consignment-container {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .consignment-layout-grid {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .layout-left-fixed-sidebar,
+  .layout-right-scrollable-form {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .form-row-2col,
+  .form-row-4col {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .form-main-card {
+    padding: 20px;
+  }
+
+  .sticky-action-notice-bar {
+    position: relative;
+    bottom: auto;
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 18px;
+  }
+
+  .btn-final-submit-order {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .back-navigation {
+    margin-bottom: 14px;
+  }
+
+  .page-header-title-box {
+    align-items: flex-start;
+  }
+
+  .title-text-group h2 {
+    font-size: 18px;
+  }
+
+  .left-inner-section {
+    padding: 16px;
+  }
+
+  .form-main-card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .form-step-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-delete-package {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .inline-form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .btn-inline-save,
+  .btn-inline-cancel {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .address-item-clickable {
+    grid-template-columns: minmax(0, 1fr) auto 30px;
+  }
+
+  .address-item-clickable .btn-delete-address {
+    grid-column: 3;
+  }
+
+  .address-default-badge {
+    display: none;
+  }
 }

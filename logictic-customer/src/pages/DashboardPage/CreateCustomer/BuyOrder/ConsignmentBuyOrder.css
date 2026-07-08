@@ -6,7 +6,7 @@
   flex-direction: column;
 }
 
-/* NĂ„â€Ă‚ÂT QUAY LÄ‚Â¡Ă‚Âº I */
+/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT QUAY LĂ„â€Ă‚Â¡Ä‚â€Ă‚Âº I */
 .purchase-buy-back-navigation {
   display: inline-flex;
   align-items: center;
@@ -26,7 +26,7 @@
   font-size: 10px;
 }
 
-/* GRID LAYOUT CHIA Ä‚â€Ă‚ÂĂ„â€Ă¢â‚¬ÂI */
+/* GRID LAYOUT CHIA Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂI */
 .purchase-buy-consignment-layout-grid {
   display: grid;
   grid-template-columns: 340px 1fr;
@@ -35,7 +35,7 @@
   min-height: 0;
 }
 
-/* ================= CÄ‚Â¡Ă‚Â»Ă‹Å“T TRĂ„â€Ă‚ÂI CÄ‚Â¡Ă‚Â»Ă‚Â Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‚ÂNH ================= */
+/* ================= CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œT TRÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂI CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂNH ================= */
 .purchase-buy-layout-left-fixed-sidebar {
   display: flex;
   flex-direction: column;
@@ -87,7 +87,7 @@
   border-top: 1px dashed #e2e8f0;
 }
 
-/* THĂ„â€Ă¢â€Â¬NH PHÄ‚Â¡Ă‚ÂºĂ‚Â¦N BOX Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‚ÂA CHÄ‚Â¡Ă‚Â»Ă‹â€  TÄ‚â€Ă‚Â¨NH */
+/* THÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NH PHĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¦N BOX Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂA CHĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă¢â‚¬  TĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¨NH */
 .purchase-buy-static-display-box {
   width: 100%;
   min-height: 40px;
@@ -244,7 +244,7 @@
   line-height: 1.3;
 }
 
-/* ================= CÄ‚Â¡Ă‚Â»Ă‹Å“T PHÄ‚Â¡Ă‚ÂºĂ‚Â¢I CUÄ‚Â¡Ă‚Â»Ă‹Å“N KIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N HĂ„â€Ă¢â€Â¬NG ================= */
+/* ================= CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œT PHĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¢I CUĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œN KIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N HÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NG ================= */
 .purchase-buy-layout-right-scrollable-form {
   height: 100%;
   overflow-y: auto;
@@ -418,7 +418,7 @@
   color: #94a3b8;
 }
 
-/* THÄ‚â€ Ă‚Â¯ VIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N LÄ‚â€ Ă‚Â¯Ä‚Â¡Ă‚Â»Ă‚ÂI GALLERY Ä‚Â¡Ă‚ÂºĂ‚Â¢NH ASPECT RATIO 1/1 CHUÄ‚Â¡Ă‚ÂºĂ‚Â¨N Ä‚â€Ă‚ÂÄ‚Â¡Ă‚ÂºĂ‚Â¸P */
+/* THĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯ VIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N LĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂI GALLERY Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¢NH ASPECT RATIO 1/1 CHUĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¨N Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¸P */
 .purchase-buy-image-previews-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
@@ -467,7 +467,7 @@
   background-color: #ef4444;
 }
 
-/* NĂ„â€Ă‚ÂT THĂ„â€Ă‚ÂM KIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N HĂ„â€Ă¢â€Â¬NG */
+/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT THÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂM KIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N HÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NG */
 .purchase-buy-add-package-dashed-trigger {
   width: 100%;
   border: 2px dashed #cbd5e1;
@@ -497,7 +497,7 @@
   color: #475569;
 }
 
-/* THANH LÄ‚â€ Ă‚Â¯U Ă„â€Ă‚Â PHĂ„â€Ă‚ÂA Ä‚â€Ă‚ÂĂ„â€Ă‚ÂY */
+/* THANH LĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯U Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â PHÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂA Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂY */
 .purchase-buy-sticky-action-notice-bar {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -548,7 +548,7 @@
   background-color: #f59e0b;
 }
 
-/* ================= OVERLAY PHĂ„â€Ă¢â‚¬Å“NG TO / THU NHÄ‚Â¡Ă‚Â»Ă‚Â LIGHTBOX TÄ‚Â¡Ă‚Â»Ă‚Â° Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‹Å“NG ================= */
+/* ================= OVERLAY PHÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă…â€œNG TO / THU NHĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â LIGHTBOX TĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â° Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œNG ================= */
 .purchase-buy-lightbox-overlay-modal {
   position: fixed;
   top: 0;
@@ -589,7 +589,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Animations hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡u Ä‚Â¡Ă‚Â»Ă‚Â©ng mÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă‚Â£t */
+/* Animations hiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡u Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â©ng mĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â£t */
 .purchase-buy-animate-zoom-in {
   animation: zoomIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -800,7 +800,7 @@
     margin-right: 7px;
   }
   
-  /* Ä‚Â¡Ă‚ÂºĂ‚Â¨n nĂ„â€Ă‚Âºt tÄ‚â€Ă†â€™ng giÄ‚Â¡Ă‚ÂºĂ‚Â£m mÄ‚Â¡Ă‚ÂºĂ‚Â·c Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¹nh cÄ‚Â¡Ă‚Â»Ă‚Â§a input number */
+  /* Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¨n nÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt tĂ„â€Ă¢â‚¬ÂÄ‚â€ Ă¢â‚¬â„¢ng giĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£m mĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â·c Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¹nh cĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â§a input number */
   
   .purchase-buy-custom-input[type="number"]::-webkit-inner-spin-button,
   .purchase-buy-custom-input[type="number"]::-webkit-outer-spin-button {
@@ -1079,9 +1079,9 @@
   }
 
 /* =========================================================
-   TYPOGRAPHY SYSTEM Ä‚Â¢Ă¢â€Â¬Ă¢â‚¬Â WEB UI
-   ChuÄ‚Â¡Ă‚ÂºĂ‚Â©n hĂ„â€Ă‚Â³a font, kĂ„â€Ă‚Â­ch thÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă¢â‚¬Âºc, Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â€Â¢ Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚ÂºĂ‚Â­m vĂ„â€  khÄ‚Â¡Ă‚ÂºĂ‚Â£ nÄ‚â€Ă†â€™ng Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Âc.
-   GiÄ‚Â¡Ă‚Â»Ă‚Â¯ nguyĂ„â€Ă‚Âªn toĂ„â€ n bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ layout, mĂ„â€ u sÄ‚Â¡Ă‚ÂºĂ‚Â¯c vĂ„â€  hĂ„â€ nh vi hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n tÄ‚Â¡Ă‚ÂºĂ‚Â¡i.
+   TYPOGRAPHY SYSTEM Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚Â¢Ă¢â€Â¬Ă‚Â WEB UI
+   ChuĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â©n hÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³a font, kÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â­ch thĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºc, Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â­m vÄ‚â€Ă¢â‚¬Â  khĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£ nĂ„â€Ă¢â‚¬ÂÄ‚â€ Ă¢â‚¬â„¢ng Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âc.
+   GiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â¯ nguyÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªn toÄ‚â€Ă¢â‚¬Â n bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ layout, mÄ‚â€Ă¢â‚¬Â u sĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¯c vÄ‚â€Ă¢â‚¬Â  hÄ‚â€Ă¢â‚¬Â nh vi hiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡i.
    ========================================================= */
 
 .purchase-buy-order-page {
@@ -1121,7 +1121,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Ä‚â€Ă‚ÂiÄ‚Â¡Ă‚Â»Ă‚Âu hÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă¢â‚¬Âºng */
+/* Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âu hĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºng */
 .purchase-buy-back-navigation {
   font-size: 13px;
   font-weight: 600;
@@ -1134,7 +1134,7 @@
   line-height: 1;
 }
 
-/* TiĂ„â€Ă‚Âªu Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Â trang */
+/* TiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªu Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â trang */
 .purchase-buy-title-text-group h2 {
   font-size: var(--font-size-page-title);
   font-weight: 700;
@@ -1150,7 +1150,7 @@
   letter-spacing: 0;
 }
 
-/* NÄ‚Â¡Ă‚Â»Ă¢â€Â¢i dung vĂ„â€  Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¹a chÄ‚Â¡Ă‚Â»Ă¢â‚¬Â° */
+/* NĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢i dung vÄ‚â€Ă¢â‚¬Â  Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¹a chĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â° */
 .purchase-buy-static-display-box {
   font-size: 14px;
   font-weight: 500;
@@ -1520,7 +1520,7 @@
 }
 
 
-/* NĂ„â€Ă‚Âºt bÄ‚Â¡Ă‚ÂºĂ‚Â¥m */
+/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt bĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¥m */
 .purchase-buy-btn-add-address,
 .purchase-buy-btn-inline-save,
 .purchase-buy-btn-inline-cancel,
@@ -1573,7 +1573,7 @@
   line-height: 1.5;
 }
 
-/* Header tÄ‚Â¡Ă‚Â»Ă‚Â«ng kiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n hĂ„â€ ng */
+/* Header tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â«ng kiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n hÄ‚â€Ă¢â‚¬Â ng */
 .purchase-buy-step-number-circle {
   font-size: 12px;
   font-weight: 700;
@@ -1587,7 +1587,7 @@
   letter-spacing: -0.01em;
 }
 
-/* Label vĂ„â€  trÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă‚Âng nhÄ‚Â¡Ă‚ÂºĂ‚Â­p liÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡u */
+/* Label vÄ‚â€Ă¢â‚¬Â  trĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âng nhĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â­p liĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡u */
 .purchase-buy-field-label {
   font-size: var(--font-size-label);
   font-weight: 600;
@@ -1636,7 +1636,7 @@
   font-weight: 400;
 }
 
-/* Khu vÄ‚Â¡Ă‚Â»Ă‚Â±c tÄ‚Â¡Ă‚ÂºĂ‚Â£i Ä‚Â¡Ă‚ÂºĂ‚Â£nh */
+/* Khu vĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â±c tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£i Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£nh */
 .purchase-buy-upload-main-text {
   font-size: 14px;
   font-weight: 600;
@@ -1655,7 +1655,7 @@
   line-height: 1;
 }
 
-/* Thanh lÄ‚â€ Ă‚Â°u Ă„â€Ă‚Â½ vĂ„â€  lightbox */
+/* Thanh lĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°u Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â½ vÄ‚â€Ă¢â‚¬Â  lightbox */
 .purchase-buy-notice-left-message p {
   font-size: 13px;
   font-weight: 400;
@@ -1708,7 +1708,7 @@
   line-height: 1.45;
 }
 
-/* TrÄ‚Â¡Ă‚ÂºĂ‚Â¡ng thĂ„â€Ă‚Â¡i disabled vÄ‚Â¡Ă‚ÂºĂ‚Â«n dÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¦ Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Âc */
+/* TrĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡ng thÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡i disabled vĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â«n dĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¦ Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âc */
 .purchase-buy-order-page :where(input, textarea, select, button):disabled {
   font-weight: inherit;
 }
@@ -1727,7 +1727,7 @@
   .purchase-buy-custom-input,
   .purchase-buy-custom-select,
   .purchase-buy-custom-textarea {
-    /* TrĂ„â€Ă‚Â¡nh trĂ„â€Ă‚Â¬nh duyÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡t iOS tÄ‚Â¡Ă‚Â»Ă‚Â± phĂ„â€Ă‚Â³ng to khi focus */
+    /* TrÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡nh trÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¬nh duyĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡t iOS tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â± phÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³ng to khi focus */
     font-size: 16px;
   }
 
@@ -1836,7 +1836,7 @@
 
 /* =========================================================
    PURCHASE BUY ORDER - ISOLATED TWO-COLUMN LAYOUT
-   Chá»‰ Ă¡p dá»¥ng cho trang mua há»™, khĂ´ng Ä‘Ă¨ CSS trang kĂ½ gá»­i.
+   ChĂ¡Â»â€° Ä‚Â¡p dĂ¡Â»Â¥ng cho trang mua hĂ¡Â»â„¢, khÄ‚Â´ng Ă„â€˜Ä‚Â¨ CSS trang kÄ‚Â½ gĂ¡Â»Â­i.
    ========================================================= */
 .purchase-buy-order-page {
   width: 100%;
@@ -1920,8 +1920,8 @@
 }
 
 /* =========================================================
-   FIX: FORM PHáº¢I CHIáº¾M TOĂ€N Bá»˜ Cá»˜T BĂN PHáº¢I
-   TrĂ¡nh CSS global cá»§a Dashboard Ă©p chiá»u rá»™ng.
+   FIX: FORM PHĂ¡ÂºÂ¢I CHIĂ¡ÂºÂ¾M TOÄ‚â‚¬N BĂ¡Â»Ëœ CĂ¡Â»ËœT BÄ‚ÂN PHĂ¡ÂºÂ¢I
+   TrÄ‚Â¡nh CSS global cĂ¡Â»Â§a Dashboard Ä‚Â©p chiĂ¡Â»Âu rĂ¡Â»â„¢ng.
    ========================================================= */
 
 .purchase-buy-order-page {
@@ -2000,5 +2000,204 @@
   .purchase-buy-form-row-2col {
     grid-template-columns:
       minmax(0, 1fr) !important;
+  }
+}
+
+/* =========================================================
+   FIX ADDRESS API + UTC PAYLOAD UI â€” PURCHASE BUY ORDER
+   Chá»‰ scope trong .purchase-buy-order-page
+   ========================================================= */
+
+.purchase-buy-order-page {
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.08), transparent 32%),
+    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+}
+
+.purchase-buy-consignment-layout-grid {
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.purchase-buy-layout-left-fixed-sidebar,
+.purchase-buy-layout-right-scrollable-form {
+  min-height: 0;
+}
+
+.purchase-buy-layout-left-fixed-sidebar {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.purchase-buy-layout-right-scrollable-form {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 6px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.purchase-buy-layout-left-fixed-sidebar::-webkit-scrollbar,
+.purchase-buy-layout-right-scrollable-form::-webkit-scrollbar,
+.purchase-buy-address-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.purchase-buy-layout-left-fixed-sidebar::-webkit-scrollbar-thumb,
+.purchase-buy-layout-right-scrollable-form::-webkit-scrollbar-thumb,
+.purchase-buy-address-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 999px;
+}
+
+.purchase-buy-address-api-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.purchase-buy-address-api-grid .purchase-buy-input-field-group {
+  min-width: 0;
+}
+
+.purchase-buy-add-address-inline-form .purchase-buy-custom-select,
+.purchase-buy-add-address-inline-form .purchase-buy-custom-input {
+  min-height: 42px;
+  border-radius: 11px;
+}
+
+.purchase-buy-add-address-inline-form .purchase-buy-custom-select:disabled,
+.purchase-buy-add-address-inline-form .purchase-buy-custom-input:disabled {
+  color: #94a3b8;
+  background-color: #f1f5f9;
+}
+
+.purchase-buy-address-preview-box {
+  width: 100%;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #92400e;
+  background: linear-gradient(135deg, #fffdf5, #fffbeb);
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.purchase-buy-address-preview-box span {
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.purchase-buy-address-preview-box strong {
+  color: #1e293b;
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.purchase-buy-address-item-clickable {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.purchase-buy-address-text-truncate strong {
+  overflow-wrap: anywhere;
+}
+
+.purchase-buy-left-unified-wrapper-box,
+.purchase-buy-form-main-card {
+  box-shadow:
+    0 14px 34px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.purchase-buy-custom-input:focus,
+.purchase-buy-custom-select:focus,
+.purchase-buy-custom-textarea:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+}
+
+.purchase-buy-btn-inline-save:disabled,
+.purchase-buy-btn-inline-cancel:disabled,
+.purchase-buy-btn-add-address:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.purchase-buy-sticky-action-notice-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 8;
+  margin-top: 18px;
+  background: rgba(248, 250, 252, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (max-width: 1180px) {
+  .purchase-buy-consignment-layout-grid {
+    grid-template-columns: 310px minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .purchase-buy-form-main-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 980px) {
+  .purchase-buy-order-page {
+    overflow-y: auto;
+  }
+
+  .purchase-buy-consignment-layout-grid {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .purchase-buy-layout-left-fixed-sidebar,
+  .purchase-buy-layout-right-scrollable-form {
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .purchase-buy-sticky-action-notice-bar {
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 680px) {
+  .purchase-buy-form-row-2col,
+  .purchase-buy-form-row-4col {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .purchase-buy-form-main-card {
+    padding: 1.1rem;
+    border-radius: 16px;
+  }
+
+  .purchase-buy-sticky-action-notice-bar {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .purchase-buy-btn-final-submit-order {
+    width: 100%;
   }
 }

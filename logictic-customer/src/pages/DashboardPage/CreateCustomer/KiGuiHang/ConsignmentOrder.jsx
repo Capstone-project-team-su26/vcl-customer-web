@@ -32,6 +32,16 @@ import {
   getDeliveryAddressesApi,
   getProductTypesApi,
 } from "../../../../api/OrderApi/consignmentApi";
+import {
+  getDistrictsByProvinceCode,
+  getFullAddressByCodes,
+  getProvinces,
+  getWardsByDistrictCode,
+} from "../../../../api/addressApi";
+import {
+  getBrowserTimeInfo,
+  getSyncedNowUtcIso,
+} from "../../../../utils/timeUtc";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -105,6 +115,20 @@ const createEmptyFormErrors = () => ({
   receiverName: "",
   receiverPhone: "",
   selectedDeliveryAddress: "",
+});
+
+const createEmptyAddressForm = () => ({
+  provinceCode: "",
+  districtCode: "",
+  wardCode: "",
+  detailAddress: "",
+});
+
+const createEmptyAddressErrors = () => ({
+  provinceCode: "",
+  districtCode: "",
+  wardCode: "",
+  detailAddress: "",
 });
 
 const isCanceledRequest = (error) =>
@@ -243,7 +267,16 @@ const normalizeDeliveryAddress = (item, index = 0) => {
           id: `address-${index}`,
           apiId: "",
           address,
+          fullAddress: address,
+          detailAddress: "",
+          provinceCode: "",
+          provinceName: "",
+          districtCode: "",
+          districtName: "",
+          wardCode: "",
+          wardName: "",
           isDefault: false,
+          raw: item,
         }
       : null;
   }
@@ -271,7 +304,16 @@ const normalizeDeliveryAddress = (item, index = 0) => {
     id: apiId || `address-${index}`,
     apiId,
     address,
+    fullAddress: String(item.fullAddress || address).trim(),
+    detailAddress: String(item.detailAddress || "").trim(),
+    provinceCode: String(item.provinceCode || item.province_code || "").trim(),
+    provinceName: String(item.provinceName || item.province_name || "").trim(),
+    districtCode: String(item.districtCode || item.district_code || "").trim(),
+    districtName: String(item.districtName || item.district_name || "").trim(),
+    wardCode: String(item.wardCode || item.ward_code || "").trim(),
+    wardName: String(item.wardName || item.ward_name || "").trim(),
     isDefault: Boolean(item.isDefault),
+    raw: item,
   };
 };
 
@@ -525,8 +567,23 @@ export default function ConsignmentOrder() {
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [deletingAddressId, setDeletingAddressId] = useState("");
   const [isAddingAddress, setIsAddingAddress] = useState(false);
-  const [newAddressInput, setNewAddressInput] = useState("");
+  const [newAddressForm, setNewAddressForm] = useState(
+    createEmptyAddressForm()
+  );
+  const [newAddressErrors, setNewAddressErrors] = useState(
+    createEmptyAddressErrors()
+  );
   const [newAddressError, setNewAddressError] = useState("");
+
+  const [provinceOptions, setProvinceOptions] = useState([]);
+  const [districtOptions, setDistrictOptions] = useState([]);
+  const [wardOptions, setWardOptions] = useState([]);
+
+  const [isLoadingProvinces, setIsLoadingProvinces] =
+    useState(false);
+  const [isLoadingDistricts, setIsLoadingDistricts] =
+    useState(false);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
 
   const [activeLightboxImg, setActiveLightboxImg] =
     useState(null);
@@ -559,6 +616,99 @@ export default function ConsignmentOrder() {
     }));
 
     clearFormError(field);
+  };
+
+  const resetNewAddressForm = () => {
+    setNewAddressForm(createEmptyAddressForm());
+    setNewAddressErrors(createEmptyAddressErrors());
+    setNewAddressError("");
+    setDistrictOptions([]);
+    setWardOptions([]);
+  };
+
+  const updateNewAddressForm = (field, value) => {
+    setNewAddressForm((previous) => {
+      if (field === "provinceCode") {
+        return {
+          ...previous,
+          provinceCode: value,
+          districtCode: "",
+          wardCode: "",
+        };
+      }
+
+      if (field === "districtCode") {
+        return {
+          ...previous,
+          districtCode: value,
+          wardCode: "",
+        };
+      }
+
+      return {
+        ...previous,
+        [field]: value,
+      };
+    });
+
+    if (field === "provinceCode") {
+      setDistrictOptions([]);
+      setWardOptions([]);
+    }
+
+    if (field === "districtCode") {
+      setWardOptions([]);
+    }
+
+    setNewAddressErrors((previous) => ({
+      ...previous,
+      [field]: "",
+      ...(field === "provinceCode"
+        ? {
+            districtCode: "",
+            wardCode: "",
+          }
+        : {}),
+      ...(field === "districtCode"
+        ? {
+            wardCode: "",
+          }
+        : {}),
+    }));
+
+    setNewAddressError("");
+  };
+
+  const getAddressOptionName = (options, code) =>
+    options.find((item) => String(item.code) === String(code))
+      ?.name ||
+    options.find((item) => String(item.value) === String(code))
+      ?.label ||
+    "";
+
+  const validateNewAddressForm = () => {
+    const errors = createEmptyAddressErrors();
+
+    if (!newAddressForm.provinceCode) {
+      errors.provinceCode = "Vui lòng chọn tỉnh/thành phố.";
+    }
+
+    if (!newAddressForm.districtCode) {
+      errors.districtCode = "Vui lòng chọn quận/huyện.";
+    }
+
+    if (!newAddressForm.wardCode) {
+      errors.wardCode = "Vui lòng chọn phường/xã.";
+    }
+
+    if (!newAddressForm.detailAddress.trim()) {
+      errors.detailAddress =
+        "Vui lòng nhập số nhà, tên đường hoặc địa chỉ chi tiết.";
+    }
+
+    setNewAddressErrors(errors);
+
+    return !Object.values(errors).some(Boolean);
   };
 
   const loadDeliveryAddresses = useCallback(
@@ -674,6 +824,125 @@ export default function ConsignmentOrder() {
   }, [loadDeliveryAddresses]);
 
   useEffect(() => {
+    const controller = new AbortController();
+
+    const loadProvinces = async () => {
+      try {
+        setIsLoadingProvinces(true);
+
+        const data = await getProvinces({
+          signal: controller.signal,
+        });
+
+        setProvinceOptions(data);
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được địa chỉ",
+            getApiErrorMessage(
+              error,
+              "Không thể tải danh sách tỉnh/thành phố."
+            )
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingProvinces(false);
+        }
+      }
+    };
+
+    loadProvinces();
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadDistricts = async () => {
+      if (!newAddressForm.provinceCode) {
+        setDistrictOptions([]);
+        setWardOptions([]);
+        return;
+      }
+
+      try {
+        setIsLoadingDistricts(true);
+
+        const data = await getDistrictsByProvinceCode(
+          newAddressForm.provinceCode,
+          {
+            signal: controller.signal,
+          }
+        );
+
+        setDistrictOptions(data);
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được quận/huyện",
+            getApiErrorMessage(
+              error,
+              "Không thể tải danh sách quận/huyện."
+            )
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingDistricts(false);
+        }
+      }
+    };
+
+    loadDistricts();
+
+    return () => controller.abort();
+  }, [newAddressForm.provinceCode]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadWards = async () => {
+      if (!newAddressForm.districtCode) {
+        setWardOptions([]);
+        return;
+      }
+
+      try {
+        setIsLoadingWards(true);
+
+        const data = await getWardsByDistrictCode(
+          newAddressForm.districtCode,
+          {
+            signal: controller.signal,
+          }
+        );
+
+        setWardOptions(data);
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được phường/xã",
+            getApiErrorMessage(
+              error,
+              "Không thể tải danh sách phường/xã."
+            )
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingWards(false);
+        }
+      }
+    };
+
+    loadWards();
+
+    return () => controller.abort();
+  }, [newAddressForm.districtCode]);
+
+  useEffect(() => {
     packagesRef.current = packages;
   }, [packages]);
 
@@ -706,25 +975,12 @@ export default function ConsignmentOrder() {
   /* ================= ADDRESS ================= */
 
   const handleSaveAddress = async () => {
-    const address = newAddressInput.trim();
-
     if (isSubmitting || isSavingAddress) {
       return;
     }
 
-    if (!address) {
-      setNewAddressError("Vui lòng nhập địa chỉ nhận hàng.");
-      return;
-    }
-
-    const addressExists = addressList.some(
-      (item) =>
-        item.address.trim().toLowerCase() ===
-        address.toLowerCase()
-    );
-
-    if (addressExists) {
-      setNewAddressError("Địa chỉ này đã có trong danh sách.");
+    if (!validateNewAddressForm()) {
+      setNewAddressError("Vui lòng kiểm tra lại thông tin địa chỉ.");
       return;
     }
 
@@ -732,9 +988,93 @@ export default function ConsignmentOrder() {
       setIsSavingAddress(true);
       setNewAddressError("");
 
-      const createdResult = await createDeliveryAddressApi({
-        address,
-      });
+      const detailAddress = newAddressForm.detailAddress.trim();
+
+      let addressResult = null;
+
+      try {
+        addressResult = await getFullAddressByCodes({
+          provinceCode: newAddressForm.provinceCode,
+          districtCode: newAddressForm.districtCode,
+          wardCode: newAddressForm.wardCode,
+          detailAddress,
+        });
+      } catch {
+        addressResult = null;
+      }
+
+      const fallbackProvinceName = getAddressOptionName(
+        provinceOptions,
+        newAddressForm.provinceCode
+      );
+      const fallbackDistrictName = getAddressOptionName(
+        districtOptions,
+        newAddressForm.districtCode
+      );
+      const fallbackWardName = getAddressOptionName(
+        wardOptions,
+        newAddressForm.wardCode
+      );
+
+      const provinceName =
+        addressResult?.province?.name || fallbackProvinceName;
+      const districtName =
+        addressResult?.district?.name || fallbackDistrictName;
+      const wardName = addressResult?.ward?.name || fallbackWardName;
+
+      const address =
+        addressResult?.fullAddress ||
+        [
+          detailAddress,
+          wardName,
+          districtName,
+          provinceName,
+        ]
+          .filter(Boolean)
+          .join(", ");
+
+      const normalizedAddress = address.trim();
+
+      if (!normalizedAddress) {
+        setNewAddressError("Địa chỉ nhận hàng không hợp lệ.");
+        return;
+      }
+
+      const addressExists = addressList.some(
+        (item) =>
+          item.address.trim().toLowerCase() ===
+          normalizedAddress.toLowerCase()
+      );
+
+      if (addressExists) {
+        setNewAddressError("Địa chỉ này đã có trong danh sách.");
+        return;
+      }
+
+      const browserTimeInfo = getBrowserTimeInfo();
+      const createdAtUtc = getSyncedNowUtcIso();
+
+      const addressPayload = {
+        address: normalizedAddress,
+        receiverAddress: normalizedAddress,
+        fullAddress: normalizedAddress,
+        detailAddress,
+        provinceCode: Number(newAddressForm.provinceCode),
+        provinceName,
+        districtCode: Number(newAddressForm.districtCode),
+        districtName,
+        wardCode: Number(newAddressForm.wardCode),
+        wardName,
+        createdAtUtc,
+        clientSubmittedAtUtc: createdAtUtc,
+        clientTimeZone: browserTimeInfo.timeZone,
+        clientUtcOffset: browserTimeInfo.utcOffsetText,
+        clientUtcOffsetMinutes: browserTimeInfo.utcOffsetMinutes,
+      };
+
+      const createdResult = await createDeliveryAddressApi(
+        addressPayload
+      );
 
       let refreshedAddresses;
 
@@ -748,32 +1088,61 @@ export default function ConsignmentOrder() {
           ) || {
             id: createUniqueId(),
             apiId: "",
-            address,
+            address: normalizedAddress,
+            fullAddress: normalizedAddress,
+            detailAddress,
+            provinceCode: String(newAddressForm.provinceCode),
+            provinceName,
+            districtCode: String(newAddressForm.districtCode),
+            districtName,
+            wardCode: String(newAddressForm.wardCode),
+            wardName,
             isDefault: false,
+            raw: addressPayload,
           };
 
         refreshedAddresses = [
           ...addressList,
-          createdAddress,
+          {
+            ...createdAddress,
+            address: createdAddress.address || normalizedAddress,
+            fullAddress:
+              createdAddress.fullAddress || normalizedAddress,
+            detailAddress:
+              createdAddress.detailAddress || detailAddress,
+            provinceCode:
+              createdAddress.provinceCode ||
+              String(newAddressForm.provinceCode),
+            provinceName:
+              createdAddress.provinceName || provinceName,
+            districtCode:
+              createdAddress.districtCode ||
+              String(newAddressForm.districtCode),
+            districtName:
+              createdAddress.districtName || districtName,
+            wardCode:
+              createdAddress.wardCode ||
+              String(newAddressForm.wardCode),
+            wardName: createdAddress.wardName || wardName,
+          },
         ];
 
         setAddressList(refreshedAddresses);
       }
 
-      const selectedAddress =
+      const selectedAddressItem =
         refreshedAddresses.find(
           (item) =>
             item.address.trim().toLowerCase() ===
-            address.toLowerCase()
-        )?.address || address;
+            normalizedAddress.toLowerCase()
+        ) || null;
 
       updateForm(
         "selectedDeliveryAddress",
-        selectedAddress
+        selectedAddressItem?.address || normalizedAddress
       );
 
-      setNewAddressInput("");
-      setNewAddressError("");
+      resetNewAddressForm();
       setIsAddingAddress(false);
 
       AuthNotify.success(
@@ -1141,6 +1510,15 @@ export default function ConsignmentOrder() {
         "Đang gửi yêu cầu tạo đơn ký gửi..."
       );
 
+      const selectedAddressItem = addressList.find(
+        (item) =>
+          item.address ===
+          form.selectedDeliveryAddress.trim()
+      );
+
+      const browserTimeInfo = getBrowserTimeInfo();
+      const submittedAtUtc = getSyncedNowUtcIso();
+
       await createConsignmentApi({
         route: form.route,
         shippingOption: form.shippingOption,
@@ -1148,6 +1526,34 @@ export default function ConsignmentOrder() {
         receiverPhone: form.receiverPhone.trim(),
         receiverAddress:
           form.selectedDeliveryAddress.trim(),
+
+        deliveryAddressId:
+          selectedAddressItem?.apiId || null,
+        receiverFullAddress:
+          selectedAddressItem?.fullAddress ||
+          form.selectedDeliveryAddress.trim(),
+        receiverDetailAddress:
+          selectedAddressItem?.detailAddress || null,
+        receiverProvinceCode:
+          selectedAddressItem?.provinceCode || null,
+        receiverProvinceName:
+          selectedAddressItem?.provinceName || null,
+        receiverDistrictCode:
+          selectedAddressItem?.districtCode || null,
+        receiverDistrictName:
+          selectedAddressItem?.districtName || null,
+        receiverWardCode:
+          selectedAddressItem?.wardCode || null,
+        receiverWardName:
+          selectedAddressItem?.wardName || null,
+
+        submittedAtUtc,
+        clientSubmittedAtUtc: submittedAtUtc,
+        clientTimeZone: browserTimeInfo.timeZone,
+        clientUtcOffset: browserTimeInfo.utcOffsetText,
+        clientUtcOffsetMinutes:
+          browserTimeInfo.utcOffsetMinutes,
+
         requiresInspection: form.inspectPackage,
         note:
           packages
@@ -1523,38 +1929,129 @@ export default function ConsignmentOrder() {
                 </>
               ) : (
                 <div className="add-address-inline-form">
-                  <label className="field-label required-label">
-                    ĐỊA CHỈ NHẬN HÀNG MỚI
-                  </label>
-
-                  <input
-                    type="text"
-                    value={newAddressInput}
+                  <SelectField
+                    label="TỈNH / THÀNH PHỐ"
+                    value={newAddressForm.provinceCode}
+                    error={newAddressErrors.provinceCode}
+                    options={provinceOptions}
+                    loading={isLoadingProvinces}
                     disabled={
                       isSubmitting ||
                       isSavingAddress
                     }
-                    placeholder="Nhập địa chỉ nhận hàng..."
-                    className={getFieldClassName(
-                      "custom-input small-input",
-                      newAddressError
-                    )}
-                    onChange={(event) => {
-                      setNewAddressInput(
-                        event.target.value
-                      );
-                      setNewAddressError("");
-                    }}
-                    onKeyDown={(event) => {
-                      if (
-                        event.key === "Enter" &&
-                        !isSavingAddress
-                      ) {
-                        event.preventDefault();
-                        handleSaveAddress();
-                      }
-                    }}
+                    placeholder="-- Chọn tỉnh/thành phố --"
+                    onChange={(value) =>
+                      updateNewAddressForm(
+                        "provinceCode",
+                        value
+                      )
+                    }
                   />
+
+                  <SelectField
+                    label="QUẬN / HUYỆN"
+                    value={newAddressForm.districtCode}
+                    error={newAddressErrors.districtCode}
+                    options={districtOptions}
+                    loading={isLoadingDistricts}
+                    disabled={
+                      isSubmitting ||
+                      isSavingAddress ||
+                      !newAddressForm.provinceCode
+                    }
+                    placeholder="-- Chọn quận/huyện --"
+                    onChange={(value) =>
+                      updateNewAddressForm(
+                        "districtCode",
+                        value
+                      )
+                    }
+                  />
+
+                  <SelectField
+                    label="PHƯỜNG / XÃ"
+                    value={newAddressForm.wardCode}
+                    error={newAddressErrors.wardCode}
+                    options={wardOptions}
+                    loading={isLoadingWards}
+                    disabled={
+                      isSubmitting ||
+                      isSavingAddress ||
+                      !newAddressForm.districtCode
+                    }
+                    placeholder="-- Chọn phường/xã --"
+                    onChange={(value) =>
+                      updateNewAddressForm(
+                        "wardCode",
+                        value
+                      )
+                    }
+                  />
+
+                  <div className="input-field-group">
+                    <label className="field-label required-label">
+                      ĐỊA CHỈ CHI TIẾT
+                    </label>
+
+                    <input
+                      type="text"
+                      value={newAddressForm.detailAddress}
+                      disabled={
+                        isSubmitting ||
+                        isSavingAddress
+                      }
+                      placeholder="Số nhà, tên đường..."
+                      className={getFieldClassName(
+                        "custom-input small-input",
+                        newAddressErrors.detailAddress
+                      )}
+                      onChange={(event) =>
+                        updateNewAddressForm(
+                          "detailAddress",
+                          event.target.value
+                        )
+                      }
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" &&
+                          !isSavingAddress
+                        ) {
+                          event.preventDefault();
+                          handleSaveAddress();
+                        }
+                      }}
+                    />
+
+                    <FieldError
+                      message={
+                        newAddressErrors.detailAddress
+                      }
+                    />
+                  </div>
+
+                  <div className="selected-address-preview">
+                    <EnvironmentOutlined />
+                    <span>
+                      {[
+                        newAddressForm.detailAddress.trim(),
+                        getAddressOptionName(
+                          wardOptions,
+                          newAddressForm.wardCode
+                        ),
+                        getAddressOptionName(
+                          districtOptions,
+                          newAddressForm.districtCode
+                        ),
+                        getAddressOptionName(
+                          provinceOptions,
+                          newAddressForm.provinceCode
+                        ),
+                      ]
+                        .filter(Boolean)
+                        .join(", ") ||
+                        "Địa chỉ đầy đủ sẽ hiển thị tại đây"}
+                    </span>
+                  </div>
 
                   <FieldError
                     message={newAddressError}
@@ -1570,8 +2067,7 @@ export default function ConsignmentOrder() {
                       }
                       onClick={() => {
                         setIsAddingAddress(false);
-                        setNewAddressInput("");
-                        setNewAddressError("");
+                        resetNewAddressForm();
                       }}
                     >
                       Hủy

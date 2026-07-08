@@ -30,6 +30,12 @@ import AuthNotify from "../../../../utils/AuthNotify";
 import { getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
 import { getConsignmentStatusesApi } from "../../../../api/OrderApi/consignmentStatusApi";
 
+import {
+  apiToUtcIso,
+  formatUtcDateTime,
+  formatVietnamDateTime,
+} from "../../../../utils/timeUtc";
+
 import "./ConsignmentListCheck.css";
 
 const { RangePicker } = DatePicker;
@@ -232,38 +238,87 @@ const normalizeStatusOptions = (
         option.label
     );
 
-const getApiDateOnly = (
-  dateString
-) => {
-  if (!dateString) {
-    return null;
-  }
+/* =========================================================
+   UTC TIME HELPERS
+   ========================================================= */
 
-  const matchedDate = String(
-    dateString
-  ).match(/^(\d{4}-\d{2}-\d{2})/);
-
-  return matchedDate?.[1] || null;
+/**
+ * Chuẩn hóa thời gian API về UTC ISO.
+ *
+ * API có thể trả:
+ * - 2026-06-29T14:00:32.8526551
+ * - 2026-06-29T14:00:32Z
+ * - 2026-06-29T14:00:32+07:00
+ *
+ * Output luôn chuẩn:
+ * - 2026-06-29T14:00:32.852Z
+ */
+const normalizeApiTimeToUtc = (value) => {
+  return apiToUtcIso(value, {
+    apiTimeMode: "utc",
+  });
 };
 
-const parseApiDateTime = (
-  dateString
-) => {
-  if (!dateString) {
+/**
+ * Lấy YYYY-MM-DD theo UTC để lọc ngày không bị lệch múi giờ.
+ */
+const getUtcDateOnly = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
     return null;
   }
 
-  const normalizedDate = String(
-    dateString
-  ).replace(/(\.\d{3})\d+/, "$1");
+  return utcIso.slice(0, 10);
+};
 
-  const date = dayjs(
-    normalizedDate
-  );
+/**
+ * Gắn field UTC vào item API.
+ */
+const normalizeConsignmentTime = (item) => {
+  if (!item) {
+    return item;
+  }
 
-  return date.isValid()
-    ? date
-    : null;
+  return {
+    ...item,
+    createdAtUtc: normalizeApiTimeToUtc(item.createdAt),
+    updatedAtUtc: normalizeApiTimeToUtc(item.updatedAt),
+    quotationCreatedAtUtc: normalizeApiTimeToUtc(
+      item.quotationCreatedAt ||
+        item?.quotation?.createdAt
+    ),
+    quotationExpiredAtUtc: normalizeApiTimeToUtc(
+      item.quotationExpiredAt ||
+        item?.quotation?.expiredAt
+    ),
+  };
+};
+
+const formatDate = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return "-";
+  }
+
+  return formatVietnamDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  });
+};
+
+const formatDateUtcTitle = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return "";
+  }
+
+  return `UTC: ${formatUtcDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  })}`;
 };
 
 const getConsignmentItems = (
@@ -442,7 +497,11 @@ const ConsignmentList = () => {
               signal
             );
 
-          setConsignments(items);
+          setConsignments(
+            items.map(
+              normalizeConsignmentTime
+            )
+          );
           return true;
         } catch (error) {
           if (
@@ -765,6 +824,8 @@ const ConsignmentList = () => {
             item.receiverName,
             item.receiverPhone,
             item.receiverAddress,
+            item.createdAtUtc,
+            item.updatedAtUtc,
           ]
             .filter(Boolean)
             .map(normalizeText)
@@ -777,8 +838,9 @@ const ConsignmentList = () => {
             );
 
           const createdDate =
-            getApiDateOnly(
-              item.createdAt
+            getUtcDateOnly(
+              item.createdAtUtc ||
+                item.createdAt
             );
 
           const matchesStartDate =
@@ -876,10 +938,21 @@ const ConsignmentList = () => {
       nextPageNumber
     );
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    const scrollTarget =
+      document.querySelector(".page-sub-content") ||
+      window;
+
+    if (scrollTarget === window) {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    } else {
+      scrollTarget.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
   };
 
   const handleViewDetail = (
@@ -915,21 +988,6 @@ const ConsignmentList = () => {
       event.preventDefault();
       handleViewDetail(item);
     }
-  };
-
-  const formatDate = (
-    dateString
-  ) => {
-    const date =
-      parseApiDateTime(
-        dateString
-      );
-
-    return date
-      ? date.format(
-          "HH:mm DD/MM/YYYY"
-        )
-      : "-";
   };
 
   const hasActiveFilter =
@@ -1172,11 +1230,17 @@ const ConsignmentList = () => {
                           </strong>
                         </span>
 
-                        <span>
+                        <span
+                          title={formatDateUtcTitle(
+                            item.createdAtUtc ||
+                              item.createdAt
+                          )}
+                        >
                           📅 Ngày tạo:{" "}
                           <strong>
                             {formatDate(
-                              item.createdAt
+                              item.createdAtUtc ||
+                                item.createdAt
                             )}
                           </strong>
                         </span>

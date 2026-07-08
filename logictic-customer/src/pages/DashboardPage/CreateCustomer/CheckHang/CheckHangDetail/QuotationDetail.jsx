@@ -6,8 +6,6 @@ import React, {
 } from "react";
 
 import axios from "axios";
-import dayjs from "dayjs";
-
 import {
   useLocation,
   useNavigate,
@@ -33,6 +31,13 @@ import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import AuthNotify from "../../../../../utils/AuthNotify";
+
+import {
+  apiToUtcIso,
+  formatUtcDateTime,
+  formatVietnamDateTime,
+  getSyncedNowDate,
+} from "../../../../../utils/timeUtc";
 
 import { getConsignmentStatusesApi } from "../../../../../api/OrderApi/consignmentStatusApi";
 import { getOrderQuotationApi } from "../../../../../api/OrderApi/consignmentApi";
@@ -182,38 +187,93 @@ const getStatusClassName = (status) => {
     .replaceAll("_", "-");
 };
 
-const parseApiDateTime = (dateString) => {
-  if (!dateString) {
-    return null;
-  }
+/* =========================================================
+   UTC TIME HELPERS
+   ========================================================= */
 
-  const normalizedDate = String(
-    dateString
-  ).replace(
-    /(\.\d{3})\d+/,
-    "$1"
-  );
-
-  const date = dayjs(
-    normalizedDate
-  );
-
-  return date.isValid()
-    ? date
-    : null;
+/**
+ * Chuẩn hóa thời gian API về UTC ISO.
+ *
+ * API có thể trả:
+ * - 2026-07-01T04:26:34.9714508
+ * - 2026-07-01T04:26:34Z
+ * - 2026-07-01T04:26:34+07:00
+ *
+ * Output luôn là UTC ISO chuẩn:
+ * - 2026-07-01T04:26:34.971Z
+ */
+const normalizeApiTimeToUtc = (value) => {
+  return apiToUtcIso(value, {
+    apiTimeMode: "utc",
+  });
 };
 
-const formatDateTime = (dateString) => {
-  const date =
-    parseApiDateTime(dateString);
+const normalizeQuotationTime = (quotation) => {
+  if (!quotation) {
+    return quotation;
+  }
 
-  if (!date) {
+  return {
+    ...quotation,
+    createdAtUtc: normalizeApiTimeToUtc(
+      quotation.createdAt
+    ),
+    updatedAtUtc: normalizeApiTimeToUtc(
+      quotation.updatedAt
+    ),
+    expiredAtUtc: normalizeApiTimeToUtc(
+      quotation.expiredAt
+    ),
+  };
+};
+
+/**
+ * Hiển thị cho user Việt Nam, dữ liệu gốc luôn parse qua UTC trước.
+ */
+const formatDateTime = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
     return "-";
   }
 
-  return date.format(
-    "HH:mm DD/MM/YYYY"
-  );
+  return formatVietnamDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  });
+};
+
+/**
+ * Tooltip hiển thị UTC gốc để kiểm tra khi cần.
+ */
+const formatDateTimeUtcTitle = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return "";
+  }
+
+  return `UTC: ${formatUtcDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  })}`;
+};
+
+/**
+ * Check hết hạn bằng giờ đã sync server nếu timeUtc.js đã sync,
+ * tránh lệch khi máy người dùng sai giờ.
+ */
+const isExpiredUtc = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return false;
+  }
+
+  const expiredTime = new Date(utcIso).getTime();
+  const nowTime = getSyncedNowDate().getTime();
+
+  return expiredTime < nowTime;
 };
 
 const formatMoney = (value) => {
@@ -404,7 +464,9 @@ const QuotationDetail = () => {
           }
 
           setQuotation(
-            quotationData
+            normalizeQuotationTime(
+              quotationData
+            )
           );
 
           if (
@@ -663,11 +725,11 @@ const QuotationDetail = () => {
       </div>
     );
   }
-const hasExpired =
-    parseApiDateTime(
-      quotation.expiredAt
-    )?.isBefore(dayjs()) ||
-    false;
+  const hasExpired =
+    isExpiredUtc(
+      quotation.expiredAtUtc ||
+        quotation.expiredAt
+    );
 
   const effectiveStatus =
     hasExpired &&
@@ -767,10 +829,16 @@ const hasExpired =
             )}
           </strong>
 
-          <small>
+          <small
+            title={formatDateTimeUtcTitle(
+              quotation.expiredAtUtc ||
+                quotation.expiredAt
+            )}
+          >
             Báo giá có hiệu lực đến{" "}
             {formatDateTime(
-              quotation.expiredAt
+              quotation.expiredAtUtc ||
+                quotation.expiredAt
             )}
           </small>
         </div>
@@ -1002,9 +1070,15 @@ const hasExpired =
                   Ngày tạo báo giá
                 </span>
 
-                <strong>
+                <strong
+                  title={formatDateTimeUtcTitle(
+                    quotation.createdAtUtc ||
+                      quotation.createdAt
+                  )}
+                >
                   {formatDateTime(
-                    quotation.createdAt
+                    quotation.createdAtUtc ||
+                      quotation.createdAt
                   )}
                 </strong>
               </div>
@@ -1026,9 +1100,15 @@ const hasExpired =
                   Ngày hết hạn
                 </span>
 
-                <strong>
+                <strong
+                  title={formatDateTimeUtcTitle(
+                    quotation.expiredAtUtc ||
+                      quotation.expiredAt
+                  )}
+                >
                   {formatDateTime(
-                    quotation.expiredAt
+                    quotation.expiredAtUtc ||
+                      quotation.expiredAt
                   )}
                 </strong>
               </div>

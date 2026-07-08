@@ -39,6 +39,18 @@ import {
   createPurchaseRequestApi,
 } from "../../../../api/OrderApi/purchaseRequestApi";
 
+import {
+  getDistrictsByProvinceCode,
+  getFullAddressByCodes,
+  getProvinces,
+  getWardsByDistrictCode,
+} from "../../../../api/addressApi";
+
+import {
+  getBrowserTimeInfo,
+  getSyncedNowUtcIso,
+} from "../../../../utils/timeUtc";
+
 import "./ConsignmentBuyOrder.css";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -52,6 +64,12 @@ const INITIAL_FORM = {
   requiresInspection: true,
   requiresQuantityCheck: true,
   generalNote: "",
+};
+
+const INITIAL_ADDRESS_SELECT = {
+  provinceCode: "",
+  districtCode: "",
+  wardCode: "",
 };
 
 const createUniqueId = () => {
@@ -251,6 +269,14 @@ const normalizeDeliveryAddress = (
           id: `address-${index}`,
           apiId: "",
           address,
+          fullAddress: address,
+          detailAddress: "",
+          provinceCode: "",
+          provinceName: "",
+          districtCode: "",
+          districtName: "",
+          wardCode: "",
+          wardName: "",
           isDefault: false,
         }
       : null;
@@ -279,6 +305,14 @@ const normalizeDeliveryAddress = (
     id: apiId || `address-${index}`,
     apiId,
     address,
+    fullAddress: item.fullAddress || address,
+    detailAddress: item.detailAddress || "",
+    provinceCode: item.provinceCode || item.province_code || "",
+    provinceName: item.provinceName || item.province_name || "",
+    districtCode: item.districtCode || item.district_code || "",
+    districtName: item.districtName || item.district_name || "",
+    wardCode: item.wardCode || item.ward_code || "",
+    wardName: item.wardName || item.ward_name || "",
     isDefault: Boolean(
       item.isDefault
     ),
@@ -386,6 +420,27 @@ const getSourceWebsiteFromLink = (
   } catch {
     return "";
   }
+};
+
+const getAddressOptionName = (options, value) => {
+  return (
+    options.find(
+      (option) => String(option.value) === String(value)
+    )?.label || ""
+  );
+};
+
+const getClientTimePayload = () => {
+  const browserTime = getBrowserTimeInfo();
+  const utcNow = getSyncedNowUtcIso();
+
+  return {
+    submittedAtUtc: utcNow,
+    clientSubmittedAtUtc: utcNow,
+    clientTimeZone: browserTime.timeZone,
+    clientUtcOffset: browserTime.utcOffsetText,
+    clientUtcOffsetMinutes: browserTime.utcOffsetMinutes,
+  };
 };
 
 const validateItem = (item) => {
@@ -667,6 +722,43 @@ export default function ConsignmentBuyOrder() {
   ] = useState("");
 
   const [
+    newAddressSelect,
+    setNewAddressSelect,
+  ] = useState(
+    INITIAL_ADDRESS_SELECT
+  );
+
+  const [
+    provinceOptions,
+    setProvinceOptions,
+  ] = useState([]);
+
+  const [
+    districtOptions,
+    setDistrictOptions,
+  ] = useState([]);
+
+  const [
+    wardOptions,
+    setWardOptions,
+  ] = useState([]);
+
+  const [
+    isLoadingProvinces,
+    setIsLoadingProvinces,
+  ] = useState(false);
+
+  const [
+    isLoadingDistricts,
+    setIsLoadingDistricts,
+  ] = useState(false);
+
+  const [
+    isLoadingWards,
+    setIsLoadingWards,
+  ] = useState(false);
+
+  const [
     activeLightboxImg,
     setActiveLightboxImg,
   ] = useState(null);
@@ -876,6 +968,179 @@ export default function ConsignmentBuyOrder() {
   ]);
 
   useEffect(() => {
+    const controller =
+      new AbortController();
+
+    const loadProvinces =
+      async () => {
+        try {
+          setIsLoadingProvinces(
+            true
+          );
+
+          const provinces =
+            await getProvinces({
+              signal:
+                controller.signal,
+            });
+
+          setProvinceOptions(
+            provinces
+          );
+        } catch (error) {
+          if (
+            !isCanceledRequest(error)
+          ) {
+            AuthNotify.error(
+              "Không tải được tỉnh/thành",
+              getApiErrorMessage(
+                error,
+                "Không thể tải danh sách tỉnh/thành phố."
+              )
+            );
+          }
+        } finally {
+          if (
+            !controller.signal
+              .aborted
+          ) {
+            setIsLoadingProvinces(
+              false
+            );
+          }
+        }
+      };
+
+    loadProvinces();
+
+    return () =>
+      controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller =
+      new AbortController();
+
+    const loadDistricts =
+      async () => {
+        if (
+          !newAddressSelect.provinceCode
+        ) {
+          setDistrictOptions([]);
+          setWardOptions([]);
+          return;
+        }
+
+        try {
+          setIsLoadingDistricts(
+            true
+          );
+
+          const districts =
+            await getDistrictsByProvinceCode(
+              newAddressSelect.provinceCode,
+              {
+                signal:
+                  controller.signal,
+              }
+            );
+
+          setDistrictOptions(
+            districts
+          );
+        } catch (error) {
+          if (
+            !isCanceledRequest(error)
+          ) {
+            AuthNotify.error(
+              "Không tải được quận/huyện",
+              getApiErrorMessage(
+                error,
+                "Không thể tải danh sách quận/huyện."
+              )
+            );
+          }
+        } finally {
+          if (
+            !controller.signal
+              .aborted
+          ) {
+            setIsLoadingDistricts(
+              false
+            );
+          }
+        }
+      };
+
+    loadDistricts();
+
+    return () =>
+      controller.abort();
+  }, [
+    newAddressSelect.provinceCode,
+  ]);
+
+  useEffect(() => {
+    const controller =
+      new AbortController();
+
+    const loadWards =
+      async () => {
+        if (
+          !newAddressSelect.districtCode
+        ) {
+          setWardOptions([]);
+          return;
+        }
+
+        try {
+          setIsLoadingWards(
+            true
+          );
+
+          const wards =
+            await getWardsByDistrictCode(
+              newAddressSelect.districtCode,
+              {
+                signal:
+                  controller.signal,
+              }
+            );
+
+          setWardOptions(wards);
+        } catch (error) {
+          if (
+            !isCanceledRequest(error)
+          ) {
+            AuthNotify.error(
+              "Không tải được phường/xã",
+              getApiErrorMessage(
+                error,
+                "Không thể tải danh sách phường/xã."
+              )
+            );
+          }
+        } finally {
+          if (
+            !controller.signal
+              .aborted
+          ) {
+            setIsLoadingWards(
+              false
+            );
+          }
+        }
+      };
+
+    loadWards();
+
+    return () =>
+      controller.abort();
+  }, [
+    newAddressSelect.districtCode,
+  ]);
+
+  useEffect(() => {
     itemsRef.current =
       items;
   }, [items]);
@@ -916,11 +1181,134 @@ export default function ConsignmentBuyOrder() {
 
   /* ================= ADDRESS ================= */
 
+  const resetNewAddressForm = () => {
+    setNewAddressSelect(
+      INITIAL_ADDRESS_SELECT
+    );
+    setNewAddressInput("");
+    setDistrictOptions([]);
+    setWardOptions([]);
+  };
+
+  const updateNewAddressSelect = (
+    field,
+    value
+  ) => {
+    setNewAddressSelect(
+      (previous) => {
+        if (field === "provinceCode") {
+          return {
+            provinceCode: value,
+            districtCode: "",
+            wardCode: "",
+          };
+        }
+
+        if (field === "districtCode") {
+          return {
+            ...previous,
+            districtCode: value,
+            wardCode: "",
+          };
+        }
+
+        return {
+          ...previous,
+          [field]: value,
+        };
+      }
+    );
+
+    setNewAddressError("");
+  };
+
+  const buildAddressPayload = async () => {
+    const detailAddress =
+      newAddressInput.trim();
+
+    if (!newAddressSelect.provinceCode) {
+      throw new Error(
+        "Vui lòng chọn tỉnh/thành phố."
+      );
+    }
+
+    if (!newAddressSelect.districtCode) {
+      throw new Error(
+        "Vui lòng chọn quận/huyện."
+      );
+    }
+
+    if (!newAddressSelect.wardCode) {
+      throw new Error(
+        "Vui lòng chọn phường/xã."
+      );
+    }
+
+    if (!detailAddress) {
+      throw new Error(
+        "Vui lòng nhập số nhà, tên đường."
+      );
+    }
+
+    const provinceName =
+      getAddressOptionName(
+        provinceOptions,
+        newAddressSelect.provinceCode
+      );
+
+    const districtName =
+      getAddressOptionName(
+        districtOptions,
+        newAddressSelect.districtCode
+      );
+
+    const wardName =
+      getAddressOptionName(
+        wardOptions,
+        newAddressSelect.wardCode
+      );
+
+    const addressResult =
+      await getFullAddressByCodes({
+        provinceCode:
+          newAddressSelect.provinceCode,
+        districtCode:
+          newAddressSelect.districtCode,
+        wardCode:
+          newAddressSelect.wardCode,
+        detailAddress,
+      });
+
+    const fullAddress =
+      addressResult?.fullAddress ||
+      [
+        detailAddress,
+        wardName,
+        districtName,
+        provinceName,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+    return {
+      address: fullAddress,
+      fullAddress,
+      detailAddress,
+      provinceCode:
+        newAddressSelect.provinceCode,
+      provinceName,
+      districtCode:
+        newAddressSelect.districtCode,
+      districtName,
+      wardCode:
+        newAddressSelect.wardCode,
+      wardName,
+      ...getClientTimePayload(),
+    };
+  };
+
   const handleSaveAddress =
     async () => {
-      const address =
-        newAddressInput.trim();
-
       if (
         isSubmitting ||
         isSavingAddress
@@ -928,12 +1316,22 @@ export default function ConsignmentBuyOrder() {
         return;
       }
 
-      if (!address) {
-        setNewAddressError(
-          "Vui lòng nhập địa chỉ nhận hàng."
-        );
+      let addressPayload;
+
+      try {
+        addressPayload =
+          await buildAddressPayload();
+      } catch (error) {
+        const message =
+          error?.message ||
+          "Vui lòng kiểm tra lại địa chỉ.";
+
+        setNewAddressError(message);
         return;
       }
+
+      const address =
+        addressPayload.address.trim();
 
       const addressExists =
         addressList.some(
@@ -958,9 +1356,9 @@ export default function ConsignmentBuyOrder() {
         setNewAddressError("");
 
         const createdResult =
-          await createDeliveryAddressApi({
-            address,
-          });
+          await createDeliveryAddressApi(
+            addressPayload
+          );
 
         let refreshedAddresses;
 
@@ -971,12 +1369,13 @@ export default function ConsignmentBuyOrder() {
           const createdAddress =
             normalizeDeliveryAddress(
               createdResult?.data ||
-                createdResult,
+                createdResult ||
+                addressPayload,
               addressList.length
             ) || {
               id: createUniqueId(),
               apiId: "",
-              address,
+              ...addressPayload,
               isDefault: false,
             };
 
@@ -1004,7 +1403,7 @@ export default function ConsignmentBuyOrder() {
           selectedAddress
         );
 
-        setNewAddressInput("");
+        resetNewAddressForm();
         setNewAddressError("");
         setIsAddingAddress(
           false
@@ -1455,6 +1854,16 @@ export default function ConsignmentBuyOrder() {
           "Đang gửi yêu cầu mua hộ..."
         );
 
+        const selectedAddress =
+          addressList.find(
+            (addressItem) =>
+              addressItem.address ===
+              form.selectedDeliveryAddress
+          );
+
+        const timePayload =
+          getClientTimePayload();
+
         const result =
           await createPurchaseRequestApi({
             route: form.route,
@@ -1464,6 +1873,37 @@ export default function ConsignmentBuyOrder() {
               form.receiverPhone.trim(),
             receiverAddress:
               form.selectedDeliveryAddress.trim(),
+            receiverAddressInfo:
+              selectedAddress
+                ? {
+                    address:
+                      selectedAddress.address,
+                    fullAddress:
+                      selectedAddress.fullAddress ||
+                      selectedAddress.address,
+                    detailAddress:
+                      selectedAddress.detailAddress ||
+                      "",
+                    provinceCode:
+                      selectedAddress.provinceCode ||
+                      "",
+                    provinceName:
+                      selectedAddress.provinceName ||
+                      "",
+                    districtCode:
+                      selectedAddress.districtCode ||
+                      "",
+                    districtName:
+                      selectedAddress.districtName ||
+                      "",
+                    wardCode:
+                      selectedAddress.wardCode ||
+                      "",
+                    wardName:
+                      selectedAddress.wardName ||
+                      "",
+                  }
+                : null,
             requiresInspection:
               form.requiresInspection,
             requiresQuantityCheck:
@@ -1471,6 +1911,7 @@ export default function ConsignmentBuyOrder() {
             generalNote:
               form.generalNote.trim(),
             items: requestItems,
+            ...timePayload,
           });
 
         AuthNotify.success(
@@ -1834,6 +2275,139 @@ export default function ConsignmentBuyOrder() {
                     ĐỊA CHỈ NHẬN HÀNG MỚI
                   </label>
 
+                  <div className="purchase-buy-address-api-grid">
+                    <div className="purchase-buy-input-field-group">
+                      <label className="purchase-buy-field-label purchase-buy-required-label">
+                        TỈNH / THÀNH PHỐ
+                      </label>
+
+                      <select
+                        value={
+                          newAddressSelect.provinceCode
+                        }
+                        disabled={
+                          isSubmitting ||
+                          isSavingAddress ||
+                          isLoadingProvinces
+                        }
+                        className={getFieldClassName(
+                          "purchase-buy-custom-select",
+                          newAddressError &&
+                            !newAddressSelect.provinceCode
+                            ? newAddressError
+                            : ""
+                        )}
+                        onChange={(event) =>
+                          updateNewAddressSelect(
+                            "provinceCode",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="">
+                          {isLoadingProvinces
+                            ? "Đang tải tỉnh/thành..."
+                            : "Chọn tỉnh/thành"}
+                        </option>
+
+                        {provinceOptions.map(
+                          (province) => (
+                            <option
+                              key={province.value}
+                              value={province.value}
+                            >
+                              {province.label}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="purchase-buy-input-field-group">
+                      <label className="purchase-buy-field-label purchase-buy-required-label">
+                        QUẬN / HUYỆN
+                      </label>
+
+                      <select
+                        value={
+                          newAddressSelect.districtCode
+                        }
+                        disabled={
+                          isSubmitting ||
+                          isSavingAddress ||
+                          isLoadingDistricts ||
+                          !newAddressSelect.provinceCode
+                        }
+                        className="purchase-buy-custom-select"
+                        onChange={(event) =>
+                          updateNewAddressSelect(
+                            "districtCode",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="">
+                          {isLoadingDistricts
+                            ? "Đang tải quận/huyện..."
+                            : "Chọn quận/huyện"}
+                        </option>
+
+                        {districtOptions.map(
+                          (district) => (
+                            <option
+                              key={district.value}
+                              value={district.value}
+                            >
+                              {district.label}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="purchase-buy-input-field-group">
+                      <label className="purchase-buy-field-label purchase-buy-required-label">
+                        PHƯỜNG / XÃ
+                      </label>
+
+                      <select
+                        value={
+                          newAddressSelect.wardCode
+                        }
+                        disabled={
+                          isSubmitting ||
+                          isSavingAddress ||
+                          isLoadingWards ||
+                          !newAddressSelect.districtCode
+                        }
+                        className="purchase-buy-custom-select"
+                        onChange={(event) =>
+                          updateNewAddressSelect(
+                            "wardCode",
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="">
+                          {isLoadingWards
+                            ? "Đang tải phường/xã..."
+                            : "Chọn phường/xã"}
+                        </option>
+
+                        {wardOptions.map(
+                          (ward) => (
+                            <option
+                              key={ward.value}
+                              value={ward.value}
+                            >
+                              {ward.label}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
                   <input
                     type="text"
                     value={
@@ -1843,7 +2417,7 @@ export default function ConsignmentBuyOrder() {
                       isSubmitting ||
                       isSavingAddress
                     }
-                    placeholder="Nhập địa chỉ nhận hàng..."
+                    placeholder="Số nhà, tên đường..."
                     className={getFieldClassName(
                       "purchase-buy-custom-input purchase-buy-small-input",
                       newAddressError
@@ -1871,6 +2445,30 @@ export default function ConsignmentBuyOrder() {
                     }}
                   />
 
+                  <div className="purchase-buy-address-preview-box">
+                    <span>Địa chỉ sẽ lưu</span>
+                    <strong>
+                      {[
+                        newAddressInput.trim(),
+                        getAddressOptionName(
+                          wardOptions,
+                          newAddressSelect.wardCode
+                        ),
+                        getAddressOptionName(
+                          districtOptions,
+                          newAddressSelect.districtCode
+                        ),
+                        getAddressOptionName(
+                          provinceOptions,
+                          newAddressSelect.provinceCode
+                        ),
+                      ]
+                        .filter(Boolean)
+                        .join(", ") ||
+                        "Chưa đủ thông tin địa chỉ"}
+                    </strong>
+                  </div>
+
                   <FieldError
                     message={
                       newAddressError
@@ -1889,9 +2487,7 @@ export default function ConsignmentBuyOrder() {
                         setIsAddingAddress(
                           false
                         );
-                        setNewAddressInput(
-                          ""
-                        );
+                        resetNewAddressForm();
                         setNewAddressError(
                           ""
                         );

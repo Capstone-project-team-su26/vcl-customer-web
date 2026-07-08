@@ -6,8 +6,6 @@ import React, {
 } from "react";
 
 import axios from "axios";
-import dayjs from "dayjs";
-
 import {
   useLocation,
   useNavigate,
@@ -41,6 +39,12 @@ import {
   cancelConsignmentApi,
 } from "../../../../../api/OrderApi/consignmentApi";
 import { getConsignmentStatusesApi } from "../../../../../api/OrderApi/consignmentStatusApi";
+
+import {
+  apiToUtcIso,
+  formatUtcDateTime,
+  formatVietnamDateTime,
+} from "../../../../../utils/timeUtc";
 
 import "./ConsignmentListDetail.css";
 
@@ -309,37 +313,78 @@ const formatWeight = (value) => {
 };
 
 /**
- * API có thể trả thời gian chứa nhiều hơn 3 chữ số
- * ở phần mili-giây, ví dụ:
+ * Chuẩn hóa thời gian API về UTC ISO.
  *
- * 2026-06-26T08:17:13.1382779
+ * API có thể trả:
+ * - 2026-06-26T08:17:13.1382779
+ * - 2026-06-26T08:17:13Z
+ * - 2026-06-26T08:17:13+07:00
  *
- * Hàm này chuẩn hóa còn 3 chữ số để trình duyệt
- * và dayjs đọc ổn định.
+ * Output luôn là UTC ISO chuẩn:
+ * - 2026-06-26T08:17:13.138Z
  */
-const parseApiDateTime = (dateString) => {
-  if (!dateString) {
-    return null;
-  }
-
-  const normalizedDateString = String(dateString).replace(
-    /(\.\d{3})\d+/,
-    "$1"
-  );
-
-  const date = dayjs(normalizedDateString);
-
-  return date.isValid() ? date : null;
+const normalizeApiTimeToUtc = (value) => {
+  return apiToUtcIso(value, {
+    apiTimeMode: "utc",
+  });
 };
 
-const formatDateTime = (dateString) => {
-  const date = parseApiDateTime(dateString);
+/**
+ * Gắn field UTC vào dữ liệu chi tiết để toàn màn hình dùng thống nhất.
+ */
+const normalizeConsignmentTime = (item) => {
+  if (!item) {
+    return item;
+  }
 
-  if (!date) {
+  const quotation = item.quotation
+    ? {
+        ...item.quotation,
+        createdAtUtc: normalizeApiTimeToUtc(item.quotation.createdAt),
+        updatedAtUtc: normalizeApiTimeToUtc(item.quotation.updatedAt),
+        expiredAtUtc: normalizeApiTimeToUtc(item.quotation.expiredAt),
+      }
+    : item.quotation;
+
+  return {
+    ...item,
+    createdAtUtc: normalizeApiTimeToUtc(item.createdAt),
+    updatedAtUtc: normalizeApiTimeToUtc(item.updatedAt),
+    cancelledAtUtc: normalizeApiTimeToUtc(item.cancelledAt),
+    quotation,
+  };
+};
+
+/**
+ * Hiển thị theo giờ Việt Nam, nhưng dữ liệu nguồn luôn convert từ UTC.
+ */
+const formatDateTime = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
     return "-";
   }
 
-  return date.format("HH:mm DD/MM/YYYY");
+  return formatVietnamDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  });
+};
+
+/**
+ * Dùng cho title/tooltip để kiểm tra UTC gốc.
+ */
+const formatDateTimeUtcTitle = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return "";
+  }
+
+  return `UTC: ${formatUtcDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  })}`;
 };
 
 const formatMoney = (value) => {
@@ -504,7 +549,7 @@ const ConsignmentListDetail = () => {
           );
         }
 
-        setConsignment(responseData);
+        setConsignment(normalizeConsignmentTime(responseData));
 
         if (
           statusesResult.status ===
@@ -575,7 +620,7 @@ const ConsignmentListDetail = () => {
          * từ trang danh sách làm dự phòng.
          */
         if (summaryData) {
-          setConsignment(summaryData);
+          setConsignment(normalizeConsignmentTime(summaryData));
         } else {
           setConsignment(null);
         }
@@ -1283,9 +1328,15 @@ const ConsignmentListDetail = () => {
             Ngày tạo yêu cầu
           </span>
 
-          <strong>
+          <strong
+            title={formatDateTimeUtcTitle(
+              consignment.createdAtUtc ||
+                consignment.createdAt
+            )}
+          >
             {formatDateTime(
-              consignment.createdAt
+              consignment.createdAtUtc ||
+                consignment.createdAt
             )}
           </strong>
         </div>
@@ -1700,9 +1751,15 @@ const ConsignmentListDetail = () => {
                     Ngày tạo báo giá
                   </span>
 
-                  <strong>
+                  <strong
+                    title={formatDateTimeUtcTitle(
+                      quotation.createdAtUtc ||
+                        quotation.createdAt
+                    )}
+                  >
                     {formatDateTime(
-                      quotation.createdAt
+                      quotation.createdAtUtc ||
+                        quotation.createdAt
                     )}
                   </strong>
                 </div>
@@ -1712,9 +1769,15 @@ const ConsignmentListDetail = () => {
                     Ngày hết hạn
                   </span>
 
-                  <strong>
+                  <strong
+                    title={formatDateTimeUtcTitle(
+                      quotation.expiredAtUtc ||
+                        quotation.expiredAt
+                    )}
+                  >
                     {formatDateTime(
-                      quotation.expiredAt
+                      quotation.expiredAtUtc ||
+                        quotation.expiredAt
                     )}
                   </strong>
                 </div>

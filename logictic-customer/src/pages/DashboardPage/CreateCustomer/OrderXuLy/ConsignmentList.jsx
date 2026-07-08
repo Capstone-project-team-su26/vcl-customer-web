@@ -28,6 +28,13 @@ import SearchIcon from "@mui/icons-material/Search";
 
 import { getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
 import { getConsignmentStatusesApi } from "../../../../api/OrderApi/consignmentStatusApi";
+
+import {
+  apiToUtcIso,
+  formatVietnamDateTime,
+  formatUtcDateTime,
+} from "../../../../utils/timeUtc";
+
 import "./ConsignmentList.css";
 
 const { RangePicker } = DatePicker;
@@ -143,50 +150,97 @@ const isPendingApprovalStatus = (
 
   const searchableStatus = normalizeText(
     `${rawStatus} ${formatStatusCode(rawStatus)} ${statusLabel}`
-  ).replace(/\s+/g, " " );
+  ).replace(/\s+/g, " ");
 
   return PENDING_APPROVAL_STATUS_KEYWORDS.some((keyword) =>
     searchableStatus.includes(
-      normalizeText(keyword).replace(/\s+/g, " " )
+      normalizeText(keyword).replace(/\s+/g, " ")
     )
   );
 };
 
+/* =========================================================
+   UTC TIME HELPERS
+   ========================================================= */
+
 /**
- * Lấy phần YYYY-MM-DD từ ngày API.
+ * Chuẩn hóa thời gian API về UTC ISO.
  *
- * Ví dụ:
- * 2026-06-29T14:00:32.8526551
- * => 2026-06-29
+ * API có thể trả:
+ * - 2026-06-29T14:00:32.8526551
+ * - 2026-06-29T14:00:32Z
+ * - 2026-06-29T14:00:32+07:00
+ *
+ * Output luôn chuẩn:
+ * - 2026-06-29T14:00:32.852Z
  */
-const getApiDateOnly = (dateString) => {
-  if (!dateString) {
-    return null;
-  }
-
-  const matchedDate = String(dateString).match(
-    /^(\d{4}-\d{2}-\d{2})/
-  );
-
-  return matchedDate?.[1] || null;
+const normalizeApiTimeToUtc = (value) => {
+  return apiToUtcIso(value, {
+    apiTimeMode: "utc",
+  });
 };
 
 /**
- * Chuẩn hóa chuỗi thời gian có quá nhiều chữ số mili-giây.
+ * Lấy YYYY-MM-DD theo UTC để lọc ngày không lệch múi giờ.
  */
-const parseApiDateTime = (dateString) => {
-  if (!dateString) {
+const getUtcDateOnly = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
     return null;
   }
 
-  const normalizedDate = String(dateString).replace(
-    /(\.\d{3})\d+/,
-    "$1"
-  );
+  return utcIso.slice(0, 10);
+};
 
-  const date = dayjs(normalizedDate);
+/**
+ * Gắn field UTC vào từng item lấy từ API.
+ */
+const normalizeConsignmentTime = (item) => {
+  if (!item) {
+    return item;
+  }
 
-  return date.isValid() ? date : null;
+  const createdAtUtc = normalizeApiTimeToUtc(item.createdAt);
+  const updatedAtUtc = normalizeApiTimeToUtc(item.updatedAt);
+
+  return {
+    ...item,
+    createdAtUtc,
+    updatedAtUtc,
+  };
+};
+
+/**
+ * Hiển thị thời gian cho user Việt Nam.
+ */
+const formatDate = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return "-";
+  }
+
+  return formatVietnamDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  });
+};
+
+/**
+ * Tooltip / title nếu cần xem UTC gốc.
+ */
+const formatDateUtcTitle = (value) => {
+  const utcIso = normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return "";
+  }
+
+  return `UTC: ${formatUtcDateTime(utcIso, {
+    apiTimeMode: "utc",
+    fallback: "-",
+  })}`;
 };
 
 const ConsignmentList = () => {
@@ -286,7 +340,11 @@ const ConsignmentList = () => {
         const items =
           await fetchAllConsignments(signal);
 
-        setConsignments(items);
+        const normalizedItems = items.map(
+          normalizeConsignmentTime
+        );
+
+        setConsignments(normalizedItems);
       } catch (error) {
         if (
           axios.isCancel(error) ||
@@ -392,14 +450,6 @@ const ConsignmentList = () => {
      DATE RANGE
      ========================================================= */
 
-  /**
-   * Sau khi chọn ngày đầu, vô hiệu hóa tất cả ngày trước đó.
-   *
-   * Ví dụ chọn 20/06/2026:
-   * - 19/06/2026 bị khóa
-   * - các ngày năm 2025 bị khóa
-   * - 20/06/2026 trở đi được chọn
-   */
   const disabledRangeDate = (
     currentDate,
     info
@@ -464,8 +514,9 @@ const ConsignmentList = () => {
     const normalizedSearch = normalizeText(searchInput);
 
     /*
-     * Chuyển RangePicker về chuỗi YYYY-MM-DD.
-     * Không dùng giờ để tránh lệch múi giờ.
+     * RangePicker chọn ngày UI.
+     * Mình convert sang YYYY-MM-DD để so với createdAtUtc.
+     * Không dùng Date object để tránh trình duyệt tự đổi timezone.
      */
     const startDate =
       dateRangeInput?.[0]?.format(
@@ -503,6 +554,8 @@ const ConsignmentList = () => {
         item.receiverName,
         item.receiverPhone,
         item.receiverAddress,
+        item.createdAtUtc,
+        item.updatedAtUtc,
       ]
         .filter(Boolean)
         .map(normalizeText)
@@ -514,8 +567,8 @@ const ConsignmentList = () => {
           normalizedSearch
         );
 
-      const createdDate = getApiDateOnly(
-        item.createdAt
+      const createdDate = getUtcDateOnly(
+        item.createdAtUtc || item.createdAt
       );
 
       const matchesStartDate =
@@ -597,10 +650,21 @@ const ConsignmentList = () => {
   ) => {
     setPageNumber(nextPageNumber);
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    const scrollTarget =
+      document.querySelector(".page-sub-content") ||
+      window;
+
+    if (scrollTarget === window) {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    } else {
+      scrollTarget.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
   };
 
   const handleViewDetail = (item) => {
@@ -630,18 +694,6 @@ const ConsignmentList = () => {
   /* =========================================================
      DISPLAY HELPERS
      ========================================================= */
-
-  const formatDate = (dateString) => {
-    const date = parseApiDateTime(dateString);
-
-    if (!date) {
-      return "-";
-    }
-
-    return date.format(
-      "HH:mm DD/MM/YYYY"
-    );
-  };
 
   const getStatusLabel = (status) => {
     const normalizedStatus = String(
@@ -684,10 +736,6 @@ const ConsignmentList = () => {
     return type || "-";
   };
 
-  /**
-   * Chỉ lấy mã vận đơn do Backend trả về.
-   * Không tự cắt orderId hoặc tạo mã KG-/DH- ở Frontend.
-   */
   const getTrackingCode = (item) => {
     const trackingCode =
       item?.consignmentCode ||
@@ -699,9 +747,6 @@ const ConsignmentList = () => {
     return String(trackingCode || "").trim() || "-";
   };
 
-  /**
-   * Mã đơn cũng sử dụng nguyên giá trị Backend trả về.
-   */
   const getOrderCode = (item) => {
     const orderCode =
       item?.orderCode ||
@@ -925,11 +970,17 @@ const ConsignmentList = () => {
                           </strong>
                         </span>
 
-                        <span>
+                        <span
+                          title={formatDateUtcTitle(
+                            item.createdAtUtc ||
+                              item.createdAt
+                          )}
+                        >
                           📅 Ngày tạo:{" "}
                           <strong>
                             {formatDate(
-                              item.createdAt
+                              item.createdAtUtc ||
+                                item.createdAt
                             )}
                           </strong>
                         </span>
@@ -967,12 +1018,14 @@ const ConsignmentList = () => {
                             </div>
 
                             <div className="receiver-phone">
-                              SĐT: {item.receiverPhone ||
+                              SĐT:{" "}
+                              {item.receiverPhone ||
                                 "-"}
                             </div>
 
                             <div className="receiver-address">
-                             Địa Chỉ: {item.receiverAddress ||
+                              Địa Chỉ:{" "}
+                              {item.receiverAddress ||
                                 "-"}
                             </div>
                           </div>
