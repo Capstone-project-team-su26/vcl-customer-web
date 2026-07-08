@@ -1,23 +1,31 @@
 import axios from "axios";
 
-const UPLOAD_API_BASE_URL =
-  import.meta.env.VITE_UPLOAD_API_BASE_URL ||
-  import.meta.env.VITE_API_BASE_URL;
+/* ================= CONFIG ================= */
 
-if (!UPLOAD_API_BASE_URL) {
-  throw new Error(
-    "Không tìm thấy VITE_UPLOAD_API_BASE_URL hoặc VITE_API_BASE_URL. Hãy cấu hình biến môi trường."
-  );
-}
+const DEFAULT_API_BASE_URL = "https://api-vcl.zushin.io.vn";
+
+const getEnvValue = (value) => {
+  if (typeof value !== "string") return "";
+  return value.trim();
+};
+
+const UPLOAD_API_BASE_URL =
+  getEnvValue(import.meta.env.VITE_UPLOAD_API_BASE_URL) ||
+  getEnvValue(import.meta.env.VITE_API_BASE_URL) ||
+  DEFAULT_API_BASE_URL;
+
+console.log("UPLOAD API BASE URL:", UPLOAD_API_BASE_URL);
+
+/* ================= AXIOS INSTANCE ================= */
 
 const uploadAxios = axios.create({
   baseURL: UPLOAD_API_BASE_URL,
   headers: {
-    Accept: "text/plain",
+    Accept: "application/json, text/plain, */*",
   },
 });
 
-
+/* ================= REQUEST INTERCEPTOR ================= */
 
 uploadAxios.interceptors.request.use(
   (config) => {
@@ -25,12 +33,17 @@ uploadAxios.interceptors.request.use(
       sessionStorage.getItem("accessToken") ||
       localStorage.getItem("accessToken");
 
+    config.headers = config.headers || {};
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-  
-    if (typeof config.headers?.delete === "function") {
+    /*
+     * Không set Content-Type khi gửi FormData.
+     * Browser sẽ tự tạo multipart/form-data kèm boundary.
+     */
+    if (typeof config.headers.delete === "function") {
       config.headers.delete("Content-Type");
       config.headers.delete("content-type");
     } else {
@@ -39,18 +52,10 @@ uploadAxios.interceptors.request.use(
     }
 
     console.log("====== UPLOAD IMAGE REQUEST ======");
-    console.log(
-      "URL:",
-      `${config.baseURL}${config.url}`
-    );
-    console.log(
-      "METHOD:",
-      config.method?.toUpperCase()
-    );
-    console.log(
-      "TOKEN:",
-      token ? "Đã có token" : "Chưa có token"
-    );
+    console.log("BASE URL:", config.baseURL);
+    console.log("URL:", `${config.baseURL}${config.url}`);
+    console.log("METHOD:", config.method?.toUpperCase());
+    console.log("TOKEN:", token ? "Đã có token" : "Chưa có token");
 
     return config;
   },
@@ -61,12 +66,8 @@ uploadAxios.interceptors.request.use(
 
 uploadAxios.interceptors.response.use(
   (response) => response,
-
   (error) => {
-    console.error(
-      "UPLOAD API ERROR:",
-      error?.response || error
-    );
+    console.error("UPLOAD API ERROR:", error?.response || error);
 
     const status = error?.response?.status;
 
@@ -88,25 +89,12 @@ const normalizeImageFile = (inputFile) => {
     throw new Error("Vui lòng chọn ảnh.");
   }
 
-  /*
-   * Nếu compressImage trả về File thì dùng trực tiếp.
-   */
-  if (
-    typeof File !== "undefined" &&
-    inputFile instanceof File
-  ) {
+  if (typeof File !== "undefined" && inputFile instanceof File) {
     return inputFile;
   }
 
-  /*
-   * Nếu compressImage trả về Blob thì chuyển thành File.
-   */
-  if (
-    typeof Blob !== "undefined" &&
-    inputFile instanceof Blob
-  ) {
-    const mimeType =
-      inputFile.type || "image/jpeg";
+  if (typeof Blob !== "undefined" && inputFile instanceof Blob) {
+    const mimeType = inputFile.type || "image/jpeg";
 
     let extension = "jpg";
 
@@ -114,42 +102,35 @@ const normalizeImageFile = (inputFile) => {
       extension = "png";
     } else if (mimeType === "image/webp") {
       extension = "webp";
+    } else if (mimeType === "image/gif") {
+      extension = "gif";
     }
 
-    return new File(
-      [inputFile],
-      `image-${Date.now()}.${extension}`,
-      {
-        type: mimeType,
-      }
-    );
+    return new File([inputFile], `image-${Date.now()}.${extension}`, {
+      type: mimeType,
+    });
   }
 
-  throw new Error(
-    "File ảnh không hợp lệ."
-  );
+  throw new Error("File ảnh không hợp lệ.");
 };
 
 const getUploadErrorMessage = (error) => {
   const status = error?.response?.status;
   const responseData = error?.response?.data;
 
-  if (
-    typeof responseData === "string" &&
-    responseData.trim()
-  ) {
+  if (typeof responseData === "string" && responseData.trim()) {
     return responseData;
   }
 
-  if (
-    typeof responseData?.message === "string"
-  ) {
+  if (typeof responseData?.message === "string") {
     return responseData.message;
   }
 
-  if (
-    typeof responseData?.title === "string"
-  ) {
+  if (typeof responseData?.error === "string") {
+    return responseData.error;
+  }
+
+  if (typeof responseData?.title === "string") {
     return responseData.title;
   }
 
@@ -158,11 +139,15 @@ const getUploadErrorMessage = (error) => {
   }
 
   if (status === 401) {
-    return "Phiên đăng nhập đã hết hạn.";
+    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
   }
 
   if (status === 403) {
     return "Bạn không có quyền tải ảnh lên.";
+  }
+
+  if (status === 404) {
+    return "Không tìm thấy API upload ảnh. Vui lòng kiểm tra lại endpoint.";
   }
 
   if (status === 413) {
@@ -177,10 +162,7 @@ const getUploadErrorMessage = (error) => {
     return "Máy chủ gặp lỗi khi xử lý ảnh.";
   }
 
-  return (
-    error?.message ||
-    "Tải ảnh lên thất bại."
-  );
+  return error?.message || "Tải ảnh lên thất bại.";
 };
 
 /* ================= UPLOAD IMAGE API ================= */
@@ -192,90 +174,47 @@ const getUploadErrorMessage = (error) => {
  * @param {(percent: number) => void} onUploadProgress Hàm nhận tiến trình upload.
  * @returns {Promise<any>} Dữ liệu API trả về.
  */
-export const uploadImage = async (
-  inputFile,
-  onUploadProgress
-) => {
-  const file =
-    normalizeImageFile(inputFile);
+export const uploadImage = async (inputFile, onUploadProgress) => {
+  const file = normalizeImageFile(inputFile);
 
   if (!file.type?.startsWith("image/")) {
-    throw new Error(
-      "File được chọn không phải là hình ảnh."
-    );
+    throw new Error("File được chọn không phải là hình ảnh.");
   }
 
   const formData = new FormData();
 
-  /*
-   * Phải đúng tên field "file"
-   * giống curl:
-   *
-   * -F 'file=@anhlogocap1.png;type=image/png'
-   */
-  formData.append(
-    "file",
-    file,
-    file.name
-  );
+  formData.append("file", file, file.name || `image-${Date.now()}.jpg`);
 
   try {
-    const response = await uploadAxios.post(
-      "/api/uploads/image",
-      formData,
-      {
-        /*
-         * Tuyệt đối không thêm:
-         *
-         * Content-Type: multipart/form-data
-         *
-         * Browser sẽ tự sinh multipart boundary.
-         */
-        onUploadProgress: (progressEvent) => {
-          if (
-            typeof onUploadProgress !==
-              "function" ||
-            !progressEvent.total
-          ) {
-            return;
-          }
+    const response = await uploadAxios.post("/api/uploads/image", formData, {
+      onUploadProgress: (progressEvent) => {
+        if (
+          typeof onUploadProgress !== "function" ||
+          !progressEvent.total
+        ) {
+          return;
+        }
 
-          const percent = Math.round(
-            (progressEvent.loaded * 100) /
-              progressEvent.total
-          );
+        const percent = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
 
-          onUploadProgress(percent);
-        },
-      }
-    );
+        onUploadProgress(percent);
+      },
+    });
 
-    console.log(
-      "UPLOAD IMAGE RESPONSE:",
-      response.data
-    );
+    console.log("UPLOAD IMAGE RESPONSE:", response.data);
 
     return response.data;
   } catch (error) {
-    console.error(
-      "UPLOAD IMAGE ERROR:",
-      error
-    );
+    console.error("UPLOAD IMAGE ERROR:", error);
+    console.error("STATUS:", error?.response?.status);
+    console.error("RESPONSE DATA:", error?.response?.data);
 
-    console.error(
-      "STATUS:",
-      error?.response?.status
-    );
-
-    console.error(
-      "RESPONSE DATA:",
-      error?.response?.data
-    );
-
-    throw new Error(
-      getUploadErrorMessage(error)
-    );
+    throw new Error(getUploadErrorMessage(error));
   }
 };
+
+export { uploadAxios };
 
 export default uploadImage;
