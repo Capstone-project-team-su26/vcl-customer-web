@@ -25,7 +25,7 @@ import "./FloatingChat.css";
    GEMINI CONFIG
    ========================================================= */
 
-const GEMINI_PROXY_URL = "../../../utils/data/gemini";
+   const GEMINI_PROXY_URL = "/api/gemini";
 
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_HISTORY_MESSAGES = 12;

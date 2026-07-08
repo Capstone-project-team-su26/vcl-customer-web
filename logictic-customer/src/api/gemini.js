@@ -22,13 +22,11 @@ const parseGeminiReply = (responseData) => {
     .trim();
 };
 
-const getGeminiErrorMessage = ({
-  status,
-  responseData,
-}) => {
+const getGeminiErrorMessage = ({ status, responseData, responseText }) => {
   const serverMessage = String(
     responseData?.error?.message ||
       responseData?.message ||
+      responseText ||
       ""
   ).trim();
 
@@ -37,7 +35,10 @@ const getGeminiErrorMessage = ({
   }
 
   if (status === 401 || status === 403) {
-    return serverMessage || "Gemini API key không hợp lệ hoặc chưa được cấp quyền.";
+    return (
+      serverMessage ||
+      "Gemini API key không hợp lệ hoặc chưa được cấp quyền."
+    );
   }
 
   if (status === 404) {
@@ -45,11 +46,17 @@ const getGeminiErrorMessage = ({
   }
 
   if (status === 429) {
-    return serverMessage || "Gemini đã vượt giới hạn sử dụng. Vui lòng thử lại sau.";
+    return (
+      serverMessage ||
+      "Gemini đã vượt giới hạn sử dụng. Vui lòng thử lại sau."
+    );
   }
 
   if (status >= 500) {
-    return serverMessage || "Máy chủ Gemini đang gặp sự cố. Vui lòng thử lại sau.";
+    return (
+      serverMessage ||
+      "Máy chủ Gemini đang gặp sự cố. Vui lòng thử lại sau."
+    );
   }
 
   return serverMessage || `Gemini phản hồi lỗi ${status}.`;
@@ -71,46 +78,43 @@ export default async function handler(req, res) {
       });
     }
 
-    const {
-      systemInstruction,
-      contents,
-    } = req.body || {};
+    const { systemInstruction, contents } = req.body || {};
 
-    if (
-      !Array.isArray(contents) ||
-      contents.length === 0
-    ) {
+    if (!Array.isArray(contents) || contents.length === 0) {
       return res.status(400).json({
         message: "Thiếu nội dung trò chuyện.",
       });
     }
 
+    const cleanSystemInstruction = String(systemInstruction || "").trim();
+
+    const geminiRequestBody = {
+      contents,
+      generationConfig: {
+        temperature: 0.35,
+        topP: 0.9,
+        maxOutputTokens: 700,
+      },
+    };
+
+    if (cleanSystemInstruction) {
+      geminiRequestBody.systemInstruction = {
+        parts: [
+          {
+            text: cleanSystemInstruction,
+          },
+        ],
+      };
+    }
+
     const geminiResponse = await fetch(GEMINI_API_URL, {
       method: "POST",
-
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
-
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text: String(systemInstruction || "").trim(),
-            },
-          ],
-        },
-
-        contents,
-
-        generationConfig: {
-          temperature: 0.35,
-          topP: 0.9,
-          maxOutputTokens: 700,
-        },
-      }),
+      body: JSON.stringify(geminiRequestBody),
     });
 
     const responseText = await geminiResponse.text();
@@ -134,6 +138,7 @@ export default async function handler(req, res) {
         message: getGeminiErrorMessage({
           status: geminiResponse.status,
           responseData,
+          responseText,
         }),
       });
     }
@@ -156,6 +161,7 @@ export default async function handler(req, res) {
 
     return res.status(500).json({
       message: "Lỗi máy chủ khi gọi Gemini.",
+      error: error?.message || "Unknown error",
     });
   }
 }
