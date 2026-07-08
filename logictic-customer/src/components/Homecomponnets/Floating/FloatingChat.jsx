@@ -25,14 +25,7 @@ import "./FloatingChat.css";
    GEMINI CONFIG
    ========================================================= */
 
-const GEMINI_MODEL =
-  "gemini-2.5-flash";
-
-const GEMINI_API_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-const GEMINI_API_KEY =
-  import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_PROXY_URL = "../../../utils/data/gemini";
 
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_HISTORY_MESSAGES = 12;
@@ -118,15 +111,11 @@ const createChatMessage = ({
 const createInitialMessage = () =>
   createChatMessage({
     sender: "bot",
-
     text: `Xin chào! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể hỗ trợ bạn về mua hộ, ký gửi và theo dõi đơn hàng.`,
-
     skipApi: true,
   });
 
-const parseJsonResponse = (
-  responseText
-) => {
+const parseJsonResponse = (responseText) => {
   if (!responseText) {
     return null;
   }
@@ -138,92 +127,43 @@ const parseJsonResponse = (
   }
 };
 
-const extractGeminiReply = (
-  responseData
-) => {
-  const candidates =
-    responseData?.candidates;
-
-  if (
-    !Array.isArray(candidates) ||
-    candidates.length === 0
-  ) {
-    return "";
-  }
-
-  const parts =
-    candidates[0]?.content?.parts;
-
-  if (!Array.isArray(parts)) {
-    return "";
-  }
-
-  return parts
-    .map((part) =>
-      String(part?.text || "").trim()
-    )
-    .filter(Boolean)
-    .join("\n")
-    .trim();
-};
-
-const getGeminiErrorMessage = ({
+const getServerErrorMessage = ({
   status,
   responseData,
+  responseText,
 }) => {
   const serverMessage = String(
-    responseData?.error?.message ||
-      responseData?.message ||
+    responseData?.message ||
+      responseData?.error?.message ||
+      responseData?.error ||
+      responseText ||
       ""
   ).trim();
 
   if (status === 400) {
-    return (
-      serverMessage ||
-      "Dữ liệu gửi đến Gemini không hợp lệ."
-    );
+    return serverMessage || "Nội dung gửi lên không hợp lệ.";
   }
 
-  if (
-    status === 401 ||
-    status === 403
-  ) {
-    return (
-      serverMessage ||
-      "API key Gemini không hợp lệ hoặc chưa được cấp quyền."
-    );
+  if (status === 401 || status === 403) {
+    return serverMessage || "Máy chủ chưa được cấp quyền dùng Gemini.";
   }
 
   if (status === 404) {
-    return (
-      serverMessage ||
-      "Không tìm thấy model Gemini đang sử dụng."
-    );
+    return "Không tìm thấy API /api/gemini. Hãy kiểm tra file api/gemini.js đã đặt đúng thư mục chưa.";
   }
 
   if (status === 429) {
-    return (
-      serverMessage ||
-      "Gemini đã vượt giới hạn sử dụng. Vui lòng thử lại sau."
-    );
+    return serverMessage || "Gemini đã vượt giới hạn sử dụng. Vui lòng thử lại sau.";
   }
 
   if (status >= 500) {
-    return (
-      serverMessage ||
-      "Máy chủ Gemini đang gặp sự cố. Vui lòng thử lại sau."
-    );
+    return serverMessage || "Máy chủ AI đang gặp sự cố. Vui lòng thử lại sau.";
   }
 
-  return (
-    serverMessage ||
-    `Gemini phản hồi lỗi ${status}.`
-  );
+  return serverMessage || `Máy chủ phản hồi lỗi ${status}.`;
 };
 
-const buildGeminiContents = (
-  messages
-) =>
+const buildGeminiContents = (messages) =>
   messages
     .filter(
       (item) =>
@@ -233,11 +173,7 @@ const buildGeminiContents = (
     )
     .slice(-MAX_HISTORY_MESSAGES)
     .map((item) => ({
-      role:
-        item.sender === "bot"
-          ? "model"
-          : "user",
-
+      role: item.sender === "bot" ? "model" : "user",
       parts: [
         {
           text: item.text.trim(),
@@ -253,102 +189,53 @@ const requestGeminiReply = async ({
   messages,
   signal,
 }) => {
-  if (!GEMINI_API_KEY) {
-    throw new Error(
-      "Chưa cấu hình VITE_GEMINI_API_KEY trong file .env."
-    );
-  }
-
-  const contents =
-    buildGeminiContents(messages);
+  const contents = buildGeminiContents(messages);
 
   if (!contents.length) {
-    throw new Error(
-      "Không có nội dung để gửi đến Gemini."
-    );
+    throw new Error("Không có nội dung để gửi đến trợ lý AI.");
   }
 
-  const response = await fetch(
-    GEMINI_API_URL,
-    {
-      method: "POST",
+  const response = await fetch(GEMINI_PROXY_URL, {
+    method: "POST",
 
-      headers: {
-        Accept: "application/json",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
 
-        "Content-Type":
-          "application/json",
+    body: JSON.stringify({
+      systemInstruction: SYSTEM_INSTRUCTION,
+      contents,
+    }),
 
-        "x-goog-api-key":
-          GEMINI_API_KEY,
-      },
+    signal,
+  });
 
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text:
-                SYSTEM_INSTRUCTION,
-            },
-          ],
-        },
-
-        contents,
-
-        generationConfig: {
-          temperature: 0.35,
-          topP: 0.9,
-          maxOutputTokens: 700,
-        },
-      }),
-
-      signal,
-    }
-  );
-
-  const responseText =
-    await response.text();
-
-  const responseData =
-    parseJsonResponse(responseText);
+  const responseText = await response.text();
+  const responseData = parseJsonResponse(responseText);
 
   if (!response.ok) {
-    console.error(
-      "Gemini API error:",
-      {
-        status:
-          response.status,
-
-        responseData,
-
-        responseText,
-      }
-    );
+    console.error("AI proxy error:", {
+      status: response.status,
+      responseData,
+      responseText,
+    });
 
     throw new Error(
-      getGeminiErrorMessage({
-        status:
-          response.status,
-
+      getServerErrorMessage({
+        status: response.status,
         responseData,
+        responseText,
       })
     );
   }
 
-  const reply =
-    extractGeminiReply(
-      responseData
-    );
+  const reply = String(responseData?.reply || "").trim();
 
   if (!reply) {
-    console.error(
-      "Gemini không có nội dung:",
-      responseData
-    );
+    console.error("AI proxy không trả về reply:", responseData);
 
-    throw new Error(
-      "Gemini không trả về nội dung hợp lệ."
-    );
+    throw new Error("Trợ lý AI không trả về nội dung hợp lệ.");
   }
 
   return reply;
@@ -361,31 +248,16 @@ const requestGeminiReply = async ({
 export default function FloatingChat() {
   const navigate = useNavigate();
 
-  const messageListRef =
-    useRef(null);
+  const messageListRef = useRef(null);
+  const inputRef = useRef(null);
+  const requestControllerRef = useRef(null);
+  const messagesRef = useRef([]);
 
-  const inputRef =
-    useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
 
-  const requestControllerRef =
-    useRef(null);
-
-  const messagesRef =
-    useRef([]);
-
-  const [isOpen, setIsOpen] =
-    useState(false);
-
-  const [message, setMessage] =
-    useState("");
-
-  const [isTyping, setIsTyping] =
-    useState(false);
-
-  const [
-    messages,
-    setMessages,
-  ] = useState([
+  const [messages, setMessages] = useState([
     createInitialMessage(),
   ]);
 
@@ -394,8 +266,7 @@ export default function FloatingChat() {
      ======================================================= */
 
   useEffect(() => {
-    messagesRef.current =
-      messages;
+    messagesRef.current = messages;
   }, [messages]);
 
   /* =======================================================
@@ -403,24 +274,17 @@ export default function FloatingChat() {
      ======================================================= */
 
   useEffect(() => {
-    const messageList =
-      messageListRef.current;
+    const messageList = messageListRef.current;
 
     if (!messageList) {
       return;
     }
 
     messageList.scrollTo({
-      top:
-        messageList.scrollHeight,
-
+      top: messageList.scrollHeight,
       behavior: "smooth",
     });
-  }, [
-    messages,
-    isTyping,
-    isOpen,
-  ]);
+  }, [messages, isTyping, isOpen]);
 
   /* =======================================================
      AUTO FOCUS
@@ -431,15 +295,12 @@ export default function FloatingChat() {
       return undefined;
     }
 
-    const timeoutId =
-      window.setTimeout(() => {
-        inputRef.current?.focus();
-      }, 250);
+    const timeoutId = window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, 250);
 
     return () => {
-      window.clearTimeout(
-        timeoutId
-      );
+      window.clearTimeout(timeoutId);
     };
   }, [isOpen]);
 
@@ -449,9 +310,7 @@ export default function FloatingChat() {
 
   useEffect(
     () => () => {
-      requestControllerRef
-        .current
-        ?.abort();
+      requestControllerRef.current?.abort();
     },
     []
   );
@@ -464,48 +323,33 @@ export default function FloatingChat() {
     text,
     status = "success",
   }) => {
-    setMessages(
-      (currentMessages) => [
-        ...currentMessages,
-
-        createChatMessage({
-          sender: "bot",
-          text,
-          status,
-        }),
-      ]
-    );
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      createChatMessage({
+        sender: "bot",
+        text,
+        status,
+      }),
+    ]);
   };
 
   /* =======================================================
      SEND MESSAGE
      ======================================================= */
 
-  const sendMessage = async (
-    messageText
-  ) => {
-    const normalizedMessage =
-      String(messageText || "")
-        .trim()
-        .slice(
-          0,
-          MAX_MESSAGE_LENGTH
-        );
+  const sendMessage = async (messageText) => {
+    const normalizedMessage = String(messageText || "")
+      .trim()
+      .slice(0, MAX_MESSAGE_LENGTH);
 
-    if (
-      !normalizedMessage ||
-      isTyping
-    ) {
+    if (!normalizedMessage || isTyping) {
       return;
     }
 
-    const userMessage =
-      createChatMessage({
-        sender: "user",
-
-        text:
-          normalizedMessage,
-      });
+    const userMessage = createChatMessage({
+      sender: "user",
+      text: normalizedMessage,
+    });
 
     const nextMessages = [
       ...messagesRef.current,
@@ -516,34 +360,23 @@ export default function FloatingChat() {
     setMessage("");
     setIsTyping(true);
 
-    requestControllerRef
-      .current
-      ?.abort();
+    requestControllerRef.current?.abort();
 
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
-    requestControllerRef.current =
-      controller;
+    requestControllerRef.current = controller;
 
     try {
-      const reply =
-        await requestGeminiReply({
-          messages:
-            nextMessages,
-
-          signal:
-            controller.signal,
-        });
+      const reply = await requestGeminiReply({
+        messages: nextMessages,
+        signal: controller.signal,
+      });
 
       addBotMessage({
         text: reply,
       });
     } catch (error) {
-      if (
-        error?.name ===
-        "AbortError"
-      ) {
+      if (error?.name === "AbortError") {
         return;
       }
 
@@ -551,18 +384,11 @@ export default function FloatingChat() {
         text:
           error?.message ||
           "Không thể kết nối với trợ lý AI. Vui lòng thử lại.",
-
         status: "error",
       });
     } finally {
-      if (
-        requestControllerRef
-          .current ===
-        controller
-      ) {
-        requestControllerRef.current =
-          null;
-
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
         setIsTyping(false);
       }
     }
@@ -572,53 +398,37 @@ export default function FloatingChat() {
      HANDLERS
      ======================================================= */
 
-  const handleSubmit = (
-    event
-  ) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
-
     sendMessage(message);
   };
 
-  const handleQuickMessage = (
-    quickMessage
-  ) => {
-    sendMessage(
-      quickMessage.message
-    );
+  const handleQuickMessage = (quickMessage) => {
+    sendMessage(quickMessage.message);
   };
 
-  const handleResetConversation =
-    () => {
-      requestControllerRef
-        .current
-        ?.abort();
+  const handleResetConversation = () => {
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
 
-      requestControllerRef.current =
-        null;
+    setIsTyping(false);
+    setMessage("");
 
-      setIsTyping(false);
-      setMessage("");
+    setMessages([
+      createChatMessage({
+        sender: "bot",
+        text: `Cuộc trò chuyện đã được làm mới. Tôi có thể tiếp tục hỗ trợ bạn về các dịch vụ của ${BRAND.name}.`,
+        skipApi: true,
+      }),
+    ]);
 
-      setMessages([
-        createChatMessage({
-          sender: "bot",
-
-          text: `Cuộc trò chuyện đã được làm mới. Tôi có thể tiếp tục hỗ trợ bạn về các dịch vụ của ${BRAND.name}.`,
-
-          skipApi: true,
-        }),
-      ]);
-
-      window.setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    };
+    window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
 
   const handleToggleChat = () => {
-    setIsOpen(
-      (current) => !current
-    );
+    setIsOpen((current) => !current);
   };
 
   const handleCloseChat = () => {
@@ -636,8 +446,6 @@ export default function FloatingChat() {
           className="floating-ai-chat__window"
           aria-label={`Trợ lý AI ${BRAND.name}`}
         >
-          {/* HEADER */}
-
           <header className="floating-ai-chat__header">
             <div className="floating-ai-chat__bot">
               <span className="floating-ai-chat__bot-avatar">
@@ -646,16 +454,12 @@ export default function FloatingChat() {
 
               <div className="floating-ai-chat__bot-info">
                 <strong>
-                  Trợ lý AI{" "}
-                  {BRAND.name}
+                  Trợ lý AI {BRAND.name}
                 </strong>
 
                 <span>
                   <i />
-
-                  {isTyping
-                    ? "Đang trả lời..."
-                    : "Đang trực tuyến"}
+                  {isTyping ? "Đang trả lời..." : "Đang trực tuyến"}
                 </span>
               </div>
             </div>
@@ -665,24 +469,17 @@ export default function FloatingChat() {
                 type="button"
                 className="floating-ai-chat__reset"
                 disabled={isTyping}
-                onClick={
-                  handleResetConversation
-                }
+                onClick={handleResetConversation}
                 aria-label="Làm mới cuộc trò chuyện"
               >
                 <ReloadOutlined />
-
-                <span>
-                  Làm mới
-                </span>
+                <span>Làm mới</span>
               </button>
 
               <button
                 type="button"
                 className="floating-ai-chat__close"
-                onClick={
-                  handleCloseChat
-                }
+                onClick={handleCloseChat}
                 aria-label="Đóng cửa sổ trò chuyện"
               >
                 <CloseOutlined />
@@ -690,47 +487,33 @@ export default function FloatingChat() {
             </div>
           </header>
 
-          {/* BODY */}
-
           <div className="floating-ai-chat__body">
             <div
               ref={messageListRef}
               className="floating-ai-chat__messages"
               aria-live="polite"
             >
-              {messages.map(
-                (chatMessage) => (
-                  <div
-                    key={
-                      chatMessage.id
-                    }
-                    className={[
-                      "floating-ai-chat__message",
+              {messages.map((chatMessage) => (
+                <div
+                  key={chatMessage.id}
+                  className={[
+                    "floating-ai-chat__message",
+                    `floating-ai-chat__message--${chatMessage.sender}`,
+                    chatMessage.status === "error" &&
+                      "floating-ai-chat__message--error",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {chatMessage.sender === "bot" && (
+                    <span className="floating-ai-chat__message-avatar">
+                      <RobotOutlined />
+                    </span>
+                  )}
 
-                      `floating-ai-chat__message--${chatMessage.sender}`,
-
-                      chatMessage.status ===
-                        "error" &&
-                        "floating-ai-chat__message--error",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    {chatMessage.sender ===
-                      "bot" && (
-                      <span className="floating-ai-chat__message-avatar">
-                        <RobotOutlined />
-                      </span>
-                    )}
-
-                    <p>
-                      {
-                        chatMessage.text
-                      }
-                    </p>
-                  </div>
-                )
-              )}
+                  <p>{chatMessage.text}</p>
+                </div>
+              ))}
 
               {isTyping && (
                 <div className="floating-ai-chat__message floating-ai-chat__message--bot">
@@ -747,60 +530,36 @@ export default function FloatingChat() {
               )}
             </div>
 
-            {/* QUICK ACTIONS */}
-
             <div className="floating-ai-chat__quick-actions">
-              {QUICK_MESSAGES.map(
-                (quickMessage) => (
-                  <button
-                    key={
-                      quickMessage.id
-                    }
-                    type="button"
-                    disabled={isTyping}
-                    onClick={() =>
-                      handleQuickMessage(
-                        quickMessage
-                      )
-                    }
-                  >
-                    {
-                      quickMessage.label
-                    }
-                  </button>
-                )
-              )}
+              {QUICK_MESSAGES.map((quickMessage) => (
+                <button
+                  key={quickMessage.id}
+                  type="button"
+                  disabled={isTyping}
+                  onClick={() => handleQuickMessage(quickMessage)}
+                >
+                  {quickMessage.label}
+                </button>
+              ))}
             </div>
-
-            {/* LINKS */}
 
             <div className="floating-ai-chat__links">
               <button
                 type="button"
-                onClick={() =>
-                  navigate(
-                    "/tracking"
-                  )
-                }
+                onClick={() => navigate("/tracking")}
               >
                 Theo dõi đơn
               </button>
 
               <button
                 type="button"
-                onClick={() =>
-                  navigate(
-                    "/register"
-                  )
-                }
+                onClick={() => navigate("/register")}
               >
                 Đăng ký tài khoản
               </button>
 
               <a
-                href={`tel:${String(
-                  BRAND.hotline || ""
-                ).replace(
+                href={`tel:${String(BRAND.hotline || "").replace(
                   /[^+\d]/g,
                   ""
                 )}`}
@@ -810,75 +569,54 @@ export default function FloatingChat() {
             </div>
           </div>
 
-          {/* INPUT */}
-
           <form
             className="floating-ai-chat__form"
-            onSubmit={
-              handleSubmit
-            }
+            onSubmit={handleSubmit}
           >
             <input
               ref={inputRef}
               type="text"
               value={message}
               disabled={isTyping}
-              onChange={(event) =>
-                setMessage(
-                  event.target.value
-                )
-              }
+              onChange={(event) => setMessage(event.target.value)}
               placeholder={
                 isTyping
                   ? "Trợ lý AI đang trả lời..."
                   : "Nhập nội dung cần hỗ trợ..."
               }
-              maxLength={
-                MAX_MESSAGE_LENGTH
-              }
+              maxLength={MAX_MESSAGE_LENGTH}
               autoComplete="off"
               aria-label="Nội dung tin nhắn"
             />
 
             <button
               type="submit"
-              disabled={
-                !message.trim() ||
-                isTyping
-              }
+              disabled={!message.trim() || isTyping}
               aria-label="Gửi tin nhắn"
             >
               <SendOutlined />
             </button>
           </form>
 
-          {/* FOOTER */}
-
           <footer className="floating-ai-chat__footer">
             <CustomerServiceOutlined />
 
             <span>
-              Hỗ trợ trực tuyến bằng
-              Việt Nam Logictic AI
+              Hỗ trợ trực tuyến bằng Việt Nam Logictic AI
             </span>
           </footer>
         </section>
       )}
 
-      {/* LAUNCHER */}
-
       <button
         type="button"
         className={[
           "floating-ai-chat__launcher",
-
           isOpen && "is-open",
         ]
           .filter(Boolean)
           .join(" ")}
-        onClick={
-          handleToggleChat
-        }
+        onClick={handleToggleChat}
         aria-label={
           isOpen
             ? "Đóng trợ lý trực tuyến"
@@ -889,11 +627,7 @@ export default function FloatingChat() {
         <span className="floating-ai-chat__launcher-ring" />
 
         <span className="floating-ai-chat__launcher-icon">
-          {isOpen ? (
-            <CloseOutlined />
-          ) : (
-            <MessageOutlined />
-          )}
+          {isOpen ? <CloseOutlined /> : <MessageOutlined />}
         </span>
 
         {!isOpen && (
