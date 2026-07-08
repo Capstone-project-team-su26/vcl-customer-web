@@ -1,5 +1,6 @@
 /* =========================================================
-   MAIN LAYOUT — PREMIUM AMBER / NAVY PALETTE
+   MAIN LAYOUT — FIX SIDEBAR SAFE VERSION
+   Không đè Sidebar, không tràn ngang, chỉ content cuộn
    ========================================================= */
 
    :root {
@@ -47,10 +48,13 @@
      ========================================================= */
   
   .main-layout-container {
+    position: relative;
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     min-width: 0;
     display: flex;
+    align-items: stretch;
     overflow: hidden;
     color: var(--text-primary);
     background:
@@ -77,12 +81,29 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
+  /* Chặn MainLayout làm Sidebar bị co hoặc bị đè */
+  .main-layout-container > :not(.main-layout-content) {
+    position: relative;
+    z-index: 30;
+    flex: 0 0 auto;
+  }
+  
+  /* Chỉ reset box sizing bên trong content, không đụng CSS Sidebar */
+  .main-layout-content,
+  .main-layout-content * {
+    box-sizing: border-box;
+  }
+  
   .main-layout-content {
+    position: relative;
+    z-index: 5;
+    flex: 1 1 0;
+    width: 0;
     min-width: 0;
-    height: calc(100vh - 20px);
+    max-width: 100%;
+    height: calc(100dvh - 20px);
     margin: 10px 10px 10px 0;
     display: flex;
-    flex: 1 1 auto;
     flex-direction: column;
     overflow: hidden;
     background: var(--surface-main);
@@ -93,6 +114,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    isolation: isolate;
   }
   
   /* =========================================================
@@ -102,14 +124,15 @@
   .main-header-layout {
     position: relative;
     z-index: 10;
-    overflow: hidden;
+    min-width: 0;
     min-height: 118px;
     padding: 20px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 26px;
+    gap: 22px;
     flex: 0 0 auto;
+    overflow: hidden;
     background:
       linear-gradient(
         115deg,
@@ -182,22 +205,25 @@
   .main-header-left {
     min-width: 0;
     display: flex;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     flex-direction: column;
     gap: 12px;
+    overflow: hidden;
   }
   
   .header-breadcrumb {
+    min-width: 0;
+    max-width: 100%;
     display: flex;
     align-items: center;
     gap: 8px;
-    max-width: 100%;
     color: var(--text-muted);
     font-size: 12px;
     line-height: 1.2;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    overflow: hidden;
   }
   
   .breadcrumb-home-box {
@@ -206,7 +232,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 auto;
+    flex: 0 0 30px;
     color: var(--amber-700);
     background:
       linear-gradient(
@@ -224,18 +250,20 @@
   }
   
   .breadcrumb-root {
+    flex: 0 0 auto;
     color: #9aa7b8;
     font-weight: 800;
   }
   
   .breadcrumb-separator {
+    flex: 0 0 auto;
     color: #cbd5e1;
     font-weight: 800;
   }
   
   .breadcrumb-current {
     min-width: 0;
-    max-width: 460px;
+    max-width: 100%;
     overflow: hidden;
     color: #334155;
     text-overflow: ellipsis;
@@ -245,6 +273,8 @@
   
   .header-page-copy {
     min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
   
   .header-page-copy h1 {
@@ -273,11 +303,12 @@
      ========================================================= */
   
   .main-header-actions {
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 13px;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
   }
   
   /* =========================================================
@@ -286,13 +317,14 @@
   
   .time-scene-card {
     position: relative;
-    overflow: hidden;
-    min-width: 222px;
+    min-width: 218px;
+    max-width: 100%;
     min-height: 74px;
     padding: 11px 18px 11px 11px;
     display: flex;
     align-items: center;
     gap: 12px;
+    overflow: hidden;
     border: 1px solid transparent;
     border-radius: 20px;
     box-shadow: var(--shadow-card);
@@ -352,18 +384,22 @@
     z-index: 2;
     min-width: 0;
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
+    overflow: hidden;
   }
   
   .time-scene-copy > span {
+    overflow: hidden;
     color: inherit;
     font-size: 10px;
     line-height: 1.25;
     font-weight: 800;
     letter-spacing: 0.05em;
+    text-overflow: ellipsis;
     text-transform: uppercase;
-    opacity: 0.78;
     white-space: nowrap;
+    opacity: 0.78;
   }
   
   .time-scene-main {
@@ -371,9 +407,11 @@
     display: flex;
     align-items: baseline;
     gap: 7px;
+    min-width: 0;
   }
   
   .time-scene-main strong {
+    min-width: 0;
     font-size: 22px;
     line-height: 1;
     font-weight: 900;
@@ -382,21 +420,26 @@
   }
   
   .time-scene-main small {
+    min-width: 0;
+    overflow: hidden;
     font-size: 11px;
     line-height: 1;
     font-weight: 700;
-    opacity: 0.75;
+    text-overflow: ellipsis;
     white-space: nowrap;
+    opacity: 0.75;
   }
   
   .time-scene-copy em {
     margin-top: 5px;
+    overflow: hidden;
     font-size: 11.5px;
     line-height: 1.25;
     font-style: normal;
     font-weight: 600;
-    opacity: 0.78;
+    text-overflow: ellipsis;
     white-space: nowrap;
+    opacity: 0.78;
   }
   
   .time-scene-status-dot {
@@ -412,7 +455,6 @@
   }
   
   /* Buổi sáng */
-  
   .time-scene-card--morning {
     color: var(--amber-800);
     background:
@@ -435,7 +477,6 @@
   }
   
   /* Ban ngày */
-  
   .time-scene-card--day {
     color: #9a3412;
     background:
@@ -458,7 +499,6 @@
   }
   
   /* Hoàng hôn */
-  
   .time-scene-card--sunset {
     color: #9f1239;
     background:
@@ -481,7 +521,6 @@
   }
   
   /* Ban đêm */
-  
   .time-scene-card--night {
     color: #f8fafc;
     background:
@@ -510,12 +549,14 @@
      ========================================================= */
   
   .header-balance-box {
-    min-width: 198px;
+    min-width: 190px;
+    max-width: 100%;
     min-height: 74px;
     padding: 11px 17px 11px 11px;
     display: flex;
     align-items: center;
     gap: 12px;
+    overflow: hidden;
     color: var(--orange-700);
     background:
       linear-gradient(
@@ -565,27 +606,34 @@
   .header-balance-copy {
     min-width: 0;
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
+    overflow: hidden;
   }
   
   .header-balance-copy > span {
+    overflow: hidden;
     color: #9a4a18;
     font-size: 10px;
     line-height: 1.25;
     font-weight: 800;
     letter-spacing: 0.055em;
+    text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
   }
   
   .header-balance-copy > strong {
     margin-top: 4px;
+    min-width: 0;
+    overflow: hidden;
     color: var(--orange-700);
     font-size: 24px;
     line-height: 1;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.035em;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
   
@@ -598,20 +646,30 @@
   
   /* =========================================================
      PAGE CONTENT
+     Chỉ khu này được cuộn
      ========================================================= */
   
   .page-sub-content {
+    position: relative;
     min-width: 0;
     min-height: 0;
-    padding: 18px 22px 22px;
+    width: 100%;
     flex: 1 1 auto;
-    overflow: auto;
+    padding: 18px 22px 22px;
+    overflow-x: hidden;
+    overflow-y: auto;
     background:
       linear-gradient(
         180deg,
         rgba(248, 250, 252, 0.35),
         rgba(244, 247, 251, 0.7)
       );
+    scroll-behavior: smooth;
+  }
+  
+  /* Chặn component con làm vỡ ngang layout */
+  .page-sub-content > * {
+    max-width: 100%;
   }
   
   .page-sub-content::-webkit-scrollbar {
@@ -636,6 +694,20 @@
      RESPONSIVE
      ========================================================= */
   
+  @media (max-width: 1280px) {
+    .main-header-layout {
+      gap: 18px;
+    }
+  
+    .time-scene-card {
+      min-width: 205px;
+    }
+  
+    .header-balance-box {
+      min-width: 180px;
+    }
+  }
+  
   @media (max-width: 1180px) {
     .main-header-layout {
       align-items: flex-start;
@@ -648,13 +720,37 @@
     }
   
     .breadcrumb-current {
-      max-width: 560px;
+      max-width: 100%;
+    }
+  }
+  
+  @media (max-width: 960px) {
+    .main-layout-content {
+      height: calc(100dvh - 16px);
+      margin: 8px 8px 8px 0;
+      border-radius: 20px;
+    }
+  
+    .main-header-layout {
+      padding: 16px;
+    }
+  
+    .main-header-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+  
+    .time-scene-card,
+    .header-balance-box {
+      width: 100%;
+      min-width: 0;
     }
   }
   
   @media (max-width: 860px) {
     .main-layout-content {
-      height: 100vh;
+      height: 100dvh;
       margin: 0;
       border: 0;
       border-radius: 0;
@@ -675,24 +771,12 @@
       font-size: 13px;
     }
   
-    .main-header-actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-  
-    .time-scene-card,
-    .header-balance-box {
-      width: 100%;
-      min-width: 0;
-    }
-  
     .page-sub-content {
       padding: 14px;
     }
   }
   
-  @media (max-width: 560px) {
+  @media (max-width: 620px) {
     .main-header-actions {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -708,7 +792,7 @@
     }
   
     .breadcrumb-current {
-      max-width: calc(100vw - 86px);
+      max-width: 100%;
     }
   
     .header-page-copy h1 {
@@ -740,3 +824,107 @@
       font-size: 22px;
     }
   }
+  /* =========================================================
+   FIX SCROLL MAIN LAYOUT
+   Dán cuối file MainLayout.css
+   ========================================================= */
+
+/* Đảm bảo app có chiều cao chuẩn */
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+/* Không khóa scroll toàn trang bằng body */
+body {
+  overflow: hidden;
+}
+
+/* Layout chính cố định theo màn hình */
+.main-layout-container {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar không bị co, không bị content đè */
+.main-layout-container > :not(.main-layout-content) {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 50;
+}
+
+/* Content chỉ chiếm phần còn lại */
+.main-layout-content {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  height: calc(100vh - 20px);
+  height: calc(100dvh - 20px);
+  margin: 10px 10px 10px 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+/* Header đứng im, không cuộn */
+.main-header-layout {
+  flex: 0 0 auto;
+}
+
+/* CHỈ PHẦN NÀY ĐƯỢC CUỘN */
+.page-sub-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Component con không được phá ngang layout */
+.page-sub-content > * {
+  max-width: 100%;
+}
+
+/* Scrollbar đẹp hơn */
+.page-sub-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.page-sub-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-sub-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.page-sub-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Tablet / mobile */
+@media (max-width: 860px) {
+  .main-layout-content {
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .page-sub-content {
+    padding-bottom: 90px;
+  }
+}
