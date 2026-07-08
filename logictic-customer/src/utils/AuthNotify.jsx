@@ -1,7 +1,7 @@
 import { notification } from "antd";
 import "./auth-notify.css";
 
-const DURATION = 2; // giây
+const DURATION = 2; // giây phút
 
 const baseConfig = {
   placement: "topRight",
