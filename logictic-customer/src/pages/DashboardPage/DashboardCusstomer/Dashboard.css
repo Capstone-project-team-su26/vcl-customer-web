@@ -1,5 +1,5 @@
 /* =========================================================
-   CUSTOMER DASHBOARD
+   CUSTOMER DASHBOARD - API READY UI
    ========================================================= */
 
    .customer-dashboard {
@@ -17,32 +17,19 @@
     --dashboard-background: #f6f8fb;
   
     width: 100%;
-    min-height: 100vh;
-    padding: 25px;
+    min-height: 100%;
+    padding: 24px;
+    overflow-x: hidden;
   
     color: var(--dashboard-text);
     background:
-      radial-gradient(
-        circle at 12% 5%,
-        rgba(72, 169, 230, 0.08),
-        transparent 24%
-      ),
-      linear-gradient(
-        180deg,
-        #f8fafc,
-        var(--dashboard-background)
-      );
+      radial-gradient(circle at 12% 5%, rgba(72, 169, 230, 0.1), transparent 25%),
+      linear-gradient(180deg, #f8fafc, var(--dashboard-background));
   
-    font-family:
-      Inter,
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-  
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   
   .customer-dashboard *,
@@ -55,101 +42,73 @@
     font-family: inherit;
   }
   
+  .customer-dashboard button:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+  
   /* =========================================================
      WELCOME
      ========================================================= */
   
   .customer-dashboard__welcome {
     position: relative;
+    isolation: isolate;
     overflow: hidden;
   
-    min-height: 285px;
+    min-height: 286px;
     padding: 38px 42px;
   
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 35px;
+    gap: 32px;
   
     color: #ffffff;
-  
     background:
-      radial-gradient(
-        circle at 78% 20%,
-        rgba(72, 169, 230, 0.35),
-        transparent 28%
-      ),
-      linear-gradient(
-        135deg,
-        #020e1b 0%,
-        var(--dashboard-navy) 48%,
-        var(--dashboard-navy-light) 100%
-      );
+      radial-gradient(circle at 78% 20%, rgba(72, 169, 230, 0.38), transparent 28%),
+      linear-gradient(135deg, #020e1b 0%, var(--dashboard-navy) 50%, var(--dashboard-navy-light) 100%);
   
-    border-radius: 25px;
+    border: 1px solid rgba(125, 220, 255, 0.12);
+    border-radius: 28px;
   
-    box-shadow:
-      0 22px 50px rgba(3, 27, 51, 0.18);
-  
-    isolation: isolate;
+    box-shadow: 0 24px 52px rgba(3, 27, 51, 0.19);
   }
   
   .customer-dashboard__welcome::before {
     content: "";
-  
     position: absolute;
     inset: 0;
     z-index: -3;
   
-    opacity: 0.15;
-  
+    opacity: 0.16;
     background-image:
-      linear-gradient(
-        rgba(255, 255, 255, 0.1) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.1) 1px,
-        transparent 1px
-      );
-  
+      linear-gradient(rgba(255, 255, 255, 0.11) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.11) 1px, transparent 1px);
     background-size: 45px 45px;
   }
   
   .customer-dashboard__welcome-decoration {
     position: absolute;
     z-index: -2;
-  
     border-radius: 50%;
-  
     pointer-events: none;
   }
   
   .customer-dashboard__welcome-decoration--one {
     top: -190px;
     right: 15%;
-  
     width: 430px;
     height: 430px;
-  
-    background:
-      radial-gradient(
-        circle,
-        rgba(72, 169, 230, 0.2),
-        transparent 68%
-      );
+    background: radial-gradient(circle, rgba(72, 169, 230, 0.22), transparent 68%);
   }
   
   .customer-dashboard__welcome-decoration--two {
     right: -140px;
     bottom: -230px;
-  
     width: 500px;
     height: 500px;
-  
     border: 1px solid rgba(255, 255, 255, 0.07);
-  
     box-shadow:
       0 0 0 60px rgba(255, 255, 255, 0.018),
       0 0 0 120px rgba(255, 255, 255, 0.01);
@@ -158,39 +117,34 @@
   .customer-dashboard__welcome-content {
     position: relative;
     z-index: 4;
-  
     max-width: 650px;
   }
   
   .customer-dashboard__welcome-date {
     margin-bottom: 17px;
-    padding: 7px 12px;
+    padding: 8px 13px;
   
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
   
     color: #9ce4ff;
-    background: rgba(72, 169, 230, 0.1);
-  
-    border: 1px solid rgba(125, 220, 255, 0.17);
+    background: rgba(72, 169, 230, 0.12);
+    border: 1px solid rgba(125, 220, 255, 0.2);
     border-radius: 999px;
   
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.4;
     font-weight: 750;
     text-transform: capitalize;
-  
     backdrop-filter: blur(10px);
   }
   
   .customer-dashboard__welcome h1 {
     margin: 0;
-  
     color: #ffffff;
-  
-    font-size: clamp(32px, 4vw, 52px);
-    line-height: 1.1;
+    font-size: clamp(34px, 4vw, 54px);
+    line-height: 1.08;
     font-weight: 900;
     letter-spacing: -0.055em;
   }
@@ -202,74 +156,73 @@
   .customer-dashboard__welcome-content > p {
     max-width: 590px;
     margin: 16px 0 0;
-  
-    color: rgba(255, 255, 255, 0.64);
-  
-    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
     line-height: 1.75;
   }
   
   .customer-dashboard__welcome-actions {
-    margin-top: 24px;
-  
+    margin-top: 25px;
     display: flex;
     flex-wrap: wrap;
-    gap: 11px;
+    gap: 12px;
   }
   
   .customer-dashboard__primary-button,
-  .customer-dashboard__secondary-button {
-    min-height: 45px;
+  .customer-dashboard__secondary-button,
+  .customer-dashboard__ghost-button {
+    min-height: 46px;
     padding: 0 18px;
   
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 9px;
   
-    border-radius: 12px;
-  
-    font-size: 11px;
+    border-radius: 14px;
+    font-size: 13px;
     font-weight: 800;
-  
     cursor: pointer;
   
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease,
-      background-color 0.2s ease;
+      background-color 0.2s ease,
+      border-color 0.2s ease;
   }
   
   .customer-dashboard__primary-button {
     color: var(--dashboard-navy);
     background: #ffffff;
-  
     border: 1px solid #ffffff;
-  
-    box-shadow:
-      0 10px 25px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.16);
   }
   
-  .customer-dashboard__primary-button:hover {
-    transform: translateY(-3px);
-  
-    box-shadow:
-      0 15px 32px rgba(0, 0, 0, 0.23);
-  }
-  
-  .customer-dashboard__secondary-button {
+  .customer-dashboard__secondary-button,
+  .customer-dashboard__ghost-button {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.08);
-  
     border: 1px solid rgba(255, 255, 255, 0.16);
-  
     backdrop-filter: blur(12px);
   }
   
-  .customer-dashboard__secondary-button:hover {
-    background: rgba(255, 255, 255, 0.15);
+  .customer-dashboard__ghost-button {
+    background: rgba(72, 169, 230, 0.12);
+  }
   
+  .customer-dashboard__primary-button:hover,
+  .customer-dashboard__secondary-button:hover,
+  .customer-dashboard__ghost-button:hover {
     transform: translateY(-3px);
+  }
+  
+  .customer-dashboard__primary-button:hover {
+    box-shadow: 0 15px 32px rgba(0, 0, 0, 0.23);
+  }
+  
+  .customer-dashboard__secondary-button:hover,
+  .customer-dashboard__ghost-button:hover {
+    background: rgba(255, 255, 255, 0.15);
   }
   
   /* =========================================================
@@ -279,12 +232,9 @@
   .customer-dashboard__welcome-visual {
     position: relative;
     z-index: 3;
-  
     flex-shrink: 0;
-  
     width: 310px;
     height: 210px;
-  
     perspective: 900px;
   }
   
@@ -292,29 +242,21 @@
     position: absolute;
     top: 8px;
     right: 30px;
-  
     width: 180px;
     height: 180px;
-  
     border: 1px solid rgba(127, 222, 255, 0.22);
     border-radius: 50%;
-  
     box-shadow:
       inset 0 0 45px rgba(72, 169, 230, 0.13),
       0 0 40px rgba(72, 169, 230, 0.08);
-  
-    animation:
-      customerDashboardGlobeFloat 5s
-      ease-in-out infinite;
+    animation: customerDashboardGlobeFloat 5s ease-in-out infinite;
   }
   
   .customer-dashboard__welcome-globe::before,
   .customer-dashboard__welcome-globe::after {
     content: "";
-  
     position: absolute;
     inset: 18px;
-  
     border: 1px solid rgba(127, 222, 255, 0.16);
     border-radius: 50%;
   }
@@ -329,16 +271,13 @@
   
   .customer-dashboard__welcome-globe span {
     position: absolute;
-  
     background: rgba(125, 220, 255, 0.17);
-  
     border-radius: 999px;
   }
   
   .customer-dashboard__welcome-globe span:nth-child(1) {
     top: 50%;
     left: 0;
-  
     width: 100%;
     height: 1px;
   }
@@ -346,7 +285,6 @@
   .customer-dashboard__welcome-globe span:nth-child(2) {
     top: 25%;
     left: 9%;
-  
     width: 82%;
     height: 1px;
   }
@@ -354,85 +292,44 @@
   .customer-dashboard__welcome-globe span:nth-child(3) {
     bottom: 25%;
     left: 9%;
-  
     width: 82%;
     height: 1px;
-  }
-  
-  @keyframes customerDashboardGlobeFloat {
-    50% {
-      transform:
-        translateY(-8px)
-        rotate(3deg);
-    }
   }
   
   .customer-dashboard__welcome-package {
     position: absolute;
     right: 125px;
     bottom: 25px;
-  
     width: 92px;
     height: 80px;
-  
-    transform:
-      rotateX(-6deg)
-      rotateY(-16deg);
-  
+    transform: rotateX(-6deg) rotateY(-16deg);
     transform-style: preserve-3d;
-  
-    animation:
-      customerDashboardPackageFloat 3s
-      ease-in-out infinite;
+    animation: customerDashboardPackageFloat 3s ease-in-out infinite;
   }
   
   .customer-dashboard__welcome-package-front {
     position: absolute;
     inset: 0;
-  
     display: flex;
     align-items: center;
     justify-content: center;
-  
     color: rgba(86, 45, 5, 0.76);
-  
-    background:
-      linear-gradient(
-        145deg,
-        #f5c274,
-        #c68133
-      );
-  
-    border:
-      1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(145deg, #f5c274, #c68133);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 5px;
-  
     font-size: 17px;
     font-weight: 950;
-  
-    box-shadow:
-      0 18px 30px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 18px 30px rgba(0, 0, 0, 0.22);
   }
   
   .customer-dashboard__welcome-package-top {
     position: absolute;
     top: -25px;
     left: 0;
-  
     width: 92px;
     height: 25px;
-  
-    background:
-      linear-gradient(
-        to right,
-        #ffd795,
-        #d39248
-      );
-  
-    transform:
-      rotateX(65deg)
-      translateZ(10px);
-  
+    background: linear-gradient(to right, #ffd795, #d39248);
+    transform: rotateX(65deg) translateZ(10px);
     transform-origin: center bottom;
   }
   
@@ -440,62 +337,67 @@
     position: absolute;
     top: 0;
     right: -25px;
-  
     width: 25px;
     height: 80px;
-  
-    background:
-      linear-gradient(
-        to right,
-        #a86125,
-        #744115
-      );
-  
-    transform:
-      rotateY(90deg);
-  
+    background: linear-gradient(to right, #a86125, #744115);
+    transform: rotateY(90deg);
     transform-origin: left center;
-  }
-  
-  @keyframes customerDashboardPackageFloat {
-    50% {
-      transform:
-        translateY(-8px)
-        rotateX(-3deg)
-        rotateY(-10deg);
-    }
   }
   
   .customer-dashboard__welcome-plane {
     position: absolute;
     top: 42px;
     left: 45px;
-  
     color: #ffffff;
-  
     font-size: 42px;
+    filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.22));
+    transform: rotate(-12deg);
+    animation: customerDashboardPlaneMove 5s ease-in-out infinite;
+  }
   
-    filter:
-      drop-shadow(
-        0 8px 10px
-        rgba(0, 0, 0, 0.22)
-      );
+  @keyframes customerDashboardGlobeFloat {
+    50% { transform: translateY(-8px) rotate(3deg); }
+  }
   
-    transform:
-      rotate(-12deg);
-  
-    animation:
-      customerDashboardPlaneMove 5s
-      ease-in-out infinite;
+  @keyframes customerDashboardPackageFloat {
+    50% { transform: translateY(-8px) rotateX(-3deg) rotateY(-10deg); }
   }
   
   @keyframes customerDashboardPlaneMove {
-    50% {
-      transform:
-        translate3d(45px, -16px, 0)
-        rotate(1deg)
-        scale(1.08);
-    }
+    50% { transform: translate3d(45px, -16px, 0) rotate(1deg) scale(1.08); }
+  }
+  
+  /* =========================================================
+     ALERT
+     ========================================================= */
+  
+  .customer-dashboard__alert {
+    margin-top: 18px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #9f1239;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  
+  .customer-dashboard__alert span {
+    flex: 1;
+  }
+  
+  .customer-dashboard__alert button {
+    border: 0;
+    color: #ffffff;
+    background: #e11d48;
+    padding: 8px 13px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
   }
   
   /* =========================================================
@@ -504,45 +406,29 @@
   
   .customer-dashboard__stats {
     margin-top: 22px;
-  
     display: grid;
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-  
-    gap: 15px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
   }
   
   .customer-dashboard__stat-card {
     position: relative;
     overflow: hidden;
-  
-    min-height: 130px;
+    min-height: 132px;
     padding: 20px;
-  
     display: flex;
     align-items: center;
-    gap: 14px;
-  
-    background: #ffffff;
-  
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.92);
     border: 1px solid var(--dashboard-border);
-    border-radius: 18px;
-  
-    box-shadow:
-      0 10px 28px rgba(15, 23, 42, 0.055);
-  
-    transition:
-      border-color 0.22s ease,
-      box-shadow 0.22s ease,
-      transform 0.22s ease;
+    border-radius: 20px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
   }
   
   .customer-dashboard__stat-card:hover {
-    border-color: rgba(25, 118, 185, 0.2);
-  
-    box-shadow:
-      0 18px 36px rgba(15, 23, 42, 0.09);
-  
+    border-color: rgba(25, 118, 185, 0.22);
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.095);
     transform: translateY(-5px);
   }
   
@@ -550,99 +436,69 @@
     position: relative;
     z-index: 2;
     flex-shrink: 0;
-  
-    width: 52px;
-    height: 52px;
-  
+    width: 54px;
+    height: 54px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-  
-    border-radius: 16px;
-  
-    font-size: 21px;
+    border-radius: 17px;
+    font-size: 22px;
   }
   
-  .customer-dashboard__stat-icon--green {
-    color: #07835c;
-    background: rgba(16, 185, 129, 0.11);
-  }
-  
-  .customer-dashboard__stat-icon--blue {
-    color: var(--dashboard-blue);
-    background: rgba(25, 118, 185, 0.1);
-  }
-  
-  .customer-dashboard__stat-icon--orange {
-    color: #c97d0d;
-    background: rgba(230, 168, 60, 0.13);
-  }
-  
-  .customer-dashboard__stat-icon--purple {
-    color: #7c3aed;
-    background: rgba(139, 92, 246, 0.1);
-  }
+  .customer-dashboard__stat-icon--green { color: #07835c; background: rgba(16, 185, 129, 0.11); }
+  .customer-dashboard__stat-icon--blue { color: var(--dashboard-blue); background: rgba(25, 118, 185, 0.1); }
+  .customer-dashboard__stat-icon--orange { color: #c97d0d; background: rgba(230, 168, 60, 0.13); }
+  .customer-dashboard__stat-icon--purple { color: #7c3aed; background: rgba(139, 92, 246, 0.1); }
   
   .customer-dashboard__stat-content {
     position: relative;
     z-index: 2;
-  
     min-width: 0;
-  
     display: flex;
     flex-direction: column;
   }
   
   .customer-dashboard__stat-content > span {
     color: #7a899c;
-  
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.4;
-    font-weight: 700;
+    font-weight: 750;
   }
   
   .customer-dashboard__stat-content strong {
     margin-top: 4px;
-  
     color: #1f2b3d;
-  
-    font-size: 23px;
-    line-height: 1.25;
+    font-size: 26px;
+    line-height: 1.22;
     font-weight: 900;
     letter-spacing: -0.035em;
   }
   
   .customer-dashboard__stat-content small {
-    margin-top: 7px;
-  
+    margin-top: 8px;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-  
+    gap: 6px;
     color: #98a4b3;
-  
-    font-size: 8px;
-    font-weight: 650;
+    font-size: 11px;
+    font-weight: 700;
   }
   
   .customer-dashboard__stat-pattern {
     position: absolute;
     right: -35px;
     bottom: -45px;
-  
     width: 120px;
     height: 120px;
-  
     border: 1px solid rgba(25, 118, 185, 0.07);
     border-radius: 50%;
-  
     box-shadow:
       0 0 0 19px rgba(25, 118, 185, 0.025),
       0 0 0 38px rgba(25, 118, 185, 0.014);
   }
   
   /* =========================================================
-     SECTION HEADING
+     SECTION HEADING + QUICK ACTIONS
      ========================================================= */
   
   .customer-dashboard__quick-section {
@@ -650,8 +506,7 @@
   }
   
   .customer-dashboard__section-heading {
-    margin-bottom: 15px;
-  
+    margin-bottom: 16px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -661,8 +516,7 @@
   .customer-dashboard__section-heading > div > span,
   .customer-dashboard__panel-header > div > span {
     color: var(--dashboard-blue);
-  
-    font-size: 8px;
+    font-size: 11px;
     line-height: 1.4;
     font-weight: 850;
     letter-spacing: 0.14em;
@@ -671,114 +525,70 @@
   .customer-dashboard__section-heading h2,
   .customer-dashboard__panel-header h2 {
     margin: 5px 0 0;
-  
     color: #243247;
-  
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1.35;
     font-weight: 850;
     letter-spacing: -0.025em;
   }
   
   .customer-dashboard__section-heading > p {
-    max-width: 410px;
+    max-width: 420px;
     margin: 0;
-  
     color: #8390a2;
-  
-    font-size: 10px;
+    font-size: 13px;
     line-height: 1.6;
     text-align: right;
   }
   
-  /* =========================================================
-     QUICK ACTIONS
-     ========================================================= */
-  
   .customer-dashboard__quick-grid {
     display: grid;
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-  
-    gap: 14px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
   }
   
   .customer-dashboard__quick-card {
     min-width: 0;
-    min-height: 130px;
+    min-height: 132px;
     padding: 17px;
-  
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 12px;
-  
+    gap: 13px;
     color: inherit;
     background: #ffffff;
-  
     border: 1px solid var(--dashboard-border);
-    border-radius: 17px;
-  
+    border-radius: 18px;
     text-align: left;
-  
-    box-shadow:
-      0 8px 24px rgba(15, 23, 42, 0.045);
-  
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
     cursor: pointer;
-  
-    transition:
-      border-color 0.22s ease,
-      box-shadow 0.22s ease,
-      transform 0.22s ease;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
   }
   
   .customer-dashboard__quick-card:hover {
-    border-color: rgba(25, 118, 185, 0.22);
-  
-    box-shadow:
-      0 16px 32px rgba(15, 23, 42, 0.085);
-  
+    border-color: rgba(25, 118, 185, 0.24);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.09);
     transform: translateY(-4px);
   }
   
   .customer-dashboard__quick-icon {
     flex-shrink: 0;
-  
-    width: 45px;
-    height: 45px;
-  
+    width: 47px;
+    height: 47px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-  
-    border-radius: 14px;
-  
-    font-size: 18px;
+    border-radius: 15px;
+    font-size: 19px;
   }
   
-  .customer-dashboard__quick-icon--blue {
-    color: var(--dashboard-blue);
-    background: rgba(25, 118, 185, 0.1);
-  }
-  
-  .customer-dashboard__quick-icon--orange {
-    color: #c97808;
-    background: rgba(230, 168, 60, 0.12);
-  }
-  
-  .customer-dashboard__quick-icon--purple {
-    color: #7c3aed;
-    background: rgba(139, 92, 246, 0.1);
-  }
-  
-  .customer-dashboard__quick-icon--green {
-    color: #07835c;
-    background: rgba(16, 185, 129, 0.1);
-  }
+  .customer-dashboard__quick-icon--blue { color: var(--dashboard-blue); background: rgba(25, 118, 185, 0.1); }
+  .customer-dashboard__quick-icon--orange { color: #c97808; background: rgba(230, 168, 60, 0.12); }
+  .customer-dashboard__quick-icon--purple { color: #7c3aed; background: rgba(139, 92, 246, 0.1); }
+  .customer-dashboard__quick-icon--green { color: #07835c; background: rgba(16, 185, 129, 0.1); }
   
   .customer-dashboard__quick-content {
     min-width: 0;
-  
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -786,33 +596,25 @@
   
   .customer-dashboard__quick-content strong {
     color: #2d3b4f;
-  
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.4;
-    font-weight: 800;
+    font-weight: 850;
   }
   
   .customer-dashboard__quick-content small {
     color: #8290a3;
-  
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.55;
   }
   
   .customer-dashboard__quick-arrow {
     color: #a9b4c1;
-  
-    font-size: 11px;
-  
-    transition:
-      color 0.2s ease,
-      transform 0.2s ease;
+    font-size: 13px;
+    transition: color 0.2s ease, transform 0.2s ease;
   }
   
-  .customer-dashboard__quick-card:hover
-    .customer-dashboard__quick-arrow {
+  .customer-dashboard__quick-card:hover .customer-dashboard__quick-arrow {
     color: var(--dashboard-blue);
-  
     transform: translateX(4px);
   }
   
@@ -822,37 +624,27 @@
   
   .customer-dashboard__main-grid {
     margin-top: 25px;
-  
     display: grid;
-    grid-template-columns:
-      minmax(0, 1.55fr)
-      minmax(310px, 0.85fr);
-  
+    grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.85fr);
     align-items: stretch;
-    gap: 17px;
+    gap: 18px;
   }
   
   .customer-dashboard__panel {
     overflow: hidden;
-  
     background: #ffffff;
-  
     border: 1px solid var(--dashboard-border);
-    border-radius: 20px;
-  
-    box-shadow:
-      0 12px 30px rgba(15, 23, 42, 0.055);
+    border-radius: 22px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
   }
   
   .customer-dashboard__panel-header {
-    min-height: 77px;
+    min-height: 78px;
     padding: 19px 21px;
-  
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-  
     border-bottom: 1px solid #edf1f5;
   }
   
@@ -863,30 +655,21 @@
   }
   
   .customer-dashboard__text-button {
-    padding: 7px 0;
-  
+    padding: 8px 0;
     display: inline-flex;
     align-items: center;
     gap: 7px;
-  
     color: var(--dashboard-blue);
     background: transparent;
-  
     border: 0;
-  
-    font-size: 9px;
-    font-weight: 800;
-  
+    font-size: 12px;
+    font-weight: 850;
     cursor: pointer;
-  
-    transition:
-      color 0.2s ease,
-      transform 0.2s ease;
+    transition: color 0.2s ease, transform 0.2s ease;
   }
   
   .customer-dashboard__text-button:hover {
     color: var(--dashboard-navy-light);
-  
     transform: translateX(2px);
   }
   
@@ -904,33 +687,23 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-  
     color: #7d8a9d;
-  
-    font-size: 8px;
-    font-weight: 650;
+    font-size: 11px;
+    font-weight: 700;
   }
   
   .customer-dashboard__legend-dot {
-    width: 7px;
-    height: 7px;
-  
+    width: 8px;
+    height: 8px;
     display: block;
-  
     border-radius: 50%;
   }
   
-  .customer-dashboard__legend-dot--purchase {
-    background: var(--dashboard-blue);
-  }
-  
-  .customer-dashboard__legend-dot--consignment {
-    background: var(--dashboard-orange);
-  }
+  .customer-dashboard__legend-dot--purchase { background: var(--dashboard-blue); }
+  .customer-dashboard__legend-dot--consignment { background: var(--dashboard-orange); }
   
   .customer-dashboard__chart-summary {
     padding: 17px 21px 0;
-  
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -944,56 +717,40 @@
   
   .customer-dashboard__chart-summary > div span {
     color: #8a98aa;
-  
-    font-size: 9px;
-    font-weight: 650;
+    font-size: 12px;
+    font-weight: 700;
   }
   
   .customer-dashboard__chart-summary strong {
     margin-top: 3px;
-  
     color: #233146;
-  
-    font-size: 21px;
+    font-size: 24px;
     font-weight: 900;
   }
   
   .customer-dashboard__chart-change {
-    padding: 6px 10px;
-  
+    padding: 7px 11px;
     color: #788699;
     background: #f4f6f9;
-  
     border-radius: 999px;
-  
-    font-size: 8px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 800;
   }
   
   .customer-dashboard__chart {
     position: relative;
-  
-    height: 245px;
+    height: 250px;
     margin: 10px 20px 20px;
     padding: 22px 16px 0;
-  
     display: flex;
     align-items: stretch;
-  
-    background:
-      linear-gradient(
-        180deg,
-        rgba(25, 118, 185, 0.025),
-        transparent
-      );
-  
-    border-radius: 15px;
+    background: linear-gradient(180deg, rgba(25, 118, 185, 0.03), transparent);
+    border-radius: 16px;
   }
   
   .customer-dashboard__chart-lines {
     position: absolute;
     inset: 22px 16px 28px;
-  
     display: flex;
     justify-content: space-between;
     flex-direction: column;
@@ -1002,27 +759,21 @@
   .customer-dashboard__chart-lines span {
     width: 100%;
     height: 1px;
-  
     background: #edf1f5;
   }
   
   .customer-dashboard__chart-columns {
     position: relative;
     z-index: 2;
-  
     width: 100%;
-  
     display: grid;
-    grid-template-columns:
-      repeat(7, minmax(0, 1fr));
-  
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     align-items: stretch;
     gap: 8px;
   }
   
   .customer-dashboard__chart-column {
     min-width: 0;
-  
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -1030,9 +781,7 @@
   
   .customer-dashboard__chart-bars {
     flex: 1;
-  
     width: 100%;
-  
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -1041,48 +790,30 @@
   
   .customer-dashboard__chart-bar {
     width: min(15px, 36%);
-  
     display: block;
-  
-    border-radius: 6px 6px 2px 2px;
-  
-    transition:
-      filter 0.2s ease,
-      transform 0.2s ease;
+    border-radius: 7px 7px 2px 2px;
+    transition: filter 0.2s ease, transform 0.2s ease;
   }
   
   .customer-dashboard__chart-bar:hover {
     filter: brightness(1.08);
-  
     transform: scaleY(1.03);
     transform-origin: bottom;
   }
   
   .customer-dashboard__chart-bar--purchase {
-    background:
-      linear-gradient(
-        to top,
-        var(--dashboard-blue),
-        var(--dashboard-blue-light)
-      );
+    background: linear-gradient(to top, var(--dashboard-blue), var(--dashboard-blue-light));
   }
   
   .customer-dashboard__chart-bar--consignment {
-    background:
-      linear-gradient(
-        to top,
-        #d78d18,
-        #f2c16e
-      );
+    background: linear-gradient(to top, #d78d18, #f2c16e);
   }
   
   .customer-dashboard__chart-column small {
     margin-top: 9px;
-  
     color: #8996a8;
-  
-    font-size: 8px;
-    font-weight: 650;
+    font-size: 11px;
+    font-weight: 750;
   }
   
   .customer-dashboard__chart-empty {
@@ -1090,22 +821,16 @@
     top: 50%;
     left: 50%;
     z-index: 3;
-  
-    padding: 7px 12px;
-  
-    color: rgba(74, 89, 109, 0.58);
-    background: rgba(255, 255, 255, 0.82);
-  
-    border: 1px solid rgba(222, 229, 237, 0.8);
+    padding: 8px 13px;
+    color: rgba(74, 89, 109, 0.66);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(222, 229, 237, 0.85);
     border-radius: 999px;
-  
-    font-size: 7px;
-    font-weight: 750;
+    font-size: 10px;
+    font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-  
     backdrop-filter: blur(5px);
-  
     transform: translate(-50%, -50%);
   }
   
@@ -1119,66 +844,42 @@
   
   .customer-dashboard__notification {
     position: relative;
-  
     padding: 14px 4px;
-  
     display: flex;
     align-items: flex-start;
-    gap: 11px;
+    gap: 12px;
   }
   
-  .customer-dashboard__notification +
-  .customer-dashboard__notification {
+  .customer-dashboard__notification + .customer-dashboard__notification {
     border-top: 1px solid #edf1f5;
   }
   
   .customer-dashboard__notification.is-unread::after {
     content: "";
-  
     position: absolute;
     top: 19px;
     right: 4px;
-  
-    width: 7px;
-    height: 7px;
-  
+    width: 8px;
+    height: 8px;
     background: var(--dashboard-blue);
-  
     border-radius: 50%;
-  
-    box-shadow:
-      0 0 0 4px rgba(25, 118, 185, 0.08);
+    box-shadow: 0 0 0 4px rgba(25, 118, 185, 0.08);
   }
   
   .customer-dashboard__notification-icon {
     flex-shrink: 0;
-  
-    width: 39px;
-    height: 39px;
-  
+    width: 40px;
+    height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-  
-    border-radius: 12px;
-  
-    font-size: 15px;
+    border-radius: 13px;
+    font-size: 16px;
   }
   
-  .customer-dashboard__notification-icon--system {
-    color: var(--dashboard-blue);
-    background: rgba(25, 118, 185, 0.09);
-  }
-  
-  .customer-dashboard__notification-icon--purchase {
-    color: #c97c0d;
-    background: rgba(230, 168, 60, 0.11);
-  }
-  
-  .customer-dashboard__notification-icon--consignment {
-    color: #7c3aed;
-    background: rgba(139, 92, 246, 0.09);
-  }
+  .customer-dashboard__notification-icon--system { color: var(--dashboard-blue); background: rgba(25, 118, 185, 0.09); }
+  .customer-dashboard__notification-icon--purchase { color: #c97c0d; background: rgba(230, 168, 60, 0.11); }
+  .customer-dashboard__notification-icon--consignment { color: #7c3aed; background: rgba(139, 92, 246, 0.09); }
   
   .customer-dashboard__notification-body {
     min-width: 0;
@@ -1193,47 +894,38 @@
   
   .customer-dashboard__notification-meta > span {
     color: var(--dashboard-blue);
-  
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 850;
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   
   .customer-dashboard__notification-meta i {
-    padding: 2px 5px;
-  
+    padding: 2px 6px;
     color: #ffffff;
     background: var(--dashboard-red);
-  
     border-radius: 999px;
-  
-    font-size: 6px;
+    font-size: 8px;
     font-style: normal;
     font-weight: 850;
   }
   
   .customer-dashboard__notification-body p {
     margin: 5px 15px 0 0;
-  
     color: #435168;
-  
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.55;
-    font-weight: 600;
+    font-weight: 650;
   }
   
   .customer-dashboard__notification-body small {
-    margin-top: 6px;
-  
+    margin-top: 7px;
     display: inline-flex;
     align-items: center;
     gap: 5px;
-  
     color: #9aa6b5;
-  
-    font-size: 7px;
-    font-weight: 650;
+    font-size: 10px;
+    font-weight: 700;
   }
   
   /* =========================================================
@@ -1241,7 +933,7 @@
      ========================================================= */
   
   .customer-dashboard__orders-panel {
-    margin-top: 17px;
+    margin-top: 18px;
   }
   
   .customer-dashboard__orders-table-wrapper {
@@ -1250,15 +942,13 @@
   
   .customer-dashboard__orders-table {
     width: 100%;
-    min-width: 750px;
-  
+    min-width: 900px;
     border-collapse: collapse;
   }
   
   .customer-dashboard__orders-table th,
   .customer-dashboard__orders-table td {
     padding: 15px 21px;
-  
     text-align: left;
     vertical-align: middle;
   }
@@ -1266,25 +956,22 @@
   .customer-dashboard__orders-table th {
     color: #7c899b;
     background: #f8fafc;
-  
-    font-size: 8px;
+    font-size: 11px;
     font-weight: 850;
     letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   
   .customer-dashboard__orders-table td {
     color: #536177;
-  
     border-top: 1px solid #edf1f5;
-  
-    font-size: 10px;
+    font-size: 13px;
     line-height: 1.5;
   }
   
   .customer-dashboard__orders-table td strong {
     color: #26364c;
-  
-    font-weight: 800;
+    font-weight: 850;
   }
   
   .customer-dashboard__orders-table tbody tr {
@@ -1296,21 +983,39 @@
   }
   
   .customer-dashboard__order-status {
-    padding: 6px 9px;
-  
+    padding: 7px 10px;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-  
+    gap: 6px;
     border-radius: 999px;
-  
-    font-size: 8px;
-    font-weight: 750;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 800;
   }
   
   .customer-dashboard__order-status--waiting {
     color: #9b620c;
-    background: rgba(230, 168, 60, 0.12);
+    background: rgba(230, 168, 60, 0.14);
+  }
+  
+  .customer-dashboard__order-status--quoted {
+    color: #075985;
+    background: rgba(14, 165, 233, 0.12);
+  }
+  
+  .customer-dashboard__order-status--processing {
+    color: #5b21b6;
+    background: rgba(139, 92, 246, 0.12);
+  }
+  
+  .customer-dashboard__order-status--done {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+  }
+  
+  .customer-dashboard__order-status--cancelled {
+    color: #be123c;
+    background: rgba(225, 29, 72, 0.11);
   }
   
   .customer-dashboard__order-status--empty {
@@ -1318,15 +1023,23 @@
     background: #f1f4f7;
   }
   
-  .customer-dashboard__orders-empty-note {
-    padding: 13px 21px;
+  .customer-dashboard__table-empty {
+    padding: 24px;
+    color: #8793a6;
+    background: #fbfcfe;
+    border: 1px dashed #d8e1eb;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
   
+  .customer-dashboard__orders-empty-note {
+    padding: 14px 21px;
     color: #929eae;
     background: #fbfcfe;
-  
     border-top: 1px solid #edf1f5;
-  
-    font-size: 8px;
+    font-size: 12px;
     line-height: 1.6;
     text-align: center;
   }
@@ -1337,8 +1050,10 @@
   
   .customer-dashboard__primary-button:focus-visible,
   .customer-dashboard__secondary-button:focus-visible,
+  .customer-dashboard__ghost-button:focus-visible,
   .customer-dashboard__quick-card:focus-visible,
-  .customer-dashboard__text-button:focus-visible {
+  .customer-dashboard__text-button:focus-visible,
+  .customer-dashboard__alert button:focus-visible {
     outline: 3px solid rgba(72, 169, 230, 0.38);
     outline-offset: 3px;
   }
@@ -1350,8 +1065,7 @@
   @media (max-width: 1180px) {
     .customer-dashboard__stats,
     .customer-dashboard__quick-grid {
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   
     .customer-dashboard__main-grid {
@@ -1360,7 +1074,6 @@
   
     .customer-dashboard__welcome-visual {
       width: 260px;
-  
       transform: scale(0.88);
       transform-origin: right center;
     }
@@ -1372,7 +1085,7 @@
     }
   
     .customer-dashboard__welcome {
-      min-height: 310px;
+      min-height: 312px;
       padding: 32px 27px;
     }
   
@@ -1380,9 +1093,7 @@
       position: absolute;
       right: -55px;
       bottom: -40px;
-  
       opacity: 0.42;
-  
       transform: scale(0.78);
     }
   
@@ -1401,16 +1112,14 @@
     }
   
     .customer-dashboard__welcome {
-      min-height: 345px;
+      min-height: 350px;
       padding: 26px 21px;
-  
       align-items: flex-start;
-  
-      border-radius: 20px;
+      border-radius: 22px;
     }
   
     .customer-dashboard__welcome h1 {
-      font-size: 33px;
+      font-size: 34px;
     }
   
     .customer-dashboard__welcome-actions {
@@ -1419,7 +1128,8 @@
     }
   
     .customer-dashboard__primary-button,
-    .customer-dashboard__secondary-button {
+    .customer-dashboard__secondary-button,
+    .customer-dashboard__ghost-button {
       width: 100%;
     }
   
@@ -1428,8 +1138,9 @@
       grid-template-columns: 1fr;
     }
   
-    .customer-dashboard__stat-card {
-      min-height: 112px;
+    .customer-dashboard__stat-card,
+    .customer-dashboard__quick-card {
+      min-height: 114px;
     }
   
     .customer-dashboard__section-heading {
@@ -1439,10 +1150,6 @@
   
     .customer-dashboard__section-heading > p {
       text-align: left;
-    }
-  
-    .customer-dashboard__quick-card {
-      min-height: 112px;
     }
   
     .customer-dashboard__panel-header {
@@ -1458,6 +1165,15 @@
       height: 220px;
       margin-right: 10px;
       margin-left: 10px;
+    }
+  
+    .customer-dashboard__alert {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  
+    .customer-dashboard__alert button {
+      width: 100%;
     }
   }
   
