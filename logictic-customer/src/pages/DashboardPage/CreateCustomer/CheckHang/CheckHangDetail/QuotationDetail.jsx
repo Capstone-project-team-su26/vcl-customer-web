@@ -45,7 +45,7 @@ import { getOrderQuotationApi } from "../../../../../api/OrderApi/consignmentApi
 import "./QuotationDetail.css";
 
 /* =========================================================
-   LABEL
+   LABELS
    ========================================================= */
 
 const QUOTATION_STATUS_FALLBACK_LABELS = {
@@ -55,31 +55,58 @@ const QUOTATION_STATUS_FALLBACK_LABELS = {
   REJECTED: "ĐÃ TỪ CHỐI",
   EXPIRED: "HẾT HẠN",
   CANCELLED: "ĐÃ HỦY",
+  CANCELED: "ĐÃ HỦY",
 };
 
 const QUOTE_TYPE_LABELS = {
   ESTIMATE: "BÁO GIÁ TẠM TÍNH",
+  OFFICIAL: "BÁO GIÁ CHÍNH THỨC",
   FINAL: "BÁO GIÁ CHÍNH THỨC",
 };
 
 const CONSIGNMENT_TYPE_LABELS = {
   EXPRESS: "HỎA TỐC",
+  "HỎA TỐC": "HỎA TỐC",
+  "HOA TOC": "HỎA TỐC",
   STANDARD: "TIÊU CHUẨN",
+  "TIÊU CHUẨN": "TIÊU CHUẨN",
+  "TIEU CHUAN": "TIÊU CHUẨN",
+};
+
+const FEE_CODE_LABELS = {
+  MAIN_SERVICE: "Cước vận chuyển quốc tế",
+  WOOD_CRATE: "Đóng thùng gỗ",
+  SUR_INSPECTION: "Phụ phí kiểm hàng",
+  SUR_INSURANCE_3PERCENT: "Phụ phí bảo hiểm",
+  SERVICE_FEE: "Phí dịch vụ",
+  TAX_DUTY: "Thuế / phí nhập khẩu",
+};
+
+const FEE_TYPE_LABELS = {
+  MAIN_SERVICE: "Dịch vụ chính",
+  SURCHARGE: "Phụ phí",
+  SERVICE_FEE: "Phí dịch vụ",
+  TAX_DUTY: "Thuế / phí nhập khẩu",
+};
+
+const CALCULATION_TYPE_LABELS = {
+  PER_KG: "Theo kg",
+  FIXED: "Cố định",
+  PERCENTAGE: "Phần trăm",
 };
 
 /* =========================================================
-   HELPER
+   COMMON HELPERS
    ========================================================= */
 
 const normalizeStatus = (value) => {
-  return String(value || "")
+  return String(value ?? "")
     .trim()
     .toUpperCase();
 };
 
 const formatStatusCode = (status) => {
-  const normalizedStatus =
-    normalizeStatus(status);
+  const normalizedStatus = normalizeStatus(status);
 
   if (!normalizedStatus) {
     return "-";
@@ -90,9 +117,7 @@ const formatStatusCode = (status) => {
     .replaceAll("-", " ");
 };
 
-const normalizeStatusOptions = (
-  apiResult
-) => {
+const normalizeStatusOptions = (apiResult) => {
   const candidates = [
     apiResult,
     apiResult?.data,
@@ -102,6 +127,9 @@ const normalizeStatusOptions = (
     apiResult?.data?.items,
     apiResult?.data?.statuses,
     apiResult?.data?.quotationStatuses,
+    apiResult?.data?.data,
+    apiResult?.data?.data?.items,
+    apiResult?.data?.data?.statuses,
   ];
 
   const rawStatuses =
@@ -113,13 +141,11 @@ const normalizeStatusOptions = (
         typeof item === "string" ||
         typeof item === "number"
       ) {
-        const value =
-          normalizeStatus(item);
+        const value = normalizeStatus(item);
 
         return {
           value,
-          label:
-            formatStatusCode(value),
+          label: formatStatusCode(value),
         };
       }
 
@@ -153,29 +179,22 @@ const normalizeStatusOptions = (
 };
 
 const getQuoteTypeLabel = (quoteType) => {
-  const normalizedType =
-    normalizeStatus(quoteType);
+  const normalizedType = normalizeStatus(quoteType);
 
   return (
-    QUOTE_TYPE_LABELS[
-      normalizedType
-    ] ||
+    QUOTE_TYPE_LABELS[normalizedType] ||
     normalizedType ||
     "-"
   );
 };
 
-const getConsignmentTypeLabel = (
-  consignmentType
-) => {
-  const normalizedType =
-    normalizeStatus(consignmentType);
+const getConsignmentTypeLabel = (consignmentType) => {
+  const rawValue = String(consignmentType ?? "").trim();
+  const normalizedType = normalizeStatus(rawValue);
 
   return (
-    CONSIGNMENT_TYPE_LABELS[
-      normalizedType
-    ] ||
-    consignmentType ||
+    CONSIGNMENT_TYPE_LABELS[normalizedType] ||
+    rawValue ||
     "-"
   );
 };
@@ -187,6 +206,16 @@ const getStatusClassName = (status) => {
     .replaceAll("_", "-");
 };
 
+const getSafeText = (value, fallback = "-") => {
+  const text = String(value ?? "").trim();
+
+  return text || fallback;
+};
+
+const getBooleanLabel = (value) => {
+  return value ? "Có" : "Không";
+};
+
 /* =========================================================
    UTC TIME HELPERS
    ========================================================= */
@@ -195,17 +224,32 @@ const getStatusClassName = (status) => {
  * Chuẩn hóa thời gian API về UTC ISO.
  *
  * API có thể trả:
- * - 2026-07-01T04:26:34.9714508
- * - 2026-07-01T04:26:34Z
- * - 2026-07-01T04:26:34+07:00
+ * - 2026-07-09T09:34:49.1217925
+ * - 2026-07-09T09:37:26.3885142Z
+ * - 2026-07-09T09:34:49+07:00
  *
- * Output luôn là UTC ISO chuẩn:
- * - 2026-07-01T04:26:34.971Z
+ * Output luôn là UTC ISO chuẩn để hiển thị và so sánh.
  */
 const normalizeApiTimeToUtc = (value) => {
   return apiToUtcIso(value, {
     apiTimeMode: "utc",
   });
+};
+
+const normalizeAdditionalFeeTime = (fee) => {
+  if (!fee) {
+    return fee;
+  }
+
+  return {
+    ...fee,
+    createdAtUtc: normalizeApiTimeToUtc(
+      fee.createdAt
+    ),
+    updatedAtUtc: normalizeApiTimeToUtc(
+      fee.updatedAt
+    ),
+  };
 };
 
 const normalizeQuotationTime = (quotation) => {
@@ -224,12 +268,16 @@ const normalizeQuotationTime = (quotation) => {
     expiredAtUtc: normalizeApiTimeToUtc(
       quotation.expiredAt
     ),
+    additionalFees: Array.isArray(
+      quotation.additionalFees
+    )
+      ? quotation.additionalFees.map(
+          normalizeAdditionalFeeTime
+        )
+      : [],
   };
 };
 
-/**
- * Hiển thị cho user Việt Nam, dữ liệu gốc luôn parse qua UTC trước.
- */
 const formatDateTime = (value) => {
   const utcIso = normalizeApiTimeToUtc(value);
 
@@ -243,9 +291,6 @@ const formatDateTime = (value) => {
   });
 };
 
-/**
- * Tooltip hiển thị UTC gốc để kiểm tra khi cần.
- */
 const formatDateTimeUtcTitle = (value) => {
   const utcIso = normalizeApiTimeToUtc(value);
 
@@ -259,10 +304,6 @@ const formatDateTimeUtcTitle = (value) => {
   })}`;
 };
 
-/**
- * Check hết hạn bằng giờ đã sync server nếu timeUtc.js đã sync,
- * tránh lệch khi máy người dùng sai giờ.
- */
 const isExpiredUtc = (value) => {
   const utcIso = normalizeApiTimeToUtc(value);
 
@@ -275,6 +316,10 @@ const isExpiredUtc = (value) => {
 
   return expiredTime < nowTime;
 };
+
+/* =========================================================
+   FORMATTERS
+   ========================================================= */
 
 const formatMoney = (value) => {
   const number = Number(value);
@@ -311,10 +356,249 @@ const formatNumber = (
   ).format(number);
 };
 
-const getQuotationCode = (
-  quotation
+const formatFeeQuantity = (quantity) => {
+  if (
+    quantity === null ||
+    quantity === undefined ||
+    quantity === ""
+  ) {
+    return "-";
+  }
+
+  return formatNumber(quantity, 2);
+};
+
+const formatFeePercent = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "-";
+  }
+
+  return `${formatNumber(number, 2)}%`;
+};
+
+/* =========================================================
+   FEE HELPERS
+   ========================================================= */
+
+const getFeeCodeLabel = (code) => {
+  const normalizedCode = normalizeStatus(code);
+
+  if (!normalizedCode) {
+    return "";
+  }
+
+  return (
+    FEE_CODE_LABELS[normalizedCode] ||
+    formatStatusCode(normalizedCode)
+  );
+};
+
+const getFeeLabel = (fee) => {
+  return (
+    fee?.label ||
+    fee?.feeName ||
+    getFeeCodeLabel(fee?.code) ||
+    "Phí phát sinh"
+  );
+};
+
+const getFeeTypeLabel = (fee) => {
+  const type = normalizeStatus(
+    fee?.feeType ||
+      fee?.type ||
+      fee?.code
+  );
+
+  return (
+    FEE_TYPE_LABELS[type] ||
+    formatStatusCode(type)
+  );
+};
+
+const getFeeCalculationType = (fee) => {
+  return normalizeStatus(
+    fee?.feeCalculationType ||
+      fee?.calculationType
+  );
+};
+
+const getFeeCalculationTypeLabel = (fee) => {
+  const type = getFeeCalculationType(fee);
+
+  return (
+    CALCULATION_TYPE_LABELS[type] ||
+    formatStatusCode(type)
+  );
+};
+
+/**
+ * Ưu tiên amount vì đây là số tiền thật API đã tính.
+ * value có thể là giá trị cấu hình như 3% nên chỉ dùng sau cùng.
+ */
+const getFeeAmount = (fee) => {
+  const amount =
+    fee?.amount ??
+    fee?.totalAmount ??
+    fee?.price ??
+    fee?.value ??
+    0;
+
+  const number = Number(amount);
+
+  return Number.isFinite(number)
+    ? number
+    : 0;
+};
+
+const isFeeEnabled = (fee) => {
+  return fee?.enabled !== false;
+};
+
+const isFeeRequired = (fee) => {
+  return Boolean(fee?.isRequired);
+};
+
+const getAdditionalFees = (quotation) => {
+  return Array.isArray(
+    quotation?.additionalFees
+  )
+    ? quotation.additionalFees
+    : [];
+};
+
+const getFallbackCostItems = (quotation) => {
+  return [
+    {
+      key: "freight",
+      label: "Cước vận chuyển quốc tế",
+      value:
+        quotation?.estimatedFreightCharge ??
+        0,
+      enabled: true,
+      required: true,
+      meta: "Dịch vụ chính",
+      calculationType: "Theo báo giá",
+      note: "Cước vận chuyển chính của đơn hàng.",
+      raw: null,
+    },
+    {
+      key: "service",
+      label: "Phí dịch vụ",
+      value: quotation?.serviceFee ?? 0,
+      enabled: true,
+      required: false,
+      meta: "Phí dịch vụ",
+      calculationType: "Theo báo giá",
+      note: "Phí dịch vụ phát sinh nếu có.",
+      raw: null,
+    },
+    {
+      key: "tax",
+      label: "Thuế và phí nhập khẩu",
+      value: quotation?.taxAndDuty ?? 0,
+      enabled: true,
+      required: false,
+      meta: "Thuế / phí nhập khẩu",
+      calculationType: "Theo báo giá",
+      note: "Thuế và phí nhập khẩu phát sinh nếu có.",
+      raw: null,
+    },
+  ];
+};
+
+const normalizeFeeToCostItem = (
+  fee,
+  index
 ) => {
+  const enabled = isFeeEnabled(fee);
+  const calculationType =
+    getFeeCalculationTypeLabel(fee);
+
+  return {
+    key:
+      fee?.id ||
+      fee?.feeId ||
+      fee?.pricingRuleId ||
+      `${fee?.code || "fee"}-${index}`,
+    id: fee?.id,
+    pricingRuleId: fee?.pricingRuleId,
+    feeId: fee?.feeId,
+    code: fee?.code,
+    codeLabel: getFeeCodeLabel(fee?.code),
+    label: getFeeLabel(fee),
+    value: getFeeAmount(fee),
+    enabled,
+    required: isFeeRequired(fee),
+    feeType: getFeeTypeLabel(fee),
+    calculationType,
+    rawCalculationType:
+      fee?.feeCalculationType ||
+      fee?.calculationType,
+    unitPrice: fee?.unitPrice,
+    quantity: fee?.quantity,
+    unitNoun: fee?.unitNoun,
+    configValue: fee?.value,
+    note: fee?.note,
+    createdAtUtc: fee?.createdAtUtc,
+    createdAt: fee?.createdAt,
+    raw: fee,
+  };
+};
+
+const getCostItems = (quotation) => {
+  const additionalFees =
+    getAdditionalFees(quotation);
+
+  if (additionalFees.length > 0) {
+    return additionalFees.map(
+      normalizeFeeToCostItem
+    );
+  }
+
+  return getFallbackCostItems(
+    quotation
+  );
+};
+
+const getActiveCostItems = (
+  costItems = []
+) => {
+  return costItems.filter(
+    (item) => item.enabled
+  );
+};
+
+const getActiveCostTotal = (
+  costItems = []
+) => {
+  return getActiveCostItems(costItems)
+    .reduce(
+      (total, item) =>
+        total + Number(item.value || 0),
+      0
+    );
+};
+
+const getDisplayTotalCost = (
+  quotation,
+  costItems = []
+) => {
+  const apiTotal = Number(
+    quotation?.totalEstimatedCost
+  );
+
+  if (Number.isFinite(apiTotal)) {
+    return apiTotal;
+  }
+
+  return getActiveCostTotal(costItems);
+};
+
+const getQuotationCode = (quotation) => {
   const code =
+    quotation?.consignmentCode ||
     quotation?.quotationCode ||
     quotation?.quoteCode ||
     quotation?.quotationId;
@@ -325,21 +609,34 @@ const getQuotationCode = (
   );
 };
 
-const extractQuotationData = (
-  response
-) => {
+
+const extractQuotationData = (response) => {
   if (!response) {
     return null;
   }
 
-  if (
-    response?.data &&
-    !Array.isArray(response.data)
-  ) {
-    return response.data;
-  }
+  const candidates = [
+    response?.data?.data,
+    response?.data,
+    response,
+  ];
 
-  return response;
+  return (
+    candidates.find(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        !Array.isArray(item) &&
+        (
+          item.quotationId ||
+          item.quotationCode ||
+          item.quoteCode ||
+          item.orderId ||
+          item.quoteType ||
+          item.additionalFees 
+        )
+    ) || null
+  );
 };
 
 const getApiErrorMessage = (
@@ -362,6 +659,15 @@ const getApiErrorMessage = (
     responseData?.error ||
     error?.message ||
     fallbackMessage
+  );
+};
+
+const isCanceledRequest = (error) => {
+  return (
+    axios.isCancel(error) ||
+    error?.code === "ERR_CANCELED" ||
+    error?.name === "CanceledError" ||
+    error?.name === "AbortError"
   );
 };
 
@@ -479,15 +785,9 @@ const QuotationDetail = () => {
               )
             );
           } else if (
-            !axios.isCancel(
+            !isCanceledRequest(
               statusesResult.reason
-            ) &&
-            statusesResult.reason?.code !==
-              "ERR_CANCELED" &&
-            statusesResult.reason?.name !==
-              "CanceledError" &&
-            statusesResult.reason?.name !==
-              "AbortError"
+            )
           ) {
             console.error(
               "Lỗi lấy danh sách trạng thái:",
@@ -508,20 +808,14 @@ const QuotationDetail = () => {
           ) {
             AuthNotify.success(
               "Làm mới thành công",
-              "Thông tin báo giá và trạng thái đã được cập nhật."
+              "Thông tin báo giá đã được cập nhật."
             );
           }
 
           return true;
         } catch (error) {
           if (
-            axios.isCancel(error) ||
-            error?.code ===
-              "ERR_CANCELED" ||
-            error?.name ===
-              "CanceledError" ||
-            error?.name ===
-              "AbortError"
+            isCanceledRequest(error)
           ) {
             return false;
           }
@@ -630,30 +924,30 @@ const QuotationDetail = () => {
         return [];
       }
 
-      return [
-        {
-          key: "freight",
-          label:
-            "Cước vận chuyển dự kiến",
-          value:
-            quotation.estimatedFreightCharge,
-        },
-        {
-          key: "service",
-          label: "Phí dịch vụ",
-          value:
-            quotation.serviceFee,
-        },
-        {
-          key: "tax",
-          label:
-            "Thuế và phí nhập khẩu",
-          value:
-            quotation.taxAndDuty,
-        },
-      ];
+      return getCostItems(
+        quotation
+      );
     },
     [quotation]
+  );
+
+  const activeCostItems = useMemo(
+    () => getActiveCostItems(costItems),
+    [costItems]
+  );
+
+  const activeCostTotal = useMemo(
+    () => getActiveCostTotal(costItems),
+    [costItems]
+  );
+
+  const displayTotalCost = useMemo(
+    () =>
+      getDisplayTotalCost(
+        quotation,
+        costItems
+      ),
+    [quotation, costItems]
   );
 
   if (loading) {
@@ -725,6 +1019,7 @@ const QuotationDetail = () => {
       </div>
     );
   }
+
   const hasExpired =
     isExpiredUtc(
       quotation.expiredAtUtc ||
@@ -743,9 +1038,6 @@ const QuotationDetail = () => {
     getStatusClassName(
       effectiveStatus
     );
-
-  const statusClass =
-    effectiveStatusClass;
 
   return (
     <div className="quotation-detail-page">
@@ -814,18 +1106,33 @@ const QuotationDetail = () => {
                   )}
                 </strong>
               </span>
+
+              <span>
+                Ngày tạo:
+                <strong
+                  title={formatDateTimeUtcTitle(
+                    quotation.createdAtUtc ||
+                      quotation.createdAt
+                  )}
+                >
+                  {formatDateTime(
+                    quotation.createdAtUtc ||
+                      quotation.createdAt
+                  )}
+                </strong>
+              </span>
             </div>
           </div>
         </div>
 
         <div className="quotation-hero-total">
           <span>
-            Tổng chi phí dự kiến
+            Tổng chi phí theo báo giá
           </span>
 
           <strong>
             {formatMoney(
-              quotation.totalEstimatedCost
+              displayTotalCost
             )}
           </strong>
 
@@ -835,7 +1142,7 @@ const QuotationDetail = () => {
                 quotation.expiredAt
             )}
           >
-            Báo giá có hiệu lực đến{" "}
+            Có hiệu lực đến{" "}
             {formatDateTime(
               quotation.expiredAtUtc ||
                 quotation.expiredAt
@@ -912,7 +1219,42 @@ const QuotationDetail = () => {
           </strong>
         </div>
       </section>
+      {orderSummary && (
+        <section className="quotation-order-summary">
+          <div>
+            <span>
+              Thông tin từ danh sách đơn hàng
+            </span>
 
+            <strong>
+              {orderSummary.itemNames ||
+                "Đơn ký gửi"}
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              Người nhận
+            </span>
+
+            <strong>
+              {orderSummary.receiverName ||
+                "-"}
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              Địa chỉ nhận
+            </span>
+
+            <strong>
+              {orderSummary.receiverAddress ||
+                "-"}
+            </strong>
+          </div>
+        </section>
+      )}
       <div className="quotation-main-grid">
         <section className="quotation-card quotation-cost-card">
           <div className="quotation-section-header">
@@ -926,45 +1268,136 @@ const QuotationDetail = () => {
               </h2>
 
               <p>
-                Các khoản phí dự kiến của đơn hàng
+                Hiển thị đầy đủ các khoản phí
               </p>
             </div>
           </div>
 
+          <div className="quotation-base-cost-grid">
+            <div>
+              <span>Cước vận chuyển</span>
+              <strong>
+                {formatMoney(
+                  quotation.estimatedFreightCharge
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Phí dịch vụ</span>
+              <strong>
+                {formatMoney(
+                  quotation.serviceFee
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Thuế / phí nhập khẩu</span>
+              <strong>
+                {formatMoney(
+                  quotation.taxAndDuty
+                )}
+              </strong>
+            </div>
+          </div>
+
           <div className="quotation-cost-list">
-            {costItems.map(
-              (item) => (
-                <div
-                  key={item.key}
-                  className="quotation-cost-row"
-                >
+            {costItems.length === 0 ? (
+              <div className="quotation-cost-row">
+                <span>
                   <span>
-                    {item.label}
+                    Chưa có khoản phí
                   </span>
 
-                  <strong>
-                    {formatMoney(
-                      item.value
-                    )}
-                  </strong>
-                </div>
+                  <small>
+                    API chưa trả về danh sách khoản phí
+                  </small>
+                </span>
+
+                <strong>
+                  {formatMoney(0)}
+                </strong>
+              </div>
+            ) : (
+              costItems.map(
+                (item) => (
+                  <div
+                    key={item.key}
+                    className={[
+                      "quotation-cost-row",
+                      !item.enabled &&
+                        "quotation-cost-row--disabled",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    <span>
+                      <span>
+                        {item.label}
+                      </span>
+
+                      <small>
+                        {item.calculationType ||
+                          item.meta ||
+                          "Khoản phí"}
+                        {item.required
+                          ? " • Bắt buộc"
+                          : " • Tùy chọn"}
+                        {!item.enabled
+                          ? " • Chưa áp dụng"
+                          : ""}
+                      </small>
+
+                      {item.note && (
+                        <em>
+                          {item.note}
+                        </em>
+                      )}
+                    </span>
+
+                    <strong>
+                      {formatMoney(
+                        item.value
+                      )}
+                    </strong>
+                  </div>
+                )
               )
+            )}
+
+            {activeCostTotal !== displayTotalCost && (
+              <div className="quotation-cost-row quotation-cost-row--sub-total">
+                <span>
+                  <span>
+                    Tổng các phí đang bật
+                  </span>
+
+                  <small>
+                    Dòng này dùng để đối chiếu với tổng tiền báo giá từ hệ thống
+                  </small>
+                </span>
+
+                <strong>
+                  {formatMoney(
+                    activeCostTotal
+                  )}
+                </strong>
+              </div>
             )}
 
             <div className="quotation-cost-total">
               <div>
                 <span>
-                  TỔNG CHI PHÍ DỰ KIẾN
+                  TỔNG CHI PHÍ THEO BÁO GIÁ
                 </span>
 
-                <small>
-                  Có thể thay đổi sau khi kiểm tra thực tế
-                </small>
+               
               </div>
 
               <strong>
                 {formatMoney(
-                  quotation.totalEstimatedCost
+                  displayTotalCost
                 )}
               </strong>
             </div>
@@ -983,7 +1416,7 @@ const QuotationDetail = () => {
               </h2>
 
               <p>
-                Chi tiết trạng thái và thông số
+                Hiển thị đầy đủ thông tin báo giá
               </p>
             </div>
           </div>
@@ -996,8 +1429,17 @@ const QuotationDetail = () => {
           >
             <Descriptions.Item label="Mã báo giá">
               <span className="quotation-id-text">
-                {quotation.quotationId ||
+                {quotation.consignmentCode ||
+                  quotation.quotationCode ||
+                  quotation.quoteCode ||
+                  quotation.quotationId ||
                   "-"}
+              </span>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Mã định danh báo giá">
+              <span className="quotation-id-text">
+                {quotation.quotationId || "-"}
               </span>
             </Descriptions.Item>
 
@@ -1019,7 +1461,7 @@ const QuotationDetail = () => {
 
             <Descriptions.Item label="Trạng thái">
               <span
-                className={`quotation-inline-status status-${statusClass}`}
+                className={`quotation-inline-status status-${effectiveStatusClass}`}
               >
                 {getQuotationStatusLabel(
                   effectiveStatus
@@ -1033,15 +1475,269 @@ const QuotationDetail = () => {
               )}
             </Descriptions.Item>
 
+            <Descriptions.Item label="Tổng trọng lượng">
+              {formatNumber(
+                quotation.totalWeight
+              )}{" "}
+              kg
+            </Descriptions.Item>
+
             <Descriptions.Item label="Tổng thể tích">
               {formatNumber(
                 quotation.totalVolume
               )}{" "}
               cm³
             </Descriptions.Item>
+
+            <Descriptions.Item label="Trọng lượng quy đổi">
+              {formatNumber(
+                quotation.volumetricWeight
+              )}{" "}
+              kg
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Trọng lượng tính cước">
+              {formatNumber(
+                quotation.chargeableWeight
+              )}{" "}
+              kg
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Cước vận chuyển">
+              <strong className="quotation-info-money">
+                {formatMoney(
+                  quotation.estimatedFreightCharge
+                )}
+              </strong>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Phí dịch vụ">
+              <strong className="quotation-info-money">
+                {formatMoney(
+                  quotation.serviceFee
+                )}
+              </strong>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Thuế / phí nhập khẩu">
+              <strong className="quotation-info-money">
+                {formatMoney(
+                  quotation.taxAndDuty
+                )}
+              </strong>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Tổng báo giá">
+              <strong className="quotation-info-money is-total">
+                {formatMoney(
+                  displayTotalCost
+                )}
+              </strong>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Số khoản phí">
+              {costItems.length} khoản
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Phí đang áp dụng">
+              {activeCostItems.length} khoản
+            </Descriptions.Item>
           </Descriptions>
         </section>
       </div>
+
+      <section className="quotation-card quotation-fees-detail-section">
+        <div className="quotation-section-header">
+          <div className="quotation-section-icon cost">
+            <PaymentsOutlinedIcon />
+          </div>
+
+          <div>
+            <h2>
+              Danh sách phụ phí 
+            </h2>
+
+            <p>
+              Hiển thị đầy đủ tên phí, loại phí, cách tính, số lượng và ghi chú
+            </p>
+          </div>
+        </div>
+
+        {costItems.length === 0 ? (
+          <div className="quotation-fee-empty">
+            Hệ thống chưa trả về danh sách khoản phí.
+          </div>
+        ) : (
+          <div className="quotation-fees-detail-grid">
+            {costItems.map(
+              (fee) => (
+                <article
+                  key={fee.key}
+                  className={[
+                    "quotation-fee-detail-card",
+                    !fee.enabled &&
+                      "is-disabled",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  <div className="quotation-fee-detail-header">
+                    <div>
+                      <span className="quotation-fee-code">
+                        {getSafeText(
+                          fee.codeLabel,
+                          fee.label
+                        )}
+                      </span>
+
+                      <h3>
+                        {fee.label}
+                      </h3>
+                    </div>
+
+                    <strong>
+                      {formatMoney(
+                        fee.value
+                      )}
+                    </strong>
+                  </div>
+
+                  <div className="quotation-fee-tags">
+                    <Tag
+                      color={
+                        fee.enabled
+                          ? "green"
+                          : "default"
+                      }
+                    >
+                      {fee.enabled
+                        ? "Đang áp dụng"
+                        : "Chưa áp dụng"}
+                    </Tag>
+
+                    <Tag
+                      color={
+                        fee.required
+                          ? "red"
+                          : "blue"
+                      }
+                    >
+                      {fee.required
+                        ? "Bắt buộc"
+                        : "Tùy chọn"}
+                    </Tag>
+
+                    <Tag color="gold">
+                      {fee.calculationType}
+                    </Tag>
+                  </div>
+
+                  <div className="quotation-fee-detail-grid-inner">
+                    <div>
+                      <span>Loại phí</span>
+                      <strong>
+                        {getSafeText(
+                          fee.feeType
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Đơn giá</span>
+                      <strong>
+                        {getFeeCalculationType(fee.raw) ===
+                        "PERCENTAGE"
+                          ? formatFeePercent(
+                              fee.unitPrice ??
+                                fee.configValue
+                            )
+                          : formatMoney(
+                              fee.unitPrice
+                            )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Số lượng</span>
+                      <strong>
+                        {formatFeeQuantity(
+                          fee.quantity
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Đơn vị</span>
+                      <strong>
+                        {getSafeText(
+                          fee.unitNoun
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Trạng thái áp dụng</span>
+                      <strong>
+                        {fee.enabled
+                          ? "Đang áp dụng"
+                          : "Chưa áp dụng"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Tính chất phí</span>
+                      <strong>
+                        {fee.required
+                          ? "Bắt buộc"
+                          : "Tùy chọn"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Mã định danh phí</span>
+                      <strong className="quotation-id-text">
+                        {getSafeText(
+                          fee.feeId
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Mã quy tắc giá</span>
+                      <strong className="quotation-id-text">
+                        {getSafeText(
+                          fee.pricingRuleId
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Ngày tạo phí</span>
+                      <strong
+                        title={formatDateTimeUtcTitle(
+                          fee.createdAtUtc ||
+                            fee.createdAt
+                        )}
+                      >
+                        {formatDateTime(
+                          fee.createdAtUtc ||
+                            fee.createdAt
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {fee.note && (
+                    <p className="quotation-fee-note">
+                      {fee.note}
+                    </p>
+                  )}
+                </article>
+              )
+            )}
+          </div>
+        )}
+      </section>
 
       <div className="quotation-bottom-grid">
         <section className="quotation-card">
@@ -1149,42 +1845,7 @@ const QuotationDetail = () => {
         </section>
       </div>
 
-      {orderSummary && (
-        <section className="quotation-order-summary">
-          <div>
-            <span>
-              Thông tin từ danh sách đơn hàng
-            </span>
-
-            <strong>
-              {orderSummary.itemNames ||
-                "Đơn ký gửi"}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Người nhận
-            </span>
-
-            <strong>
-              {orderSummary.receiverName ||
-                "-"}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Địa chỉ nhận
-            </span>
-
-            <strong>
-              {orderSummary.receiverAddress ||
-                "-"}
-            </strong>
-          </div>
-        </section>
-      )}
+  
     </div>
   );
 };
