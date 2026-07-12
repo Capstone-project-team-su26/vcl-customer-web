@@ -43,19 +43,11 @@ export const createConsignmentApi = async (payload) => {
   }
 };
 
-export const getConsignmentsApi = async (
-  pageNumber = 1,
-  pageSize = 100,
-  options = {}
-) => {
+export const getConsignmentsApi = async (options = {}) => {
   try {
     const response = await axiosInstance.get(
       "/api/orders/consignments",
       {
-        params: {
-          pageNumber,
-          pageSize,
-        },
         signal: getSignal(options),
         headers: {
           Accept: "text/plain, application/json",

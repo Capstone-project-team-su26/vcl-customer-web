@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -13,7 +14,6 @@ import {
   DatePicker,
   Input,
   Space,
-  message,
 } from "antd";
 
 import {
@@ -24,10 +24,13 @@ import {
 
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import SearchIcon from "@mui/icons-material/Search";
 
 import { getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
 import { getConsignmentStatusesApi } from "../../../../api/OrderApi/consignmentStatusApi";
+import AuthNotify from "../../../../utils/AuthNotify";
 
 import {
   apiToUtcIso,
@@ -40,7 +43,6 @@ import "./ConsignmentList.css";
 const { RangePicker } = DatePicker;
 
 const DEFAULT_PAGE_SIZE = 5;
-const API_PAGE_SIZE = 100;
 
 /* =========================================================
    HELPER FUNCTIONS
@@ -52,6 +54,51 @@ const normalizeText = (value) => {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+};
+
+const extractConsignmentItems = (apiResult) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.results,
+    apiResult?.data?.items,
+    apiResult?.data?.results,
+    apiResult?.data?.data,
+    apiResult?.data?.data?.items,
+    apiResult?.data?.data?.results,
+  ];
+
+  return candidates.find(Array.isArray) || [];
+};
+
+const copyTextToClipboard = async (text) => {
+  if (
+    navigator.clipboard?.writeText &&
+    window.isSecureContext
+  ) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+
+  textArea.value = text;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.top = "-9999px";
+  textArea.style.opacity = "0";
+
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  const copied = document.execCommand("copy");
+
+  document.body.removeChild(textArea);
+
+  if (!copied) {
+    throw new Error("Không thể sao chép mã vận đơn.");
+  }
 };
 
 const formatStatusCode = (status) =>
@@ -259,6 +306,9 @@ const ConsignmentList = () => {
 
   const [pageNumber, setPageNumber] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [copiedTrackingCode, setCopiedTrackingCode] =
+    useState("");
+  const copyResetTimerRef = useRef(null);
 
   /* =========================================================
      FETCH ALL CONSIGNMENTS
@@ -266,68 +316,11 @@ const ConsignmentList = () => {
 
   const fetchAllConsignments = useCallback(
     async (signal) => {
-      const firstResponse =
-        await getConsignmentsApi(
-          1,
-          API_PAGE_SIZE,
-          { signal }
-        );
+      const response = await getConsignmentsApi({
+        signal,
+      });
 
-      const firstPageData = firstResponse?.data;
-
-      if (!firstPageData) {
-        throw new Error(
-          "Response API không chứa trường data."
-        );
-      }
-
-      const firstPageItems = Array.isArray(
-        firstPageData.items
-      )
-        ? firstPageData.items
-        : [];
-
-      const totalApiPages = Math.max(
-        1,
-        Number(firstPageData.totalPages) || 1
-      );
-
-      const actualApiPageSize =
-        Number(firstPageData.pageSize) ||
-        API_PAGE_SIZE;
-
-      if (totalApiPages === 1) {
-        return firstPageItems;
-      }
-
-      const remainingRequests = Array.from(
-        {
-          length: totalApiPages - 1,
-        },
-        (_, index) =>
-          getConsignmentsApi(
-            index + 2,
-            actualApiPageSize,
-            { signal }
-          )
-      );
-
-      const remainingResponses =
-        await Promise.all(remainingRequests);
-
-      const remainingItems =
-        remainingResponses.flatMap((response) => {
-          return Array.isArray(
-            response?.data?.items
-          )
-            ? response.data.items
-            : [];
-        });
-
-      return [
-        ...firstPageItems,
-        ...remainingItems,
-      ];
+      return extractConsignmentItems(response);
     },
     []
   );
@@ -358,7 +351,8 @@ const ConsignmentList = () => {
           error
         );
 
-        message.error(
+        AuthNotify.error(
+          "Không tải được danh sách ký gửi",
           error?.response?.data?.message ||
             error?.message ||
             "Không thể tải danh sách ký gửi."
@@ -414,7 +408,8 @@ const ConsignmentList = () => {
           error
         );
 
-        message.error(
+        AuthNotify.error(
+          "Không tải được trạng thái",
           error?.response?.data?.message ||
             error?.message ||
             "Không thể tải danh sách trạng thái."
@@ -434,6 +429,15 @@ const ConsignmentList = () => {
       controller.abort();
     };
   }, [refreshKey]);
+
+  useEffect(
+    () => () => {
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(copyResetTimerRef.current);
+      }
+    },
+    []
+  );
 
   const statusLabelMap = useMemo(() => {
     return new Map(
@@ -486,7 +490,8 @@ const ConsignmentList = () => {
     );
 
     if (endDate.isBefore(startDate, "day")) {
-      message.warning(
+      AuthNotify.warning(
+        "Khoảng ngày không hợp lệ",
         "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu."
       );
 
@@ -644,6 +649,53 @@ const ConsignmentList = () => {
     );
   };
 
+  const handleCopyTrackingCode = async (
+    event,
+    item
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const trackingCode = getTrackingCode(item);
+
+    if (!trackingCode || trackingCode === "-") {
+      AuthNotify.warning(
+        "Chưa có mã vận đơn",
+        "Đơn hàng chưa có mã vận đơn để sao chép."
+      );
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(trackingCode);
+
+      setCopiedTrackingCode(trackingCode);
+      AuthNotify.success(
+        "Sao chép thành công",
+        "Đã sao chép mã vận đơn."
+      );
+
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(copyResetTimerRef.current);
+      }
+
+      copyResetTimerRef.current =
+        window.setTimeout(() => {
+          setCopiedTrackingCode("");
+        }, 1800);
+    } catch (error) {
+      console.error(
+        "Không thể sao chép mã vận đơn:",
+        error
+      );
+
+      AuthNotify.error(
+        "Sao chép thất bại",
+        "Không thể sao chép mã vận đơn. Vui lòng thử lại."
+      );
+    }
+  };
+
   const handlePageChange = (
     _,
     nextPageNumber
@@ -755,6 +807,7 @@ const ConsignmentList = () => {
     return String(orderCode || "").trim() || "-";
   };
 
+
   const hasActiveFilter = Boolean(
     searchInput.trim() ||
       (dateRangeInput?.[0] &&
@@ -795,7 +848,7 @@ const ConsignmentList = () => {
               prefix={
                 <SearchIcon className="filter-search-icon" />
               }
-              placeholder="Tìm mã đơn, khách hàng, người nhận..."
+              placeholder="Tìm mã vận đơn, sản phẩm, người nhận..."
               value={searchInput}
               onChange={handleSearchChange}
               onPressEnter={() =>
@@ -910,36 +963,81 @@ const ConsignmentList = () => {
                           item
                         )
                       }
-                      aria-label={`Xem chi tiết lô hàng ${getTrackingCode(
+                      aria-label={`Xem chi tiết đơn ký gửi ${getTrackingCode(
                         item
                       )}`}
                     >
                       <div className="card-header">
                         <div className="header-left">
-                          <span className="order-code">
-                            {getTrackingCode(
-                              item
-                            )}
-                          </span>
+                          <div className="tracking-code-block">
+                            <span className="tracking-code-label">
+                              MÃ VẬN ĐƠN
+                            </span>
 
-                          <span className="tag-type">
-                            {getConsignmentTypeLabel(
-                              item.consignmentType
-                            )}
-                          </span>
+                            <div className="tracking-code-row">
+                              <strong className="order-code">
+                                {getTrackingCode(
+                                  item
+                                )}
+                              </strong>
 
-                          <span className="tag-count">
-                            Tuyến{" "}
-                            {item.route || "-"}
-                          </span>
+                              <button
+                                type="button"
+                                className={[
+                                  "copy-tracking-button",
+                                  copiedTrackingCode ===
+                                    getTrackingCode(item) &&
+                                    "is-copied",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                title="Sao chép mã vận đơn"
+                                aria-label={`Sao chép mã vận đơn ${getTrackingCode(
+                                  item
+                                )}`}
+                                onClick={(event) =>
+                                  handleCopyTrackingCode(
+                                    event,
+                                    item
+                                  )
+                                }
+                              >
+                                {copiedTrackingCode ===
+                                getTrackingCode(item) ? (
+                                  <>
+                                    <CheckRoundedIcon />
+                                    <span>Đã chép</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ContentCopyRoundedIcon />
+                                    <span>Sao chép</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
 
-                          <span
-                            className={`tag-status-header status-${statusClass}`}
-                          >
-                            {getStatusLabel(
-                              item.status
-                            )}
-                          </span>
+                          <div className="header-tags">
+                            <span className="tag-type">
+                              {getConsignmentTypeLabel(
+                                item.consignmentType
+                              )}
+                            </span>
+
+                            <span className="tag-count">
+                              Tuyến{" "}
+                              {item.route || "-"}
+                            </span>
+
+                            <span
+                              className={`tag-status-header status-${statusClass}`}
+                            >
+                              {getStatusLabel(
+                                item.status
+                              )}
+                            </span>
+                          </div>
                         </div>
 
                         <Button
@@ -1008,9 +1106,14 @@ const ConsignmentList = () => {
                           </div>
 
                           <div className="product-info">
-                            <div className="customer-name">
-                              {item.itemNames ||
-                                "-"}
+                            <div className="product-name-group">
+                              <span className="product-name-label">
+                                SẢN PHẨM
+                              </span>
+
+                              <strong className="product-name-value">
+                                {item.itemNames || "-"}
+                              </strong>
                             </div>
 
                             <div className="sku-tag">
@@ -1018,15 +1121,19 @@ const ConsignmentList = () => {
                             </div>
 
                             <div className="receiver-phone">
-                              SĐT:{" "}
-                              {item.receiverPhone ||
-                                "-"}
+                              <span>Số điện thoại:</span>{" "}
+                              <strong>
+                                {item.receiverPhone ||
+                                  "-"}
+                              </strong>
                             </div>
 
                             <div className="receiver-address">
-                              Địa Chỉ:{" "}
-                              {item.receiverAddress ||
-                                "-"}
+                              <span>Địa chỉ:</span>{" "}
+                              <strong>
+                                {item.receiverAddress ||
+                                  "-"}
+                              </strong>
                             </div>
                           </div>
                         </div>
