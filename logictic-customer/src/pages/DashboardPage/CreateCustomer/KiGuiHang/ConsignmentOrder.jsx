@@ -19,8 +19,9 @@ import {
   PlusOutlined,
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
-import { Switch } from "antd";
+
 import uploadImage from "../../../../api/Upload/UploadImage";
+import ConsignmentOrderConfirm from "../../../../components/DashboardComponents/CustomerKiguiComponents/ConfirmKigui/ConsignmentOrderConfirm";
 import "./ConsignmentOrder.css";
 import AuthNotify from "../../../../utils/AuthNotify";
 import {
@@ -42,7 +43,7 @@ import {
   getBrowserTimeInfo,
   getSyncedNowUtcIso,
 } from "../../../../utils/timeUtc";
-
+import { Switch, Tooltip } from "antd";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const ACCEPTED_IMAGE_TYPES = [
@@ -51,28 +52,87 @@ const ACCEPTED_IMAGE_TYPES = [
   "image/webp",
 ];
 
+
 const PACKAGE_NUMBER_FIELDS = [
   {
     field: "weight",
-    label: "CÂN NẶNG (KG)",
+    label: (
+      <span className="field-label-with-tooltip">
+        CÂN NẶNG KIỆN HÀNG(KG)
+
+        <Tooltip title="Nhập tổng cân nặng của kiện hàng theo đơn vị kilogram (kg).">
+          <InfoCircleOutlined
+            style={{
+              color: "#1890ff",
+              cursor: "pointer",
+              marginLeft: 6,
+            }}
+          />
+        </Tooltip>
+      </span>
+    ),
     placeholder: "Nhập cân nặng...",
   },
   {
     field: "length",
-    label: "DÀI (CM)",
+    label: (
+      <span className="field-label-with-tooltip">
+        DÀI (CM)
+
+        <Tooltip title="Nhập chiều dài của kiện hàng theo đơn vị centimet (cm).">
+          <InfoCircleOutlined
+            style={{
+              color: "#1890ff",
+              cursor: "pointer",
+              marginLeft: 6,
+            }}
+          />
+        </Tooltip>
+      </span>
+    ),
     placeholder: "Nhập chiều dài...",
   },
   {
     field: "width",
-    label: "RỘNG (CM)",
+    label: (
+      <span className="field-label-with-tooltip">
+        RỘNG (CM)
+
+        <Tooltip title="Nhập chiều rộng của kiện hàng theo đơn vị centimet (cm).">
+          <InfoCircleOutlined
+            style={{
+              color: "#1890ff",
+              cursor: "pointer",
+              marginLeft: 6,
+            }}
+          />
+        </Tooltip>
+      </span>
+    ),
     placeholder: "Nhập chiều rộng...",
   },
   {
     field: "height",
-    label: "CAO (CM)",
+    label: (
+      <span className="field-label-with-tooltip">
+        CAO (CM)
+
+        <Tooltip title="Nhập chiều cao của kiện hàng theo đơn vị centimet (cm).">
+          <InfoCircleOutlined
+            style={{
+              color: "#1890ff",
+              cursor: "pointer",
+              marginLeft: 6,
+            }}
+          />
+        </Tooltip>
+      </span>
+    ),
     placeholder: "Nhập chiều cao...",
   },
 ];
+
+
 
 const INITIAL_FORM = {
   route: "",
@@ -80,6 +140,7 @@ const INITIAL_FORM = {
   receiverName: "",
   receiverPhone: "",
   selectedDeliveryAddress: "",
+  note: "",
   inspectPackage: true,
 };
 
@@ -105,7 +166,6 @@ const createEmptyPackage = () => ({
   length: "",
   declaredValue: "",
   trackingCode: "",
-  note: "",
   images: [],
 });
 
@@ -115,6 +175,7 @@ const createEmptyFormErrors = () => ({
   receiverName: "",
   receiverPhone: "",
   selectedDeliveryAddress: "",
+  note: "",
 });
 
 const createEmptyAddressForm = () => ({
@@ -427,10 +488,6 @@ const validatePackage = (pkg) => {
     }
   });
 
-  if (!pkg.note.trim()) {
-    errors.note = "Vui lòng nhập ghi chú kiện hàng.";
-  }
-
   if (!pkg.images.length) {
     errors.images = "Vui lòng tải ít nhất 1 ảnh sản phẩm.";
   }
@@ -472,6 +529,10 @@ const validateConsignmentForm = ({
   if (!form.selectedDeliveryAddress.trim()) {
     formErrors.selectedDeliveryAddress =
       "Vui lòng thêm và chọn địa chỉ nhận hàng.";
+  }
+
+  if (!form.note.trim()) {
+    formErrors.note = "Vui lòng nhập ghi chú cho đơn ký gửi.";
   }
 
   const packageErrors = Object.fromEntries(
@@ -587,6 +648,7 @@ export default function ConsignmentOrder() {
 
   const [activeLightboxImg, setActiveLightboxImg] =
     useState(null);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(
     "Đang chuẩn bị tạo đơn..."
@@ -1466,8 +1528,28 @@ export default function ConsignmentOrder() {
     return result.isValid;
   };
 
-  const handleCreateOrder = async () => {
+  const handleOpenConfirmation = () => {
     if (isSubmitting || !validateForm()) {
+      return;
+    }
+
+    setIsConfirming(true);
+
+    window.setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }, 0);
+  };
+
+  const handleCreateOrder = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!validateForm()) {
+      setIsConfirming(false);
       return;
     }
 
@@ -1555,11 +1637,7 @@ export default function ConsignmentOrder() {
           browserTimeInfo.utcOffsetMinutes,
 
         requiresInspection: form.inspectPackage,
-        note:
-          packages
-            .map((pkg) => pkg.note.trim())
-            .filter(Boolean)
-            .join(", ") || "Hàng ký gửi",
+        note: form.note.trim(),
         items,
       });
 
@@ -1599,6 +1677,22 @@ export default function ConsignmentOrder() {
       );
     }
   };
+
+  if (isConfirming) {
+    return (
+      <ConsignmentOrderConfirm
+        form={form}
+        packages={packages}
+        routeOptions={routeOptions}
+        shippingOptions={shippingOptions}
+        productTypeOptions={productTypeOptions}
+        isSubmitting={isSubmitting}
+        submitMessage={submitMessage}
+        onBack={() => setIsConfirming(false)}
+        onConfirm={handleCreateOrder}
+      />
+    );
+  }
 
   return (
     <div
@@ -1759,7 +1853,7 @@ export default function ConsignmentOrder() {
             <div className="left-inner-section border-top-dash">
               <label className="field-label">
                 <EnvironmentOutlined />
-                ĐỊA CHỈ ĐANG CHỌN
+                ĐỊA CHỈ NHẬN HÀNG
               </label>
 
               <div
@@ -2105,12 +2199,26 @@ export default function ConsignmentOrder() {
               </div>
 
               <div className="toggle-text-info">
-                <h4>YÊU CẦU KIỂM HÀNG</h4>
-                <p>
-                  Khai mở kiểm đếm số lượng thực tế
-                  tại kho.
-                </p>
-              </div>
+  <div className="toggle-title-row">
+    <h4>YÊU CẦU KIỂM HÀNG</h4>
+
+    <Tooltip
+      title="Bật tùy chọn này nếu bạn muốn nhân viên kho mở kiện hàng để kiểm tra sản phẩm và đối chiếu số lượng thực tế."
+      placement="top"
+    >
+   <InfoCircleOutlined
+  style={{
+    color: "#1890ff",
+    cursor: "pointer",
+  }}
+/>
+    </Tooltip>
+  </div>
+
+  <p>
+    Mở kiện và kiểm đếm số lượng sản phẩm thực tế tại kho.
+  </p>
+</div>
 
               <Switch
                 checked={form.inspectPackage}
@@ -2141,16 +2249,29 @@ export default function ConsignmentOrder() {
                   }}
                 >
                   <div className="form-step-header">
-                    <div className="step-header-left">
-                      <div className="step-number-circle">
-                        {index + 1}
-                      </div>
+                  <div className="step-header-left">
+  <div className="step-number-circle">
+    {index + 1}
+  </div>
 
-                      <h3>
-                        THÔNG TIN SẢN PHẨM KIỆN
-                        THỨ {index + 1}
-                      </h3>
-                    </div>
+  <h3>
+    THÔNG TIN SẢN PHẨM KIỆN THỨ {index + 1}
+  </h3>
+
+  <Tooltip
+    title={`Nhập chính xác thông tin sản phẩm thuộc kiện hàng thứ ${
+      index + 1
+    }, bao gồm tên sản phẩm, loại hàng hóa, số lượng, giá trị, cân nặng và kích thước. Để chúng tính chi phí chính xác và đảm bảo kiện hàng được vận chuyển an toàn.`}
+    placement="top"
+  >
+    <InfoCircleOutlined
+      className="package-header-info-icon"
+      aria-label={`Hướng dẫn nhập thông tin kiện hàng thứ ${
+        index + 1
+      }`}
+    />
+  </Tooltip>
+</div>
 
                     {packages.length > 1 && (
                       <button
@@ -2411,34 +2532,6 @@ export default function ConsignmentOrder() {
                     />
                   </div>
 
-                  <div className="input-field-group">
-                    <label className="field-label required-label">
-                      GHI CHÚ KIỆN HÀNG
-                    </label>
-
-                    <textarea
-                      rows={2}
-                      value={pkg.note}
-                      disabled={isSubmitting}
-                      placeholder="Mô tả đặc điểm, ghi chú bổ sung cho kiện hàng..."
-                      className={getFieldClassName(
-                        "custom-textarea",
-                        errors.note
-                      )}
-                      onChange={(event) =>
-                        handleInputChange(
-                          pkg.id,
-                          "note",
-                          event.target.value
-                        )
-                      }
-                    />
-
-                    <FieldError
-                      message={errors.note}
-                    />
-                  </div>
-
                   <div className="input-field-group package-image-section">
                     <label className="field-label required-label">
                       ẢNH SẢN PHẨM KIỆN{" "}
@@ -2575,13 +2668,50 @@ export default function ConsignmentOrder() {
               <span>THÊM KIỆN HÀNG MỚI</span>
             </button>
 
+            <div
+              className="form-main-card consignment-general-note-card"
+              style={{ marginTop: "1.25rem", marginBottom: "1.5rem" }}
+            >
+              <div className="form-step-header">
+                <div className="step-header-left">
+                  <div className="step-number-circle">
+                    <InfoCircleOutlined />
+                  </div>
+
+                  <h3>GHI CHÚ CHUNG CHO ĐƠN KÝ GỬI</h3>
+                </div>
+              </div>
+
+              <div className="input-field-group">
+                <label className="field-label required-label">
+                  GHI CHÚ ĐƠN HÀNG
+                </label>
+
+                <textarea
+                  rows={4}
+                  value={form.note}
+                  disabled={isSubmitting}
+                  placeholder="Nhập ghi chú chung, yêu cầu đóng gói hoặc thông tin cần lưu ý cho toàn bộ đơn ký gửi..."
+                  className={getFieldClassName(
+                    "custom-textarea",
+                    formErrors.note
+                  )}
+                  onChange={(event) =>
+                    updateForm("note", event.target.value)
+                  }
+                />
+
+                <FieldError message={formErrors.note} />
+              </div>
+            </div>
+
             <div className="sticky-action-notice-bar">
               <div className="notice-left-message">
                 <InfoCircleOutlined className="info-notice-icon" />
 
                 <p>
                   <strong>LƯU Ý:</strong> Đơn
-                  hàng sẽ được nhân viên VCL
+                  hàng sẽ được nhân viên Việt Nam Logictic
                   kiểm tra và xác nhận lại
                   thông tin trước khi xử lý.
                 </p>
@@ -2591,7 +2721,7 @@ export default function ConsignmentOrder() {
                 type="button"
                 className="btn-final-submit-order"
                 disabled={isSubmitting}
-                onClick={handleCreateOrder}
+                onClick={handleOpenConfirmation}
               >
                 {isSubmitting ? (
                   <>

@@ -2230,3 +2230,32 @@
     display: none;
   }
 }
+.field-label-with-tooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.toggle-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.toggle-title-row h4 {
+  margin: 0;
+}
+
+.toggle-info-icon {
+  color: #1890ff;
+  font-size: 15px;
+  cursor: help;
+  flex-shrink: 0;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.toggle-info-icon:hover {
+  color: #0958d9;
+  transform: scale(1.1);
+}
