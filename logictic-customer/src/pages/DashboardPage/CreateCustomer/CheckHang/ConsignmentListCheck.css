@@ -1359,3 +1359,240 @@
     min-width: 100%;
   }
 }
+/* =========================================================
+   FIX: MÃ VẬN ĐƠN, SẢN PHẨM VÀ CARD BÁO GIÁ
+   ========================================================= */
+
+.card-header {
+  align-items: flex-start;
+}
+
+.header-left {
+  flex: 1;
+  align-items: flex-end;
+  gap: 12px 18px;
+}
+
+.tracking-code-block {
+  min-width: 0;
+  flex: 1 1 420px;
+}
+
+.tracking-code-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tracking-code-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.tracking-code-row .order-code {
+  min-width: 0;
+  max-width: 620px;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 850;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-tracking-button {
+  min-height: 34px;
+  padding: 0 11px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.copy-tracking-button svg {
+  font-size: 16px;
+}
+
+.copy-tracking-button:hover:not(:disabled) {
+  color: #ffffff;
+  background: var(--vcl-primary);
+  border-color: var(--vcl-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.2);
+}
+
+.copy-tracking-button.is-copied {
+  color: #047857;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.copy-tracking-button:disabled {
+  color: #94a3b8;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+}
+
+.copy-tracking-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.16);
+  outline-offset: 2px;
+}
+
+.header-tags {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.product-name-group {
+  min-width: 0;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.product-name-label {
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-name-value {
+  max-width: 100%;
+  overflow: hidden;
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.consignment-card {
+  contain: layout paint;
+}
+
+.card-body {
+  min-height: 132px;
+}
+
+.body-left {
+  align-items: flex-start;
+}
+
+.product-info {
+  width: 100%;
+  flex: 1;
+}
+
+.receiver-phone strong,
+.receiver-address strong {
+  color: #334155;
+}
+
+@media (max-width: 1024px) {
+  .tracking-code-block {
+    flex-basis: 100%;
+  }
+
+  .tracking-code-row .order-code,
+  .product-name-group {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+  }
+
+  .header-left,
+  .tracking-code-block,
+  .view-detail-button {
+    width: 100%;
+  }
+
+  .tracking-code-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tracking-code-row .order-code {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .copy-tracking-button {
+    width: fit-content;
+  }
+
+  .card-body {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .copy-tracking-button {
+    width: 100%;
+  }
+
+  .header-tags {
+    width: 100%;
+  }
+
+  .product-name-value,
+  .receiver-address {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .body-left {
+    width: 100%;
+  }
+
+  .product-info {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-tracking-button {
+    transition: none;
+  }
+
+  .copy-tracking-button:hover:not(:disabled) {
+    transform: none;
+  }
+}

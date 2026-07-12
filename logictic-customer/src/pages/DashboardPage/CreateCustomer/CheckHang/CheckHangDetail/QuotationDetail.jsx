@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -30,6 +31,11 @@ import ScaleOutlinedIcon from "@mui/icons-material/ScaleOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import PaymentRoundedIcon from "@mui/icons-material/PaymentRounded";
 import AuthNotify from "../../../../../utils/AuthNotify";
 
 import {
@@ -41,6 +47,12 @@ import {
 
 import { getConsignmentStatusesApi } from "../../../../../api/OrderApi/consignmentStatusApi";
 import { getOrderQuotationApi } from "../../../../../api/OrderApi/consignmentApi";
+import {
+  acceptQuotationApi,
+  rejectQuotationApi,
+  confirmAndPayQuotationApi,
+  getPaymentCheckoutUrl,
+} from "../../../../../api/OrderApi/purchaseRequestApi";
 
 import "./QuotationDetail.css";
 
@@ -52,6 +64,8 @@ const QUOTATION_STATUS_FALLBACK_LABELS = {
   DRAFT: "BẢN NHÁP",
   PENDING: "CHỜ XÁC NHẬN",
   APPROVED: "ĐÃ DUYỆT",
+  ACCEPTED: "ĐÃ CHẤP NHẬN",
+  PAID: "ĐÃ THANH TOÁN",
   REJECTED: "ĐÃ TỪ CHỐI",
   EXPIRED: "HẾT HẠN",
   CANCELLED: "ĐÃ HỦY",
@@ -378,6 +392,41 @@ const formatFeePercent = (value) => {
   return `${formatNumber(number, 2)}%`;
 };
 
+const copyTextToClipboard = async (text) => {
+  const value = String(text || "").trim();
+
+  if (!value) {
+    throw new Error("Không có nội dung để sao chép.");
+  }
+
+  if (
+    navigator.clipboard?.writeText &&
+    window.isSecureContext
+  ) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.top = "-9999px";
+  textArea.style.opacity = "0";
+
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  const copied = document.execCommand("copy");
+
+  document.body.removeChild(textArea);
+
+  if (!copied) {
+    throw new Error("Không thể sao chép mã vận đơn.");
+  }
+};
+
 /* =========================================================
    FEE HELPERS
    ========================================================= */
@@ -548,17 +597,8 @@ const normalizeFeeToCostItem = (
 };
 
 const getCostItems = (quotation) => {
-  const additionalFees =
-    getAdditionalFees(quotation);
-
-  if (additionalFees.length > 0) {
-    return additionalFees.map(
-      normalizeFeeToCostItem
-    );
-  }
-
-  return getFallbackCostItems(
-    quotation
+  return getAdditionalFees(quotation).map(
+    normalizeFeeToCostItem
   );
 };
 
@@ -581,6 +621,41 @@ const getActiveCostTotal = (
     );
 };
 
+const getBaseCostTotal = (quotation) => {
+  const freight = Number(
+    quotation?.estimatedFreightCharge
+  );
+  const serviceFee = Number(
+    quotation?.serviceFee
+  );
+  const taxAndDuty = Number(
+    quotation?.taxAndDuty
+  );
+
+  return [
+    freight,
+    serviceFee,
+    taxAndDuty,
+  ].reduce(
+    (total, value) =>
+      total +
+      (Number.isFinite(value)
+        ? value
+        : 0),
+    0
+  );
+};
+
+const getCalculatedTotalCost = (
+  quotation,
+  costItems = []
+) => {
+  return (
+    getBaseCostTotal(quotation) +
+    getActiveCostTotal(costItems)
+  );
+};
+
 const getDisplayTotalCost = (
   quotation,
   costItems = []
@@ -593,12 +668,14 @@ const getDisplayTotalCost = (
     return apiTotal;
   }
 
-  return getActiveCostTotal(costItems);
+  return getCalculatedTotalCost(
+    quotation,
+    costItems
+  );
 };
 
 const getQuotationCode = (quotation) => {
   const code =
-    quotation?.consignmentCode ||
     quotation?.quotationCode ||
     quotation?.quoteCode ||
     quotation?.quotationId;
@@ -606,6 +683,19 @@ const getQuotationCode = (quotation) => {
   return (
     String(code || "").trim() ||
     "-"
+  );
+};
+
+const getConsignmentCode = (quotation) => {
+  const code =
+    quotation?.consignmentCode ||
+    quotation?.trackingCode ||
+    quotation?.waybillCode ||
+    quotation?.shipmentCode;
+
+  return (
+    String(code || "").trim() ||
+    "Chưa được cấp mã"
   );
 };
 
@@ -671,6 +761,49 @@ const isCanceledRequest = (error) => {
   );
 };
 
+const getActionResponseMessage = (
+  apiResult,
+  fallbackMessage
+) => {
+  if (
+    typeof apiResult === "string" &&
+    apiResult.trim()
+  ) {
+    return apiResult.trim();
+  }
+
+  return (
+    apiResult?.message ||
+    apiResult?.data?.message ||
+    apiResult?.data?.data?.message ||
+    fallbackMessage
+  );
+};
+
+const buildPaymentRedirectUrl = (
+  paymentStatus,
+  quotationId
+) => {
+  const redirectUrl = new URL(
+    window.location.href
+  );
+
+  redirectUrl.search = "";
+  redirectUrl.hash = "";
+
+  redirectUrl.searchParams.set(
+    "payment",
+    paymentStatus
+  );
+
+  redirectUrl.searchParams.set(
+    "quotationId",
+    quotationId
+  );
+
+  return redirectUrl.toString();
+};
+
 /* =========================================================
    COMPONENT
    ========================================================= */
@@ -704,6 +837,29 @@ const QuotationDetail = () => {
     statusOptions,
     setStatusOptions,
   ] = useState([]);
+
+  const [
+    copiedConsignmentCode,
+    setCopiedConsignmentCode,
+  ] = useState("");
+
+  const [
+    quotationAction,
+    setQuotationAction,
+  ] = useState("");
+
+  const copyResetTimerRef =
+    useRef(null);
+
+  /*
+   * Giá trị hiển thị được tạo ngay trong component để mọi handler
+   * và phần JSX đều dùng chung một nguồn, không còn lỗi biến ngoài scope.
+   */
+  const displayConsignmentCode =
+    getConsignmentCode(quotation);
+
+  const displayQuotationCode =
+    getQuotationCode(quotation);
 
   const fetchQuotation =
     useCallback(
@@ -865,6 +1021,17 @@ const QuotationDetail = () => {
     };
   }, [fetchQuotation]);
 
+  useEffect(
+    () => () => {
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(
+          copyResetTimerRef.current
+        );
+      }
+    },
+    []
+  );
+
   const handleReload = () => {
     const controller =
       new AbortController();
@@ -880,6 +1047,290 @@ const QuotationDetail = () => {
   const handleBack = () => {
     navigate(-1);
   };
+
+  const handleCopyConsignmentCode = async (
+    event
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (
+      !displayConsignmentCode ||
+      displayConsignmentCode ===
+        "Chưa được cấp mã"
+    ) {
+      AuthNotify.warning(
+        "Chưa có mã vận đơn",
+        "Báo giá chưa có mã vận đơn để sao chép."
+      );
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(
+        displayConsignmentCode
+      );
+
+      setCopiedConsignmentCode(
+        displayConsignmentCode
+      );
+
+      AuthNotify.success(
+        "Sao chép thành công",
+        `Đã sao chép mã vận đơn ${displayConsignmentCode}.`
+      );
+
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(
+          copyResetTimerRef.current
+        );
+      }
+
+      copyResetTimerRef.current =
+        window.setTimeout(() => {
+          setCopiedConsignmentCode("");
+        }, 1800);
+    } catch (error) {
+      console.error(
+        "Không thể sao chép mã vận đơn:",
+        error
+      );
+
+      AuthNotify.error(
+        "Sao chép thất bại",
+        "Không thể sao chép mã vận đơn. Vui lòng thử lại."
+      );
+    }
+  };
+
+  const handleQuotationActionError = (
+    error,
+    title,
+    fallbackMessage
+  ) => {
+    if (isCanceledRequest(error)) {
+      return;
+    }
+
+    console.error(
+      title,
+      error
+    );
+
+    const responseStatus =
+      error?.response?.status;
+
+    const apiMessage =
+      getApiErrorMessage(
+        error,
+        fallbackMessage
+      );
+
+    if (responseStatus === 401) {
+      sessionStorage.removeItem(
+        "accessToken"
+      );
+
+      localStorage.removeItem(
+        "accessToken"
+      );
+
+      AuthNotify.error(
+        "Phiên đăng nhập hết hạn",
+        "Vui lòng đăng nhập lại để tiếp tục."
+      );
+
+      navigate("/login");
+      return;
+    }
+
+    AuthNotify.error(
+      title,
+      apiMessage
+    );
+  };
+
+  const reloadQuotationAfterAction =
+    async () => {
+      const refreshController =
+        new AbortController();
+
+      await fetchQuotation(
+        refreshController.signal
+      );
+    };
+
+  const handleRejectQuotation =
+    async () => {
+      const quotationId =
+        quotation?.quotationId;
+
+      if (!quotationId) {
+        AuthNotify.error(
+          "Không thể từ chối báo giá",
+          "Không tìm thấy mã định danh báo giá."
+        );
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Bạn có chắc chắn muốn từ chối báo giá này không?"
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setQuotationAction("reject");
+
+        const result =
+          await rejectQuotationApi(
+            quotationId
+          );
+
+        AuthNotify.success(
+          "Từ chối báo giá thành công",
+          getActionResponseMessage(
+            result,
+            "Báo giá đã được từ chối trên hệ thống."
+          )
+        );
+
+        await reloadQuotationAfterAction();
+      } catch (error) {
+        handleQuotationActionError(
+          error,
+          "Từ chối báo giá thất bại",
+          "Không thể từ chối báo giá. Vui lòng thử lại."
+        );
+      } finally {
+        setQuotationAction("");
+      }
+    };
+
+  const handleAcceptQuotation =
+    async () => {
+      const quotationId =
+        quotation?.quotationId;
+
+      if (!quotationId) {
+        AuthNotify.error(
+          "Không thể chấp nhận báo giá",
+          "Không tìm thấy mã định danh báo giá."
+        );
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Bạn có chắc chắn muốn chấp nhận báo giá tạm tính này không?"
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setQuotationAction("accept");
+
+        const result =
+          await acceptQuotationApi(
+            quotationId
+          );
+
+        AuthNotify.success(
+          "Chấp nhận báo giá thành công",
+          getActionResponseMessage(
+            result,
+            "Báo giá tạm tính đã được chấp nhận."
+          )
+        );
+
+        await reloadQuotationAfterAction();
+      } catch (error) {
+        handleQuotationActionError(
+          error,
+          "Chấp nhận báo giá thất bại",
+          "Không thể chấp nhận báo giá. Vui lòng thử lại."
+        );
+      } finally {
+        setQuotationAction("");
+      }
+    };
+
+  const handleConfirmAndPay =
+    async () => {
+      const quotationId =
+        quotation?.quotationId;
+
+      if (!quotationId) {
+        AuthNotify.error(
+          "Không thể tạo thanh toán",
+          "Không tìm thấy mã định danh báo giá."
+        );
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Bạn có chắc chắn muốn xác nhận báo giá và thanh toán ${formatMoney(
+          displayTotalCost
+        )} không?`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        setQuotationAction("pay");
+
+        const result =
+          await confirmAndPayQuotationApi(
+            quotationId,
+            {
+              returnUrl:
+                buildPaymentRedirectUrl(
+                  "success",
+                  quotationId
+                ),
+
+              cancelUrl:
+                buildPaymentRedirectUrl(
+                  "cancel",
+                  quotationId
+                ),
+            }
+          );
+
+        const checkoutUrl =
+          getPaymentCheckoutUrl(
+            result
+          );
+
+        if (!checkoutUrl) {
+          throw new Error(
+            "API không trả về đường dẫn thanh toán PayOS."
+          );
+        }
+
+        AuthNotify.success(
+          "Tạo thanh toán thành công",
+          "Đang chuyển đến trang thanh toán PayOS."
+        );
+
+        window.location.assign(
+          checkoutUrl
+        );
+      } catch (error) {
+        handleQuotationActionError(
+          error,
+          "Tạo thanh toán thất bại",
+          "Không thể tạo giao dịch thanh toán. Vui lòng thử lại."
+        );
+
+        setQuotationAction("");
+      }
+    };
 
   const statusLabelMap = useMemo(
     () =>
@@ -941,6 +1392,20 @@ const QuotationDetail = () => {
     [costItems]
   );
 
+  const baseCostTotal = useMemo(
+    () => getBaseCostTotal(quotation),
+    [quotation]
+  );
+
+  const calculatedTotalCost = useMemo(
+    () =>
+      getCalculatedTotalCost(
+        quotation,
+        costItems
+      ),
+    [quotation, costItems]
+  );
+
   const displayTotalCost = useMemo(
     () =>
       getDisplayTotalCost(
@@ -949,6 +1414,12 @@ const QuotationDetail = () => {
       ),
     [quotation, costItems]
   );
+
+  const hasTotalDifference =
+    Math.abs(
+      calculatedTotalCost -
+        displayTotalCost
+    ) >= 1;
 
   if (loading) {
     return (
@@ -1026,11 +1497,25 @@ const QuotationDetail = () => {
         quotation.expiredAt
     );
 
-  const effectiveStatus =
-    hasExpired &&
+  const quotationStatus =
     normalizeStatus(
       quotation.status
-    ) !== "APPROVED"
+    );
+
+  const completedStatuses = [
+    "APPROVED",
+    "ACCEPTED",
+    "REJECTED",
+    "CANCELLED",
+    "CANCELED",
+    "PAID",
+  ];
+
+  const effectiveStatus =
+    hasExpired &&
+    !completedStatuses.includes(
+      quotationStatus
+    )
       ? "EXPIRED"
       : quotation.status;
 
@@ -1038,6 +1523,44 @@ const QuotationDetail = () => {
     getStatusClassName(
       effectiveStatus
     );
+
+  const normalizedQuoteType =
+    normalizeStatus(
+      quotation.quoteType
+    );
+
+  const canManageQuotation =
+    normalizeStatus(
+      effectiveStatus
+    ) === "PENDING" &&
+    !hasExpired &&
+    Boolean(
+      quotation.quotationId
+    );
+
+  const canAcceptEstimate =
+    canManageQuotation &&
+    normalizedQuoteType ===
+      "ESTIMATE";
+
+  const canConfirmAndPay =
+    canManageQuotation &&
+    [
+      "OFFICIAL",
+      "FINAL",
+    ].includes(
+      normalizedQuoteType
+    );
+
+  const showQuotationActions =
+    canManageQuotation &&
+    (
+      canAcceptEstimate ||
+      canConfirmAndPay
+    );
+
+  const isActionLoading =
+    Boolean(quotationAction);
 
   return (
     <div className="quotation-detail-page">
@@ -1067,16 +1590,50 @@ const QuotationDetail = () => {
 
           <div className="quotation-hero-content">
             <div className="quotation-title-row">
-              <div>
+              <div className="quotation-code-group">
                 <span className="quotation-eyebrow">
-                  MÃ BÁO GIÁ
+                  MÃ VẬN ĐƠN
                 </span>
 
-                <h1>
-                  {getQuotationCode(
-                    quotation
-                  )}
-                </h1>
+                <div className="quotation-code-row">
+                  <h1 title={displayConsignmentCode}>
+                    {displayConsignmentCode}
+                  </h1>
+
+                  <button
+                    type="button"
+                    className={[
+                      "quotation-copy-code-button",
+                      copiedConsignmentCode ===
+                        displayConsignmentCode &&
+                        "is-copied",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    disabled={
+                      displayConsignmentCode ===
+                      "Chưa được cấp mã"
+                    }
+                    onClick={
+                      handleCopyConsignmentCode
+                    }
+                    title="Sao chép mã vận đơn"
+                    aria-label={`Sao chép mã vận đơn ${displayConsignmentCode}`}
+                  >
+                    {copiedConsignmentCode ===
+                    displayConsignmentCode ? (
+                      <>
+                        <CheckRoundedIcon />
+                        <span>Đã chép</span>
+                      </>
+                    ) : (
+                      <>
+                        <ContentCopyRoundedIcon />
+                        <span>Sao chép</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               <span
@@ -1089,6 +1646,13 @@ const QuotationDetail = () => {
             </div>
 
             <div className="quotation-meta-row">
+              <span>
+                Mã báo giá:
+                <strong>
+                  {displayQuotationCode}
+                </strong>
+              </span>
+
               <span>
                 Mã đơn hàng:
                 <strong>
@@ -1300,18 +1864,40 @@ const QuotationDetail = () => {
                 )}
               </strong>
             </div>
+
+            <div className="is-additional-fee">
+              <span>Tổng phụ phí</span>
+              <strong>
+                {formatMoney(
+                  activeCostTotal
+                )}
+              </strong>
+            </div>
           </div>
 
           <div className="quotation-cost-list">
+            <div className="quotation-cost-list-heading">
+              <div>
+                <strong>Phụ phí áp dụng</strong>
+                <span>
+                  {activeCostItems.length} khoản đang được tính
+                </span>
+              </div>
+
+              <strong>
+                {formatMoney(activeCostTotal)}
+              </strong>
+            </div>
+
             {costItems.length === 0 ? (
               <div className="quotation-cost-row">
                 <span>
                   <span>
-                    Chưa có khoản phí
+                    Không có phụ phí
                   </span>
 
                   <small>
-                    API chưa trả về danh sách khoản phí
+                    Báo giá hiện tại không có khoản phụ phí nào.
                   </small>
                 </span>
 
@@ -1366,21 +1952,25 @@ const QuotationDetail = () => {
               )
             )}
 
-            {activeCostTotal !== displayTotalCost && (
-              <div className="quotation-cost-row quotation-cost-row--sub-total">
+            {hasTotalDifference && (
+              <div className="quotation-cost-row quotation-cost-row--warning">
                 <span>
                   <span>
-                    Tổng các phí đang bật
+                    Chênh lệch dữ liệu báo giá
                   </span>
 
                   <small>
-                    Dòng này dùng để đối chiếu với tổng tiền báo giá từ hệ thống
+                    Tổng cộng từ các khoản phí là{" "}
+                    {formatMoney(
+                      calculatedTotalCost
+                    )}, khác với tổng API.
                   </small>
                 </span>
 
                 <strong>
                   {formatMoney(
-                    activeCostTotal
+                    displayTotalCost -
+                      calculatedTotalCost
                   )}
                 </strong>
               </div>
@@ -1392,7 +1982,12 @@ const QuotationDetail = () => {
                   TỔNG CHI PHÍ THEO BÁO GIÁ
                 </span>
 
-               
+                <small>
+                  Chi phí gốc{" "}
+                  {formatMoney(baseCostTotal)}
+                  {" + "}phụ phí{" "}
+                  {formatMoney(activeCostTotal)}
+                </small>
               </div>
 
               <strong>
@@ -1427,19 +2022,44 @@ const QuotationDetail = () => {
             size="middle"
             className="quotation-descriptions"
           >
-            <Descriptions.Item label="Mã báo giá">
-              <span className="quotation-id-text">
-                {quotation.consignmentCode ||
-                  quotation.quotationCode ||
-                  quotation.quoteCode ||
-                  quotation.quotationId ||
-                  "-"}
-              </span>
+            <Descriptions.Item label="Mã vận đơn">
+              <div className="quotation-description-code">
+                <span className="quotation-id-text">
+                  {displayConsignmentCode}
+                </span>
+
+                <button
+                  type="button"
+                  className={[
+                    "quotation-inline-copy-button",
+                    copiedConsignmentCode ===
+                      displayConsignmentCode &&
+                      "is-copied",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  disabled={
+                    displayConsignmentCode ===
+                    "Chưa được cấp mã"
+                  }
+                  onClick={
+                    handleCopyConsignmentCode
+                  }
+                  aria-label={`Sao chép mã vận đơn ${displayConsignmentCode}`}
+                >
+                  {copiedConsignmentCode ===
+                  displayConsignmentCode ? (
+                    <CheckRoundedIcon />
+                  ) : (
+                    <ContentCopyRoundedIcon />
+                  )}
+                </button>
+              </div>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Mã định danh báo giá">
+            <Descriptions.Item label="Mã báo giá">
               <span className="quotation-id-text">
-                {quotation.quotationId || "-"}
+                {displayQuotationCode}
               </span>
             </Descriptions.Item>
 
@@ -1535,11 +2155,11 @@ const QuotationDetail = () => {
               </strong>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Số khoản phí">
+            <Descriptions.Item label="Số phụ phí">
               {costItems.length} khoản
             </Descriptions.Item>
 
-            <Descriptions.Item label="Phí đang áp dụng">
+            <Descriptions.Item label="Phụ phí đang áp dụng">
               {activeCostItems.length} khoản
             </Descriptions.Item>
           </Descriptions>
@@ -1565,7 +2185,7 @@ const QuotationDetail = () => {
 
         {costItems.length === 0 ? (
           <div className="quotation-fee-empty">
-            Hệ thống chưa trả về danh sách khoản phí.
+            Báo giá hiện tại không có phụ phí.
           </div>
         ) : (
           <div className="quotation-fees-detail-grid">
@@ -1844,8 +2464,141 @@ const QuotationDetail = () => {
           </div>
         </section>
       </div>
+      {showQuotationActions && (
+        <aside
+          className={[
+            "quotation-action-dock",
+            canConfirmAndPay
+              ? "is-payment"
+              : "is-estimate",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          aria-label="Thao tác báo giá"
+        >
+          <div className="quotation-action-dock-icon">
+            {canConfirmAndPay ? (
+              <PaymentRoundedIcon />
+            ) : (
+              <TaskAltRoundedIcon />
+            )}
+          </div>
 
-  
+          <div className="quotation-action-dock-content">
+            <span>
+              {canConfirmAndPay
+                ? "BÁO GIÁ CHÍNH THỨC"
+                : "BÁO GIÁ TẠM TÍNH"}
+            </span>
+
+            <strong>
+              {canConfirmAndPay
+                ? "Xác nhận và thanh toán"
+                : "Xác nhận lựa chọn của bạn"}
+            </strong>
+
+            <small>
+              Tổng báo giá:{" "}
+              <b>
+                {formatMoney(
+                  displayTotalCost
+                )}
+              </b>
+            </small>
+          </div>
+
+          <div className="quotation-action-dock-buttons">
+            <Button
+              type="button"
+              variant="outlined"
+              startIcon={
+                quotationAction ===
+                "reject" ? (
+                  <CircularProgress
+                    size={17}
+                    thickness={5}
+                  />
+                ) : (
+                  <CloseRoundedIcon />
+                )
+              }
+              onClick={
+                handleRejectQuotation
+              }
+              disabled={
+                isActionLoading
+              }
+              className="quotation-reject-button"
+            >
+              {quotationAction ===
+              "reject"
+                ? "ĐANG TỪ CHỐI..."
+                : "TỪ CHỐI"}
+            </Button>
+
+            {canAcceptEstimate && (
+              <Button
+                type="button"
+                variant="contained"
+                startIcon={
+                  quotationAction ===
+                  "accept" ? (
+                    <CircularProgress
+                      size={17}
+                      thickness={5}
+                    />
+                  ) : (
+                    <TaskAltRoundedIcon />
+                  )
+                }
+                onClick={
+                  handleAcceptQuotation
+                }
+                disabled={
+                  isActionLoading
+                }
+                className="quotation-accept-button"
+              >
+                {quotationAction ===
+                "accept"
+                  ? "ĐANG XÁC NHẬN..."
+                  : "CHẤP NHẬN BÁO GIÁ"}
+              </Button>
+            )}
+
+            {canConfirmAndPay && (
+              <Button
+                type="button"
+                variant="contained"
+                startIcon={
+                  quotationAction ===
+                  "pay" ? (
+                    <CircularProgress
+                      size={17}
+                      thickness={5}
+                    />
+                  ) : (
+                    <PaymentRoundedIcon />
+                  )
+                }
+                onClick={
+                  handleConfirmAndPay
+                }
+                disabled={
+                  isActionLoading
+                }
+                className="quotation-payment-button"
+              >
+                {quotationAction ===
+                "pay"
+                  ? "ĐANG TẠO THANH TOÁN..."
+                  : "XÁC NHẬN & THANH TOÁN"}
+              </Button>
+            )}
+          </div>
+        </aside>
+      )}
+
     </div>
   );
 };

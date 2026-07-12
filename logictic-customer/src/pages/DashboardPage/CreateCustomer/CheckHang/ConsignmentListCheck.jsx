@@ -25,6 +25,8 @@ import {
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SearchIcon from "@mui/icons-material/Search";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 
 import AuthNotify from "../../../../utils/AuthNotify";
 import { getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
@@ -41,7 +43,6 @@ import "./ConsignmentListCheck.css";
 const { RangePicker } = DatePicker;
 
 const DEFAULT_PAGE_SIZE = 5;
-const API_PAGE_SIZE = 100;
 
 /* =========================================================
    HELPERS
@@ -321,40 +322,55 @@ const formatDateUtcTitle = (value) => {
   })}`;
 };
 
-const getConsignmentItems = (
-  response
-) => {
-  const responseData =
-    response?.data ?? response;
+const extractConsignmentItems = (apiResult) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.results,
+    apiResult?.data?.items,
+    apiResult?.data?.results,
+    apiResult?.data?.data,
+    apiResult?.data?.data?.items,
+    apiResult?.data?.data?.results,
+  ];
 
-  if (
-    Array.isArray(responseData)
-  ) {
-    return {
-      items: responseData,
-      totalPages: 1,
-      pageSize:
-        responseData.length ||
-        API_PAGE_SIZE,
-    };
+  return candidates.find(Array.isArray) || [];
+};
+
+const copyTextToClipboard = async (text) => {
+  const value = String(text || "").trim();
+
+  if (!value) {
+    throw new Error("Không có nội dung để sao chép.");
   }
 
-  return {
-    items: Array.isArray(
-      responseData?.items
-    )
-      ? responseData.items
-      : [],
-    totalPages: Math.max(
-      1,
-      Number(
-        responseData?.totalPages
-      ) || 1
-    ),
-    pageSize:
-      Number(responseData?.pageSize) ||
-      API_PAGE_SIZE,
-  };
+  if (
+    navigator.clipboard?.writeText &&
+    window.isSecureContext
+  ) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.top = "-9999px";
+  textArea.style.opacity = "0";
+
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  const copied = document.execCommand("copy");
+
+  document.body.removeChild(textArea);
+
+  if (!copied) {
+    throw new Error("Không thể sao chép mã vận đơn.");
+  }
 };
 
 const getTrackingCode = (item) => {
@@ -428,62 +444,28 @@ const ConsignmentList = () => {
     setRefreshKey,
   ] = useState(0);
 
+  const [
+    copiedTrackingCode,
+    setCopiedTrackingCode,
+  ] = useState("");
+
+  const copyResetTimerRef =
+    useRef(null);
+
   /* =========================================================
      FETCH CONSIGNMENTS
      ========================================================= */
 
   const fetchAllConsignments =
     useCallback(async (signal) => {
-      const firstResponse =
-        await getConsignmentsApi(
-          1,
-          API_PAGE_SIZE,
-          { signal }
-        );
+      const response =
+        await getConsignmentsApi({
+          signal,
+        });
 
-      const firstPage =
-        getConsignmentItems(
-          firstResponse
-        );
-
-      if (
-        firstPage.totalPages === 1
-      ) {
-        return firstPage.items;
-      }
-
-      const remainingRequests =
-        Array.from(
-          {
-            length:
-              firstPage.totalPages -
-              1,
-          },
-          (_, index) =>
-            getConsignmentsApi(
-              index + 2,
-              firstPage.pageSize,
-              { signal }
-            )
-        );
-
-      const remainingResponses =
-        await Promise.all(
-          remainingRequests
-        );
-
-      const remainingItems =
-        remainingResponses.flatMap(
-          (response) =>
-            getConsignmentItems(
-              response
-            ).items
-        );
-
-      return [
-        ...firstPage.items,
-        ...remainingItems,
-      ];
+      return extractConsignmentItems(
+        response
+      );
     }, []);
 
   const fetchConsignments =
@@ -636,6 +618,17 @@ const ConsignmentList = () => {
     fetchStatuses,
     refreshKey,
   ]);
+
+  useEffect(
+    () => () => {
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(
+          copyResetTimerRef.current
+        );
+      }
+    },
+    []
+  );
 
   /* =========================================================
      STATUS LABEL
@@ -930,6 +923,65 @@ const ConsignmentList = () => {
     );
   };
 
+  const handleCopyTrackingCode = async (
+    event,
+    item
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const trackingCode =
+      getTrackingCode(item);
+
+    if (
+      !trackingCode ||
+      trackingCode ===
+        "Chưa được cấp mã"
+    ) {
+      AuthNotify.warning(
+        "Chưa có mã vận đơn",
+        "Đơn ký gửi chưa được cấp mã vận đơn để sao chép."
+      );
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(
+        trackingCode
+      );
+
+      setCopiedTrackingCode(
+        trackingCode
+      );
+
+      AuthNotify.success(
+        "Sao chép thành công",
+        `Đã sao chép mã vận đơn ${trackingCode}.`
+      );
+
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(
+          copyResetTimerRef.current
+        );
+      }
+
+      copyResetTimerRef.current =
+        window.setTimeout(() => {
+          setCopiedTrackingCode("");
+        }, 1800);
+    } catch (error) {
+      console.error(
+        "Không thể sao chép mã vận đơn:",
+        error
+      );
+
+      AuthNotify.error(
+        "Sao chép thất bại",
+        "Không thể sao chép mã vận đơn. Vui lòng thử lại."
+      );
+    }
+  };
+
   const handlePageChange = (
     _,
     nextPageNumber
@@ -1173,31 +1225,80 @@ const ConsignmentList = () => {
                     >
                       <div className="card-header">
                         <div className="header-left">
-                          <span className="order-code">
-                            {getTrackingCode(
-                              item
-                            )}
-                          </span>
+                          <div className="tracking-code-block">
+                            <span className="tracking-code-label">
+                              MÃ VẬN ĐƠN
+                            </span>
 
-                          <span className="tag-type">
-                            {getConsignmentTypeLabel(
-                              item.consignmentType
-                            )}
-                          </span>
+                            <div className="tracking-code-row">
+                              <strong className="order-code">
+                                {getTrackingCode(
+                                  item
+                                )}
+                              </strong>
 
-                          <span className="tag-count">
-                            Tuyến{" "}
-                            {item.route ||
-                              "-"}
-                          </span>
+                              <button
+                                type="button"
+                                className={[
+                                  "copy-tracking-button",
+                                  copiedTrackingCode ===
+                                    getTrackingCode(item) &&
+                                    "is-copied",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                disabled={
+                                  getTrackingCode(item) ===
+                                  "Chưa được cấp mã"
+                                }
+                                title="Sao chép mã vận đơn"
+                                aria-label={`Sao chép mã vận đơn ${getTrackingCode(
+                                  item
+                                )}`}
+                                onClick={(event) =>
+                                  handleCopyTrackingCode(
+                                    event,
+                                    item
+                                  )
+                                }
+                              >
+                                {copiedTrackingCode ===
+                                getTrackingCode(item) ? (
+                                  <>
+                                    <CheckRoundedIcon />
+                                    <span>Đã chép</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ContentCopyRoundedIcon />
+                                    <span>Sao chép</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
 
-                          <span
-                            className={`tag-status-header status-${statusClass}`}
-                          >
-                            {getStatusLabel(
-                              item.status
-                            )}
-                          </span>
+                          <div className="header-tags">
+                            <span className="tag-type">
+                              {getConsignmentTypeLabel(
+                                item.consignmentType
+                              )}
+                            </span>
+
+                            <span className="tag-count">
+                              Tuyến{" "}
+                              {item.route ||
+                                "-"}
+                            </span>
+
+                            <span
+                              className={`tag-status-header status-${statusClass}`}
+                            >
+                              {getStatusLabel(
+                                item.status
+                              )}
+                            </span>
+                          </div>
                         </div>
 
                         <Button
@@ -1268,9 +1369,17 @@ const ConsignmentList = () => {
                           </div>
 
                           <div className="product-info">
-                            <div className="customer-name">
-                              {item.itemNames ||
-                                "-"}
+                            <div className="product-name-group">
+                              <span className="product-name-label">
+                                SẢN PHẨM
+                              </span>
+
+                              <strong
+                                className="product-name-value"
+                                title={item.itemNames || "-"}
+                              >
+                                {item.itemNames || "-"}
+                              </strong>
                             </div>
 
                             <div className="sku-tag">
