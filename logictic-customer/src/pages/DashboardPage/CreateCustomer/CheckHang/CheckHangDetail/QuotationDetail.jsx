@@ -21,6 +21,11 @@ import {
 import {
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
 } from "@mui/material";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -848,6 +853,21 @@ const QuotationDetail = () => {
     setQuotationAction,
   ] = useState("");
 
+  const [
+    rejectDialogOpen,
+    setRejectDialogOpen,
+  ] = useState(false);
+
+  const [
+    rejectionReason,
+    setRejectionReason,
+  ] = useState("");
+
+  const [
+    rejectionReasonError,
+    setRejectionReasonError,
+  ] = useState("");
+
   const copyResetTimerRef =
     useRef(null);
 
@@ -1160,7 +1180,47 @@ const QuotationDetail = () => {
       );
     };
 
-  const handleRejectQuotation =
+  const handleOpenRejectDialog = () => {
+    if (!quotation?.quotationId) {
+      AuthNotify.error(
+        "Không thể từ chối báo giá",
+        "Không tìm thấy mã định danh báo giá."
+      );
+      return;
+    }
+
+    setRejectionReason("");
+    setRejectionReasonError("");
+    setRejectDialogOpen(true);
+  };
+
+  const handleCloseRejectDialog = () => {
+    if (quotationAction === "reject") {
+      return;
+    }
+
+    setRejectDialogOpen(false);
+    setRejectionReason("");
+    setRejectionReasonError("");
+  };
+
+  const handleRejectionReasonChange = (
+    event
+  ) => {
+    const value =
+      event.target.value.slice(
+        0,
+        500
+      );
+
+    setRejectionReason(value);
+
+    if (value.trim()) {
+      setRejectionReasonError("");
+    }
+  };
+
+  const handleConfirmRejectQuotation =
     async () => {
       const quotationId =
         quotation?.quotationId;
@@ -1173,11 +1233,20 @@ const QuotationDetail = () => {
         return;
       }
 
-      const confirmed = window.confirm(
-        "Bạn có chắc chắn muốn từ chối báo giá này không?"
-      );
+      const reason =
+        rejectionReason.trim();
 
-      if (!confirmed) {
+      if (!reason) {
+        setRejectionReasonError(
+          "Vui lòng nhập lý do từ chối báo giá."
+        );
+        return;
+      }
+
+      if (reason.length < 3) {
+        setRejectionReasonError(
+          "Lý do từ chối phải có ít nhất 3 ký tự."
+        );
         return;
       }
 
@@ -1186,8 +1255,13 @@ const QuotationDetail = () => {
 
         const result =
           await rejectQuotationApi(
-            quotationId
+            quotationId,
+            reason
           );
+
+        setRejectDialogOpen(false);
+        setRejectionReason("");
+        setRejectionReasonError("");
 
         AuthNotify.success(
           "Từ chối báo giá thành công",
@@ -2523,7 +2597,7 @@ const QuotationDetail = () => {
                 )
               }
               onClick={
-                handleRejectQuotation
+                handleOpenRejectDialog
               }
               disabled={
                 isActionLoading
@@ -2598,6 +2672,152 @@ const QuotationDetail = () => {
           </div>
         </aside>
       )}
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={
+          handleCloseRejectDialog
+        }
+        fullWidth
+        maxWidth="sm"
+        className="quotation-reject-dialog"
+        PaperProps={{
+          className:
+            "quotation-reject-dialog-paper",
+        }}
+      >
+        <DialogTitle className="quotation-reject-dialog-title">
+          <div className="quotation-reject-dialog-title-icon">
+            <CloseRoundedIcon />
+          </div>
+
+          <div>
+            <strong>
+              Từ chối báo giá
+            </strong>
+
+            <span>
+              Vui lòng cho biết lý do để bộ phận phụ trách hỗ trợ bạn tốt hơn.
+            </span>
+          </div>
+        </DialogTitle>
+
+        <DialogContent className="quotation-reject-dialog-content">
+          <div className="quotation-reject-summary">
+            <div>
+              <span>
+                Mã báo giá
+              </span>
+
+              <strong>
+                {displayQuotationCode}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Tổng báo giá
+              </span>
+
+              <strong>
+                {formatMoney(
+                  displayTotalCost
+                )}
+              </strong>
+            </div>
+          </div>
+
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            minRows={4}
+            maxRows={7}
+            value={
+              rejectionReason
+            }
+            onChange={
+              handleRejectionReasonChange
+            }
+            error={
+              Boolean(
+                rejectionReasonError
+              )
+            }
+            helperText={
+              rejectionReasonError ||
+              `${rejectionReason.length}/500 ký tự`
+            }
+            disabled={
+              quotationAction ===
+              "reject"
+            }
+            label="Lý do từ chối"
+            placeholder="Ví dụ: Chi phí hiện tại chưa phù hợp với ngân sách của tôi..."
+            className="quotation-rejection-reason-field"
+            inputProps={{
+              maxLength: 500,
+            }}
+          />
+
+          <div className="quotation-reject-dialog-note">
+            <span>
+              Lưu ý
+            </span>
+
+            <p>
+              Sau khi xác nhận, báo giá sẽ chuyển sang trạng thái đã từ chối.
+            </p>
+          </div>
+        </DialogContent>
+
+        <DialogActions className="quotation-reject-dialog-actions">
+          <Button
+            type="button"
+            variant="outlined"
+            color="inherit"
+            onClick={
+              handleCloseRejectDialog
+            }
+            disabled={
+              quotationAction ===
+              "reject"
+            }
+            className="quotation-reject-cancel-button"
+          >
+            Quay lại
+          </Button>
+
+          <Button
+            type="button"
+            variant="contained"
+            startIcon={
+              quotationAction ===
+              "reject" ? (
+                <CircularProgress
+                  size={17}
+                  thickness={5}
+                />
+              ) : (
+                <CloseRoundedIcon />
+              )
+            }
+            onClick={
+              handleConfirmRejectQuotation
+            }
+            disabled={
+              quotationAction ===
+                "reject" ||
+              !rejectionReason.trim()
+            }
+            className="quotation-reject-confirm-button"
+          >
+            {quotationAction ===
+            "reject"
+              ? "ĐANG TỪ CHỐI..."
+              : "XÁC NHẬN TỪ CHỐI"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </div>
   );

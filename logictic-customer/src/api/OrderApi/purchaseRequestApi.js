@@ -367,6 +367,7 @@ export const getPurchaseRequestDetailApi =
  */
 export const rejectQuotationApi = async (
   quotationId,
+  rejectionReason,
   options = {}
 ) => {
   const id = validateId(
@@ -374,18 +375,35 @@ export const rejectQuotationApi = async (
     "Không tìm thấy mã báo giá để từ chối."
   );
 
+  const reason = normalizeText(
+    typeof rejectionReason === "object"
+      ? rejectionReason?.rejectionReason
+      : rejectionReason
+  );
+
+  if (!reason) {
+    throw new Error(
+      "Vui lòng nhập lý do từ chối báo giá."
+    );
+  }
+
+  const requestPayload = {
+    rejectionReason: reason,
+  };
+
   try {
     const response = await axiosInstance.put(
       `/api/quotations/${encodeURIComponent(
         id
       )}/reject`,
-      null,
+      requestPayload,
       {
         signal: getSignal(options),
-
         headers: {
           Accept:
             "text/plain, application/json",
+          "Content-Type":
+            "application/json",
         },
       }
     );
@@ -395,17 +413,20 @@ export const rejectQuotationApi = async (
     if (!isCanceledRequest(error)) {
       console.error(
         "Lỗi từ chối báo giá:",
-        getApiErrorMessage(
-          error,
-          "Không thể từ chối báo giá."
-        )
+        {
+          status:
+            error?.response?.status,
+          response:
+            error?.response?.data,
+          quotationId: id,
+          rejectionReason: reason,
+        }
       );
     }
 
     throw error;
   }
 };
-
 /**
  * Khách hàng chấp nhận báo giá tạm tính.
  *

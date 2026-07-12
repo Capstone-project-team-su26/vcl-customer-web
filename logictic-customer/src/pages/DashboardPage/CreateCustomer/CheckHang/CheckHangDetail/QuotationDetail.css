@@ -2676,3 +2676,307 @@
     transform: none;
   }
 }
+/* =========================================================
+   REJECT QUOTATION DIALOG
+   ========================================================= */
+
+.quotation-reject-dialog .MuiBackdrop-root {
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.quotation-reject-dialog-paper.MuiPaper-root {
+  width: min(620px, calc(100vw - 28px));
+  margin: 14px;
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(239, 68, 68, 0.08),
+      transparent 220px
+    ),
+    #ffffff;
+
+  border: 1px solid #fecaca;
+  border-radius: 22px;
+
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.24);
+}
+
+.quotation-reject-dialog-title.MuiDialogTitle-root {
+  padding: 22px 24px 18px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+
+  border-bottom: 1px solid #fee2e2;
+}
+
+.quotation-reject-dialog-title-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+
+  display: grid;
+  place-items: center;
+
+  color: #ffffff;
+  background:
+    linear-gradient(
+      135deg,
+      #ef4444,
+      #dc2626
+    );
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 9px 20px rgba(220, 38, 38, 0.24);
+}
+
+.quotation-reject-dialog-title-icon svg {
+  font-size: 26px;
+}
+
+.quotation-reject-dialog-title > div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quotation-reject-dialog-title strong {
+  color: #7f1d1d;
+
+  font-size: 19px;
+  line-height: 1.4;
+  font-weight: 850;
+}
+
+.quotation-reject-dialog-title span {
+  color: #64748b;
+
+  font-size: 13px;
+  line-height: 1.65;
+  font-weight: 500;
+}
+
+.quotation-reject-dialog-content.MuiDialogContent-root {
+  padding: 22px 24px 10px;
+}
+
+.quotation-reject-summary {
+  margin-bottom: 18px;
+
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quotation-reject-summary > div {
+  min-width: 0;
+  min-height: 76px;
+  padding: 14px 15px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.quotation-reject-summary span {
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.quotation-reject-summary strong {
+  min-width: 0;
+
+  color: #0f172a;
+
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 800;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.quotation-rejection-reason-field
+  .MuiOutlinedInput-root {
+  align-items: flex-start;
+
+  background: #ffffff;
+  border-radius: 14px;
+}
+
+.quotation-rejection-reason-field
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-width: 2px;
+}
+
+.quotation-rejection-reason-field
+  textarea {
+  color: #0f172a;
+
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.quotation-rejection-reason-field
+  .MuiFormHelperText-root {
+  margin: 7px 4px 0;
+
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.quotation-reject-dialog-note {
+  margin-top: 16px;
+  padding: 13px 15px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  color: #92400e;
+  background: #fffbeb;
+
+  border: 1px solid #fde68a;
+  border-radius: 13px;
+}
+
+.quotation-reject-dialog-note span {
+  flex-shrink: 0;
+
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.quotation-reject-dialog-note p {
+  margin: 0;
+
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.quotation-reject-dialog-actions.MuiDialogActions-root {
+  padding: 18px 24px 22px;
+
+  display: grid;
+  grid-template-columns:
+    minmax(120px, 0.7fr)
+    minmax(190px, 1.3fr);
+  gap: 11px;
+}
+
+.quotation-reject-dialog-actions
+  .MuiButton-root {
+  min-height: 48px;
+  margin: 0;
+  padding: 0 18px;
+
+  border-radius: 13px;
+
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.quotation-reject-cancel-button.MuiButton-root {
+  color: #475569;
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.quotation-reject-cancel-button.MuiButton-root:hover {
+  color: #0f172a;
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.quotation-reject-confirm-button.MuiButton-root {
+  color: #ffffff;
+  background:
+    linear-gradient(
+      135deg,
+      #ef4444,
+      #dc2626
+    );
+
+  box-shadow:
+    0 9px 20px rgba(220, 38, 38, 0.23);
+}
+
+.quotation-reject-confirm-button.MuiButton-root:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #dc2626,
+      #b91c1c
+    );
+
+  box-shadow:
+    0 12px 25px rgba(220, 38, 38, 0.3);
+}
+
+.quotation-reject-confirm-button.MuiButton-root.Mui-disabled {
+  color: rgba(255, 255, 255, 0.78);
+  background: #fca5a5;
+  box-shadow: none;
+}
+
+.quotation-reject-confirm-button
+  .MuiCircularProgress-root {
+  color: #ffffff;
+}
+
+@media (max-width: 560px) {
+  .quotation-reject-dialog-title.MuiDialogTitle-root {
+    padding: 18px;
+  }
+
+  .quotation-reject-dialog-content.MuiDialogContent-root {
+    padding: 18px 18px 8px;
+  }
+
+  .quotation-reject-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-reject-summary > div {
+    min-height: 68px;
+  }
+
+  .quotation-reject-dialog-actions.MuiDialogActions-root {
+    padding: 16px 18px 18px;
+
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-reject-dialog-actions
+    .MuiButton-root {
+    width: 100%;
+  }
+}
