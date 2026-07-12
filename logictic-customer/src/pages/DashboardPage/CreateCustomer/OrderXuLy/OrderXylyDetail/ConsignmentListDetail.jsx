@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -32,6 +33,8 @@ import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 
 import {
   getConsignmentDetailApi,
@@ -417,6 +420,42 @@ const getDisplayCode = (consignment) => {
 
 
 
+
+const copyTextToClipboard = async (text) => {
+  const value = String(text || "").trim();
+
+  if (!value) {
+    throw new Error("Không có nội dung để sao chép.");
+  }
+
+  if (
+    navigator.clipboard?.writeText &&
+    window.isSecureContext
+  ) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.top = "-9999px";
+  textArea.style.opacity = "0";
+
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  const copied = document.execCommand("copy");
+
+  document.body.removeChild(textArea);
+
+  if (!copied) {
+    throw new Error("Không thể sao chép mã vận đơn.");
+  }
+};
+
 const getApiErrorMessage = (
   error,
   fallbackMessage = "Đã xảy ra lỗi."
@@ -459,6 +498,14 @@ const ConsignmentListDetail = () => {
 
   const [consignment, setConsignment] =
     useState(null);
+
+  const [
+    copiedConsignmentCode,
+    setCopiedConsignmentCode,
+  ] = useState("");
+
+  const copyResetTimerRef =
+    useRef(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -648,6 +695,17 @@ const ConsignmentListDetail = () => {
     };
   }, [fetchConsignmentDetail]);
 
+  useEffect(
+    () => () => {
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(
+          copyResetTimerRef.current
+        );
+      }
+    },
+    []
+  );
+
   const handleReload = () => {
     const controller = new AbortController();
 
@@ -658,6 +716,64 @@ const ConsignmentListDetail = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleCopyConsignmentCode = async (
+    event
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const consignmentCode =
+      getDisplayCode(consignment);
+
+    if (
+      !consignmentCode ||
+      consignmentCode ===
+        "Chưa được cấp mã"
+    ) {
+      AuthNotify.warning(
+        "Chưa có mã vận đơn",
+        "Đơn ký gửi chưa được cấp mã vận đơn để sao chép."
+      );
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(
+        consignmentCode
+      );
+
+      setCopiedConsignmentCode(
+        consignmentCode
+      );
+
+      AuthNotify.success(
+        "Sao chép thành công",
+        `Đã sao chép mã vận đơn ${consignmentCode}.`
+      );
+
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(
+          copyResetTimerRef.current
+        );
+      }
+
+      copyResetTimerRef.current =
+        window.setTimeout(() => {
+          setCopiedConsignmentCode("");
+        }, 1800);
+    } catch (error) {
+      console.error(
+        "Không thể sao chép mã vận đơn:",
+        error
+      );
+
+      AuthNotify.error(
+        "Sao chép thất bại",
+        "Không thể sao chép mã vận đơn. Vui lòng thử lại."
+      );
+    }
   };
 
   const handleOpenCancelModal = () => {
@@ -947,39 +1063,16 @@ const ConsignmentListDetail = () => {
           quantity ?? 0,
       },
       {
-        title: "Tổng trọng lượng",
+        title: "Trọng lượng",
         dataIndex: "weight",
         key: "weight",
-        width: 165,
-        render: (weight, record) => {
-          const quantity =
-            Number(record.quantity) || 0;
-
-          const unitWeight =
-            Number(weight) || 0;
-
-          const itemTotalWeight =
-            quantity * unitWeight;
-
-          return (
-            <div className="detail-product-name-cell">
-              <strong>
-                {formatWeight(
-                  itemTotalWeight
-                )}{" "}
-                kg
-              </strong>
-
-              <span>
-                {quantity} ×{" "}
-                {formatWeight(
-                  unitWeight
-                )}{" "}
-                kg
-              </span>
-            </div>
-          );
-        },
+        width: 130,
+        align: "center",
+        render: (weight) => (
+          <strong className="detail-weight-value">
+            {formatWeight(weight)} kg
+          </strong>
+        ),
       },
       {
         title: "Kích thước",
@@ -1151,6 +1244,9 @@ const ConsignmentListDetail = () => {
      CHUẨN BỊ DỮ LIỆU HIỂN THỊ
      ======================================================= */
 
+  const displayCode =
+    getDisplayCode(consignment);
+
   const statusClass =
     getStatusClassName(
       consignment.status
@@ -1186,39 +1282,6 @@ const ConsignmentListDetail = () => {
       0
     );
 
-  /**
-   * Tổng trọng lượng thực của lô hàng:
-   *
-   * Tổng = Σ (số lượng × trọng lượng mỗi sản phẩm)
-   *
-   * Ví dụ:
-   * 2 sản phẩm × 0,5 kg = 1 kg.
-   */
-  const totalActualWeight =
-    items.reduce(
-      (total, item) => {
-        const quantity =
-          Number(item.quantity);
-
-        const unitWeight =
-          Number(item.weight);
-
-        if (
-          !Number.isFinite(quantity) ||
-          !Number.isFinite(unitWeight) ||
-          quantity <= 0 ||
-          unitWeight < 0
-        ) {
-          return total;
-        }
-
-        return (
-          total +
-          quantity * unitWeight
-        );
-      },
-      0
-    );
 
   const totalDimWeight =
     items.reduce(
@@ -1285,11 +1348,51 @@ const ConsignmentListDetail = () => {
 
           <div className="detail-hero-content">
             <div className="detail-title-row">
-              <h1>
-                {getDisplayCode(
-                  consignment
-                )}
-              </h1>
+              <div className="detail-code-group">
+                <span className="detail-code-label">
+                  MÃ VẬN ĐƠN
+                </span>
+
+                <div className="detail-code-row">
+                  <h1 title={displayCode}>
+                    {displayCode}
+                  </h1>
+
+                  <button
+                    type="button"
+                    className={[
+                      "detail-copy-code-button",
+                      copiedConsignmentCode ===
+                        displayCode &&
+                        "is-copied",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={
+                      handleCopyConsignmentCode
+                    }
+                    disabled={
+                      displayCode ===
+                      "Chưa được cấp mã"
+                    }
+                    aria-label={`Sao chép mã vận đơn ${displayCode}`}
+                    title="Sao chép mã vận đơn"
+                  >
+                    {copiedConsignmentCode ===
+                    displayCode ? (
+                      <>
+                        <CheckRoundedIcon />
+                        <span>Đã chép</span>
+                      </>
+                    ) : (
+                      <>
+                        <ContentCopyRoundedIcon />
+                        <span>Sao chép</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
 
               <span
                 className={`detail-status-badge status-${statusClass}`}
@@ -1374,7 +1477,7 @@ const ConsignmentListDetail = () => {
 
           <strong>
             {formatWeight(
-              totalActualWeight
+              consignment.totalWeight
             )}
 
             <small>kg</small>
@@ -1579,7 +1682,7 @@ const ConsignmentListDetail = () => {
           dataSource={items}
           pagination={false}
           scroll={{
-            x: 1420,
+            x: 1320,
           }}
           locale={{
             emptyText:
