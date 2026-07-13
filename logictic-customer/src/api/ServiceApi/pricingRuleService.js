@@ -3,6 +3,10 @@ import axiosInstance from "../axios";
 const VOLUMETRIC_DIVISOR_CODE =
   "VOLUMETRIC_DIVISOR";
 
+/* =========================================================
+   RESPONSE HELPERS
+   ========================================================= */
+
 const getResponseData = (response) => {
   return (
     response?.data?.data ??
@@ -34,6 +38,18 @@ const getErrorMessage = (
   );
 };
 
+const isCanceledRequest = (error) => {
+  return (
+    error?.code === "ERR_CANCELED" ||
+    error?.name === "CanceledError" ||
+    error?.name === "AbortError"
+  );
+};
+
+/* =========================================================
+   PRICING RULE HELPERS
+   ========================================================= */
+
 const extractPricingRules = (data) => {
   const candidates = [
     data,
@@ -49,21 +65,105 @@ const extractPricingRules = (data) => {
   );
 };
 
+/* =========================================================
+   SERVICE PRICING HELPERS
+   ========================================================= */
+
+const extractServicePricings = (data) => {
+  const candidates = [
+    data,
+    data?.items,
+    data?.servicePricings,
+    data?.servicePricing,
+    data?.services,
+    data?.data,
+    data?.data?.items,
+    data?.data?.servicePricings,
+    data?.data?.servicePricing,
+    data?.data?.services,
+  ];
+
+  return (
+    candidates.find(Array.isArray) || []
+  );
+};
+
 const normalizeCode = (value) => {
   return String(value || "")
     .trim()
     .toUpperCase();
 };
 
+const normalizeServicePricing = (item) => {
+  const rawPrice =
+    item?.price ??
+    item?.amount ??
+    item?.servicePrice ??
+    item?.unitPrice ??
+    item?.value ??
+    0;
+
+  const numericPrice = Number(rawPrice);
+
+  return {
+    ...item,
+
+    servicePricingId:
+      item?.servicePricingId ||
+      item?.id ||
+      "",
+
+    serviceCode:
+      item?.serviceCode ||
+      item?.code ||
+      "",
+
+    serviceName:
+      item?.serviceName ||
+      item?.name ||
+      "Dịch vụ",
+
+    description:
+      item?.description ||
+      item?.note ||
+      "",
+
+    status:
+      normalizeCode(
+        item?.status || "ACTIVE"
+      ),
+
+    price: Number.isFinite(numericPrice)
+      ? numericPrice
+      : 0,
+
+    currency:
+      item?.currency ||
+      item?.currencyCode ||
+      "VND",
+
+    unit:
+      item?.unit ||
+      item?.unitName ||
+      "",
+  };
+};
+
+/* =========================================================
+   SERVICE
+   ========================================================= */
+
 const pricingRuleService = {
   /**
    * GET /api/pricing-rules
    *
-   * API chỉ chịu trách nhiệm lấy hệ số DIM.
-   * Số lượng sản phẩm được lấy từ item của đơn hàng
-   * và nhân ở màn ConsignmentListDetail.
+   * Lấy hệ số quy đổi thể tích đang ACTIVE.
    *
-   * @param {{ signal?: AbortSignal, params?: object }} options
+   * @param {{
+   *   signal?: AbortSignal,
+   *   params?: object
+   * }} options
+   *
    * @returns {Promise<object>}
    */
   getVolumetricDivisorRule: async (
@@ -80,6 +180,7 @@ const pricingRuleService = {
         {
           targetRuleCode:
             VOLUMETRIC_DIVISOR_CODE,
+          params,
         }
       );
 
@@ -115,7 +216,9 @@ const pricingRuleService = {
         );
       }
 
-      const divisor = Number(rule.value);
+      const divisor = Number(
+        rule?.value
+      );
 
       if (
         !Number.isFinite(divisor) ||
@@ -140,11 +243,7 @@ const pricingRuleService = {
 
       return normalizedRule;
     } catch (error) {
-      if (
-        error?.code === "ERR_CANCELED" ||
-        error?.name === "CanceledError" ||
-        error?.name === "AbortError"
-      ) {
+      if (isCanceledRequest(error)) {
         throw error;
       }
 
@@ -161,6 +260,173 @@ const pricingRuleService = {
       );
     }
   },
+
+  /**
+   * GET /api/service-pricings
+   *
+   * Lấy danh sách bảng giá dịch vụ.
+   *
+   * Token đăng nhập sẽ được axiosInstance tự động
+   * thêm vào Authorization header.
+   *
+   * @param {{
+   *   signal?: AbortSignal,
+   *   params?: object,
+   *   onlyActive?: boolean
+   * }} options
+   *
+   * @returns {Promise<Array>}
+   */
+  getServicePricings: async (
+    options = {}
+  ) => {
+    const {
+      signal,
+      params = {},
+      onlyActive = false,
+    } = options;
+
+    try {
+      console.info(
+        "[Service Pricing API] GET /api/service-pricings",
+        {
+          params,
+          onlyActive,
+        }
+      );
+
+      const response =
+        await axiosInstance.get(
+          "/api/service-pricings",
+          {
+            signal,
+            params,
+            headers: {
+              Accept: "*/*",
+            },
+          }
+        );
+
+      const responseData =
+        getResponseData(response);
+
+      const servicePricings =
+        extractServicePricings(
+          responseData
+        ).map(normalizeServicePricing);
+
+      const filteredPricings =
+        onlyActive
+          ? servicePricings.filter(
+              (item) =>
+                !item.status ||
+                item.status === "ACTIVE"
+            )
+          : servicePricings;
+
+      console.info(
+        "[Service Pricing API] Danh sách bảng giá:",
+        filteredPricings
+      );
+
+      return filteredPricings;
+    } catch (error) {
+      if (isCanceledRequest(error)) {
+        throw error;
+      }
+
+      console.error(
+        "[GET /api/service-pricings]",
+        error?.response?.data || error
+      );
+
+      throw new Error(
+        getErrorMessage(
+          error,
+          "Không thể tải bảng giá dịch vụ."
+        )
+      );
+    }
+  },
+
+  /**
+   * Lấy chi tiết một bảng giá theo ID.
+   *
+   * GET /api/service-pricings/{id}
+   *
+   * @param {string} servicePricingId
+   * @param {{ signal?: AbortSignal }} options
+   *
+   * @returns {Promise<object>}
+   */
+  getServicePricingById: async (
+    servicePricingId,
+    options = {}
+  ) => {
+    const id = String(
+      servicePricingId || ""
+    ).trim();
+
+    if (!id) {
+      throw new Error(
+        "Service Pricing ID không hợp lệ."
+      );
+    }
+
+    const {
+      signal,
+    } = options;
+
+    try {
+      const response =
+        await axiosInstance.get(
+          `/api/service-pricings/${encodeURIComponent(
+            id
+          )}`,
+          {
+            signal,
+            headers: {
+              Accept: "*/*",
+            },
+          }
+        );
+
+      const responseData =
+        getResponseData(response);
+
+      if (!responseData) {
+        throw new Error(
+          "Không tìm thấy thông tin bảng giá dịch vụ."
+        );
+      }
+
+      return normalizeServicePricing(
+        responseData
+      );
+    } catch (error) {
+      if (isCanceledRequest(error)) {
+        throw error;
+      }
+
+      console.error(
+        `[GET /api/service-pricings/${id}]`,
+        error?.response?.data || error
+      );
+
+      throw new Error(
+        getErrorMessage(
+          error,
+          "Không thể tải chi tiết bảng giá dịch vụ."
+        )
+      );
+    }
+  },
 };
+
+export const {
+  getVolumetricDivisorRule,
+  getServicePricings,
+  getServicePricingById,
+} = pricingRuleService;
 
 export default pricingRuleService;
