@@ -337,7 +337,7 @@ export default function MainLayout() {
               <span className="time-scene-status-dot" />
             </div>
 
-            <div className="header-balance-box">
+            {/* <div className="header-balance-box">
               <div className="header-balance-icon">
                 <WalletIcon />
               </div>
@@ -354,7 +354,7 @@ export default function MainLayout() {
                   <small>đ</small>
                 </strong>
               </div>
-            </div>
+            </div> */}
           </div>
         </header>
 

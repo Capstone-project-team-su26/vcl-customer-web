@@ -51,6 +51,8 @@ import {
   getSyncedNowUtcIso,
 } from "../../../../utils/timeUtc";
 
+import ConsignmentBuyOrderConfirm from "../../../../components/DashboardComponents/CustomerBuyComponents/ConfirmBuy/ConsignmentBuyOrderConfirm";
+
 import "./ConsignmentBuyOrder.css";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -762,6 +764,11 @@ export default function ConsignmentBuyOrder() {
     activeLightboxImg,
     setActiveLightboxImg,
   ] = useState(null);
+
+  const [
+    isConfirming,
+    setIsConfirming,
+  ] = useState(false);
 
   const [
     isSubmitting,
@@ -1799,6 +1806,41 @@ export default function ConsignmentBuyOrder() {
     return result.isValid;
   };
 
+  const handleOpenConfirmation =
+    () => {
+      if (
+        isSubmitting ||
+        !validateForm()
+      ) {
+        return;
+      }
+
+      setIsConfirming(true);
+
+      window.setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }, 0);
+    };
+
+  const handleCloseConfirmation =
+    () => {
+      if (isSubmitting) {
+        return;
+      }
+
+      setIsConfirming(false);
+
+      window.setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }, 0);
+    };
+
   const handleCreateBuyOrder =
     async () => {
       if (
@@ -1937,6 +1979,31 @@ export default function ConsignmentBuyOrder() {
         );
       }
     };
+
+  if (isConfirming) {
+    return (
+      <ConsignmentBuyOrderConfirm
+        form={form}
+        items={items}
+        routeOptions={routeOptions}
+        productTypeOptions={
+          productTypeOptions
+        }
+        isSubmitting={
+          isSubmitting
+        }
+        submitMessage={
+          submitMessage
+        }
+        onBack={
+          handleCloseConfirmation
+        }
+        onConfirm={
+          handleCreateBuyOrder
+        }
+      />
+    );
+  }
 
   return (
     <div
@@ -3130,7 +3197,7 @@ export default function ConsignmentBuyOrder() {
                   isSubmitting
                 }
                 onClick={
-                  handleCreateBuyOrder
+                  handleOpenConfirmation
                 }
               >
                 {isSubmitting ? (
@@ -3139,7 +3206,10 @@ export default function ConsignmentBuyOrder() {
                     ĐANG TẠO YÊU CẦU...
                   </>
                 ) : (
-                  "TẠO YÊU CẦU MUA HỘ"
+                  <>
+                    <CheckOutlined />
+                    XEM LẠI YÊU CẦU
+                  </>
                 )}
               </button>
             </div>
