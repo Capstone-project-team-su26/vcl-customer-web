@@ -351,20 +351,7 @@ export const getPurchaseRequestDetailApi =
     }
   };
 
-/* =========================================================
-   QUOTATION APIs
-   ========================================================= */
 
-/**
- * Khách hàng từ chối báo giá ký gửi.
- *
- * PUT /api/quotations/{quotationId}/reject
- *
- * Lưu ý:
- * - API nhận quotationId.
- * - Không truyền orderId.
- * - Token được axiosInstance tự gắn qua interceptor.
- */
 export const rejectQuotationApi = async (
   quotationId,
   rejectionReason,

@@ -3049,3 +3049,139 @@ transform: none;
     transform: none;
   }
 }
+/* =========================================================
+   SUMMARY TOOLTIP - HIỆN ĐẦY ĐỦ KHI RÊ CHUỘT
+   Import file này sau ConsignmentListDetail.css
+   ========================================================= */
+
+   .detail-summary-card {
+    min-width: 0;
+  }
+  
+  .detail-summary-card.is-overflowing {
+    cursor: help;
+  }
+  
+  .detail-summary-card.is-overflowing:hover {
+    border-color: #93c5fd;
+    box-shadow:
+      0 8px 18px rgba(15, 23, 42, 0.06),
+      0 18px 38px rgba(37, 99, 235, 0.13);
+  }
+  
+  .detail-summary-label,
+  .detail-summary-value {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .detail-summary-label {
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  
+  .detail-summary-value {
+    color: #1e293b;
+    font-size: 18px;
+    line-height: 1.35;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+  
+  .detail-summary-value small {
+    margin-left: 5px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  
+  /* Tooltip Ant Design */
+  .detail-summary-tooltip {
+    max-width: min(440px, calc(100vw - 24px));
+  }
+  
+  .detail-summary-tooltip .ant-tooltip-inner {
+    min-width: 180px;
+    max-width: 440px;
+    padding: 12px 14px;
+  
+    color: #f8fafc;
+    background:
+      linear-gradient(
+        145deg,
+        rgba(15, 23, 42, 0.98),
+        rgba(30, 41, 59, 0.98)
+      );
+  
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 11px;
+  
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  
+    box-shadow:
+      0 8px 22px rgba(15, 23, 42, 0.2),
+      0 18px 46px rgba(15, 23, 42, 0.22);
+  }
+  
+  .detail-summary-tooltip .ant-tooltip-arrow::before {
+    background: #172033;
+  }
+  
+  .detail-summary-tooltip-label {
+    margin-bottom: 5px;
+    color: #cbd5e1;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+  
+  .detail-summary-tooltip-value {
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+  }
+  
+  @media (max-width: 768px) {
+    .detail-summary-tooltip .ant-tooltip-inner {
+      max-width: calc(100vw - 28px);
+      padding: 10px 12px;
+    }
+  
+    .detail-summary-tooltip-value {
+      font-size: 13px;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .detail-summary-card.is-overflowing {
+      transition: none;
+    }
+  
+    .detail-summary-card.is-overflowing:hover {
+      transform: none;
+    }
+  }

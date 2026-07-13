@@ -16,8 +16,10 @@ import {
 import {
   Descriptions,
   Image,
+  Modal,
   Table,
   Tag,
+  Tooltip,
 } from "antd";
 
 import {
@@ -42,6 +44,7 @@ import {
   cancelConsignmentApi,
 } from "../../../../../api/OrderApi/consignmentApi";
 import { getConsignmentStatusesApi } from "../../../../../api/OrderApi/consignmentStatusApi";
+import pricingRuleService from "../../../../../api/ServiceApi/pricingRuleService";
 
 import {
   apiToUtcIso,
@@ -118,6 +121,55 @@ const normalizeProductTypeOptions = (apiResult) => {
         option.value &&
         option.label
     );
+};
+
+const toFiniteNumberOrNull = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : null;
+};
+
+/* =========================================================
+   QUY TẮC HỆ SỐ QUY ĐỔI THỂ TÍCH
+   ========================================================= */
+
+const normalizeVolumetricDivisorRule = (rule) => {
+  if (
+    !rule ||
+    normalizeStatus(rule.ruleCode) !==
+      "VOLUMETRIC_DIVISOR" ||
+    normalizeStatus(rule.status) !==
+      "ACTIVE"
+  ) {
+    return null;
+  }
+
+  const value = toFiniteNumberOrNull(
+    rule.value
+  );
+
+  if (
+    !Number.isFinite(value) ||
+    value <= 0
+  ) {
+    return null;
+  }
+
+  return {
+    ...rule,
+    ruleCode: "VOLUMETRIC_DIVISOR",
+    value,
+  };
 };
 
 /* =========================================================
@@ -257,41 +309,89 @@ const getStatusClassName = (status) => {
 };
 
 
-const DIM_DIVISOR = 5000;
+const DIM_DECIMAL_PLACES = 2;
+const MIN_DIM_WEIGHT = 0.01;
+
+const roundDimWeightUp = (value) => {
+  const number = Number(value);
+
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
+    return null;
+  }
+
+  const multiplier =
+    10 ** DIM_DECIMAL_PLACES;
+
+  /*
+   * Làm tròn LÊN đến 2 chữ số thập phân.
+   * Ví dụ:
+   * 0.001  -> 0.01
+   * 0.011  -> 0.02
+   * 1.231  -> 1.24
+   */
+  const roundedValue =
+    Math.ceil(
+      (number - 1e-10) *
+        multiplier
+    ) / multiplier;
+
+  return Math.max(
+    roundedValue,
+    MIN_DIM_WEIGHT
+  );
+};
 
 const calculateDimWeight = (
   length,
   width,
-  height
+  height,
+  volumetricDivisor
 ) => {
   const lengthValue = Number(length);
   const widthValue = Number(width);
   const heightValue = Number(height);
+  const divisorValue = Number(
+    volumetricDivisor
+  );
 
   if (
     !Number.isFinite(lengthValue) ||
     !Number.isFinite(widthValue) ||
     !Number.isFinite(heightValue) ||
+    !Number.isFinite(divisorValue) ||
     lengthValue <= 0 ||
     widthValue <= 0 ||
-    heightValue <= 0
+    heightValue <= 0 ||
+    divisorValue <= 0
   ) {
     return null;
   }
 
-  return (
-    lengthValue *
-    widthValue *
-    heightValue
-  ) / DIM_DIVISOR;
+  const rawDimWeight =
+    (lengthValue *
+      widthValue *
+      heightValue) /
+    divisorValue;
+
+  return roundDimWeightUp(
+    rawDimWeight
+  );
 };
 
 const formatDimWeight = (value) => {
-  if (!Number.isFinite(value)) {
+  const roundedValue =
+    roundDimWeightUp(value);
+
+  if (roundedValue === null) {
     return "-";
   }
 
-  return value.toFixed(2);
+  return roundedValue.toFixed(
+    DIM_DECIMAL_PLACES
+  );
 };
 
 /**
@@ -480,6 +580,185 @@ const getApiErrorMessage = (
 };
 
 /* =========================================================
+   THẺ TỔNG QUAN HIỆN ĐẦY ĐỦ KHI RÊ CHUỘT
+   ========================================================= */
+
+const SummaryCard = ({
+  label,
+  value,
+  suffix = "",
+}) => {
+  const labelRef = useRef(null);
+  const valueRef = useRef(null);
+
+  const [isOverflowing, setIsOverflowing] =
+    useState(false);
+
+  const displayValue =
+    value === null ||
+    value === undefined ||
+    value === ""
+      ? "-"
+      : String(value);
+
+  const fullValue = suffix
+    ? `${displayValue} ${suffix}`
+    : displayValue;
+
+  const checkOverflow = useCallback(() => {
+    const labelElement = labelRef.current;
+    const valueElement = valueRef.current;
+
+    const labelOverflow = Boolean(
+      labelElement &&
+        labelElement.scrollWidth >
+          labelElement.clientWidth + 1
+    );
+
+    const valueOverflow = Boolean(
+      valueElement &&
+        valueElement.scrollWidth >
+          valueElement.clientWidth + 1
+    );
+
+    setIsOverflowing(
+      labelOverflow || valueOverflow
+    );
+  }, [displayValue, label, suffix]);
+
+  useEffect(() => {
+    const frameId =
+      window.requestAnimationFrame(
+        checkOverflow
+      );
+
+    let resizeObserver;
+
+    if (
+      typeof ResizeObserver !==
+      "undefined"
+    ) {
+      resizeObserver = new ResizeObserver(
+        checkOverflow
+      );
+
+      if (labelRef.current) {
+        resizeObserver.observe(
+          labelRef.current
+        );
+      }
+
+      if (valueRef.current) {
+        resizeObserver.observe(
+          valueRef.current
+        );
+      }
+    }
+
+    window.addEventListener(
+      "resize",
+      checkOverflow
+    );
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      window.removeEventListener(
+        "resize",
+        checkOverflow
+      );
+    };
+  }, [checkOverflow]);
+
+  const tooltipContent = isOverflowing ? (
+    <div
+      style={{
+        maxWidth: 420,
+        lineHeight: 1.55,
+        overflowWrap: "anywhere",
+      }}
+    >
+      <div
+        style={{
+          marginBottom: 4,
+          fontSize: 12,
+          fontWeight: 600,
+          opacity: 0.8,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+        }}
+      >
+        {fullValue}
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <Tooltip
+      title={tooltipContent}
+      placement="top"
+      mouseEnterDelay={0.12}
+      mouseLeaveDelay={0.05}
+      overlayStyle={{
+        maxWidth: 440,
+      }}
+    >
+      <div
+        className="detail-summary-card"
+        aria-label={`${label}: ${fullValue}`}
+        style={{
+          cursor: isOverflowing
+            ? "help"
+            : "default",
+        }}
+      >
+        <span
+          ref={labelRef}
+          style={{
+            display: "block",
+            width: "100%",
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </span>
+
+        <strong
+          ref={valueRef}
+          style={{
+            display: "block",
+            width: "100%",
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {displayValue}
+
+          {suffix && (
+            <>
+              {" "}
+              <small>{suffix}</small>
+            </>
+          )}
+        </strong>
+      </div>
+    </Tooltip>
+  );
+};
+
+/* =========================================================
    COMPONENT
    ========================================================= */
 
@@ -522,6 +801,21 @@ const ConsignmentListDetail = () => {
   ] = useState([]);
 
   const [
+    volumetricDivisorRule,
+    setVolumetricDivisorRule,
+  ] = useState(null);
+
+  const [
+    volumetricRuleError,
+    setVolumetricRuleError,
+  ] = useState("");
+
+  const [
+    volumetricRuleLoading,
+    setVolumetricRuleLoading,
+  ] = useState(true);
+
+  const [
     isCancelModalOpen,
     setIsCancelModalOpen,
   ] = useState(false);
@@ -536,6 +830,81 @@ const ConsignmentListDetail = () => {
 
   const [isCancelling, setIsCancelling] =
     useState(false);
+
+  const [
+    fullTextPreview,
+    setFullTextPreview,
+  ] = useState({
+    open: false,
+    title: "",
+    content: "",
+  });
+
+  /* =======================================================
+     LẤY RIÊNG HỆ SỐ QUY ĐỔI THỂ TÍCH
+     ======================================================= */
+
+  const fetchVolumetricDivisorRule =
+    useCallback(async (signal) => {
+      try {
+        setVolumetricRuleLoading(true);
+        setVolumetricRuleError("");
+
+        console.info(
+          "[Consignment Detail] GET /api/pricing-rules → VOLUMETRIC_DIVISOR"
+        );
+
+        const result =
+          await pricingRuleService.getVolumetricDivisorRule({
+            signal,
+          });
+
+        const normalizedRule =
+          normalizeVolumetricDivisorRule(
+            result
+          );
+
+        if (!normalizedRule) {
+          throw new Error(
+            "Không tìm thấy quy tắc VOLUMETRIC_DIVISOR đang ACTIVE hoặc value không hợp lệ."
+          );
+        }
+
+        setVolumetricDivisorRule(
+          normalizedRule
+        );
+
+        console.info(
+          "[Consignment Detail] VOLUMETRIC_DIVISOR đang áp dụng:",
+          normalizedRule
+        );
+      } catch (error) {
+        if (
+          axios.isCancel(error) ||
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "AbortError"
+        ) {
+          return;
+        }
+
+        console.error(
+          "[Consignment Detail] Lỗi tải VOLUMETRIC_DIVISOR:",
+          error
+        );
+
+        setVolumetricDivisorRule(null);
+        setVolumetricRuleError(
+          getApiErrorMessage(
+            error,
+            "Không thể tải hệ số quy đổi thể tích từ API."
+          )
+        );
+      } finally {
+        if (!signal?.aborted) {
+          setVolumetricRuleLoading(false);
+        }
+      }
+    }, []);
 
   /* =======================================================
      LẤY CHI TIẾT KÝ GỬI
@@ -641,6 +1010,7 @@ const ConsignmentListDetail = () => {
             productTypesResult.reason
           );
         }
+
       } catch (error) {
         if (
           axios.isCancel(error) ||
@@ -695,6 +1065,18 @@ const ConsignmentListDetail = () => {
     };
   }, [fetchConsignmentDetail]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchVolumetricDivisorRule(
+      controller.signal
+    );
+
+    return () => {
+      controller.abort();
+    };
+  }, [fetchVolumetricDivisorRule]);
+
   useEffect(
     () => () => {
       if (copyResetTimerRef.current) {
@@ -707,10 +1089,16 @@ const ConsignmentListDetail = () => {
   );
 
   const handleReload = () => {
-    const controller = new AbortController();
+    const detailController =
+      new AbortController();
+    const pricingController =
+      new AbortController();
 
     fetchConsignmentDetail(
-      controller.signal
+      detailController.signal
+    );
+    fetchVolumetricDivisorRule(
+      pricingController.signal
     );
   };
 
@@ -981,6 +1369,78 @@ const ConsignmentListDetail = () => {
     [productTypeLabelMap]
   );
 
+  const volumetricDivisor = useMemo(
+    () =>
+      toFiniteNumberOrNull(
+        volumetricDivisorRule?.value
+      ),
+    [volumetricDivisorRule]
+  );
+
+  const getRecordProductType = useCallback(
+    (record) => {
+      const productType =
+        record?.productType;
+
+      if (
+        productType &&
+        typeof productType === "object"
+      ) {
+        return (
+          productType.value ||
+          productType.code ||
+          productType.productTypeCode ||
+          productType.productTypeId ||
+          productType.id ||
+          productType.name ||
+          productType.productTypeName ||
+          ""
+        );
+      }
+
+      return (
+        productType ||
+        record?.productTypeCode ||
+        record?.productTypeId ||
+        record?.productTypeName ||
+        ""
+      );
+    },
+    []
+  );
+
+  const handleOpenFullText = useCallback(
+    (title, content) => {
+      const normalizedContent =
+        String(content ?? "").trim();
+
+      if (
+        !normalizedContent ||
+        normalizedContent === "-"
+      ) {
+        return;
+      }
+
+      setFullTextPreview({
+        open: true,
+        title,
+        content: normalizedContent,
+      });
+    },
+    []
+  );
+
+  const handleCloseFullText = useCallback(
+    () => {
+      setFullTextPreview({
+        open: false,
+        title: "",
+        content: "",
+      });
+    },
+    []
+  );
+
   /* =======================================================
      CỘT BẢNG SẢN PHẨM
      ======================================================= */
@@ -1035,23 +1495,123 @@ const ConsignmentListDetail = () => {
         title: "Sản phẩm",
         dataIndex: "productName",
         key: "productName",
-        minWidth: 180,
+        width: 210,
         render: (
           productName,
           record
-        ) => (
-          <div className="detail-product-name-cell">
-            <strong>
-              {productName || "-"}
-            </strong>
+        ) => {
+          const displayProductName =
+            productName ||
+            record?.name ||
+            record?.itemName ||
+            record?.product?.name ||
+            record?.product?.productName ||
+            "-";
 
-            <span>
-              {getProductTypeLabel(
-                record.productType
-              )}
-            </span>
-          </div>
-        ),
+          return (
+            <div className="detail-product-name-cell">
+              <button
+                type="button"
+                className="detail-product-name-button"
+                title="Bấm để xem đầy đủ"
+                aria-label={`Xem đầy đủ tên sản phẩm ${displayProductName}`}
+                onClick={() =>
+                  handleOpenFullText(
+                    "Tên sản phẩm",
+                    displayProductName
+                  )
+                }
+                style={{
+                  display: "block",
+                  width: "100%",
+                  minWidth: 0,
+                  padding: 0,
+                  overflow: "hidden",
+                  color: "inherit",
+                  font: "inherit",
+                  textAlign: "left",
+                  background: "transparent",
+                  border: 0,
+                  cursor: "pointer",
+                }}
+              >
+                <strong
+                  className="detail-product-name"
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {displayProductName}
+                </strong>
+              </button>
+            </div>
+          );
+        },
+      },
+      {
+        title: "Loại sản phẩm",
+        key: "productType",
+        width: 170,
+        align: "center",
+        render: (_, record) => {
+          const productTypeLabel =
+            getProductTypeLabel(
+              getRecordProductType(
+                record
+              )
+            );
+
+          if (
+            !productTypeLabel ||
+            productTypeLabel === "-"
+          ) {
+            return (
+              <span className="detail-pending-value">
+                Chưa cập nhật
+              </span>
+            );
+          }
+
+          return (
+            <button
+              type="button"
+              title="Bấm để xem đầy đủ"
+              aria-label={`Xem đầy đủ loại sản phẩm ${productTypeLabel}`}
+              onClick={() =>
+                handleOpenFullText(
+                  "Loại sản phẩm",
+                  productTypeLabel
+                )
+              }
+              style={{
+                maxWidth: "100%",
+                padding: 0,
+                background: "transparent",
+                border: 0,
+                cursor: "pointer",
+              }}
+            >
+              <Tag
+                color="blue"
+                className="detail-product-type-tag"
+                style={{
+                  display: "block",
+                  maxWidth: "100%",
+                  marginInlineEnd: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {productTypeLabel}
+              </Tag>
+            </button>
+          );
+        },
       },
       {
         title: "Số lượng",
@@ -1087,15 +1647,28 @@ const ConsignmentListDetail = () => {
         ),
       },
       {
-        title: "DIM = ((Dài x Rộng x Cao) / 5000)",
+        title: volumetricDivisor
+          ? `DIM = (Dài × Rộng × Cao) / ${formatWeight(
+              volumetricDivisor
+            )}`
+          : "DIM (chưa có hệ số từ API)",
         key: "dimensionalWeight",
-        width: 235,
+        width: 250,
         render: (_, record) => {
+          if (!volumetricDivisor) {
+            return (
+              <span className="detail-pending-value">
+                Chưa có hệ số DIM
+              </span>
+            );
+          }
+
           const dimWeight =
             calculateDimWeight(
               record.length,
               record.width,
-              record.height
+              record.height,
+              volumetricDivisor
             );
 
           if (dimWeight === null) {
@@ -1107,7 +1680,10 @@ const ConsignmentListDetail = () => {
               {record.length} ×{" "}
               {record.width} ×{" "}
               {record.height} /{" "}
-              {DIM_DIVISOR} ={" "}
+              {formatWeight(
+                volumetricDivisor
+              )}{" "}
+              ={" "}
               <strong>
                 {formatDimWeight(
                   dimWeight
@@ -1138,9 +1714,49 @@ const ConsignmentListDetail = () => {
           "domesticTrackingCode",
         key: "domesticTrackingCode",
         width: 180,
-        render: (trackingCode) =>
-          trackingCode ||
-          "Chưa cập nhật",
+        render: (trackingCode) => {
+          const displayTrackingCode =
+            trackingCode ||
+            "Chưa cập nhật";
+
+          if (!trackingCode) {
+            return (
+              <span className="detail-pending-value">
+                {displayTrackingCode}
+              </span>
+            );
+          }
+
+          return (
+            <button
+              type="button"
+              title="Bấm để xem đầy đủ"
+              aria-label={`Xem đầy đủ mã vận đơn nội địa ${displayTrackingCode}`}
+              onClick={() =>
+                handleOpenFullText(
+                  "Mã vận đơn nội địa",
+                  displayTrackingCode
+                )
+              }
+              style={{
+                display: "block",
+                width: "100%",
+                padding: 0,
+                overflow: "hidden",
+                color: "inherit",
+                font: "inherit",
+                textAlign: "left",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                background: "transparent",
+                border: 0,
+                cursor: "pointer",
+              }}
+            >
+              {displayTrackingCode}
+            </button>
+          );
+        },
       },
       {
         title: "",
@@ -1164,7 +1780,12 @@ const ConsignmentListDetail = () => {
           ) : null,
       },
     ],
-    [getProductTypeLabel]
+    [
+      getProductTypeLabel,
+      getRecordProductType,
+      handleOpenFullText,
+      volumetricDivisor,
+    ]
   );
 
   /* =======================================================
@@ -1283,23 +1904,39 @@ const ConsignmentListDetail = () => {
     );
 
 
-  const totalDimWeight =
-    items.reduce(
-      (total, item) => {
-        const dimWeight =
-          calculateDimWeight(
-            item.length,
-            item.width,
-            item.height
-          );
+  const calculatedTotalDimWeight =
+    volumetricDivisor
+      ? items.reduce(
+          (total, item) => {
+            const dimWeight =
+              calculateDimWeight(
+                item.length,
+                item.width,
+                item.height,
+                volumetricDivisor
+              );
 
-        return (
-          total +
-          (dimWeight ?? 0)
-        );
-      },
-      0
+            return (
+              total +
+              (dimWeight ?? 0)
+            );
+          },
+          0
+        )
+      : null;
+
+  const apiVolumetricWeight =
+    toFiniteNumberOrNull(
+      consignment.volumetricWeight ??
+        quotation?.volumetricWeight
     );
+
+  const totalDimWeight =
+    Number.isFinite(
+      calculatedTotalDimWeight
+    )
+      ? calculatedTotalDimWeight
+      : apiVolumetricWeight;
 
   /* =======================================================
      GIAO DIỆN CHÍNH
@@ -1335,6 +1972,21 @@ const ConsignmentListDetail = () => {
           Không thể tải dữ liệu mới nhất.
           Đang hiển thị dữ liệu từ danh
           sách.
+        </div>
+      )}
+
+      {volumetricRuleLoading && (
+        <div className="detail-warning-message">
+          Đang tải riêng quy tắc
+          VOLUMETRIC_DIVISOR từ API
+          /api/pricing-rules...
+        </div>
+      )}
+
+      {volumetricRuleError && (
+        <div className="detail-warning-message">
+          {volumetricRuleError} Phần DIM
+          không dùng hệ số cố định thay thế.
         </div>
       )}
 
@@ -1448,79 +2100,65 @@ const ConsignmentListDetail = () => {
       {/* Tổng quan */}
 
       <section className="detail-summary-grid">
-        <div className="detail-summary-card">
-          <span>
-            Loại vận chuyển
-          </span>
+        <SummaryCard
+          label="Loại vận chuyển"
+          value={getConsignmentTypeLabel(
+            consignment.consignmentType
+          )}
+          onOpen={handleOpenFullText}
+        />
 
-          <strong>
-            {getConsignmentTypeLabel(
-              consignment.consignmentType
-            )}
-          </strong>
-        </div>
+        <SummaryCard
+          label="Tuyến vận chuyển"
+          value={consignment.route || "-"}
+          onOpen={handleOpenFullText}
+        />
 
-        <div className="detail-summary-card">
-          <span>
-            Tuyến vận chuyển
-          </span>
+        <SummaryCard
+          label="Tổng trọng lượng"
+          value={formatWeight(
+            consignment.totalWeight
+          )}
+          suffix="kg"
+          onOpen={handleOpenFullText}
+        />
 
-          <strong>
-            {consignment.route || "-"}
-          </strong>
-        </div>
+        <SummaryCard
+          label="Tổng thể tích"
+          value={
+            consignment.totalVolume ?? 0
+          }
+          suffix="cm³"
+          onOpen={handleOpenFullText}
+        />
 
-        <div className="detail-summary-card">
-          <span>
-            Tổng trọng lượng
-          </span>
+        <SummaryCard
+          label="Số sản phẩm"
+          value={totalProductQuantity}
+          suffix="sản phẩm"
+          onOpen={handleOpenFullText}
+        />
 
-          <strong>
-            {formatWeight(
-              consignment.totalWeight
-            )}
-
-            <small>kg</small>
-          </strong>
-        </div>
-
-        <div className="detail-summary-card">
-          <span>
-            Tổng thể tích
-          </span>
-
-          <strong>
-            {consignment.totalVolume ??
-              0}
-
-            <small>cm³</small>
-          </strong>
-        </div>
-
-        <div className="detail-summary-card">
-          <span>
-            Số sản phẩm
-          </span>
-
-          <strong>
-            {totalProductQuantity}
-
-            <small>
-              sản phẩm
-            </small>
-          </strong>
-        </div>
-        <div className="detail-summary-card">
-          <span>
-            Tổng khối lượng DIM
-          </span>
-
-          <strong>
-            {totalDimWeight.toFixed(2)}
-
-            <small>kg</small>
-          </strong>
-        </div>
+        <SummaryCard
+          label="Tổng khối lượng DIM"
+          value={
+            Number.isFinite(
+              totalDimWeight
+            )
+              ? formatDimWeight(
+                  totalDimWeight
+                )
+              : "-"
+          }
+          suffix={
+            Number.isFinite(
+              totalDimWeight
+            )
+              ? "kg"
+              : ""
+          }
+          onOpen={handleOpenFullText}
+        />
       </section>
 
       {/* Thông tin khách hàng và nhận hàng */}
@@ -1682,7 +2320,7 @@ const ConsignmentListDetail = () => {
           dataSource={items}
           pagination={false}
           scroll={{
-            x: 1320,
+            x: 1500,
           }}
           locale={{
             emptyText:
@@ -1937,6 +2575,31 @@ const ConsignmentListDetail = () => {
           )}
         </button>
       </section>
+
+      <Modal
+        open={fullTextPreview.open}
+        title={fullTextPreview.title}
+        onCancel={handleCloseFullText}
+        footer={null}
+        centered
+        width={560}
+      >
+        <div
+          style={{
+            maxHeight: "55vh",
+            padding: "8px 2px 4px",
+            overflowY: "auto",
+            color: "#172033",
+            fontSize: 15,
+            fontWeight: 600,
+            lineHeight: 1.7,
+            overflowWrap: "anywhere",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {fullTextPreview.content}
+        </div>
+      </Modal>
 
       {isCancelModalOpen && (
         <div
