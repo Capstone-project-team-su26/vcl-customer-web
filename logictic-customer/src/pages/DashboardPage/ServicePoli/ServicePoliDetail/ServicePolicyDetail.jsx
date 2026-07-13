@@ -487,14 +487,14 @@ import {
               </p>
             </div>
   
-            <button
+            {/* <button
               type="button"
               className="service-policy-detail__close"
               onClick={requestClose}
               aria-label="Đóng cửa sổ chi tiết"
             >
               ×
-            </button>
+            </button> */}
           </header>
   
           <div className="service-policy-detail__hero">

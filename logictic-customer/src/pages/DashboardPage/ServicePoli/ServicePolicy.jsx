@@ -19,7 +19,6 @@ const COLUMN_LABELS = {
   serviceType: "Loại dịch vụ",
   originCountry: "Quốc gia gửi",
   destinationCountry: "Quốc gia nhận",
-  unitType: "Đơn vị tính",
   price: "Đơn giá",
   currency: "Loại tiền",
   effectiveDate: "Ngày áp dụng",
@@ -32,13 +31,18 @@ const PRIORITY_COLUMNS = [
   "serviceType",
   "originCountry",
   "destinationCountry",
-  "unitType",
   "price",
   "currency",
   "effectiveDate",
   "status",
   "id",
   "carrierId",
+];
+const HIDDEN_COLUMNS = [
+  "serviceCode",
+  "description",
+  "unit",
+  "unitType",
 ];
 
 const STATUS_LABELS = {
@@ -353,21 +357,23 @@ export default function ServicePolicy() {
 
   const columns = useMemo(() => {
     const columnSet = new Set();
-
+  
     servicePricings.forEach((item) => {
       if (
         item &&
         typeof item === "object" &&
         !Array.isArray(item)
       ) {
-        Object.keys(item).forEach((key) =>
-          columnSet.add(key)
-        );
+        Object.keys(item).forEach((key) => {
+          if (!HIDDEN_COLUMNS.includes(key)) {
+            columnSet.add(key);
+          }
+        });
       }
     });
-
+  
     const allColumns = Array.from(columnSet);
-
+  
     return [
       ...PRIORITY_COLUMNS.filter((column) =>
         allColumns.includes(column)
@@ -650,9 +656,7 @@ export default function ServicePolicy() {
                           item?.price,
                           item?.currency
                         )}
-                        <small>
-                          /{item?.unitType || "đơn vị"}
-                        </small>
+                       
                       </strong>
                     </div>
 
