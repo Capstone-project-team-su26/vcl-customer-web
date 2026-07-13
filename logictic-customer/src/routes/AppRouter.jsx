@@ -67,6 +67,7 @@ import ConsignmentBuyOrder from "../pages/DashboardPage/CreateCustomer/BuyOrder/
 import PurchaseRequestPendingList from "../pages/DashboardPage/CreateCustomer/BuyOrderXuLy/PurchaseRequestPendingList"; // Import
 import PurchaseRequestDetail from "../pages/DashboardPage/CreateCustomer/BuyOrderXuLy/BuyOrderXuLyDetail/PurchaseRequestDetail"; // Import
 import CustomerServiceChat from "../pages/DashboardPage/Chat/CustomerServiceChat"; // Import
+import BuyForMeQuotationList from "../pages/DashboardPage/CreateCustomer/CheckHangMuaHo/BuyForMeQuotationList"
 
 const AppRouter = () => {
   return (
@@ -174,6 +175,11 @@ const AppRouter = () => {
             element={<PurchaseRequestDetail />}
           />
           <Route path="/customer-service-chat" element={<CustomerServiceChat />} />
+          <Route
+  path="/check-orders/buy-on-behalf"
+  element={<BuyForMeQuotationList />}
+/>
+
 
 
         </Route>

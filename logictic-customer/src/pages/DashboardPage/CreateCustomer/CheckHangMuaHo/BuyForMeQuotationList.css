@@ -1,0 +1,700 @@
+.purchase-pending-container {
+    min-height: 100vh;
+    padding: 28px;
+    background:
+      radial-gradient(circle at top left, rgba(255, 122, 0, 0.14), transparent 32%),
+      linear-gradient(135deg, #fff7ed 0%, #f8fafc 45%, #eef2ff 100%);
+    color: #172033;
+  }
+  
+  .purchase-pending-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    margin-bottom: 22px;
+  }
+  
+  .purchase-pending-page-title {
+    margin: 0;
+    color: #111827;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.6px;
+    text-transform: uppercase;
+  }
+  
+  .purchase-pending-page-subtitle {
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  
+  .purchase-pending-page-summary {
+    min-width: 132px;
+    padding: 16px 20px;
+    border: 1px solid rgba(249, 115, 22, 0.22);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08);
+    text-align: center;
+    backdrop-filter: blur(14px);
+  }
+  
+  .purchase-pending-page-summary strong {
+    display: block;
+    color: #f97316;
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 900;
+  }
+  
+  .purchase-pending-page-summary span {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  
+  .purchase-pending-filter-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+    padding: 18px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(16px);
+  }
+  
+  .purchase-pending-filter-fields {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .purchase-pending-search-input {
+    width: 360px;
+    height: 44px;
+    border-radius: 14px;
+    border-color: #e2e8f0;
+    overflow: hidden;
+  }
+  
+  .purchase-pending-search-input input {
+    font-weight: 600;
+  }
+  
+  .purchase-pending-search-icon {
+    color: #f97316;
+    font-size: 20px;
+  }
+  
+  .purchase-pending-date-picker {
+    width: 280px;
+    height: 44px;
+    border-radius: 14px;
+    border-color: #e2e8f0;
+  }
+  
+  .purchase-pending-date-picker .ant-picker-input input {
+    font-weight: 600;
+  }
+  
+  .purchase-pending-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .purchase-pending-reset-button {
+    height: 44px;
+    padding: 0 18px !important;
+    border-radius: 14px !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+    font-weight: 800 !important;
+    background: #ffffff !important;
+    text-transform: none !important;
+  }
+  
+  .purchase-pending-reset-button:hover {
+    border-color: #f97316 !important;
+    color: #f97316 !important;
+    background: #fff7ed !important;
+  }
+  
+  .purchase-pending-loading-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-height: 320px;
+    padding: 32px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    color: #475569;
+    font-size: 15px;
+    font-weight: 800;
+  }
+  
+  .purchase-pending-card-list {
+    display: grid;
+    gap: 18px;
+  }
+  
+  .purchase-pending-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+    cursor: pointer;
+    transition:
+      transform 0.22s ease,
+      box-shadow 0.22s ease,
+      border-color 0.22s ease;
+  }
+  
+  .purchase-pending-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 6px;
+    background: linear-gradient(180deg, #f97316, #facc15);
+  }
+  
+  .purchase-pending-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(249, 115, 22, 0.42);
+    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.14);
+  }
+  
+  .purchase-pending-card:focus-visible {
+    outline: 3px solid rgba(249, 115, 22, 0.32);
+    outline-offset: 3px;
+  }
+  
+  .purchase-pending-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px 14px 24px;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+  
+  .purchase-pending-header-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-width: 0;
+  }
+  
+  .purchase-pending-order-code {
+    color: #0f172a;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: -0.25px;
+  }
+  
+  .purchase-pending-code-group {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+  
+  .purchase-pending-code-label {
+    color: #94a3b8;
+    font-size: 10px;
+    line-height: 1.3;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  
+  .purchase-pending-copy-code-button {
+    min-height: 31px;
+    padding: 5px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: #c2410c;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 850;
+    cursor: pointer;
+    transition:
+      color 0.18s ease,
+      background 0.18s ease,
+      border-color 0.18s ease,
+      transform 0.18s ease;
+  }
+  
+  .purchase-pending-copy-code-button svg {
+    font-size: 15px;
+  }
+  
+  .purchase-pending-copy-code-button:hover {
+    color: #9a3412;
+    background: #ffedd5;
+    border-color: #fb923c;
+    transform: translateY(-1px);
+  }
+  
+  .purchase-pending-copy-code-button.is-copied {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+  }
+  
+  .purchase-pending-copy-code-button:focus-visible {
+    outline: 3px solid rgba(249, 115, 22, 0.22);
+    outline-offset: 2px;
+  }
+  
+  .purchase-pending-tag-type,
+  .purchase-pending-tag-count,
+  .purchase-pending-status-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  
+  .purchase-pending-tag-type {
+    color: #7c2d12;
+    background: #ffedd5;
+    border: 1px solid #fed7aa;
+  }
+  
+  .purchase-pending-tag-count {
+    color: #334155;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .purchase-pending-status-tag,
+  .purchase-pending-status-badge {
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+  }
+  
+  .purchase-pending-status-pending-review {
+    color: #92400e;
+    background: #fef3c7;
+    border-color: #fde68a;
+  }
+  
+  .purchase-pending-view-detail-button {
+    min-width: 122px !important;
+    height: 36px !important;
+    border-radius: 12px !important;
+    border-color: rgba(249, 115, 22, 0.45) !important;
+    color: #ea580c !important;
+    font-weight: 800 !important;
+    text-transform: none !important;
+    background: #fff7ed !important;
+  }
+  
+  .purchase-pending-view-detail-button:hover {
+    border-color: #f97316 !important;
+    background: #ffedd5 !important;
+  }
+  
+  .purchase-pending-sub-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 22px;
+    padding: 14px 20px 14px 24px;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .purchase-pending-sub-header strong {
+    color: #111827;
+    font-weight: 900;
+  }
+  
+  .purchase-pending-status-inline {
+    color: #64748b;
+  }
+  
+  .purchase-pending-status-inline b {
+    color: #92400e;
+    font-weight: 900;
+  }
+  
+  .purchase-pending-card-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 270px;
+    gap: 18px;
+    padding: 18px 20px 22px 24px;
+  }
+  
+  .purchase-pending-body-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    min-width: 0;
+  }
+  
+  .purchase-pending-box-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 58px;
+    height: 58px;
+    border-radius: 20px;
+    background:
+      linear-gradient(135deg, #fff7ed, #ffedd5);
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.18);
+    font-size: 26px;
+  }
+  
+  .purchase-pending-product-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .purchase-pending-customer-name {
+    color: #111827;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: -0.2px;
+  }
+  
+  .purchase-pending-sku-tag,
+  .purchase-pending-receiver-phone,
+  .purchase-pending-note {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  
+  .purchase-pending-sku-tag {
+    color: #475569;
+  }
+  
+  .purchase-pending-products {
+    display: grid;
+    gap: 9px;
+    margin-top: 14px;
+  }
+  
+  .purchase-pending-products-title {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.55px;
+    text-transform: uppercase;
+  }
+  
+  .purchase-pending-product-row {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+  }
+  
+  .purchase-pending-product-index {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+    color: #c2410c;
+    background: #ffedd5;
+    font-size: 12px;
+    font-weight: 900;
+  }
+  
+  .purchase-pending-product-name {
+    min-width: 0;
+    color: #1e293b;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  
+  .purchase-pending-product-quantity {
+    padding: 5px 9px;
+    border-radius: 9px;
+    color: #9a3412;
+    background: #fff7ed;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  
+  .purchase-pending-product-empty {
+    padding: 12px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    color: #64748b;
+    background: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  
+  .purchase-pending-note {
+    color: #334155;
+  }
+  
+  .purchase-pending-body-right {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .purchase-pending-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+  
+  .purchase-pending-request-type {
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #f8fafc;
+  }
+  
+  .purchase-pending-request-type span {
+    display: block;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+  }
+  
+  .purchase-pending-request-type strong {
+    display: block;
+    margin-top: 5px;
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 900;
+  }
+  
+  .purchase-pending-specs-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .purchase-pending-specs-list span {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #ffffff;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  
+  .purchase-pending-specs-list strong {
+    color: #111827;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+  
+  .purchase-pending-empty-container {
+    display: grid;
+    place-items: center;
+    min-height: 320px;
+    padding: 38px 24px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.86);
+    text-align: center;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+  }
+  
+  .purchase-pending-empty-icon {
+    margin-bottom: 12px;
+    font-size: 44px;
+  }
+  
+  .purchase-pending-empty-container h3 {
+    margin: 0;
+    color: #111827;
+    font-size: 20px;
+    font-weight: 900;
+  }
+  
+  .purchase-pending-empty-container p {
+    max-width: 520px;
+    margin: 10px 0 18px;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.55;
+  }
+  
+  .purchase-pending-empty-reset-button {
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    text-transform: none !important;
+  }
+  
+  .purchase-pending-pagination-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-top: 22px;
+    padding: 16px 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+  }
+  
+  .purchase-pending-pagination-summary {
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  
+  .purchase-pending-pagination-summary strong {
+    color: #0f172a;
+    font-weight: 900;
+  }
+  
+  /* ================= RESPONSIVE ================= */
+  
+  @media (max-width: 1100px) {
+    .purchase-pending-card-body {
+      grid-template-columns: 1fr;
+    }
+  
+    .purchase-pending-body-right {
+      max-width: 100%;
+    }
+  }
+  
+  @media (max-width: 860px) {
+    .purchase-pending-container {
+      padding: 18px;
+    }
+  
+    .purchase-pending-page-header,
+    .purchase-pending-filter-section,
+    .purchase-pending-card-header,
+    .purchase-pending-pagination-section {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  
+    .purchase-pending-page-summary {
+      width: 100%;
+    }
+  
+    .purchase-pending-search-input,
+    .purchase-pending-date-picker {
+      width: 100%;
+    }
+  
+    .purchase-pending-filter-fields .ant-space {
+      width: 100%;
+    }
+  
+    .purchase-pending-filter-fields .ant-space-item {
+      width: 100%;
+    }
+  
+    .purchase-pending-filter-actions {
+      width: 100%;
+    }
+  
+    .purchase-pending-reset-button {
+      width: 100%;
+    }
+  
+    .purchase-pending-view-detail-button {
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 560px) {
+    .purchase-pending-page-title {
+      font-size: 22px;
+    }
+  
+    .purchase-pending-card-header,
+    .purchase-pending-sub-header,
+    .purchase-pending-card-body {
+      padding-left: 18px;
+      padding-right: 16px;
+    }
+  
+    .purchase-pending-body-left {
+      flex-direction: column;
+    }
+  
+    .purchase-pending-box-icon {
+      width: 52px;
+      height: 52px;
+    }
+  
+    .purchase-pending-order-code {
+      font-size: 15px;
+    }
+  
+    .purchase-pending-code-group {
+      width: 100%;
+    }
+  
+    .purchase-pending-product-row {
+      grid-template-columns: 30px minmax(0, 1fr);
+    }
+  
+    .purchase-pending-product-quantity {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }

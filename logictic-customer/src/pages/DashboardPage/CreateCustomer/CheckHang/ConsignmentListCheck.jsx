@@ -1167,7 +1167,7 @@ const ConsignmentList = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">
-            THEO DÕI BÁO GIÁ
+            THEO DÕI BÁO GIÁ KÍ GỬI 
           </h1>
 
           <p className="page-subtitle">
