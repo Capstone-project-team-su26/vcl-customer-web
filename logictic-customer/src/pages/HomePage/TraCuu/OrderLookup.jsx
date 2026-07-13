@@ -1,5 +1,15 @@
-import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  motion,
+  AnimatePresence,
+} from "framer-motion";
+
 import {
   ArrowRightOutlined,
   CheckCircleOutlined,
@@ -7,7 +17,6 @@ import {
   CloseCircleOutlined,
   CopyOutlined,
   CustomerServiceOutlined,
-  EnvironmentOutlined,
   FileSearchOutlined,
   GlobalOutlined,
   HomeOutlined,
@@ -21,155 +30,73 @@ import {
 } from "@ant-design/icons";
 
 import Header from "../../../layouts/HeaderLayout/Headeer";
+import AuthNotify from "../../../utils/AuthNotify";
+
+import {
+  apiToUtcIso,
+  formatVietnamDateTime,
+} from "../../../utils/timeUtc";
+
+import {
+  getPublicParcelTrackingApi,
+} from "../../../api/ServiceApi/publicParcelTrackingApi";
+
 import "./OrderLookup.css";
 
-const MOCK_ORDERS = {
-  "ORD-2026-0001": {
-    orderCode: "ORD-2026-0001",
-    serviceType: "Mua hộ",
-    status: "IN_TRANSIT",
-    statusText: "Đang vận chuyển về Việt Nam",
-    customerName: "Nguyễn Văn An",
-    route: "Trung Quốc → Việt Nam",
-    warehouse: "Kho Quảng Châu",
-    receiverAddress: "TP. Hồ Chí Minh, Việt Nam",
-    totalWeight: "3.2 kg",
-    totalPackages: 2,
-    estimatedDelivery: "09/07/2026",
-    totalCost: "1.280.000đ",
-    createdAt: "01/07/2026 09:30",
-    lastUpdated: "06/07/2026 14:20",
-    note: "Đơn hàng đang trên tuyến vận chuyển quốc tế. Dự kiến nhập kho Việt Nam trong 2-3 ngày.",
-    items: [
-      {
-        name: "Áo khoác nam",
-        quantity: 1,
-        price: "420.000đ",
-      },
-      {
-        name: "Giày thể thao",
-        quantity: 1,
-        price: "690.000đ",
-      },
-    ],
-    timeline: [
-      {
-        title: "Tạo yêu cầu mua hộ",
-        time: "01/07/2026 09:30",
-        description: "Khách hàng tạo yêu cầu mua hộ thành công.",
-        completed: true,
-      },
-      {
-        title: "Đã báo giá",
-        time: "01/07/2026 10:15",
-        description: "Sales đã gửi báo giá và chờ khách xác nhận.",
-        completed: true,
-      },
-      {
-        title: "Đã đặt mua",
-        time: "02/07/2026 08:40",
-        description: "Sản phẩm đã được đặt mua từ nhà cung cấp.",
-        completed: true,
-      },
-      {
-        title: "Kho quốc tế tiếp nhận",
-        time: "04/07/2026 16:10",
-        description: "Kiện hàng đã được tiếp nhận tại kho quốc tế.",
-        completed: true,
-      },
-      {
-        title: "Đang vận chuyển",
-        time: "06/07/2026 14:20",
-        description: "Hàng đang trên tuyến vận chuyển về Việt Nam.",
-        completed: true,
-        active: true,
-      },
-      {
-        title: "Nhập kho Việt Nam",
-        time: "Dự kiến",
-        description: "Hàng sẽ được nhập kho Việt Nam và chuẩn bị giao.",
-        completed: false,
-      },
-    ],
-  },
-
-  "KG-2026-0002": {
-    orderCode: "KG-2026-0002",
-    serviceType: "Ký gửi",
-    status: "VN_WAREHOUSE",
-    statusText: "Đã nhập kho Việt Nam",
-    customerName: "Trần Minh Khoa",
-    route: "Nhật Bản → Việt Nam",
-    warehouse: "Kho Việt Nam",
-    receiverAddress: "Đà Nẵng, Việt Nam",
-    totalWeight: "5.8 kg",
-    totalPackages: 1,
-    estimatedDelivery: "08/07/2026",
-    totalCost: "960.000đ",
-    createdAt: "28/06/2026 13:05",
-    lastUpdated: "06/07/2026 09:10",
-    note: "Kiện hàng đã nhập kho Việt Nam. Nhân viên kho đang chuẩn bị bàn giao cho đơn vị giao hàng.",
-    items: [
-      {
-        name: "Kiện hàng ký gửi",
-        quantity: 1,
-        price: "Đã khai báo",
-      },
-    ],
-    timeline: [
-      {
-        title: "Tạo yêu cầu ký gửi",
-        time: "28/06/2026 13:05",
-        description: "Khách hàng tạo yêu cầu ký gửi thành công.",
-        completed: true,
-      },
-      {
-        title: "Kho quốc tế tiếp nhận",
-        time: "30/06/2026 11:20",
-        description: "Kho quốc tế đã tiếp nhận và kiểm tra kiện hàng.",
-        completed: true,
-      },
-      {
-        title: "Đã xuất kho quốc tế",
-        time: "02/07/2026 17:00",
-        description: "Kiện hàng đã rời kho quốc tế.",
-        completed: true,
-      },
-      {
-        title: "Nhập kho Việt Nam",
-        time: "06/07/2026 09:10",
-        description: "Hàng đã về kho Việt Nam.",
-        completed: true,
-        active: true,
-      },
-      {
-        title: "Chờ giao hàng",
-        time: "Dự kiến",
-        description: "Kho Việt Nam chuẩn bị bàn giao cho đơn vị giao hàng.",
-        completed: false,
-      },
-    ],
-  },
-};
+/* =========================================================
+   STATUS
+   ========================================================= */
 
 const STATUS_STYLE = {
+  PENDING_REVIEW: {
+    className: "is-transit",
+    icon: <ClockCircleOutlined />,
+  },
+  PENDING: {
+    className: "is-transit",
+    icon: <ClockCircleOutlined />,
+  },
+  QUOTATION_SENT: {
+    className: "is-transit",
+    icon: <ClockCircleOutlined />,
+  },
+  APPROVED: {
+    className: "is-transit",
+    icon: <CheckCircleOutlined />,
+  },
   IN_TRANSIT: {
-    label: "Đang vận chuyển",
     className: "is-transit",
     icon: <TruckOutlined />,
   },
+  INTERNATIONAL_WAREHOUSE: {
+    className: "is-warehouse",
+    icon: <GlobalOutlined />,
+  },
   VN_WAREHOUSE: {
-    label: "Đã nhập kho Việt Nam",
     className: "is-warehouse",
     icon: <HomeOutlined />,
   },
+  VIETNAM_WAREHOUSE: {
+    className: "is-warehouse",
+    icon: <HomeOutlined />,
+  },
+  DELIVERED: {
+    className: "is-completed",
+    icon: <CheckCircleOutlined />,
+  },
   COMPLETED: {
-    label: "Hoàn tất",
     className: "is-completed",
     icon: <CheckCircleOutlined />,
   },
   CANCELLED: {
-    label: "Đã hủy",
+    className: "is-cancelled",
+    icon: <CloseCircleOutlined />,
+  },
+  CANCELED: {
+    className: "is-cancelled",
+    icon: <CloseCircleOutlined />,
+  },
+  REJECTED: {
     className: "is-cancelled",
     icon: <CloseCircleOutlined />,
   },
@@ -186,64 +113,550 @@ const fadeUp = {
   },
 };
 
-const OrderLookup = () => {
-  const [orderCode, setOrderCode] = useState("");
-  const [searchedCode, setSearchedCode] = useState("");
-  const [orderData, setOrderData] = useState(null);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
-  const normalizedCode = useMemo(() => {
-    return orderCode.trim().toUpperCase();
-  }, [orderCode]);
+const normalizeStatus = (value) => {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replaceAll("-", "_")
+    .replaceAll(" ", "_");
+};
 
-  const currentStatus = useMemo(() => {
-    if (!orderData?.status) {
-      return null;
+const formatStatusCode = (value) => {
+  const status = normalizeStatus(value);
+
+  if (!status) {
+    return "Chưa cập nhật";
+  }
+
+  return status
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(
+      /(^|\s)\S/g,
+      (character) =>
+        character.toUpperCase()
+    );
+};
+
+const formatRoute = (route) => {
+  const value = String(route ?? "").trim();
+
+  if (!value) {
+    return "Chưa cập nhật";
+  }
+
+  return value
+    .replace(/\s*-\s*/g, " → ")
+    .replace(/\s*_\s*/g, " → ");
+};
+
+const normalizeApiTimeToUtc = (value) => {
+  return apiToUtcIso(value, {
+    apiTimeMode: "utc",
+  });
+};
+
+const formatDateTime = (value) => {
+  const utcIso =
+    normalizeApiTimeToUtc(value);
+
+  if (!utcIso) {
+    return "Chưa cập nhật";
+  }
+
+  return formatVietnamDateTime(
+    utcIso,
+    {
+      apiTimeMode: "utc",
+      fallback: "Chưa cập nhật",
+    }
+  );
+};
+
+const unwrapTrackingData = (result) => {
+  return (
+    result?.data?.data ??
+    result?.data ??
+    result ??
+    null
+  );
+};
+
+const normalizeParcel = (
+  parcel,
+  index
+) => {
+  const parcelCode =
+    parcel?.parcelCode ||
+    parcel?.trackingCode ||
+    parcel?.domesticTrackingCode ||
+    parcel?.code ||
+    parcel?.id ||
+    `Kiện ${index + 1}`;
+
+  const status =
+    parcel?.status ||
+    parcel?.parcelStatus ||
+    "";
+
+  const statusLabel =
+    parcel?.statusLabel ||
+    parcel?.statusName ||
+    formatStatusCode(status);
+
+  const weightValue =
+    parcel?.weight ??
+    parcel?.totalWeight ??
+    parcel?.actualWeight;
+
+  const weight = Number(weightValue);
+
+  return {
+    ...parcel,
+    parcelCode: String(
+      parcelCode
+    ).trim(),
+    status,
+    statusLabel,
+    weight:
+      Number.isFinite(weight)
+        ? `${weight.toLocaleString(
+            "vi-VN",
+            {
+              maximumFractionDigits: 3,
+            }
+          )} kg`
+        : "",
+    updatedAt:
+      parcel?.updatedAt ||
+      parcel?.lastUpdated ||
+      parcel?.createdAt ||
+      "",
+  };
+};
+
+const extractHistory = (data) => {
+  const candidates = [
+    data?.timeline,
+    data?.trackingHistory,
+    data?.statusHistory,
+    data?.histories,
+    data?.events,
+  ];
+
+  const rawHistory =
+    candidates.find(Array.isArray) ||
+    [];
+
+  return rawHistory.map(
+    (item, index) => ({
+      title:
+        item?.title ||
+        item?.statusLabel ||
+        item?.statusName ||
+        formatStatusCode(
+          item?.status
+        ) ||
+        `Cập nhật ${index + 1}`,
+      time: formatDateTime(
+        item?.time ||
+          item?.updatedAt ||
+          item?.createdAt
+      ),
+      description:
+        item?.description ||
+        item?.note ||
+        item?.message ||
+        "Trạng thái được cập nhật từ hệ thống.",
+      completed:
+        item?.completed !== false,
+      active:
+        Boolean(item?.active) ||
+        index ===
+          rawHistory.length - 1,
+    })
+  );
+};
+
+const normalizeTrackingResult = (
+  result
+) => {
+  const data =
+    unwrapTrackingData(result);
+
+  if (!data) {
+    throw new Error(
+      "Hệ thống không trả về dữ liệu vận đơn."
+    );
+  }
+
+  const consignmentCode =
+    String(
+      data.consignmentCode ||
+        data.trackingCode ||
+        data.code ||
+        ""
+    ).trim();
+
+  if (!consignmentCode) {
+    throw new Error(
+      "Dữ liệu tra cứu không có mã vận đơn."
+    );
+  }
+
+  const status =
+    normalizeStatus(data.status);
+
+  const statusLabel =
+    String(
+      data.statusLabel ||
+        data.statusName ||
+        formatStatusCode(status)
+    ).trim();
+
+  const parcels = Array.isArray(
+    data.parcels
+  )
+    ? data.parcels.map(
+        normalizeParcel
+      )
+    : [];
+
+  const apiHistory =
+    extractHistory(data);
+
+  const timeline =
+    apiHistory.length > 0
+      ? apiHistory
+      : [
+          {
+            title:
+              statusLabel ||
+              "Trạng thái hiện tại",
+            time: formatDateTime(
+              data.updatedAt ||
+                data.createdAt
+            ),
+            description:
+              "Đây là trạng thái mới nhất được trả về từ hệ thống tra cứu vận đơn.",
+            completed: true,
+            active: true,
+          },
+        ];
+
+  const itemCountNumber =
+    Number(data.itemCount);
+
+  return {
+    raw: data,
+    orderCode: consignmentCode,
+    consignmentCode,
+    consignmentType:
+      data.consignmentType ||
+      "Chưa cập nhật",
+    route: formatRoute(data.route),
+    status,
+    statusText:
+      statusLabel ||
+      "Chưa cập nhật",
+    receiverName:
+      data.receiverName ||
+      "Chưa cập nhật",
+    itemCount:
+      Number.isFinite(
+        itemCountNumber
+      )
+        ? itemCountNumber
+        : 0,
+    totalPackages:
+      parcels.length,
+    createdAt:
+      formatDateTime(
+        data.createdAt
+      ),
+    lastUpdated:
+      formatDateTime(
+        data.updatedAt ||
+          data.lastUpdated ||
+          data.createdAt
+      ),
+    parcels,
+    timeline,
+    note:
+      `Trạng thái hiện tại: ${
+        statusLabel ||
+        "Chưa cập nhật"
+      }. Dữ liệu được lấy trực tiếp từ hệ thống tra cứu vận đơn.`,
+  };
+};
+
+const copyTextToClipboard =
+  async (text) => {
+    const value =
+      String(text ?? "").trim();
+
+    if (!value) {
+      return;
     }
 
-    return STATUS_STYLE[orderData.status] || STATUS_STYLE.IN_TRANSIT;
-  }, [orderData]);
+    if (
+      navigator.clipboard?.writeText &&
+      window.isSecureContext
+    ) {
+      await navigator.clipboard.writeText(
+        value
+      );
+      return;
+    }
 
-  const handleLookup = (event) => {
+    const textArea =
+      document.createElement(
+        "textarea"
+      );
+
+    textArea.value = value;
+    textArea.setAttribute(
+      "readonly",
+      ""
+    );
+    textArea.style.position =
+      "fixed";
+    textArea.style.top =
+      "-9999px";
+    textArea.style.opacity = "0";
+
+    document.body.appendChild(
+      textArea
+    );
+    textArea.select();
+
+    const copied =
+      document.execCommand("copy");
+
+    document.body.removeChild(
+      textArea
+    );
+
+    if (!copied) {
+      throw new Error(
+        "Không thể sao chép mã vận đơn."
+      );
+    }
+  };
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
+
+const OrderLookup = () => {
+  const [
+    orderCode,
+    setOrderCode,
+  ] = useState("");
+
+  const [
+    searchedCode,
+    setSearchedCode,
+  ] = useState("");
+
+  const [
+    orderData,
+    setOrderData,
+  ] = useState(null);
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState("");
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(false);
+
+  const [copied, setCopied] =
+    useState(false);
+
+  const lookupAbortRef =
+    useRef(null);
+
+  const copyTimerRef =
+    useRef(null);
+
+  const normalizedCode =
+    useMemo(() => {
+      return orderCode
+        .trim()
+        .toUpperCase();
+    }, [orderCode]);
+
+  const currentStatus =
+    useMemo(() => {
+      if (!orderData?.status) {
+        return {
+          className:
+            "is-transit",
+          icon: (
+            <ClockCircleOutlined />
+          ),
+        };
+      }
+
+      return (
+        STATUS_STYLE[
+          orderData.status
+        ] || {
+          className:
+            "is-transit",
+          icon: (
+            <ClockCircleOutlined />
+          ),
+        }
+      );
+    }, [orderData]);
+
+  useEffect(
+    () => () => {
+      lookupAbortRef.current?.abort();
+
+      if (copyTimerRef.current) {
+        window.clearTimeout(
+          copyTimerRef.current
+        );
+      }
+    },
+    []
+  );
+
+  const handleLookup = async (
+    event
+  ) => {
     event.preventDefault();
 
     if (!normalizedCode) {
-      setErrorMessage("Vui lòng nhập mã đơn hàng cần tra cứu.");
+      const message =
+        "Vui lòng nhập mã vận đơn cần tra cứu.";
+
+      setErrorMessage(message);
       setOrderData(null);
+
+      AuthNotify.warning(
+        "Thiếu mã vận đơn",
+        message
+      );
+
       return;
     }
 
-    if (normalizedCode.length < 5) {
-      setErrorMessage("Mã đơn hàng chưa hợp lệ.");
+    if (
+      normalizedCode.length < 5
+    ) {
+      const message =
+        "Mã vận đơn chưa hợp lệ.";
+
+      setErrorMessage(message);
       setOrderData(null);
+
+      AuthNotify.warning(
+        "Mã vận đơn không hợp lệ",
+        message
+      );
+
       return;
     }
+
+    lookupAbortRef.current?.abort();
+
+    const controller =
+      new AbortController();
+
+    lookupAbortRef.current =
+      controller;
 
     setErrorMessage("");
     setIsLoading(true);
     setOrderData(null);
     setCopied(false);
-    setSearchedCode(normalizedCode);
+    setSearchedCode(
+      normalizedCode
+    );
 
-    window.setTimeout(() => {
-      const result = MOCK_ORDERS[normalizedCode];
-
-      if (!result) {
-        setErrorMessage(
-          "Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hoặc liên hệ bộ phận hỗ trợ.",
+    try {
+      const result =
+        await getPublicParcelTrackingApi(
+          normalizedCode,
+          {
+            signal:
+              controller.signal,
+          }
         );
-        setOrderData(null);
-      } else {
-        setOrderData(result);
+
+      if (
+        controller.signal.aborted
+      ) {
+        return;
       }
 
-      setIsLoading(false);
-    }, 900);
+      const normalizedResult =
+        normalizeTrackingResult(
+          result
+        );
+
+      setOrderData(
+        normalizedResult
+      );
+
+      AuthNotify.success(
+        "Tra cứu thành công",
+        `Đã tìm thấy vận đơn ${normalizedResult.orderCode}.`
+      );
+    } catch (error) {
+      if (
+        error?.code ===
+          "ERR_CANCELED" ||
+        error?.name ===
+          "CanceledError" ||
+        error?.name ===
+          "AbortError"
+      ) {
+        return;
+      }
+
+      const message =
+        error?.message ||
+        "Không tìm thấy vận đơn. Vui lòng kiểm tra lại mã vận đơn.";
+
+      setOrderData(null);
+      setErrorMessage(message);
+
+      AuthNotify.error(
+        "Tra cứu thất bại",
+        message
+      );
+    } finally {
+      if (
+        !controller.signal.aborted
+      ) {
+        setIsLoading(false);
+      }
+
+      if (
+        lookupAbortRef.current ===
+        controller
+      ) {
+        lookupAbortRef.current =
+          null;
+      }
+    }
   };
 
   const resetLookup = () => {
+    lookupAbortRef.current?.abort();
+
     setOrderCode("");
     setSearchedCode("");
     setOrderData(null);
@@ -252,22 +665,51 @@ const OrderLookup = () => {
     setCopied(false);
   };
 
-  const copyOrderCode = async () => {
-    if (!orderData?.orderCode) {
-      return;
-    }
+  const copyOrderCode =
+    async () => {
+      if (!orderData?.orderCode) {
+        AuthNotify.warning(
+          "Chưa có mã vận đơn",
+          "Không có mã vận đơn để sao chép."
+        );
 
-    try {
-      await navigator.clipboard.writeText(orderData.orderCode);
-      setCopied(true);
+        return;
+      }
 
-      window.setTimeout(() => {
+      try {
+        await copyTextToClipboard(
+          orderData.orderCode
+        );
+
+        setCopied(true);
+
+        AuthNotify.success(
+          "Sao chép thành công",
+          `Đã sao chép mã vận đơn ${orderData.orderCode}.`
+        );
+
+        if (
+          copyTimerRef.current
+        ) {
+          window.clearTimeout(
+            copyTimerRef.current
+          );
+        }
+
+        copyTimerRef.current =
+          window.setTimeout(() => {
+            setCopied(false);
+          }, 1400);
+      } catch (error) {
         setCopied(false);
-      }, 1400);
-    } catch {
-      setCopied(false);
-    }
-  };
+
+        AuthNotify.error(
+          "Sao chép thất bại",
+          error?.message ||
+            "Không thể sao chép mã vận đơn."
+        );
+      }
+    };
 
   return (
     <>
@@ -275,7 +717,10 @@ const OrderLookup = () => {
 
       <main className="order-lookup-page">
         <section className="order-lookup-hero">
-          <div className="order-lookup-hero__bg" aria-hidden="true">
+          <div
+            className="order-lookup-hero__bg"
+            aria-hidden="true"
+          >
             <span />
             <span />
             <span />
@@ -287,27 +732,38 @@ const OrderLookup = () => {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              transition={{ duration: 0.55 }}
+              transition={{
+                duration: 0.55,
+              }}
             >
               <span className="order-lookup-eyebrow">
                 <FileSearchOutlined />
-                Tra cứu trạng thái đơn hàng
+                Tra cứu trạng thái vận đơn
               </span>
 
-              <h1>Theo dõi đơn hàng bằng mã đơn</h1>
+              <h1>
+                Theo dõi kiện hàng bằng
+                mã vận đơn
+              </h1>
 
               <p>
-                Nhập mã đơn hàng để kiểm tra trạng thái xử lý, tuyến vận chuyển,
-                kho hiện tại, thời gian cập nhật và lịch sử di chuyển của kiện hàng.
+                Nhập mã vận đơn để kiểm tra trạng thái,
+                loại vận chuyển, tuyến vận chuyển, người
+                nhận và danh sách kiện hàng hiện tại.
               </p>
 
               <div className="order-lookup-sample">
-                <span>Mã demo:</span>
-                <button type="button" onClick={() => setOrderCode("ORD-2026-0001")}>
-                  ORD-2026-0001
-                </button>
-                <button type="button" onClick={() => setOrderCode("KG-2026-0002")}>
-                  KG-2026-0002
+                <span>Mã mẫu:</span>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOrderCode(
+                      "VCL-20260712105447-295605"
+                    )
+                  }
+                >
+                  VCL-20260712105447-295605
                 </button>
               </div>
             </motion.div>
@@ -317,40 +773,81 @@ const OrderLookup = () => {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              transition={{ duration: 0.55, delay: 0.12 }}
+              transition={{
+                duration: 0.55,
+                delay: 0.12,
+              }}
             >
               <div className="order-lookup-search-card__icon">
                 <SearchOutlined />
               </div>
 
               <h2>Tra cứu nhanh</h2>
-              <p>Vui lòng nhập chính xác mã đơn hàng được cung cấp khi tạo yêu cầu.</p>
 
-              <form onSubmit={handleLookup} className="order-lookup-form">
+              <p>
+                Vui lòng nhập chính xác mã vận đơn
+                được hệ thống cung cấp.
+              </p>
+
+              <form
+                onSubmit={handleLookup}
+                className="order-lookup-form"
+              >
                 <label>
-                  <span>Mã đơn hàng</span>
+                  <span>Mã vận đơn</span>
 
-                  <div className={errorMessage && !orderData ? "is-error" : ""}>
+                  <div
+                    className={
+                      errorMessage &&
+                      !orderData
+                        ? "is-error"
+                        : ""
+                    }
+                  >
                     <FileSearchOutlined />
+
                     <input
                       type="text"
-                      placeholder="Ví dụ: ORD-2026-0001"
+                      placeholder="Ví dụ: VCL-20260712105447-295605"
                       value={orderCode}
-                      onChange={(event) => {
-                        setOrderCode(event.target.value.toUpperCase());
-                        setErrorMessage("");
+                      autoComplete="off"
+                      onChange={(
+                        event
+                      ) => {
+                        setOrderCode(
+                          event.target.value.toUpperCase()
+                        );
+                        setErrorMessage(
+                          ""
+                        );
                       }}
                     />
                   </div>
                 </label>
 
-                <button type="submit" disabled={isLoading}>
-                  {isLoading ? "Đang tra cứu..." : "Tra cứu đơn hàng"}
-                  {isLoading ? <span className="order-lookup-spinner" /> : <ArrowRightOutlined />}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading
+                    ? "Đang tra cứu..."
+                    : "Tra cứu vận đơn"}
+
+                  {isLoading ? (
+                    <span className="order-lookup-spinner" />
+                  ) : (
+                    <ArrowRightOutlined />
+                  )}
                 </button>
               </form>
 
-              <button type="button" className="order-lookup-reset" onClick={resetLookup}>
+              <button
+                type="button"
+                className="order-lookup-reset"
+                onClick={
+                  resetLookup
+                }
+              >
                 <ReloadOutlined />
                 Làm mới tra cứu
               </button>
@@ -365,231 +862,494 @@ const OrderLookup = () => {
                 <motion.div
                   className="order-lookup-loading"
                   key="loading"
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -18 }}
+                  initial={{
+                    opacity: 0,
+                    y: 18,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: -18,
+                  }}
                 >
                   <div className="order-lookup-loading__box">
                     <span />
-                    <strong>Đang kiểm tra mã đơn hàng</strong>
-                    <p>Hệ thống đang truy xuất trạng thái và lịch sử vận chuyển.</p>
+
+                    <strong>
+                      Đang kiểm tra mã
+                      vận đơn
+                    </strong>
+
+                    <p>
+                      Hệ thống đang truy xuất
+                      trạng thái kiện hàng.
+                    </p>
                   </div>
                 </motion.div>
               )}
 
-              {!isLoading && errorMessage && (
-                <motion.div
-                  className="order-lookup-error"
-                  key="error"
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -18 }}
-                >
-                  <CloseCircleOutlined />
-                  <div>
-                    <h3>Không thể tra cứu đơn hàng</h3>
-                    <p>{errorMessage}</p>
-                    {searchedCode && <span>Mã đã nhập: {searchedCode}</span>}
-                  </div>
-                </motion.div>
-              )}
+              {!isLoading &&
+                errorMessage && (
+                  <motion.div
+                    className="order-lookup-error"
+                    key="error"
+                    initial={{
+                      opacity: 0,
+                      y: 18,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: -18,
+                    }}
+                  >
+                    <CloseCircleOutlined />
 
-              {!isLoading && orderData && (
-                <motion.div
-                  className="order-lookup-result"
-                  key={orderData.orderCode}
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -24 }}
-                  transition={{ duration: 0.42 }}
-                >
-                  <div className="order-lookup-result__top">
                     <div>
-                      <span className="order-lookup-result__label">
-                        Kết quả tra cứu
-                      </span>
-
-                      <h2>{orderData.orderCode}</h2>
+                      <h3>
+                        Không thể tra cứu
+                        vận đơn
+                      </h3>
 
                       <p>
-                        Cập nhật gần nhất: <strong>{orderData.lastUpdated}</strong>
+                        {errorMessage}
                       </p>
-                    </div>
 
-                    <div className={`order-lookup-status ${currentStatus.className}`}>
-                      {currentStatus.icon}
-                      <span>{orderData.statusText}</span>
-                    </div>
-                  </div>
-
-                  <div className="order-lookup-overview-grid">
-                    <article>
-                      <span>
-                        <ShoppingCartOutlined />
-                      </span>
-                      <small>Loại dịch vụ</small>
-                      <strong>{orderData.serviceType}</strong>
-                    </article>
-
-                    <article>
-                      <span>
-                        <GlobalOutlined />
-                      </span>
-                      <small>Tuyến vận chuyển</small>
-                      <strong>{orderData.route}</strong>
-                    </article>
-
-                    <article>
-                      <span>
-                        <InboxOutlined />
-                      </span>
-                      <small>Số kiện</small>
-                      <strong>{orderData.totalPackages} kiện</strong>
-                    </article>
-
-                    <article>
-                      <span>
-                        <TruckOutlined />
-                      </span>
-                      <small>Khối lượng</small>
-                      <strong>{orderData.totalWeight}</strong>
-                    </article>
-                  </div>
-
-                  <div className="order-lookup-detail-layout">
-                    <div className="order-lookup-main-card">
-                      <div className="order-lookup-card-head">
+                      {searchedCode && (
                         <span>
-                          <ClockCircleOutlined />
+                          Mã đã nhập:{" "}
+                          {searchedCode}
                         </span>
-                        <div>
-                          <h3>Lịch sử xử lý đơn hàng</h3>
-                          <p>Theo dõi từng mốc trạng thái của đơn hàng.</p>
-                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+              {!isLoading &&
+                orderData && (
+                  <motion.div
+                    className="order-lookup-result"
+                    key={
+                      orderData.orderCode
+                    }
+                    initial={{
+                      opacity: 0,
+                      y: 24,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: -24,
+                    }}
+                    transition={{
+                      duration: 0.42,
+                    }}
+                  >
+                    <div className="order-lookup-result__top">
+                      <div>
+                        <span className="order-lookup-result__label">
+                          Kết quả tra cứu
+                        </span>
+
+                        <h2>
+                          {
+                            orderData.orderCode
+                          }
+                        </h2>
+
+                        <p>
+                          Cập nhật gần nhất:{" "}
+                          <strong>
+                            {
+                              orderData.lastUpdated
+                            }
+                          </strong>
+                        </p>
                       </div>
 
-                      <div className="order-lookup-timeline">
-                        {orderData.timeline.map((item, index) => (
-                          <div
-                            className={`order-lookup-timeline-item ${
-                              item.completed ? "is-completed" : ""
-                            } ${item.active ? "is-active" : ""}`}
-                            key={`${item.title}-${index}`}
-                          >
-                            <div className="order-lookup-timeline-item__dot">
-                              {item.completed ? <CheckCircleOutlined /> : index + 1}
-                            </div>
+                      <div
+                        className={`order-lookup-status ${currentStatus.className}`}
+                      >
+                        {
+                          currentStatus.icon
+                        }
 
-                            <div className="order-lookup-timeline-item__content">
-                              <div>
-                                <h4>{item.title}</h4>
-                                <time>{item.time}</time>
-                              </div>
-
-                              <p>{item.description}</p>
-                            </div>
-                          </div>
-                        ))}
+                        <span>
+                          {
+                            orderData.statusText
+                          }
+                        </span>
                       </div>
                     </div>
 
-                    <aside className="order-lookup-side">
-                      <div className="order-lookup-info-card">
+                    <div className="order-lookup-overview-grid">
+                      <article>
+                        <span>
+                          <ShoppingCartOutlined />
+                        </span>
+
+                        <small>
+                          Loại vận chuyển
+                        </small>
+
+                        <strong>
+                          {
+                            orderData.consignmentType
+                          }
+                        </strong>
+                      </article>
+
+                      <article>
+                        <span>
+                          <GlobalOutlined />
+                        </span>
+
+                        <small>
+                          Tuyến vận chuyển
+                        </small>
+
+                        <strong>
+                          {
+                            orderData.route
+                          }
+                        </strong>
+                      </article>
+
+                      <article>
+                        <span>
+                          <ShoppingCartOutlined />
+                        </span>
+
+                        <small>
+                          Số sản phẩm
+                        </small>
+
+                        <strong>
+                          {
+                            orderData.itemCount
+                          }{" "}
+                          sản phẩm
+                        </strong>
+                      </article>
+
+                      <article>
+                        <span>
+                          <InboxOutlined />
+                        </span>
+
+                        <small>
+                          Số kiện
+                        </small>
+
+                        <strong>
+                          {
+                            orderData.totalPackages
+                          }{" "}
+                          kiện
+                        </strong>
+                      </article>
+                    </div>
+
+                    <div className="order-lookup-detail-layout">
+                      <div className="order-lookup-main-card">
                         <div className="order-lookup-card-head">
                           <span>
-                            <InfoCircleOutlined />
+                            <ClockCircleOutlined />
                           </span>
+
                           <div>
-                            <h3>Thông tin đơn hàng</h3>
-                            <p>Thông tin tổng quan của đơn.</p>
+                            <h3>
+                              Lịch sử xử lý
+                              vận đơn
+                            </h3>
+
+                            <p>
+                              Theo dõi các mốc trạng
+                              thái được hệ thống trả về.
+                            </p>
                           </div>
                         </div>
 
-                        <div className="order-lookup-info-list">
-                          <div>
-                            <span>Khách hàng</span>
-                            <strong>{orderData.customerName}</strong>
-                          </div>
+                        <div className="order-lookup-timeline">
+                          {orderData.timeline.map(
+                            (
+                              item,
+                              index
+                            ) => (
+                              <div
+                                className={`order-lookup-timeline-item ${
+                                  item.completed
+                                    ? "is-completed"
+                                    : ""
+                                } ${
+                                  item.active
+                                    ? "is-active"
+                                    : ""
+                                }`}
+                                key={`${item.title}-${index}`}
+                              >
+                                <div className="order-lookup-timeline-item__dot">
+                                  {item.completed ? (
+                                    <CheckCircleOutlined />
+                                  ) : (
+                                    index +
+                                    1
+                                  )}
+                                </div>
 
-                          <div>
-                            <span>Kho hiện tại</span>
-                            <strong>{orderData.warehouse}</strong>
-                          </div>
+                                <div className="order-lookup-timeline-item__content">
+                                  <div>
+                                    <h4>
+                                      {
+                                        item.title
+                                      }
+                                    </h4>
 
-                          <div>
-                            <span>Địa chỉ nhận</span>
-                            <strong>{orderData.receiverAddress}</strong>
-                          </div>
+                                    <time>
+                                      {
+                                        item.time
+                                      }
+                                    </time>
+                                  </div>
 
-                          <div>
-                            <span>Dự kiến giao</span>
-                            <strong>{orderData.estimatedDelivery}</strong>
-                          </div>
-
-                          <div>
-                            <span>Tổng chi phí</span>
-                            <strong>{orderData.totalCost}</strong>
-                          </div>
+                                  <p>
+                                    {
+                                      item.description
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          )}
                         </div>
-
-                        <button
-                          type="button"
-                          className="order-lookup-copy-btn"
-                          onClick={copyOrderCode}
-                        >
-                          <CopyOutlined />
-                          {copied ? "Đã copy mã đơn" : "Copy mã đơn hàng"}
-                        </button>
                       </div>
 
-                      <div className="order-lookup-info-card">
-                        <div className="order-lookup-card-head">
-                          <span>
-                            <InboxOutlined />
-                          </span>
-                          <div>
-                            <h3>Hàng hóa</h3>
-                            <p>Danh sách sản phẩm / kiện hàng.</p>
-                          </div>
-                        </div>
+                      <aside className="order-lookup-side">
+                        <div className="order-lookup-info-card">
+                          <div className="order-lookup-card-head">
+                            <span>
+                              <InfoCircleOutlined />
+                            </span>
 
-                        <div className="order-lookup-items">
-                          {orderData.items.map((item, index) => (
-                            <div key={`${item.name}-${index}`}>
-                              <strong>{item.name}</strong>
-                              <span>
-                                SL: {item.quantity} · {item.price}
-                              </span>
+                            <div>
+                              <h3>
+                                Thông tin vận đơn
+                              </h3>
+
+                              <p>
+                                Thông tin tổng quan của vận đơn.
+                              </p>
                             </div>
-                          ))}
+                          </div>
+
+                          <div className="order-lookup-info-list">
+                            <div>
+                              <span>
+                                Người nhận
+                              </span>
+
+                              <strong>
+                                {
+                                  orderData.receiverName
+                                }
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span>
+                                Trạng thái
+                              </span>
+
+                              <strong>
+                                {
+                                  orderData.statusText
+                                }
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span>
+                                Loại vận chuyển
+                              </span>
+
+                              <strong>
+                                {
+                                  orderData.consignmentType
+                                }
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span>
+                                Tuyến
+                              </span>
+
+                              <strong>
+                                {
+                                  orderData.route
+                                }
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span>
+                                Ngày tạo
+                              </span>
+
+                              <strong>
+                                {
+                                  orderData.createdAt
+                                }
+                              </strong>
+                            </div>
+
+                            <div>
+                              <span>
+                                Số sản phẩm
+                              </span>
+
+                              <strong>
+                                {
+                                  orderData.itemCount
+                                }{" "}
+                                sản phẩm
+                              </strong>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="order-lookup-copy-btn"
+                            onClick={
+                              copyOrderCode
+                            }
+                          >
+                            <CopyOutlined />
+
+                            {copied
+                              ? "Đã copy mã vận đơn"
+                              : "Copy mã vận đơn"}
+                          </button>
                         </div>
-                      </div>
 
-                      <div className="order-lookup-note-card">
-                        <SafetyCertificateOutlined />
-                        <p>{orderData.note}</p>
-                      </div>
-                    </aside>
-                  </div>
-                </motion.div>
-              )}
+                        <div className="order-lookup-info-card">
+                          <div className="order-lookup-card-head">
+                            <span>
+                              <InboxOutlined />
+                            </span>
 
-              {!isLoading && !orderData && !errorMessage && (
-                <motion.div
-                  className="order-lookup-empty"
-                  key="empty"
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -18 }}
-                >
-                  <FileSearchOutlined />
-                  <h3>Nhập mã đơn hàng để bắt đầu tra cứu</h3>
-                  <p>
-                    Mã đơn thường có dạng <strong>ORD-2026-0001</strong> hoặc{" "}
-                    <strong>KG-2026-0002</strong>.
-                  </p>
-                </motion.div>
-              )}
+                            <div>
+                              <h3>
+                                Danh sách kiện hàng
+                              </h3>
+
+                              <p>
+                                Thông tin các kiện hàng thuộc vận đơn.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="order-lookup-items">
+                            {orderData.parcels.length >
+                            0 ? (
+                              orderData.parcels.map(
+                                (
+                                  parcel,
+                                  index
+                                ) => (
+                                  <div
+                                    key={`${parcel.parcelCode}-${index}`}
+                                  >
+                                    <strong>
+                                      {
+                                        parcel.parcelCode
+                                      }
+                                    </strong>
+
+                                    <span>
+                                      {
+                                        parcel.statusLabel
+                                      }
+                                      {parcel.weight
+                                        ? ` · ${parcel.weight}`
+                                        : ""}
+                                    </span>
+                                  </div>
+                                )
+                              )
+                            ) : (
+                              <div>
+                                <strong>
+                                  Chưa có kiện hàng
+                                </strong>
+
+                                <span>
+                                  Hiện chưa có kiện hàng nào
+                                  được cập nhật.
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="order-lookup-note-card">
+                          <SafetyCertificateOutlined />
+
+                          <p>
+                            {
+                              orderData.note
+                            }
+                          </p>
+                        </div>
+                      </aside>
+                    </div>
+                  </motion.div>
+                )}
+
+              {!isLoading &&
+                !orderData &&
+                !errorMessage && (
+                  <motion.div
+                    className="order-lookup-empty"
+                    key="empty"
+                    initial={{
+                      opacity: 0,
+                      y: 18,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: -18,
+                    }}
+                  >
+                    <FileSearchOutlined />
+
+                    <h3>
+                      Nhập mã vận đơn để
+                      bắt đầu tra cứu
+                    </h3>
+
+                    <p>
+                      Mã vận đơn có dạng{" "}
+                      <strong>
+                        VCL-20260712105447-295605
+                      </strong>
+                      .
+                    </p>
+                  </motion.div>
+                )}
             </AnimatePresence>
           </div>
         </section>
@@ -601,10 +1361,15 @@ const OrderLookup = () => {
                 <span>
                   <CustomerServiceOutlined />
                 </span>
-                <h2>Không tìm thấy mã đơn hàng?</h2>
+
+                <h2>
+                  Không tìm thấy mã vận đơn?
+                </h2>
+
                 <p>
-                  Kiểm tra lại mã đơn trong email, tin nhắn thông báo hoặc liên hệ
-                  bộ phận hỗ trợ để được kiểm tra thủ công.
+                  Kiểm tra lại mã trong thông báo
+                  hoặc liên hệ bộ phận hỗ trợ để
+                  được kiểm tra thủ công.
                 </p>
               </div>
 
