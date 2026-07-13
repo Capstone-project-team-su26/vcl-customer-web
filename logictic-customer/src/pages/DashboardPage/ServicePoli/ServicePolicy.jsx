@@ -71,7 +71,7 @@ const COUNTRY_LABELS = {
 };
 
 const SERVICE_TYPE_LABELS = {
-  STANDARD: "Tiêu chuẩn",
+  // STANDARD: "Tiêu chuẩn",
   EXPRESS: "Hỏa tốc",
   FAST: "Nhanh",
 };
@@ -86,6 +86,8 @@ const isCanceledRequest = (error) => {
 
 const normalizeCode = (value) => {
   return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toUpperCase()
     .replaceAll(" ", "_")
