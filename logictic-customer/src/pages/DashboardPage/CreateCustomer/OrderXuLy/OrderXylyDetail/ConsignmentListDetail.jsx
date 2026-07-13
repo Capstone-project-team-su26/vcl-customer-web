@@ -2155,7 +2155,7 @@ const ConsignmentListDetail = () => {
         />
 
         <SummaryCard
-          label="Số sản phẩm"
+          label="Tổng số lượng sản phẩm"
           value={totalProductQuantity}
           suffix="sản phẩm"
           onOpen={handleOpenFullText}
