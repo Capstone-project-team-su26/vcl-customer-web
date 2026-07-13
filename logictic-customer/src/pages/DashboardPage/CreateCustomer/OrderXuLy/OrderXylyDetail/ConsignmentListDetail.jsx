@@ -1259,8 +1259,16 @@ const ConsignmentListDetail = () => {
 
       AuthNotify.success(
         "Hủy đơn thành công",
-        "Đơn ký gửi đã được hủy trên hệ thống."
+        "Đơn ký gửi đã được hủy và chuyển vào lịch sử."
       );
+      
+      navigate("/history/consignment", {
+        replace: true,
+        state: {
+          refresh: true,
+          cancelledOrderId: orderId,
+        },
+      });
 
       const refreshController =
         new AbortController();
