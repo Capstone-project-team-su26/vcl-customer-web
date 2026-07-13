@@ -36,8 +36,10 @@ import {
 } from "../../../../../utils/timeUtc";
 
 import {
+  
   getPurchaseRequestDetailApi,
 } from "../../../../../api/OrderApi/purchaseRequestApi";
+import {getProductTypesApi} from "../../../../../api/OrderApi/consignmentApi"
 
 import "./PurchaseRequestDetail.css";
 
@@ -182,6 +184,55 @@ const getDetailData = (result) => {
   return result?.data ?? result ?? null;
 };
 
+const getProductTypeItems = (result) => {
+  const responseData = result?.data ?? result;
+  const payload = responseData?.data ?? responseData;
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  const items =
+    payload?.items ||
+    payload?.productTypes ||
+    payload?.results ||
+    [];
+
+  return Array.isArray(items) ? items : [];
+};
+
+const getProductTypeId = (productType) => {
+  return String(
+    productType?.productTypeId ??
+      productType?.id ??
+      productType?.code ??
+      productType?.value ??
+      ""
+  ).trim();
+};
+
+const getProductTypeName = (productType) => {
+  return safeText(
+    productType?.productTypeName ??
+      productType?.name ??
+      productType?.label ??
+      productType?.description,
+    getProductTypeId(productType) || "Chưa cập nhật"
+  );
+};
+
+const getItemProductTypeKey = (item) => {
+  return String(
+    item?.productTypeId ??
+      item?.productType?.productTypeId ??
+      item?.productType?.id ??
+      item?.productType?.value ??
+      item?.productType ??
+      item?.productTypeCode ??
+      ""
+  ).trim();
+};
+
 const getBooleanLabel = (value) => {
   return value ? "Có" : "Không";
 };
@@ -237,6 +288,23 @@ const PurchaseRequestDetail = () => {
 
   const [activeImage, setActiveImage] =
     useState(null);
+
+  const [productTypes, setProductTypes] =
+    useState([]);
+
+  const [productTypesLoading, setProductTypesLoading] =
+    useState(false);
+
+  const productTypeNameMap = useMemo(() => {
+    return new Map(
+      productTypes
+        .map((productType) => [
+          getProductTypeId(productType),
+          getProductTypeName(productType),
+        ])
+        .filter(([id]) => Boolean(id))
+    );
+  }, [productTypes]);
 
   const statusClass = useMemo(() => {
     return getStatusClassName(
@@ -314,18 +382,67 @@ const PurchaseRequestDetail = () => {
       [requestId]
     );
 
+  const loadProductTypes = useCallback(
+    async (signal) => {
+      try {
+        setProductTypesLoading(true);
+
+        const result = await getProductTypesApi({
+          signal,
+        });
+
+        const productTypeItems =
+          getProductTypeItems(result);
+
+        setProductTypes(productTypeItems);
+      } catch (error) {
+        if (isCanceledRequest(error)) {
+          return;
+        }
+
+        console.error(
+          "Lỗi lấy danh mục loại sản phẩm:",
+          error
+        );
+
+        setProductTypes([]);
+
+        AuthNotify.warning(
+          "Không tải được loại sản phẩm",
+          getApiErrorMessage(
+            error,
+            "Hệ thống sẽ tạm hiển thị mã loại sản phẩm."
+          )
+        );
+      } finally {
+        if (!signal?.aborted) {
+          setProductTypesLoading(false);
+        }
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     const controller =
       new AbortController();
 
-    loadPurchaseRequestDetail(
-      controller.signal
-    );
+    Promise.allSettled([
+      loadPurchaseRequestDetail(
+        controller.signal
+      ),
+      loadProductTypes(
+        controller.signal
+      ),
+    ]);
 
     return () => {
       controller.abort();
     };
-  }, [loadPurchaseRequestDetail]);
+  }, [
+    loadProductTypes,
+    loadPurchaseRequestDetail,
+  ]);
 
   useEffect(() => {
     if (!activeImage) {
@@ -359,9 +476,14 @@ const PurchaseRequestDetail = () => {
     const controller =
       new AbortController();
 
-    loadPurchaseRequestDetail(
-      controller.signal
-    );
+    Promise.allSettled([
+      loadPurchaseRequestDetail(
+        controller.signal
+      ),
+      loadProductTypes(
+        controller.signal
+      ),
+    ]);
   };
 
   const handleCopy = async (
@@ -719,6 +841,8 @@ const PurchaseRequestDetail = () => {
                 index={index}
                 onCopy={handleCopy}
                 onOpenImage={handleOpenImage}
+                productTypeNameMap={productTypeNameMap}
+                productTypesLoading={productTypesLoading}
               />
             ))}
           </div>
@@ -742,17 +866,34 @@ const InfoRow = ({
   value,
   copyable = false,
   onCopy,
+  loading = false,
+  accent = false,
 }) => {
   const displayValue = safeText(value);
 
   return (
-    <div className="purchase-detail-info-row">
+    <div
+      className={`purchase-detail-info-row ${
+        loading ? "is-loading" : ""
+      } ${accent ? "is-accent" : ""}`}
+    >
       <span>{label}</span>
 
       <div>
-        <strong>{displayValue}</strong>
+        <strong>
+          {loading && (
+            <CircularProgress
+              size={14}
+              thickness={5}
+            />
+          )}
 
-        {copyable && displayValue !== "-" && (
+          {displayValue}
+        </strong>
+
+        {copyable &&
+          !loading &&
+          displayValue !== "-" && (
           <button
             type="button"
             onClick={() =>
@@ -774,6 +915,8 @@ const ProductItemCard = ({
   index,
   onCopy,
   onOpenImage,
+  productTypeNameMap,
+  productTypesLoading,
 }) => {
   const productLink =
     String(item.productLink || "").trim();
@@ -781,6 +924,27 @@ const ProductItemCard = ({
   const imageAlt =
     item.productName ||
     `Sản phẩm ${index + 1}`;
+
+  const productTypeKey =
+    getItemProductTypeKey(item);
+
+  const directProductTypeName =
+    typeof item?.productType === "object"
+      ? safeText(
+          item.productType?.productTypeName ??
+            item.productType?.name ??
+            item.productType?.label,
+          ""
+        )
+      : safeText(
+          item?.productTypeName,
+          ""
+        );
+
+  const productTypeLabel =
+    directProductTypeName ||
+    productTypeNameMap?.get(productTypeKey) ||
+    safeText(productTypeKey, "Chưa cập nhật");
 
   return (
     <article className="purchase-detail-product-card">
@@ -818,7 +982,7 @@ const ProductItemCard = ({
         <div className="purchase-detail-product-header">
           <div>
             <span className="purchase-detail-product-index">
-              Sản phẩm #{index + 1}
+              Sản phẩm thứ {index + 1}
             </span>
 
             <h3>
@@ -842,7 +1006,13 @@ const ProductItemCard = ({
 
           <InfoRow
             label="Loại sản phẩm"
-            value={item.productType}
+            value={
+              productTypesLoading
+                ? "Đang tải tên loại sản phẩm..."
+                : productTypeLabel
+            }
+            loading={productTypesLoading}
+            accent
             copyable
             onCopy={onCopy}
           />

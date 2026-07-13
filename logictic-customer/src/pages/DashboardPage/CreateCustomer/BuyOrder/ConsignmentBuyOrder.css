@@ -6,7 +6,7 @@
   flex-direction: column;
 }
 
-/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT QUAY LĂ„â€Ă‚Â¡Ä‚â€Ă‚Âº I */
+/* NĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT QUAY LÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âº I */
 .purchase-buy-back-navigation {
   display: inline-flex;
   align-items: center;
@@ -26,7 +26,7 @@
   font-size: 10px;
 }
 
-/* GRID LAYOUT CHIA Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂI */
+/* GRID LAYOUT CHIA Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚ÂI */
 .purchase-buy-consignment-layout-grid {
   display: grid;
   grid-template-columns: 340px 1fr;
@@ -35,7 +35,7 @@
   min-height: 0;
 }
 
-/* ================= CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œT TRÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂI CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂNH ================= */
+/* ================= CÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬Â¹Ä‚â€¦Ă¢â‚¬Å“T TRĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂI CÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂNH ================= */
 .purchase-buy-layout-left-fixed-sidebar {
   display: flex;
   flex-direction: column;
@@ -87,7 +87,7 @@
   border-top: 1px dashed #e2e8f0;
 }
 
-/* THÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NH PHĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¦N BOX Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂA CHĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă¢â‚¬  TĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¨NH */
+/* THĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â€Â¬Ă‚ÂÄ‚â€Ă‚Â¬NH PHÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¦N BOX Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂA CHÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬Â¹Ä‚Â¢Ă¢â€Â¬  TÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¨NH */
 .purchase-buy-static-display-box {
   width: 100%;
   min-height: 40px;
@@ -244,7 +244,7 @@
   line-height: 1.3;
 }
 
-/* ================= CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œT PHĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¢I CUĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œN KIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N HÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NG ================= */
+/* ================= CÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬Â¹Ä‚â€¦Ă¢â‚¬Å“T PHÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¢I CUÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬Â¹Ä‚â€¦Ă¢â‚¬Å“N KIÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬ N HĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â€Â¬Ă‚ÂÄ‚â€Ă‚Â¬NG ================= */
 .purchase-buy-layout-right-scrollable-form {
   height: 100%;
   overflow-y: auto;
@@ -418,7 +418,7 @@
   color: #94a3b8;
 }
 
-/* THĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯ VIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N LĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂI GALLERY Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¢NH ASPECT RATIO 1/1 CHUĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¨N Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¸P */
+/* THÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¯ VIÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬ N LÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¯Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂI GALLERY Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¢NH ASPECT RATIO 1/1 CHUÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¨N Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¸P */
 .purchase-buy-image-previews-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
@@ -467,7 +467,7 @@
   background-color: #ef4444;
 }
 
-/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT THÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂM KIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N HÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NG */
+/* NĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT THĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂM KIÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬ N HĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â€Â¬Ă‚ÂÄ‚â€Ă‚Â¬NG */
 .purchase-buy-add-package-dashed-trigger {
   width: 100%;
   border: 2px dashed #cbd5e1;
@@ -497,7 +497,7 @@
   color: #475569;
 }
 
-/* THANH LĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯U Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â PHÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂA Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂY */
+/* THANH LÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¯U Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â PHĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂA Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂY */
 .purchase-buy-sticky-action-notice-bar {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -548,7 +548,7 @@
   background-color: #f59e0b;
 }
 
-/* ================= OVERLAY PHÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă…â€œNG TO / THU NHĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â LIGHTBOX TĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â° Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œNG ================= */
+/* ================= OVERLAY PHĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¦Ă¢â‚¬Å“NG TO / THU NHÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â LIGHTBOX TÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â° Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬Â¹Ä‚â€¦Ă¢â‚¬Å“NG ================= */
 .purchase-buy-lightbox-overlay-modal {
   position: fixed;
   top: 0;
@@ -589,7 +589,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Animations hiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡u Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â©ng mĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â£t */
+/* Animations hiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¡u Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â©ng mÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â°Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â£t */
 .purchase-buy-animate-zoom-in {
   animation: zoomIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -800,7 +800,7 @@
     margin-right: 7px;
   }
   
-  /* Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¨n nÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt tĂ„â€Ă¢â‚¬ÂÄ‚â€ Ă¢â‚¬â„¢ng giĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£m mĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â·c Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¹nh cĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â§a input number */
+  /* Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¨n nĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt tÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ Ä‚Â¢Ă¢â€Â¬Ă¢â€Â¢ng giÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â£m mÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â·c Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¹Ă…â€œÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¹nh cÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â§a input number */
   
   .purchase-buy-custom-input[type="number"]::-webkit-inner-spin-button,
   .purchase-buy-custom-input[type="number"]::-webkit-outer-spin-button {
@@ -1079,9 +1079,9 @@
   }
 
 /* =========================================================
-   TYPOGRAPHY SYSTEM Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚Â¢Ă¢â€Â¬Ă‚Â WEB UI
-   ChuĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â©n hÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³a font, kÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â­ch thĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºc, Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â­m vÄ‚â€Ă¢â‚¬Â  khĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£ nĂ„â€Ă¢â‚¬ÂÄ‚â€ Ă¢â‚¬â„¢ng Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âc.
-   GiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â¯ nguyÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªn toÄ‚â€Ă¢â‚¬Â n bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ layout, mÄ‚â€Ă¢â‚¬Â u sĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¯c vÄ‚â€Ă¢â‚¬Â  hÄ‚â€Ă¢â‚¬Â nh vi hiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡i.
+   TYPOGRAPHY SYSTEM Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¢Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â€Â¬Ă‚ÂÄ‚â€Ă‚Â¬Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â WEB UI
+   ChuÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â©n hĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³a font, kĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â­ch thÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â°Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Âºc, Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¹Ă…â€œÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â€Â¬Ă‚ÂÄ‚â€Ă‚Â¢ Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¹Ă…â€œÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â­m vĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â  khÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â£ nÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ Ä‚Â¢Ă¢â€Â¬Ă¢â€Â¢ng Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¹Ă…â€œÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âc.
+   GiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¯ nguyĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªn toĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â n bÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â€Â¬Ă‚ÂÄ‚â€Ă‚Â¢ layout, mĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â u sÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¯c vĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â  hĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â nh vi hiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¡n tÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡i.
    ========================================================= */
 
 .purchase-buy-order-page {
@@ -1121,7 +1121,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âu hĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºng */
+/* Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âu hÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â°Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Âºng */
 .purchase-buy-back-navigation {
   font-size: 13px;
   font-weight: 600;
@@ -1134,7 +1134,7 @@
   line-height: 1;
 }
 
-/* TiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªu Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â trang */
+/* TiĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªu Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¹Ă…â€œÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â trang */
 .purchase-buy-title-text-group h2 {
   font-size: var(--font-size-page-title);
   font-weight: 700;
@@ -1150,7 +1150,7 @@
   letter-spacing: 0;
 }
 
-/* NĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢i dung vÄ‚â€Ă¢â‚¬Â  Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¹a chĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â° */
+/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â€Â¬Ă‚ÂÄ‚â€Ă‚Â¢i dung vĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â  Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¹Ă…â€œÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¹a chÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â° */
 .purchase-buy-static-display-box {
   font-size: 14px;
   font-weight: 500;
@@ -1520,7 +1520,7 @@
 }
 
 
-/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt bĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¥m */
+/* NĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt bÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¥m */
 .purchase-buy-btn-add-address,
 .purchase-buy-btn-inline-save,
 .purchase-buy-btn-inline-cancel,
@@ -1573,7 +1573,7 @@
   line-height: 1.5;
 }
 
-/* Header tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â«ng kiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n hÄ‚â€Ă¢â‚¬Â ng */
+/* Header tÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â«ng kiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¡n hĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â ng */
 .purchase-buy-step-number-circle {
   font-size: 12px;
   font-weight: 700;
@@ -1587,7 +1587,7 @@
   letter-spacing: -0.01em;
 }
 
-/* Label vÄ‚â€Ă¢â‚¬Â  trĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âng nhĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â­p liĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡u */
+/* Label vĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â  trÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â°Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âng nhÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â­p liÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¡u */
 .purchase-buy-field-label {
   font-size: var(--font-size-label);
   font-weight: 600;
@@ -1636,7 +1636,7 @@
   font-weight: 400;
 }
 
-/* Khu vĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â±c tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£i Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£nh */
+/* Khu vÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â±c tÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â£i Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â£nh */
 .purchase-buy-upload-main-text {
   font-size: 14px;
   font-weight: 600;
@@ -1655,7 +1655,7 @@
   line-height: 1;
 }
 
-/* Thanh lĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°u Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â½ vÄ‚â€Ă¢â‚¬Â  lightbox */
+/* Thanh lÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬ Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â°u Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â½ vĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚Â  lightbox */
 .purchase-buy-notice-left-message p {
   font-size: 13px;
   font-weight: 400;
@@ -1708,7 +1708,7 @@
   line-height: 1.45;
 }
 
-/* TrĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡ng thÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡i disabled vĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â«n dĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¦ Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âc */
+/* TrÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡ng thĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡i disabled vÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂºĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â«n dÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¦ Ä‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€¹Ă…â€œÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Âc */
 .purchase-buy-order-page :where(input, textarea, select, button):disabled {
   font-weight: inherit;
 }
@@ -1727,7 +1727,7 @@
   .purchase-buy-custom-input,
   .purchase-buy-custom-select,
   .purchase-buy-custom-textarea {
-    /* TrÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡nh trÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¬nh duyĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡t iOS tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â± phÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³ng to khi focus */
+    /* TrĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡nh trĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¬nh duyÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚â€Ă‚Â¡t iOS tÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â»Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â± phĂ„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³ng to khi focus */
     font-size: 16px;
   }
 
@@ -1836,7 +1836,7 @@
 
 /* =========================================================
    PURCHASE BUY ORDER - ISOLATED TWO-COLUMN LAYOUT
-   ChĂ¡Â»â€° Ä‚Â¡p dĂ¡Â»Â¥ng cho trang mua hĂ¡Â»â„¢, khÄ‚Â´ng Ă„â€˜Ä‚Â¨ CSS trang kÄ‚Â½ gĂ¡Â»Â­i.
+   ChÄ‚Â¡Ă‚Â»Ă¢â‚¬Â° Ă„â€Ă‚Â¡p dÄ‚Â¡Ă‚Â»Ă‚Â¥ng cho trang mua hÄ‚Â¡Ă‚Â»Ă¢â€Â¢, khĂ„â€Ă‚Â´ng Ä‚â€Ă¢â‚¬ËœĂ„â€Ă‚Â¨ CSS trang kĂ„â€Ă‚Â½ gÄ‚Â¡Ă‚Â»Ă‚Â­i.
    ========================================================= */
 .purchase-buy-order-page {
   width: 100%;
@@ -1920,8 +1920,8 @@
 }
 
 /* =========================================================
-   FIX: FORM PHĂ¡ÂºÂ¢I CHIĂ¡ÂºÂ¾M TOÄ‚â‚¬N BĂ¡Â»Ëœ CĂ¡Â»ËœT BÄ‚ÂN PHĂ¡ÂºÂ¢I
-   TrÄ‚Â¡nh CSS global cĂ¡Â»Â§a Dashboard Ä‚Â©p chiĂ¡Â»Âu rĂ¡Â»â„¢ng.
+   FIX: FORM PHÄ‚Â¡Ă‚ÂºĂ‚Â¢I CHIÄ‚Â¡Ă‚ÂºĂ‚Â¾M TOĂ„â€Ă¢â€Â¬N BÄ‚Â¡Ă‚Â»Ă‹Å“ CÄ‚Â¡Ă‚Â»Ă‹Å“T BĂ„â€Ă‚ÂN PHÄ‚Â¡Ă‚ÂºĂ‚Â¢I
+   TrĂ„â€Ă‚Â¡nh CSS global cÄ‚Â¡Ă‚Â»Ă‚Â§a Dashboard Ă„â€Ă‚Â©p chiÄ‚Â¡Ă‚Â»Ă‚Âu rÄ‚Â¡Ă‚Â»Ă¢â€Â¢ng.
    ========================================================= */
 
 .purchase-buy-order-page {
@@ -2004,8 +2004,8 @@
 }
 
 /* =========================================================
-   FIX ADDRESS API + UTC PAYLOAD UI â€” PURCHASE BUY ORDER
-   Chá»‰ scope trong .purchase-buy-order-page
+   FIX ADDRESS API + UTC PAYLOAD UI Ă¢â‚¬â€ PURCHASE BUY ORDER
+   ChĂ¡Â»â€° scope trong .purchase-buy-order-page
    ========================================================= */
 
 .purchase-buy-order-page {
@@ -2199,5 +2199,229 @@
 
   .purchase-buy-btn-final-submit-order {
     width: 100%;
+  }
+}
+
+/* =========================================================
+   FINAL FORM LAYOUT FIX
+   ========================================================= */
+
+.purchase-buy-order-page,
+.purchase-buy-order-page * {
+  box-sizing: border-box;
+}
+
+.purchase-buy-order-page {
+  min-width: 0;
+  min-height: 0;
+}
+
+.purchase-buy-order-page .purchase-buy-consignment-layout-grid {
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 22px;
+}
+
+.purchase-buy-order-page .purchase-buy-layout-right-scrollable-form,
+.purchase-buy-order-page .purchase-buy-scrollable-content-wrapper,
+.purchase-buy-order-page .purchase-buy-form-main-card {
+  min-width: 0;
+  width: 100%;
+}
+
+.purchase-buy-order-page .purchase-buy-form-main-card {
+  padding: 22px;
+  overflow: visible;
+}
+
+.purchase-buy-order-page .purchase-buy-form-step-header {
+  margin-bottom: 22px;
+}
+
+.purchase-buy-order-page .purchase-buy-input-field-group {
+  min-width: 0;
+  gap: 9px;
+}
+
+.purchase-buy-order-page .purchase-buy-field-label,
+.purchase-buy-order-page .purchase-buy-field-label-row {
+  position: relative;
+  z-index: 1;
+}
+
+.purchase-buy-order-page .purchase-buy-field-label-row {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 21px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.purchase-buy-order-page .purchase-buy-field-label-row .purchase-buy-field-label {
+  min-height: 21px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.purchase-buy-order-page .purchase-buy-field-info-button {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 18px;
+  color: #3b82f6;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+  cursor: help;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.purchase-buy-order-page .purchase-buy-field-info-button:hover,
+.purchase-buy-order-page .purchase-buy-field-info-button:focus-visible {
+  color: #1d4ed8;
+  background: #dbeafe;
+  outline: none;
+  transform: scale(1.08);
+}
+
+.purchase-buy-order-page .purchase-buy-field-info-button .anticon,
+.purchase-buy-order-page .purchase-buy-field-info-button svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  font-size: 15px;
+}
+
+.purchase-buy-order-page .purchase-buy-product-link-field {
+  margin-bottom: 24px;
+}
+
+.purchase-buy-order-page .purchase-buy-product-attributes-field {
+  margin-top: 0;
+}
+
+.purchase-buy-order-page .purchase-buy-form-row-2col,
+.purchase-buy-order-page .purchase-buy-form-row-4col {
+  align-items: start;
+  column-gap: 20px;
+  row-gap: 22px;
+  margin-bottom: 22px;
+}
+
+.purchase-buy-order-page .purchase-buy-product-basic-grid {
+  margin-top: 0;
+  margin-bottom: 22px;
+}
+
+.purchase-buy-order-page
+  .purchase-buy-product-basic-grid
+  > .purchase-buy-input-field-group {
+  align-self: start;
+}
+
+.purchase-buy-order-page
+  .purchase-buy-product-basic-grid
+  > .purchase-buy-input-field-group
+  > .purchase-buy-field-label,
+.purchase-buy-order-page
+  .purchase-buy-product-basic-grid
+  > .purchase-buy-input-field-group
+  > .purchase-buy-field-label-row {
+  min-height: 21px;
+  margin: 0;
+}
+
+.purchase-buy-order-page .purchase-buy-custom-input,
+.purchase-buy-order-page .purchase-buy-custom-select {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+}
+
+.purchase-buy-order-page .purchase-buy-custom-textarea {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.purchase-buy-order-page
+  .purchase-buy-form-main-card
+  > .purchase-buy-input-field-group
+  + .purchase-buy-input-field-group {
+  margin-top: 22px;
+}
+
+.purchase-buy-order-page .purchase-buy-field-error-message {
+  min-height: 0;
+  margin-top: 1px;
+}
+
+.purchase-buy-order-page .purchase-buy-package-image-section {
+  margin-top: 24px !important;
+}
+
+.purchase-buy-order-page .purchase-buy-sticky-action-notice-bar {
+  position: sticky;
+  z-index: 30;
+  bottom: 0;
+}
+
+@media (max-width: 1180px) {
+  .purchase-buy-order-page .purchase-buy-consignment-layout-grid {
+    grid-template-columns: 310px minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+
+@media (max-width: 980px) {
+  .purchase-buy-order-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .purchase-buy-order-page .purchase-buy-consignment-layout-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .purchase-buy-order-page .purchase-buy-layout-left-fixed-sidebar,
+  .purchase-buy-order-page .purchase-buy-layout-right-scrollable-form {
+    width: 100% !important;
+    max-width: none !important;
+    height: auto;
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .purchase-buy-order-page .purchase-buy-form-main-card {
+    padding: 16px;
+  }
+
+  .purchase-buy-order-page .purchase-buy-form-row-2col,
+  .purchase-buy-order-page .purchase-buy-form-row-4col {
+    grid-template-columns: minmax(0, 1fr) !important;
+    row-gap: 18px;
+  }
+
+  .purchase-buy-order-page .purchase-buy-product-link-field,
+  .purchase-buy-order-page .purchase-buy-product-basic-grid {
+    margin-bottom: 20px;
+  }
+
+  .purchase-buy-order-page .purchase-buy-sticky-action-notice-bar {
+    position: static;
   }
 }

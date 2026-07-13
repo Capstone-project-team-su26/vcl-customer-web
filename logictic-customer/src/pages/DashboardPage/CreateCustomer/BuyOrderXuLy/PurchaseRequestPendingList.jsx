@@ -24,6 +24,8 @@ import {
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SearchIcon from "@mui/icons-material/Search";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 
 import AuthNotify from "../../../../utils/AuthNotify";
 
@@ -192,6 +194,19 @@ const getPurchaseRequestItems = (response) => {
   return Array.isArray(items) ? items : [];
 };
 
+const getProductItems = (purchaseRequest) => {
+  return Array.isArray(purchaseRequest?.items)
+    ? purchaseRequest.items
+    : [];
+};
+
+const getTotalQuantity = (purchaseRequest) => {
+  return getProductItems(purchaseRequest).reduce(
+    (total, product) => total + Number(product?.quantity || 0),
+    0
+  );
+};
+
 const isPendingReviewStatus = (status) => {
   return normalizeStatus(status) === "PENDING_REVIEW";
 };
@@ -216,6 +231,31 @@ const getStatusClassName = (status) => {
     .replaceAll("_", "-");
 };
 
+const writeTextToClipboard = async (text) => {
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.clipboard?.writeText
+  ) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!copied) {
+    throw new Error("Không thể sao chép mã.");
+  }
+};
+
 /* =========================================================
    COMPONENT
    ========================================================= */
@@ -223,6 +263,7 @@ const getStatusClassName = (status) => {
 const PurchaseRequestPendingList = () => {
   const navigate = useNavigate();
   const manualRefreshRef = useRef(false);
+  const copyTimerRef = useRef(null);
 
   const [
     purchaseRequests,
@@ -251,6 +292,19 @@ const PurchaseRequestPendingList = () => {
     refreshKey,
     setRefreshKey,
   ] = useState(0);
+
+  const [copiedCode, setCopiedCode] =
+    useState("");
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        window.clearTimeout(
+          copyTimerRef.current
+        );
+      }
+    };
+  }, []);
 
   /* =========================================================
      FETCH DATA
@@ -428,13 +482,17 @@ const PurchaseRequestPendingList = () => {
         item.purchaseRequestId,
         item.purchaseCode,
         item.customerId,
-        item.customerName,
+        item.receiverName,
         item.itemCount,
         item.status,
         formatStatusCode(item.status),
         item.generalNote,
         item.createdAtUtc,
         item.updatedAtUtc,
+        ...getProductItems(item).flatMap((product) => [
+          product?.productName,
+          product?.quantity,
+        ]),
       ]
         .filter(Boolean)
         .map(normalizeText)
@@ -574,6 +632,54 @@ const PurchaseRequestPendingList = () => {
     );
   };
 
+  const handleCopyPurchaseCode = async (
+    event,
+    item
+  ) => {
+    event.stopPropagation();
+
+    const purchaseCode = String(
+      item?.purchaseCode || ""
+    ).trim();
+
+    if (!purchaseCode) {
+      AuthNotify.warning(
+        "Chưa có mã vận đơn",
+        "Không tìm thấy mã để sao chép."
+      );
+      return;
+    }
+
+    try {
+      await writeTextToClipboard(
+        purchaseCode
+      );
+
+      setCopiedCode(purchaseCode);
+
+      AuthNotify.success(
+        "Đã sao chép mã vận đơn",
+        purchaseCode
+      );
+
+      if (copyTimerRef.current) {
+        window.clearTimeout(
+          copyTimerRef.current
+        );
+      }
+
+      copyTimerRef.current =
+        window.setTimeout(() => {
+          setCopiedCode("");
+        }, 1800);
+    } catch (error) {
+      AuthNotify.error(
+        "Sao chép thất bại",
+        "Vui lòng bôi đen và sao chép mã thủ công."
+      );
+    }
+  };
+
   const handleCardKeyDown = (
     event,
     item
@@ -598,19 +704,19 @@ const PurchaseRequestPendingList = () => {
      ========================================================= */
 
   return (
-    <div className="vcl-container">
-      <div className="page-header">
+    <div className="purchase-pending-container">
+      <div className="purchase-pending-page-header">
         <div>
-          <h1 className="page-title">
+          <h1 className="purchase-pending-page-title">
             YÊU CẦU MUA HỘ CHỜ DUYỆT
           </h1>
 
-          <p className="page-subtitle">
+          <p className="purchase-pending-page-subtitle">
             Danh sách yêu cầu mua hộ đang chờ kiểm tra và duyệt
           </p>
         </div>
 
-        <div className="page-summary">
+        <div className="purchase-pending-page-summary">
           <strong>
             {filteredPurchaseRequests.length}
           </strong>
@@ -619,17 +725,17 @@ const PurchaseRequestPendingList = () => {
         </div>
       </div>
 
-      <div className="filter-section">
-        <div className="filter-fields">
+      <div className="purchase-pending-filter-section">
+        <div className="purchase-pending-filter-fields">
           <Space size="middle" wrap>
             <Input
               prefix={
-                <SearchIcon className="filter-search-icon" />
+                <SearchIcon className="purchase-pending-search-icon" />
               }
-              placeholder="Tìm mã yêu cầu, khách hàng, ghi chú..."
+              placeholder="Tìm mã yêu cầu, người nhận, sản phẩm..."
               value={searchInput}
               allowClear
-              className="filter-search-input"
+              className="purchase-pending-search-input"
               onChange={handleSearchChange}
             />
 
@@ -644,19 +750,19 @@ const PurchaseRequestPendingList = () => {
               ]}
               allowClear
               inputReadOnly
-              className="filter-date-picker"
+              className="purchase-pending-date-picker"
             />
           </Space>
         </div>
 
-        <div className="filter-actions">
+        <div className="purchase-pending-filter-actions">
           <Button
             variant="outlined"
             color="inherit"
             startIcon={<AutorenewIcon />}
             onClick={handleResetClick}
             disabled={loading}
-            className="filter-reset-button"
+            className="purchase-pending-reset-button"
           >
             LÀM MỚI
           </Button>
@@ -664,7 +770,7 @@ const PurchaseRequestPendingList = () => {
       </div>
 
       {loading ? (
-        <div className="vcl-loading-box">
+        <div className="purchase-pending-loading-box">
           <CircularProgress size={38} />
 
           <div>
@@ -673,11 +779,11 @@ const PurchaseRequestPendingList = () => {
         </div>
       ) : (
         <>
-          <div className="card-list">
+          <div className="purchase-pending-card-list">
             {visiblePurchaseRequests.length ===
             0 ? (
-              <div className="empty-container">
-                <div className="empty-icon">
+              <div className="purchase-pending-empty-container">
+                <div className="purchase-pending-empty-icon">
                   📭
                 </div>
 
@@ -696,7 +802,7 @@ const PurchaseRequestPendingList = () => {
                     color="inherit"
                     startIcon={<AutorenewIcon />}
                     onClick={handleResetClick}
-                    className="empty-reset-button"
+                    className="purchase-pending-empty-reset-button"
                   >
                     Xóa bộ lọc
                   </Button>
@@ -716,7 +822,7 @@ const PurchaseRequestPendingList = () => {
                         item.purchaseRequestId ||
                         item.purchaseCode
                       }
-                      className="consignment-card"
+                      className="purchase-pending-card"
                       role="button"
                       tabIndex={0}
                       aria-label={`Xem chi tiết yêu cầu mua hộ ${getPurchaseCode(
@@ -732,22 +838,61 @@ const PurchaseRequestPendingList = () => {
                         )
                       }
                     >
-                      <div className="card-header">
-                        <div className="header-left">
-                          <span className="order-code">
-                            {getPurchaseCode(item)}
-                          </span>
+                      <div className="purchase-pending-card-header">
+                        <div className="purchase-pending-header-left">
+                          <div className="purchase-pending-code-group">
+                            <span className="purchase-pending-code-label">
+                              Mã vận đơn
+                            </span>
 
-                          <span className="tag-type">
+                            <span className="purchase-pending-order-code">
+                              {getPurchaseCode(item)}
+                            </span>
+
+                            <button
+                              type="button"
+                              className={`purchase-pending-copy-code-button ${
+                                copiedCode === item.purchaseCode
+                                  ? "is-copied"
+                                  : ""
+                              }`}
+                              aria-label={`Sao chép mã vận đơn ${getPurchaseCode(item)}`}
+                              title={
+                                copiedCode === item.purchaseCode
+                                  ? "Đã sao chép"
+                                  : "Sao chép mã vận đơn"
+                              }
+                              onClick={(event) =>
+                                handleCopyPurchaseCode(
+                                  event,
+                                  item
+                                )
+                              }
+                            >
+                              {copiedCode === item.purchaseCode ? (
+                                <CheckRoundedIcon />
+                              ) : (
+                                <ContentCopyRoundedIcon />
+                              )}
+
+                              <span>
+                                {copiedCode === item.purchaseCode
+                                  ? "Đã sao chép"
+                                  : "Sao chép"}
+                              </span>
+                            </button>
+                          </div>
+
+                          <span className="purchase-pending-tag-type">
                             MUA HỘ
                           </span>
 
-                          <span className="tag-count">
+                          <span className="purchase-pending-tag-count">
                             {item.itemCount ?? 0} sản phẩm
                           </span>
 
                           <span
-                            className={`tag-status-header status-${statusClass}`}
+                            className={`purchase-pending-status-tag purchase-pending-status-${statusClass}`}
                           >
                             {formatStatusCode(
                               item.status
@@ -761,7 +906,7 @@ const PurchaseRequestPendingList = () => {
                           endIcon={
                             <ArrowForwardIcon />
                           }
-                          className="view-detail-button"
+                          className="purchase-pending-view-detail-button"
                           onClick={(event) => {
                             event.stopPropagation();
                             handleViewDetail(item);
@@ -771,11 +916,11 @@ const PurchaseRequestPendingList = () => {
                         </Button>
                       </div>
 
-                      <div className="sub-header">
+                      <div className="purchase-pending-sub-header">
                         <span>
-                          Khách hàng:{" "}
+                          Người nhận:{" "}
                           <strong>
-                            {item.customerName || "-"}
+                            {item.receiverName || "-"}
                           </strong>
                         </span>
 
@@ -794,37 +939,60 @@ const PurchaseRequestPendingList = () => {
                           </strong>
                         </span>
 
-                        <span className="price-total-header">
+                        <span className="purchase-pending-status-inline">
                           TRẠNG THÁI:{" "}
-                          <b className="inspection-yes">
+                          <b>
                             Chờ duyệt
                           </b>
                         </span>
                       </div>
 
-                      <div className="card-body">
-                        <div className="body-left">
-                          <div className="box-icon">
+                      <div className="purchase-pending-card-body">
+                        <div className="purchase-pending-body-left">
+                          <div className="purchase-pending-box-icon">
                             🛒
                           </div>
 
-                          <div className="product-info">
-                            <div className="customer-name">
-                              Yêu cầu mua hộ{" "}
-                              {getPurchaseCode(item)}
+                          <div className="purchase-pending-product-info">
+                            <div className="purchase-pending-customer-name">
+                              Người nhận: {item.receiverName || "-"}
                             </div>
 
-                            <div className="sku-tag">
+                            <div className="purchase-pending-sku-tag">
                               Mã yêu cầu:{" "}
                               {getPurchaseId(item) || "-"}
                             </div>
 
-                            <div className="receiver-phone">
-                              Số sản phẩm:{" "}
-                              {item.itemCount ?? 0}
+                            <div className="purchase-pending-products">
+                              <div className="purchase-pending-products-title">
+                                Danh sách sản phẩm
+                              </div>
+
+                              {getProductItems(item).length > 0 ? (
+                                getProductItems(item).map((product, productIndex) => (
+                                  <div
+                                    className="purchase-pending-product-row"
+                                    key={`${getPurchaseId(item)}-${productIndex}`}
+                                  >
+                                    <span className="purchase-pending-product-index">
+                                      {productIndex + 1}
+                                    </span>
+                                    <span className="purchase-pending-product-name">
+                                      {product?.productName || "Sản phẩm chưa có tên"}
+                                    </span>
+                                    <strong className="purchase-pending-product-quantity">
+                                      SL: {Number(product?.quantity || 0).toLocaleString("vi-VN")}
+                                    </strong>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="purchase-pending-product-empty">
+                                  Chưa có thông tin sản phẩm
+                                </div>
+                              )}
                             </div>
 
-                            <div className="receiver-address">
+                            <div className="purchase-pending-note">
                               Ghi chú:{" "}
                               {item.generalNote?.trim()
                                 ? item.generalNote
@@ -833,14 +1001,14 @@ const PurchaseRequestPendingList = () => {
                           </div>
                         </div>
 
-                        <div className="body-right">
+                        <div className="purchase-pending-body-right">
                           <span
-                            className={`status-badge-center status-${statusClass}`}
+                            className={`purchase-pending-status-badge purchase-pending-status-${statusClass}`}
                           >
                             Chờ duyệt
                           </span>
 
-                          <div className="shipping-type">
+                          <div className="purchase-pending-request-type">
                             <span>
                               LOẠI YÊU CẦU
                             </span>
@@ -850,11 +1018,18 @@ const PurchaseRequestPendingList = () => {
                             </strong>
                           </div>
 
-                          <div className="specs-list">
+                          <div className="purchase-pending-specs-list">
                             <span>
-                              SP:{" "}
+                              Mặt hàng:{" "}
                               <strong>
                                 {item.itemCount ?? 0}
+                              </strong>
+                            </span>
+
+                            <span>
+                              Tổng SL:{" "}
+                              <strong>
+                                {getTotalQuantity(item).toLocaleString("vi-VN")}
                               </strong>
                             </span>
 
@@ -876,8 +1051,8 @@ const PurchaseRequestPendingList = () => {
 
           {filteredPurchaseRequests.length >
             0 && (
-            <div className="pagination-section">
-              <span className="pagination-summary">
+            <div className="purchase-pending-pagination-section">
+              <span className="purchase-pending-pagination-summary">
                 Hiển thị{" "}
                 <strong>
                   {

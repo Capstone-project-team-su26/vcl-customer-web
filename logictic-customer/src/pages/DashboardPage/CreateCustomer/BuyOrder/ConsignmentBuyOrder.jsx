@@ -22,7 +22,7 @@ import {
   SafetyCertificateOutlined,
   ShoppingCartOutlined,
 } from "@ant-design/icons";
-import { Switch } from "antd";
+import { Switch, Tooltip } from "antd";
 
 import AuthNotify from "../../../../utils/AuthNotify";
 import uploadImage from "../../../../api/Upload/UploadImage";
@@ -1962,7 +1962,7 @@ export default function ConsignmentBuyOrder() {
             "Yêu cầu mua hộ đã được tiếp nhận."
         );
 
-        navigate("/processing-orders");
+        navigate("/processing-orders/purchase-requests");
       } catch (error) {
         AuthNotify.error(
           "Tạo yêu cầu thất bại",
@@ -2726,7 +2726,7 @@ export default function ConsignmentBuyOrder() {
                       )}
                     </div>
 
-                    <div className="purchase-buy-input-field-group">
+                    <div className="purchase-buy-input-field-group purchase-buy-product-link-field">
                       <label className="purchase-buy-field-label purchase-buy-required-label">
                         <LinkOutlined />
                         LINK SẢN PHẨM
@@ -2768,11 +2768,27 @@ export default function ConsignmentBuyOrder() {
                       />
                     </div>
 
-                    <div className="purchase-buy-form-row-2col">
+                    <div className="purchase-buy-form-row-2col purchase-buy-product-basic-grid">
                       <div className="purchase-buy-input-field-group">
-                        <label className="purchase-buy-field-label purchase-buy-required-label">
-                          WEBSITE NGUỒN
-                        </label>
+                        <div className="purchase-buy-field-label-row">
+                          <label className="purchase-buy-field-label purchase-buy-required-label">
+                            WEBSITE NGUỒN
+                          </label>
+
+                          <Tooltip
+    title="Nhập tên website bán sản phẩm, ví dụ: amazon.com, shopee.vn hoặc taobao.com."
+    placement="top"
+  >
+    <InfoCircleOutlined
+      style={{
+        color: "#1890ff",
+        cursor: "pointer",
+        fontSize: "14px",
+        flexShrink: 0,
+      }}
+    />
+  </Tooltip>
+                        </div>
 
                         <input
                           type="text"
@@ -2946,10 +2962,30 @@ export default function ConsignmentBuyOrder() {
                       </div>
                     </div>
 
-                    <div className="purchase-buy-input-field-group">
-                      <label className="purchase-buy-field-label purchase-buy-required-label">
-                        THUỘC TÍNH SẢN PHẨM
-                      </label>
+                    <div className="purchase-buy-input-field-group purchase-buy-product-attributes-field">
+                      <div className="purchase-buy-field-label-row">
+                        <label className="purchase-buy-field-label purchase-buy-required-label">
+                          THUỘC TÍNH SẢN PHẨM
+                        </label>
+
+                        <Tooltip
+  title="Nhập đặc điểm cần mua chính xác như màu sắc, kích thước, phiên bản hoặc dung lượng."
+  placement="top"
+>
+  <InfoCircleOutlined
+    role="button"
+    tabIndex={0}
+    aria-label="Hướng dẫn nhập thuộc tính sản phẩm"
+    style={{
+      color: "#1890ff",
+      cursor: "pointer",
+      fontSize: "14px",
+      flexShrink: 0,
+      marginLeft: "6px",
+    }}
+  />
+</Tooltip>
+                      </div>
 
                       <input
                         type="text"
@@ -3184,7 +3220,7 @@ export default function ConsignmentBuyOrder() {
                   <strong>
                     LƯU Ý:
                   </strong>{" "}
-                  VCL sẽ kiểm tra link,
+                  Việt Nam Logictic sẽ kiểm tra link,
                   thuộc tính và số lượng
                   trước khi tiến hành báo giá.
                 </p>
@@ -3208,7 +3244,7 @@ export default function ConsignmentBuyOrder() {
                 ) : (
                   <>
                     <CheckOutlined />
-                    XEM LẠI YÊU CẦU
+                    XÁC NHẬN YÊU CẦU MUA HỘ
                   </>
                 )}
               </button>

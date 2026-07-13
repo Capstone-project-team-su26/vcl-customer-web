@@ -2261,7 +2261,7 @@ export default function ConsignmentOrder() {
   <Tooltip
     title={`Nhập chính xác thông tin sản phẩm thuộc kiện hàng thứ ${
       index + 1
-    }, bao gồm tên sản phẩm, loại hàng hóa, số lượng, giá trị, cân nặng và kích thước. Để chúng tính chi phí chính xác và đảm bảo kiện hàng được vận chuyển an toàn.`}
+    }, bao gồm tên sản phẩm, loại hàng hóa, số lượng, giá trị, cân nặng và kích thước. Để chúng tôi tính chi phí chính xác và đảm bảo kiện hàng được vận chuyển an toàn.`}
     placement="top"
   >
     <InfoCircleOutlined
@@ -2407,7 +2407,7 @@ export default function ConsignmentOrder() {
 
                     <div className="input-field-group">
                       <label className="field-label required-label">
-                        GIÁ TRỊ SẢN PHẨM (VND)
+                        GIÁ TRỊ KIỆN HÀNG (VND)
                       </label>
 
                       <input
@@ -2723,13 +2723,15 @@ export default function ConsignmentOrder() {
                 disabled={isSubmitting}
                 onClick={handleOpenConfirmation}
               >
+                 <CheckOutlined />
                 {isSubmitting ? (
                   <>
                     <LoadingOutlined spin />
                     ĐANG TẠO ĐƠN...
                   </>
                 ) : (
-                  "TẠO ĐƠN HÀNG NGAY"
+                  
+                  "XÁC NHẬN YEU CẦU KÍ GỬI "
                 )}
               </button>
             </div>

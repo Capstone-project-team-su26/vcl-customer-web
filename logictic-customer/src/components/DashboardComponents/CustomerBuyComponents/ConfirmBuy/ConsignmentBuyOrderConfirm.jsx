@@ -9,10 +9,13 @@ import {
   CloseOutlined,
   EnvironmentOutlined,
   FileTextOutlined,
+  GlobalOutlined,
+  HomeOutlined,
   InfoCircleOutlined,
   LeftOutlined,
   LinkOutlined,
   LoadingOutlined,
+  PhoneOutlined,
   SafetyCertificateOutlined,
   ShoppingCartOutlined,
 } from "@ant-design/icons";
@@ -60,6 +63,27 @@ const getDisplayText = (
 
   return text || fallback;
 };
+
+const formatNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? number.toLocaleString("vi-VN")
+    : "0";
+};
+
+const getReceiverAddress = (form) =>
+  getDisplayText(
+    form?.selectedDeliveryAddress ||
+      form?.receiverAddress ||
+      form?.deliveryAddress ||
+      form?.address,
+    "Chưa cập nhật"
+  );
+
+const getProductTypeValue = (item) =>
+  item?.productType ??
+  item?.productTypeId ??
+  item?.productTypeCode;
 
 const ConfirmStatus = ({
   enabled,
@@ -143,7 +167,7 @@ export default function ConsignmentBuyOrderConfirm({
   return (
     <div className="purchase-buy-confirm-page">
       <div className="purchase-buy-confirm-shell">
-        <button
+        {/* <button
           type="button"
           className="purchase-buy-confirm-back"
           disabled={isSubmitting}
@@ -151,7 +175,7 @@ export default function ConsignmentBuyOrderConfirm({
         >
           <LeftOutlined />
           QUAY LẠI CHỈNH SỬA
-        </button>
+        </button> */}
 
         <section className="purchase-buy-confirm-hero">
           <div className="purchase-buy-confirm-hero-icon">
@@ -205,7 +229,7 @@ export default function ConsignmentBuyOrderConfirm({
             </small>
 
             <strong>
-              {items.length} sản phẩm
+              {formatNumber(items.length)} mặt hàng
             </strong>
           </article>
 
@@ -219,7 +243,7 @@ export default function ConsignmentBuyOrderConfirm({
             </small>
 
             <strong>
-              {totalQuantity} sản phẩm
+              {formatNumber(totalQuantity)} sản phẩm
             </strong>
           </article>
         </section>
@@ -245,8 +269,9 @@ export default function ConsignmentBuyOrderConfirm({
               </div>
 
               <div className="purchase-buy-confirm-info-grid">
-                <div>
-                  <span>
+                <div className="purchase-buy-confirm-info-item">
+                  <span className="purchase-buy-confirm-info-label">
+                    <EnvironmentOutlined />
                     Người nhận
                   </span>
 
@@ -258,8 +283,9 @@ export default function ConsignmentBuyOrderConfirm({
                   </strong>
                 </div>
 
-                <div>
-                  <span>
+                <div className="purchase-buy-confirm-info-item">
+                  <span className="purchase-buy-confirm-info-label">
+                    <PhoneOutlined />
                     Số điện thoại
                   </span>
 
@@ -271,16 +297,14 @@ export default function ConsignmentBuyOrderConfirm({
                   </strong>
                 </div>
 
-                <div className="is-full-width">
-                  <span>
+                <div className="purchase-buy-confirm-info-item is-full-width">
+                  <span className="purchase-buy-confirm-info-label">
+                    <HomeOutlined />
                     Địa chỉ nhận hàng
                   </span>
 
                   <strong>
-                    {getDisplayText(
-                      form?.selectedDeliveryAddress,
-                      "Chưa cập nhật"
-                    )}
+                    {getReceiverAddress(form)}
                   </strong>
                 </div>
               </div>
@@ -298,7 +322,7 @@ export default function ConsignmentBuyOrderConfirm({
                   </h2>
 
                   <p>
-                    Có {items.length} dòng sản phẩm
+                    Có {formatNumber(items.length)} mặt hàng
                     trong yêu cầu mua hộ.
                   </p>
                 </div>
@@ -315,7 +339,7 @@ export default function ConsignmentBuyOrderConfirm({
                     const productTypeLabel =
                       getOptionLabel(
                         productTypeOptions,
-                        item?.productType
+                        getProductTypeValue(item)
                       );
 
                     return (
@@ -383,18 +407,17 @@ export default function ConsignmentBuyOrderConfirm({
 
                             <strong className="purchase-buy-confirm-quantity">
                               SL:{" "}
-                              {Number(
-                                item?.quantity
-                              ) || 0}
+                              {formatNumber(item?.quantity)}
                             </strong>
                           </div>
 
                           <div className="purchase-buy-confirm-product-tags">
-                            <span>
+                            <span title="Loại sản phẩm">
                               {productTypeLabel}
                             </span>
 
-                            <span>
+                            <span title="Website nguồn">
+                              <GlobalOutlined />
                               {getDisplayText(
                                 item?.sourceWebsite,
                                 "Chưa có website"
@@ -615,9 +638,15 @@ export default function ConsignmentBuyOrderConfirm({
           aria-live="polite"
         >
           <div className="purchase-buy-confirm-loading-card">
-            <div>
-              <LoadingOutlined spin />
+            <div className="purchase-buy-confirm-loading-visual">
+              <span className="purchase-buy-confirm-loading-ring" />
+              <span className="purchase-buy-confirm-loading-ring is-secondary" />
+              <ShoppingCartOutlined />
             </div>
+
+            <span className="purchase-buy-confirm-loading-eyebrow">
+              HỆ THỐNG VCL ĐANG XỬ LÝ
+            </span>
 
             <h3>
               ĐANG TẠO YÊU CẦU MUA HỘ
@@ -631,6 +660,12 @@ export default function ConsignmentBuyOrderConfirm({
             <span className="purchase-buy-confirm-loading-bar">
               <i />
             </span>
+
+            <div className="purchase-buy-confirm-loading-steps" aria-hidden="true">
+              <span>Kiểm tra dữ liệu</span>
+              <span>Tải ảnh sản phẩm</span>
+              <span>Tạo yêu cầu</span>
+            </div>
 
             <small>
               Vui lòng không đóng hoặc tải lại trang.
