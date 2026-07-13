@@ -398,6 +398,114 @@ const getOrderCode = (item) => {
   );
 };
 
+
+/**
+ * Chuẩn hóa tên sản phẩm từ nhiều dạng dữ liệu API:
+ * - Chuỗi: "Sản phẩm 1 và Sản phẩm 2"
+ * - Chuỗi có dấu phẩy, dấu chấm phẩy, dấu | hoặc xuống dòng
+ * - Mảng chuỗi / mảng object
+ * - Chuỗi JSON
+ */
+const extractProductNames = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(
+      extractProductNames
+    );
+  }
+
+  if (
+    typeof value === "object"
+  ) {
+    const nestedCandidates = [
+      value.productName,
+      value.itemName,
+      value.name,
+      value.title,
+      value.product?.productName,
+      value.product?.name,
+      value.items,
+      value.products,
+      value.productNames,
+      value.itemNames,
+    ];
+
+    return nestedCandidates.flatMap(
+      extractProductNames
+    );
+  }
+
+  const text = String(value).trim();
+
+  if (!text) {
+    return [];
+  }
+
+  if (
+    (text.startsWith("[") &&
+      text.endsWith("]")) ||
+    (text.startsWith("{") &&
+      text.endsWith("}"))
+  ) {
+    try {
+      return extractProductNames(
+        JSON.parse(text)
+      );
+    } catch {
+      // Không phải JSON hợp lệ, xử lý như chuỗi thông thường.
+    }
+  }
+
+  return text
+    .split(
+      /\s*(?:\r?\n+|;|\||,|\s+và\s+|\s+and\s+|\s*&\s*)\s*/giu
+    )
+    .map((name) => name.trim())
+    .filter(Boolean);
+};
+
+const getProductNames = (item) => {
+  const candidates = [
+    item?.items,
+    item?.products,
+    item?.productNames,
+    item?.itemNames,
+    item?.productName,
+    item?.itemName,
+  ];
+
+  const names = candidates.flatMap(
+    extractProductNames
+  );
+
+  const uniqueNames = [];
+  const seenNames = new Set();
+
+  names.forEach((name) => {
+    const normalizedName =
+      normalizeText(name);
+
+    if (
+      !normalizedName ||
+      seenNames.has(normalizedName)
+    ) {
+      return;
+    }
+
+    seenNames.add(normalizedName);
+    uniqueNames.push(name);
+  });
+
+  return uniqueNames;
+};
+
 /* =========================================================
    COMPONENT
    ========================================================= */
@@ -811,6 +919,7 @@ const ConsignmentList = () => {
             item.waybillCode,
             item.shipmentCode,
             item.itemNames,
+            getProductNames(item).join(" "),
             item.consignmentType,
             item.status,
             item.route,
@@ -1195,6 +1304,9 @@ const ConsignmentList = () => {
                       item.status
                     );
 
+                  const productNames =
+                    getProductNames(item);
+
                   return (
                     <div
                       key={
@@ -1370,16 +1482,54 @@ const ConsignmentList = () => {
 
                           <div className="product-info">
                             <div className="product-name-group">
-                              <span className="product-name-label">
-                                SẢN PHẨM
-                              </span>
+                              <div className="product-name-heading">
+                                <span className="product-name-label">
+                                  SẢN PHẨM
+                                </span>
 
-                              <strong
-                                className="product-name-value"
-                                title={item.itemNames || "-"}
-                              >
-                                {item.itemNames || "-"}
-                              </strong>
+                                <span className="product-count-badge">
+                                  {productNames.length}{" "}
+                                  sản phẩm
+                                </span>
+                              </div>
+
+                              {productNames.length > 0 ? (
+                                <div
+                                  className="product-name-list"
+                                  aria-label="Danh sách sản phẩm"
+                                >
+                                  {productNames.map(
+                                    (
+                                      productName,
+                                      productIndex
+                                    ) => (
+                                      <div
+                                        key={`${productName}-${productIndex}`}
+                                        className="product-name-item"
+                                      >
+                                        <span className="product-name-index">
+                                          {productIndex + 1}
+                                        </span>
+
+                                        <strong
+                                          className="product-name-value"
+                                          title={
+                                            productName
+                                          }
+                                        >
+                                          {
+                                            productName
+                                          }
+                                        </strong>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="product-name-empty">
+                                  Chưa cập nhật sản phẩm
+                                </div>
+                              )}
                             </div>
 
                             <div className="sku-tag">

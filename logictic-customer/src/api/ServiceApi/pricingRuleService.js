@@ -59,8 +59,9 @@ const pricingRuleService = {
   /**
    * GET /api/pricing-rules
    *
-   * Endpoint hiện trả một mảng. Hàm này lọc ngay tại service
-   * và chỉ trả về rule VOLUMETRIC_DIVISOR đang ACTIVE.
+   * API chỉ chịu trách nhiệm lấy hệ số DIM.
+   * Số lượng sản phẩm được lấy từ item của đơn hàng
+   * và nhân ở màn ConsignmentListDetail.
    *
    * @param {{ signal?: AbortSignal, params?: object }} options
    * @returns {Promise<object>}

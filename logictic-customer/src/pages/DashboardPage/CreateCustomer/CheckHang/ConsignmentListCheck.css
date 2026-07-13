@@ -52,7 +52,7 @@
       #f6f8fc;
   }
   
-  /* Đồng bộ font cho tất cả thành phần bên trong */
+  /* Äá»“ng bá»™ font cho táº¥t cáº£ thĂ nh pháº§n bĂªn trong */
   
   .vcl-container *,
   .vcl-container *::before,
@@ -1146,8 +1146,8 @@
     }
   
     /*
-     * Dùng 16px trên điện thoại để trình duyệt iOS
-     * không tự phóng to khi người dùng nhập liệu.
+     * DĂ¹ng 16px trĂªn Ä‘iá»‡n thoáº¡i Ä‘á»ƒ trĂ¬nh duyá»‡t iOS
+     * khĂ´ng tá»± phĂ³ng to khi ngÆ°á»i dĂ¹ng nháº­p liá»‡u.
      */
   
     .filter-search-input .ant-input,
@@ -1334,7 +1334,7 @@
     }
   }
 
-  /* Dropdown tráº¡ng thĂ¡i láº¥y tá»« API */
+  /* Dropdown trĂ¡ÂºÂ¡ng thÄ‚Â¡i lĂ¡ÂºÂ¥y tĂ¡Â»Â« API */
 .filter-status-select {
   width: 220px;
   min-width: 220px;
@@ -1360,7 +1360,7 @@
   }
 }
 /* =========================================================
-   FIX: MÃ VẬN ĐƠN, SẢN PHẨM VÀ CARD BÁO GIÁ
+   FIX: MĂƒ Váº¬N ÄÆ N, Sáº¢N PHáº¨M VĂ€ CARD BĂO GIĂ
    ========================================================= */
 
 .card-header {
@@ -1594,5 +1594,161 @@
 
   .copy-tracking-button:hover:not(:disabled) {
     transform: none;
+  }
+}
+
+/* =========================================================
+   PRODUCT LIST â€” TĂCH RIĂNG Tá»ªNG Sáº¢N PHáº¨M
+   ========================================================= */
+
+.vcl-container .product-name-group {
+  width: min(100%, 760px);
+  max-width: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vcl-container .product-name-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vcl-container .product-name-label {
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vcl-container .product-count-badge {
+  flex: 0 0 auto;
+  min-height: 23px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.vcl-container .product-name-list {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.vcl-container .product-name-item {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid #dfe7f1;
+  border-radius: 9px;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.035);
+}
+
+.vcl-container .product-name-index {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 850;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.18);
+}
+
+.vcl-container .product-name-value {
+  min-width: 0;
+  max-width: none;
+  display: block;
+  overflow: visible;
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 750;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.vcl-container .product-name-empty {
+  width: 100%;
+  padding: 9px 11px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px dashed #cbd5e1;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 550;
+}
+
+.vcl-container .card-body {
+  min-height: 0;
+}
+
+.vcl-container .body-left {
+  align-items: flex-start;
+}
+
+.vcl-container .box-icon {
+  margin-top: 25px;
+}
+
+@media (max-width: 768px) {
+  .vcl-container .product-name-group {
+    width: 100%;
+  }
+
+  .vcl-container .product-name-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .vcl-container .box-icon {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .vcl-container .product-name-item {
+    padding: 8px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .vcl-container .product-name-index {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+
+  .vcl-container .product-name-value {
+    font-size: 13px;
   }
 }

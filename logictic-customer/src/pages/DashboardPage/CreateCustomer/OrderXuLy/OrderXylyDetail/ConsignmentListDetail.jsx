@@ -348,11 +348,13 @@ const calculateDimWeight = (
   length,
   width,
   height,
+  quantity,
   volumetricDivisor
 ) => {
   const lengthValue = Number(length);
   const widthValue = Number(width);
   const heightValue = Number(height);
+  const quantityValue = Number(quantity);
   const divisorValue = Number(
     volumetricDivisor
   );
@@ -361,20 +363,28 @@ const calculateDimWeight = (
     !Number.isFinite(lengthValue) ||
     !Number.isFinite(widthValue) ||
     !Number.isFinite(heightValue) ||
+    !Number.isFinite(quantityValue) ||
     !Number.isFinite(divisorValue) ||
     lengthValue <= 0 ||
     widthValue <= 0 ||
     heightValue <= 0 ||
+    quantityValue <= 0 ||
     divisorValue <= 0
   ) {
     return null;
   }
 
+  /*
+   * DIM = (Dài × Rộng × Cao × Số lượng)
+   *       / Hệ số DIM
+   */
   const rawDimWeight =
-    (lengthValue *
+    (
+      lengthValue *
       widthValue *
-      heightValue) /
-    divisorValue;
+      heightValue *
+      quantityValue
+    ) / divisorValue;
 
   return roundDimWeightUp(
     rawDimWeight
@@ -1648,12 +1658,12 @@ const ConsignmentListDetail = () => {
       },
       {
         title: volumetricDivisor
-          ? `DIM = (Dài × Rộng × Cao) / ${formatWeight(
+          ? `DIM = (Dài × Rộng × Cao × Số lượng) / ${formatWeight(
               volumetricDivisor
             )}`
           : "DIM (chưa có hệ số từ API)",
         key: "dimensionalWeight",
-        width: 250,
+        width: 310,
         render: (_, record) => {
           if (!volumetricDivisor) {
             return (
@@ -1663,23 +1673,34 @@ const ConsignmentListDetail = () => {
             );
           }
 
+          const quantityValue =
+            Number(record.quantity);
+
           const dimWeight =
             calculateDimWeight(
               record.length,
               record.width,
               record.height,
+              quantityValue,
               volumetricDivisor
             );
 
           if (dimWeight === null) {
-            return "-";
+            return (
+              <span className="detail-pending-value">
+                Thiếu kích thước hoặc số lượng
+              </span>
+            );
           }
 
           return (
             <span className="detail-dimension-text">
+              (
               {record.length} ×{" "}
               {record.width} ×{" "}
-              {record.height} /{" "}
+              {record.height} ×{" "}
+              {quantityValue}
+              ) /{" "}
               {formatWeight(
                 volumetricDivisor
               )}{" "}
@@ -1913,6 +1934,7 @@ const ConsignmentListDetail = () => {
                 item.length,
                 item.width,
                 item.height,
+                item.quantity,
                 volumetricDivisor
               );
 

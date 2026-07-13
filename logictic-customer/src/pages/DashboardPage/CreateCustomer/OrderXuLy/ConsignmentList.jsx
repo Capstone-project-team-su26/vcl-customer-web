@@ -56,6 +56,101 @@ const normalizeText = (value) => {
     .trim();
 };
 
+
+const PRODUCT_NAME_SEPARATOR =
+  /\r?\n|[,;|•]+|\s+(?:và|and)\s+/giu;
+
+/**
+ * Chuẩn hóa tên sản phẩm từ nhiều kiểu dữ liệu API:
+ * - "Sản phẩm 1, Sản phẩm 2"
+ * - "Sản phẩm 1 và Sản phẩm 2"
+ * - "Sản phẩm 1\nSản phẩm 2"
+ * - ["Sản phẩm 1", "Sản phẩm 2"]
+ * - [{ productName: "Sản phẩm 1" }]
+ */
+const collectProductNames = (source) => {
+  if (
+    source === null ||
+    source === undefined ||
+    source === ""
+  ) {
+    return [];
+  }
+
+  if (Array.isArray(source)) {
+    return source.flatMap(
+      collectProductNames
+    );
+  }
+
+  if (typeof source === "object") {
+    const directName =
+      source.productName ||
+      source.itemName ||
+      source.name ||
+      source.title ||
+      source.product?.productName ||
+      source.product?.name;
+
+    if (directName) {
+      return collectProductNames(
+        directName
+      );
+    }
+
+    return collectProductNames(
+      source.items ||
+        source.productNames ||
+        source.itemNames ||
+        []
+    );
+  }
+
+  const text = String(source).trim();
+
+  if (!text) {
+    return [];
+  }
+
+  if (
+    (text.startsWith("[") &&
+      text.endsWith("]")) ||
+    (text.startsWith("{") &&
+      text.endsWith("}"))
+  ) {
+    try {
+      return collectProductNames(
+        JSON.parse(text)
+      );
+    } catch {
+      // Không phải JSON hợp lệ thì tiếp tục xử lý chuỗi thường.
+    }
+  }
+
+  return text
+    .split(PRODUCT_NAME_SEPARATOR)
+    .map((name) => name.trim())
+    .filter(Boolean);
+};
+
+const getProductNames = (item) => {
+  const rawNames =
+    item?.itemNames ??
+    item?.productNames ??
+    item?.items ??
+    [];
+
+  return Array.from(
+    new Set(
+      collectProductNames(rawNames)
+        .map((name) =>
+          String(name).trim()
+        )
+        .filter(Boolean)
+    )
+  );
+};
+
 const extractConsignmentItems = (apiResult) => {
   const candidates = [
     apiResult,
@@ -552,7 +647,7 @@ const ConsignmentList = () => {
         item.domesticTrackingCode,
         item.waybillCode,
         item.shipmentCode,
-        item.itemNames,
+        getProductNames(item).join(" "),
         item.consignmentType,
         item.status,
         item.route,
@@ -946,6 +1041,9 @@ const ConsignmentList = () => {
                       item.status
                     );
 
+                  const productNames =
+                    getProductNames(item);
+
                   return (
                     <div
                       key={item.orderId}
@@ -1107,13 +1205,59 @@ const ConsignmentList = () => {
 
                           <div className="product-info">
                             <div className="product-name-group">
-                              <span className="product-name-label">
-                                SẢN PHẨM
-                              </span>
+                              <div className="product-name-heading">
+                                <span className="product-name-label">
+                                  SẢN PHẨM
+                                </span>
 
-                              <strong className="product-name-value">
-                                {item.itemNames || "-"}
-                              </strong>
+                                {productNames.length > 1 && (
+                                  <span className="product-name-count">
+                                    {productNames.length} sản phẩm
+                                  </span>
+                                )}
+                              </div>
+
+                              {productNames.length > 0 ? (
+                                <div
+                                  className={[
+                                    "product-name-list",
+                                    productNames.length === 1 &&
+                                      "is-single",
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                                  aria-label={`Danh sách ${productNames.length} sản phẩm`}
+                                >
+                                  {productNames.map(
+                                    (
+                                      productName,
+                                      productIndex
+                                    ) => (
+                                      <div
+                                        key={`${productName}-${productIndex}`}
+                                        className="product-name-item"
+                                      >
+                                        {productNames.length > 1 && (
+                                          <span className="product-name-index">
+                                            {productIndex + 1}
+                                          </span>
+                                        )}
+
+                                        <strong
+                                          className="product-name-value"
+                                          title={productName}
+                                        >
+                                          {productName}
+                                        </strong>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              ) : (
+                                <strong className="product-name-empty">
+                                  Chưa có tên sản phẩm
+                                </strong>
+                              )}
                             </div>
 
                             <div className="sku-tag">
