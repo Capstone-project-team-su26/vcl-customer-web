@@ -314,7 +314,7 @@
   }
 }
 /* =========================================================
-   CHUẨN HÓA FONT CHỮ TRANG CẤU HÌNH HỒ SƠ
+   CHUáº¨N HĂ“A FONT CHá»® TRANG Cáº¤U HĂŒNH Há»’ SÆ 
    ========================================================= */
 
    .profile-config-page {
@@ -338,7 +338,7 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Đồng bộ font cho input và button */
+  /* Äá»“ng bá»™ font cho input vĂ  button */
   
   .profile-config-page input,
   .profile-config-page button,
@@ -347,7 +347,7 @@
     font-family: inherit;
   }
   
-  /* Tiêu đề trang */
+  /* TiĂªu Ä‘á» trang */
   
   .profile-config-header h2 {
     font-size: 24px;
@@ -363,7 +363,7 @@
     letter-spacing: 0;
   }
   
-  /* Tiêu đề từng khu vực */
+  /* TiĂªu Ä‘á» tá»«ng khu vá»±c */
   
   .profile-section-title h4 {
     font-size: 16px;
@@ -381,7 +381,7 @@
     letter-spacing: 0.03em;
   }
   
-  /* Chữ trong avatar */
+  /* Chá»¯ trong avatar */
   
   .profile-view-avatar {
     font-size: 26px;
@@ -389,7 +389,7 @@
     font-weight: 700;
   }
   
-  /* Thông tin hồ sơ */
+  /* ThĂ´ng tin há»“ sÆ¡ */
   
   .profile-view-header h3 {
     font-size: 18px;
@@ -404,7 +404,7 @@
     font-weight: 400;
   }
   
-  /* Nhãn thông tin */
+  /* NhĂ£n thĂ´ng tin */
   
   .profile-view-field-label {
     font-size: 11px;
@@ -413,7 +413,7 @@
     letter-spacing: 0.04em;
   }
   
-  /* Giá trị thông tin */
+  /* GiĂ¡ trá»‹ thĂ´ng tin */
   
   .profile-view-field-value {
     font-size: 14px;
@@ -422,7 +422,7 @@
     letter-spacing: 0;
   }
   
-  /* Tiêu đề khu vực chỉnh sửa */
+  /* TiĂªu Ä‘á» khu vá»±c chá»‰nh sá»­a */
   
   .profile-edit-header h3 {
     font-size: 18px;
@@ -463,7 +463,7 @@
     font-weight: 400;
   }
   
-  /* Gợi ý dưới input */
+  /* Gá»£i Ă½ dÆ°á»›i input */
   
   .profile-form-hint {
     font-size: 12px;
@@ -472,7 +472,7 @@
     letter-spacing: 0;
   }
   
-  /* Thông báo lỗi */
+  /* ThĂ´ng bĂ¡o lá»—i */
   
   .profile-form-error {
     font-size: 12px;
@@ -481,7 +481,7 @@
     letter-spacing: 0;
   }
   
-  /* Nút bấm */
+  /* NĂºt báº¥m */
   
   .profile-btn.secondary {
     font-family: inherit;
@@ -490,3 +490,140 @@
     font-weight: 600;
     letter-spacing: 0;
   }
+
+
+/* =========================================================
+   PROFILE ADDRESS DROPDOWN API
+   ========================================================= */
+
+.profile-address-section {
+  padding: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fbfdff,
+      #f8fafc
+    );
+
+  border: 1px solid #dfe7f0;
+  border-radius: 14px;
+}
+
+.profile-address-header {
+  margin-bottom: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-address-header h4 {
+  margin: 0;
+
+  color: #1e293b;
+
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 800;
+}
+
+.profile-address-header p {
+  margin: 4px 0 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.profile-address-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.profile-address-section
+  select.profile-form-input {
+  width: 100%;
+  cursor: pointer;
+}
+
+.profile-address-section
+  select.profile-form-input:disabled {
+  color: #94a3b8;
+  background: #f1f5f9;
+
+  cursor: not-allowed;
+}
+
+.profile-current-address,
+.profile-address-preview {
+  padding: 11px 12px;
+
+  border-radius: 11px;
+}
+
+.profile-current-address {
+  margin-bottom: 14px;
+
+  color: #854d0e;
+  background: #fffbeb;
+
+  border: 1px solid #fde68a;
+}
+
+.profile-address-preview {
+  margin-top: 14px;
+
+  color: #1d4ed8;
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+}
+
+.profile-current-address span,
+.profile-current-address strong,
+.profile-current-address small,
+.profile-address-preview span,
+.profile-address-preview strong {
+  display: block;
+}
+
+.profile-current-address span,
+.profile-address-preview span {
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.profile-current-address strong,
+.profile-address-preview strong {
+  margin-top: 4px;
+
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 700;
+
+  overflow-wrap: anywhere;
+}
+
+.profile-current-address small {
+  margin-top: 5px;
+
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .profile-address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-address-section {
+    padding: 13px;
+  }
+}
