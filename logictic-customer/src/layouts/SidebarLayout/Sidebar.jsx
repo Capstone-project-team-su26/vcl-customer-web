@@ -11,35 +11,36 @@ import {
 } from "react-router-dom";
 
 import {
-  LogoutOutlined,
   AppstoreOutlined,
-  PlusCircleOutlined,
-  UnorderedListOutlined,
-  DownloadOutlined,
   CreditCardOutlined,
-  InboxOutlined,
-  HomeOutlined,
-  HistoryOutlined,
-  DownOutlined,
-  UpOutlined,
-  TransactionOutlined,
-  SettingOutlined,
-  FileTextOutlined,
-} from "@ant-design/icons";
-import {
   CustomerServiceOutlined,
+  DownloadOutlined,
+  DownOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
+  HomeOutlined,
+  InboxOutlined,
+  LogoutOutlined,
+  PlusCircleOutlined,
+  SettingOutlined,
+  TransactionOutlined,
+  UnorderedListOutlined,
+  UpOutlined,
 } from "@ant-design/icons";
+
 import { getUserProfileApi } from "../../api/Auth/authService";
 import logoImage from "../../assets/anhlogocap2.jpeg";
 
 import "./Sidebar.css";
 
+const SIDEBAR_PROFILE_SYNC_KEY = "sidebarProfileSynced";
+
 const parseSessionUser = () => {
   try {
-    const userStr = sessionStorage.getItem("user");
+    const userString = sessionStorage.getItem("user");
 
-    if (userStr) {
-      const user = JSON.parse(userStr);
+    if (userString) {
+      const user = JSON.parse(userString);
 
       return {
         id:
@@ -67,15 +68,10 @@ const parseSessionUser = () => {
       fullName:
         sessionStorage.getItem("fullName") ||
         "Khách hàng",
-      phone:
-        sessionStorage.getItem("phone") ||
-        "",
+      phone: sessionStorage.getItem("phone") || "",
     };
   } catch (error) {
-    console.error(
-      "Lỗi đọc session tại Sidebar:",
-      error
-    );
+    console.error("Lỗi đọc session tại Sidebar:", error);
 
     return {
       id: "",
@@ -87,21 +83,19 @@ const parseSessionUser = () => {
 
 const syncSessionFromProfile = (profile) => {
   try {
-    const userStr =
-      sessionStorage.getItem("user");
-
-    const currentUser = userStr
-      ? JSON.parse(userStr)
+    const userString = sessionStorage.getItem("user");
+    const currentUser = userString
+      ? JSON.parse(userString)
       : {};
 
-    const merged = {
+    const mergedUser = {
       ...currentUser,
       ...profile,
     };
 
     sessionStorage.setItem(
       "user",
-      JSON.stringify(merged)
+      JSON.stringify(mergedUser)
     );
 
     if (profile.fullName) {
@@ -125,22 +119,72 @@ const syncSessionFromProfile = (profile) => {
   }
 };
 
+const getSubMenuStateByPath = (pathname) => ({
+  lichSu: pathname.startsWith("/history/"),
+  khoHang: pathname.startsWith("/warehouse/"),
+  donDangXuLy:
+    pathname === "/processing-orders" ||
+    pathname.startsWith("/processing-orders/"),
+  kienChoBaoGia:
+    pathname === "/check-orders" ||
+    pathname.startsWith("/check-orders/"),
+});
+
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { pathname } = location;
 
-  const [userInfo, setUserInfo] =
-    useState(parseSessionUser);
+  const [userInfo, setUserInfo] = useState(
+    parseSessionUser
+  );
 
-  const [loadingProfile, setLoadingProfile] =
-    useState(false);
+  const [openSubMenus, setOpenSubMenus] = useState(
+    () => getSubMenuStateByPath(pathname)
+  );
 
-    const [openSubMenus, setOpenSubMenus] = useState({
-      lichSu: false,
-      khoHang: false,
-      donDangXuLy: false,
-      kienChoBaoGia: false,
-    });
+  const processingPurchaseActive =
+    pathname ===
+      "/processing-orders/purchase-requests" ||
+    pathname.startsWith(
+      "/processing-orders/purchase-requests/"
+    );
+
+  const processingConsignmentActive =
+    pathname === "/processing-orders" ||
+    (pathname.startsWith("/processing-orders/") &&
+      !processingPurchaseActive);
+
+  const quotationPurchaseActive =
+    pathname === "/check-orders/buy-on-behalf" ||
+    pathname.startsWith(
+      "/check-orders/buy-on-behalf/"
+    );
+
+  const quotationConsignmentActive =
+    pathname === "/check-orders" ||
+    (pathname.startsWith("/check-orders/") &&
+      !quotationPurchaseActive);
+
+  const historyPurchaseActive =
+    pathname === "/history/buy-on-behalf" ||
+    pathname.startsWith(
+      "/history/buy-on-behalf/"
+    );
+
+  const historyConsignmentActive =
+    pathname === "/history/consignment" ||
+    pathname.startsWith(
+      "/history/consignment/"
+    );
+
+  const warehouseInventoryActive =
+    pathname === "/warehouse/inventory" ||
+    pathname.startsWith("/warehouse/inventory/");
+
+  const warehouseExportActive =
+    pathname === "/warehouse/export" ||
+    pathname.startsWith("/warehouse/export/");
 
   const toggleSubMenu = (menuKey) => {
     setOpenSubMenus((previousState) => ({
@@ -149,51 +193,85 @@ export default function Sidebar() {
     }));
   };
 
-  const loadProfile = useCallback(async () => {
+  const loadProfileOnce = useCallback(async () => {
+    // Hiển thị dữ liệu session ngay lập tức, không hiện loading
+    // mỗi khi người dùng chuyển menu.
     setUserInfo(parseSessionUser());
 
+    const profileAlreadySynced =
+      sessionStorage.getItem(
+        SIDEBAR_PROFILE_SYNC_KEY
+      ) === "true";
+
+    if (profileAlreadySynced) {
+      return;
+    }
+
     try {
-      setLoadingProfile(true);
+      const profile = await getUserProfileApi();
 
-      const profile =
-        await getUserProfileApi();
-
-      if (profile) {
-        syncSessionFromProfile(profile);
-
-        setUserInfo({
-          id:
-            profile.userId ||
-            profile.id ||
-            profile.customerId ||
-            "",
-          fullName:
-            profile.fullName ||
-            profile.name ||
-            profile.userName ||
-            "Khách hàng",
-          phone: profile.phone || "",
-        });
+      if (!profile) {
+        return;
       }
+
+      syncSessionFromProfile(profile);
+
+      setUserInfo({
+        id:
+          profile.userId ||
+          profile.id ||
+          profile.customerId ||
+          "",
+        fullName:
+          profile.fullName ||
+          profile.name ||
+          profile.userName ||
+          "Khách hàng",
+        phone: profile.phone || "",
+      });
+
+      sessionStorage.setItem(
+        SIDEBAR_PROFILE_SYNC_KEY,
+        "true"
+      );
     } catch (error) {
       console.error(
         "Lỗi lấy profile tại Sidebar:",
         error
       );
-    } finally {
-      setLoadingProfile(false);
     }
   }, []);
 
+  // Chỉ tải hồ sơ một lần khi Sidebar được khởi tạo.
+  // Không phụ thuộc pathname nên chuyển menu sẽ không gọi lại API.
   useEffect(() => {
-    loadProfile();
-  }, [location.pathname, loadProfile]);
+    loadProfileOnce();
+  }, [loadProfileOnce]);
 
-  const {
-    id,
-    fullName,
-    phone,
-  } = userInfo;
+  // Khi truy cập trực tiếp bằng URL hoặc chuyển route,
+  // tự mở đúng nhóm submenu đang chứa trang hiện tại.
+  useEffect(() => {
+    const activeSubMenus =
+      getSubMenuStateByPath(pathname);
+
+    setOpenSubMenus((previousState) => ({
+      ...previousState,
+      ...(activeSubMenus.lichSu
+        ? { lichSu: true }
+        : {}),
+      ...(activeSubMenus.khoHang
+        ? { khoHang: true }
+        : {}),
+      ...(activeSubMenus.donDangXuLy
+        ? { donDangXuLy: true }
+        : {}),
+      ...(activeSubMenus.kienChoBaoGia
+        ? { kienChoBaoGia: true }
+        : {}),
+    }));
+  }, [pathname]);
+
+  const { id, fullName, phone } = userInfo;
 
   const avatarLetter =
     fullName
@@ -201,13 +279,11 @@ export default function Sidebar() {
       ?.charAt(0)
       ?.toUpperCase() || "U";
 
-  const phoneDisplay = loadingProfile
-    ? "Đang tải..."
-    : phone
-      ? `SĐT: ${phone}`
-      : id
-        ? `ID: ${id}`
-        : "Chưa có số điện thoại";
+  const phoneDisplay = phone
+    ? `SĐT: ${phone}`
+    : id
+      ? `ID: ${id}`
+      : "Chưa có số điện thoại";
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -221,29 +297,30 @@ export default function Sidebar() {
   return (
     <aside className="sidebar-container">
       <div className="sidebar-fixed-top">
-      <div className="sidebar-customer-label">
-  CUSTOMER
-</div>
-      <div className="sidebar-header">
-  <NavLink
-  
-    className="sidebar-brand-logo"
-    aria-label="Về trang chủ Việt Nam Logictic"
-    title="Việt Nam Logictic"
-  >
-    <img
-      src={logoImage}
-      alt="Logo Việt Nam Logictic"
-      className="sidebar-brand-logo__image"
-      width="1000"
-      height="400"
-      loading="eager"
-      decoding="async"
-      fetchPriority="high"
-      draggable="false"
-    />
-  </NavLink>
-</div>
+        <div className="sidebar-customer-label">
+          CUSTOMER
+        </div>
+
+        <div className="sidebar-header">
+          <NavLink
+            to="/customer/dashboard"
+            className="sidebar-brand-logo"
+            aria-label="Về trang chủ Việt Nam Logictic"
+            title="Việt Nam Logictic"
+          >
+            <img
+              src={logoImage}
+              alt="Logo Việt Nam Logictic"
+              className="sidebar-brand-logo__image"
+              width="1000"
+              height="400"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              draggable="false"
+            />
+          </NavLink>
+        </div>
 
         <NavLink
           to="/settings/profile-config"
@@ -286,20 +363,6 @@ export default function Sidebar() {
             <div className="profile-id">
               {phoneDisplay}
             </div>
-
-            <div className="profile-progress-label">
-              <span>HỒ SƠ</span>
-              <span>100%</span>
-            </div>
-
-            <div className="profile-progress-bar">
-              <div
-                className="progress-fill"
-                style={{
-                  width: "100%",
-                }}
-              />
-            </div>
           </div>
         </NavLink>
       </div>
@@ -312,13 +375,10 @@ export default function Sidebar() {
         <NavLink
           to="/customer/dashboard"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <AppstoreOutlined className="menu-icon" />
-
           <span className="menu-text">
             Bảng điều khiển
           </span>
@@ -327,237 +387,229 @@ export default function Sidebar() {
         <NavLink
           to="/create-order"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <PlusCircleOutlined className="menu-icon" />
-
           <span className="menu-text">
             Tạo đơn hàng
           </span>
         </NavLink>
 
         <div className="menu-item-dropdown">
-  <button
-    type="button"
-    className={`menu-item menu-item-button ${
-      openSubMenus.donDangXuLy
-        ? "submenu-parent-open"
-        : ""
-    }`}
-    onClick={() =>
-      toggleSubMenu("donDangXuLy")
-    }
-    aria-expanded={openSubMenus.donDangXuLy}
-  >
-    <UnorderedListOutlined className="menu-icon" />
+          <button
+            type="button"
+            className={`menu-item menu-item-button ${
+              openSubMenus.donDangXuLy
+                ? "submenu-parent-open"
+                : ""
+            } ${
+              processingPurchaseActive ||
+              processingConsignmentActive
+                ? "submenu-parent-active"
+                : ""
+            }`}
+            onClick={() =>
+              toggleSubMenu("donDangXuLy")
+            }
+            aria-expanded={
+              openSubMenus.donDangXuLy
+            }
+          >
+            <UnorderedListOutlined className="menu-icon" />
+            <span className="menu-text">
+              Đơn đang xử lý
+            </span>
 
-    <span className="menu-text">
-      Đơn đang xử lý
-    </span>
+            {openSubMenus.donDangXuLy ? (
+              <UpOutlined className="arrow-icon" />
+            ) : (
+              <DownOutlined className="arrow-icon" />
+            )}
+          </button>
 
-    {openSubMenus.donDangXuLy ? (
-      <UpOutlined className="arrow-icon" />
-    ) : (
-      <DownOutlined className="arrow-icon" />
-    )}
-  </button>
+          {openSubMenus.donDangXuLy && (
+            <div className="submenu-list timeline-style">
+              <NavLink
+                to="/processing-orders/purchase-requests"
+                className={`submenu-item ${
+                  processingPurchaseActive
+                    ? "active-sub"
+                    : ""
+                }`}
+              >
+                Xử lý mua hộ
+              </NavLink>
 
-  {openSubMenus.donDangXuLy && (
-    <div className="submenu-list timeline-style">
-      <NavLink
-        to="/processing-orders/purchase-requests"
-        className={({ isActive }) =>
-          `submenu-item ${
-            isActive
-              ? "active-sub"
-              : ""
-          }`
-        }
-      >
-        Xử lý mua hộ
-      </NavLink>
+              <NavLink
+                to="/processing-orders"
+                end
+                className={`submenu-item ${
+                  processingConsignmentActive
+                    ? "active-sub"
+                    : ""
+                }`}
+              >
+                Xử lý ký gửi
+              </NavLink>
+            </div>
+          )}
+        </div>
 
-      <NavLink
-        to="/processing-orders"
-        className={({ isActive }) =>
-          `submenu-item ${
-            isActive
-              ? "active-sub"
-              : ""
-          }`
-        }
-      >
-        Xử lý ký gửi
-      </NavLink>
-    </div>
-  )}
-</div>
-<div className="menu-item-dropdown">
-  <button
-    type="button"
-    className={`menu-item menu-item-button ${
-      openSubMenus.kienChoBaoGia
-        ? "submenu-parent-open"
-        : ""
-    }`}
-    onClick={() =>
-      toggleSubMenu("kienChoBaoGia")
-    }
-    aria-expanded={openSubMenus.kienChoBaoGia}
-  >
-    <InboxOutlined className="menu-icon" />
+        <div className="menu-item-dropdown">
+          <button
+            type="button"
+            className={`menu-item menu-item-button ${
+              openSubMenus.kienChoBaoGia
+                ? "submenu-parent-open"
+                : ""
+            } ${
+              quotationPurchaseActive ||
+              quotationConsignmentActive
+                ? "submenu-parent-active"
+                : ""
+            }`}
+            onClick={() =>
+              toggleSubMenu("kienChoBaoGia")
+            }
+            aria-expanded={
+              openSubMenus.kienChoBaoGia
+            }
+          >
+            <InboxOutlined className="menu-icon" />
+            <span className="menu-text">
+              Kiện chờ báo giá
+            </span>
 
-    <span className="menu-text">
-      Kiện chờ báo giá
-    </span>
+            {openSubMenus.kienChoBaoGia ? (
+              <UpOutlined className="arrow-icon" />
+            ) : (
+              <DownOutlined className="arrow-icon" />
+            )}
+          </button>
 
-    {openSubMenus.kienChoBaoGia ? (
-      <UpOutlined className="arrow-icon" />
-    ) : (
-      <DownOutlined className="arrow-icon" />
-    )}
-  </button>
+          {openSubMenus.kienChoBaoGia && (
+            <div className="submenu-list timeline-style">
+              <NavLink
+                to="/check-orders/buy-on-behalf"
+                className={`submenu-item ${
+                  quotationPurchaseActive
+                    ? "active-sub"
+                    : ""
+                }`}
+              >
+                Báo giá mua hộ
+              </NavLink>
 
-  {openSubMenus.kienChoBaoGia && (
-    <div className="submenu-list timeline-style">
-      <NavLink
-        to="/check-orders/buy-on-behalf"
-        className={({ isActive }) =>
-          `submenu-item ${
-            isActive
-              ? "active-sub"
-              : ""
-          }`
-        }
-      >
-        Báo giá mua hộ
-      </NavLink>
+              <NavLink
+                to="/check-orders"
+                end
+                className={`submenu-item ${
+                  quotationConsignmentActive
+                    ? "active-sub"
+                    : ""
+                }`}
+              >
+                Báo giá ký gửi
+              </NavLink>
+            </div>
+          )}
+        </div>
 
-      <NavLink
-        to="/check-orders"
-        className={({ isActive }) =>
-          `submenu-item ${
-            isActive
-              ? "active-sub"
-              : ""
-          }`
-        }
-      >
-        Báo giá ký gửi
-      </NavLink>
-    </div>
-  )}
-</div>
         <NavLink
           to="/receive-goods"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <DownloadOutlined className="menu-icon" />
-
-          <span className="menu-text">
-            Nhận hàng
-          </span>
+          <span className="menu-text">Nhận hàng</span>
         </NavLink>
 
         <NavLink
           to="/payment"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <CreditCardOutlined className="menu-icon" />
-
           <span className="menu-text">
             Thanh toán vận chuyển
           </span>
         </NavLink>
 
-     
         <div className="menu-item-dropdown">
-  <button
-    type="button"
-    className={`menu-item menu-item-button ${
-      openSubMenus.khoHang
-        ? "submenu-parent-open"
-        : ""
-    }`}
-    onClick={() =>
-      toggleSubMenu("khoHang")
-    }
-    aria-expanded={openSubMenus.khoHang}
-  >
-    <HomeOutlined className="menu-icon" />
+          <button
+            type="button"
+            className={`menu-item menu-item-button ${
+              openSubMenus.khoHang
+                ? "submenu-parent-open"
+                : ""
+            } ${
+              warehouseInventoryActive ||
+              warehouseExportActive
+                ? "submenu-parent-active"
+                : ""
+            }`}
+            onClick={() =>
+              toggleSubMenu("khoHang")
+            }
+            aria-expanded={openSubMenus.khoHang}
+          >
+            <HomeOutlined className="menu-icon" />
+            <span className="menu-text">
+              Theo dõi kho hàng
+            </span>
 
-    <span className="menu-text">
-      Theo dõi kho hàng
-    </span>
+            {openSubMenus.khoHang ? (
+              <UpOutlined className="arrow-icon" />
+            ) : (
+              <DownOutlined className="arrow-icon" />
+            )}
+          </button>
 
-    {openSubMenus.khoHang ? (
-      <UpOutlined className="arrow-icon" />
-    ) : (
-      <DownOutlined className="arrow-icon" />
-    )}
-  </button>
+          {openSubMenus.khoHang && (
+            <div className="submenu-list timeline-style">
+              <NavLink
+                to="/warehouse/inventory"
+                className={`submenu-item ${
+                  warehouseInventoryActive
+                    ? "active-sub"
+                    : ""
+                }`}
+              >
+                Tồn kho tổng
+              </NavLink>
 
-  {openSubMenus.khoHang && (
-    <div className="submenu-list timeline-style">
-      <NavLink
-        to="/warehouse/inventory"
-        className={({ isActive }) =>
-          `submenu-item ${
-            isActive
-              ? "active-sub"
-              : ""
-          }`
-        }
-      >
-        Tồn kho tổng
-      </NavLink>
+              <NavLink
+                to="/warehouse/export"
+                className={`submenu-item ${
+                  warehouseExportActive
+                    ? "active-sub"
+                    : ""
+                }`}
+              >
+                Xuất kho
+              </NavLink>
+            </div>
+          )}
+        </div>
 
-      <NavLink
-        to="/warehouse/export"
-        className={({ isActive }) =>
-          `submenu-item ${
-            isActive
-              ? "active-sub"
-              : ""
-          }`
-        }
-      >
-        Xuất kho
-      </NavLink>
-    </div>
-  )}
-</div>
-
-<div className="menu-section-label">
+        <div className="menu-section-label">
           TIN NHẮN
         </div>
 
         <NavLink
           to="/customer-service-chat"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <CustomerServiceOutlined className="menu-icon" />
-
           <span className="menu-text">
             Trò chuyện với CSKH
           </span>
         </NavLink>
-
 
         <div className="menu-section-label">
           TRA CỨU &amp; LỊCH SỬ
@@ -570,14 +622,16 @@ export default function Sidebar() {
               openSubMenus.lichSu
                 ? "submenu-parent-open"
                 : ""
+            } ${
+              historyPurchaseActive ||
+              historyConsignmentActive
+                ? "submenu-parent-active"
+                : ""
             }`}
-            onClick={() =>
-              toggleSubMenu("lichSu")
-            }
+            onClick={() => toggleSubMenu("lichSu")}
             aria-expanded={openSubMenus.lichSu}
           >
             <HistoryOutlined className="menu-icon" />
-
             <span className="menu-text">
               Lịch sử mua hàng
             </span>
@@ -593,26 +647,22 @@ export default function Sidebar() {
             <div className="submenu-list timeline-style">
               <NavLink
                 to="/history/buy-on-behalf"
-                className={({ isActive }) =>
-                  `submenu-item ${
-                    isActive
-                      ? "active-sub"
-                      : ""
-                  }`
-                }
+                className={`submenu-item ${
+                  historyPurchaseActive
+                    ? "active-sub"
+                    : ""
+                }`}
               >
                 Mua hộ
               </NavLink>
 
               <NavLink
                 to="/history/consignment"
-                className={({ isActive }) =>
-                  `submenu-item ${
-                    isActive
-                      ? "active-sub"
-                      : ""
-                  }`
-                }
+                className={`submenu-item ${
+                  historyConsignmentActive
+                    ? "active-sub"
+                    : ""
+                }`}
               >
                 Ký gửi
               </NavLink>
@@ -627,13 +677,10 @@ export default function Sidebar() {
         <NavLink
           to="/financial/transaction-history"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <TransactionOutlined className="menu-icon" />
-
           <span className="menu-text">
             Lịch sử giao dịch
           </span>
@@ -646,13 +693,10 @@ export default function Sidebar() {
         <NavLink
           to="/settings/profile-config"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <SettingOutlined className="menu-icon" />
-
           <span className="menu-text">
             Cấu hình tài khoản
           </span>
@@ -661,13 +705,10 @@ export default function Sidebar() {
         <NavLink
           to="/settings/chinh-sach-dich-vu"
           className={({ isActive }) =>
-            `menu-item ${
-              isActive ? "active" : ""
-            }`
+            `menu-item ${isActive ? "active" : ""}`
           }
         >
           <FileTextOutlined className="menu-icon" />
-
           <span className="menu-text">
             Chính sách dịch vụ
           </span>
