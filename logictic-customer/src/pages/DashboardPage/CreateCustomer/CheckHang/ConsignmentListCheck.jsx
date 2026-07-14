@@ -1271,13 +1271,11 @@ const ConsignmentList = () => {
                 </div>
 
                 <h3>
-                  Không tìm thấy lô
-                  hàng
+                  Không tìm thấy yêu cầu báo giá kí gửi
                 </h3>
 
                 <p>
-                  Hãy thay đổi từ khóa
-                  hoặc khoảng ngày tìm kiếm.
+                Chỉ hiển thị các yêu cầu có trạng thái Đã báo giá. Hãy thay đổi từ khóa hoặc khoảng ngày tìm kiếm.
                 </p>
 
                 {hasActiveFilter && (

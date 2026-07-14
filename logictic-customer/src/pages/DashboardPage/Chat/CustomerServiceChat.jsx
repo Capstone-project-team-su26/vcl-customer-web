@@ -6,12 +6,27 @@ import React, {
 } from "react";
 
 import {
+  Alert,
+  Avatar,
+  Badge,
+  Button,
+  ConfigProvider,
+  Empty,
+  Input,
+  Modal,
+  Select,
+  Spin,
+  Tag,
+  Tooltip,
+  Upload,
+} from "antd";
+
+import {
   CheckCircleOutlined,
   CloseOutlined,
-  CommentOutlined,
+  CopyOutlined,
   CustomerServiceOutlined,
   DeleteOutlined,
-  InboxOutlined,
   MessageOutlined,
   PaperClipOutlined,
   PictureOutlined,
@@ -59,7 +74,63 @@ const RELATED_TYPE_OPTIONS = [
 
 const RELATED_TYPE_LABELS = {
   PURCHASE_REQUEST: "Yêu cầu mua hộ",
+  PURCHASEREQUEST: "Yêu cầu mua hộ",
+  BUY_FOR_ME: "Yêu cầu mua hộ",
+  BUYFORME: "Yêu cầu mua hộ",
   CONSIGNMENT: "Yêu cầu ký gửi",
+  CONSIGNMENT_REQUEST: "Yêu cầu ký gửi",
+  CONSIGNMENTREQUEST: "Yêu cầu ký gửi",
+  QUOTATION: "Báo giá",
+  SUPPORT: "Hỗ trợ chung",
+};
+
+const STATUS_LABELS = {
+  PENDING: "Đang chờ xử lý",
+  PENDING_REVIEW: "Đang chờ duyệt",
+  PROCESSING: "Đang xử lý",
+  IN_PROGRESS: "Đang xử lý",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Đã từ chối",
+  COMPLETED: "Đã hoàn thành",
+  CANCELLED: "Đã hủy",
+  CANCELED: "Đã hủy",
+  ACTIVE: "Đang hoạt động",
+  INACTIVE: "Ngừng hoạt động",
+  QUOTATION_SENT: "Đã gửi báo giá",
+};
+
+const normalizeDisplayCode = (value) => {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+};
+
+const getRelatedTypeLabel = (value) => {
+  const normalized = normalizeDisplayCode(value);
+  const compact = normalized.replaceAll("_", "");
+
+  return (
+    RELATED_TYPE_LABELS[normalized] ||
+    RELATED_TYPE_LABELS[compact] ||
+    "Hỗ trợ chung"
+  );
+};
+
+const getStatusDisplayName = (value) => {
+  const normalized = normalizeDisplayCode(value);
+
+  if (!normalized) {
+    return "";
+  }
+
+  return (
+    STATUS_LABELS[normalized] ||
+    normalized
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/^./, (character) => character.toUpperCase())
+  );
 };
 
 const RELATED_TYPE_LOADERS = {
@@ -227,7 +298,7 @@ const getRoleDisplayName = (role) => {
     roleKey === "SALESSTAFF" ||
     roleKey.includes("SALE")
   ) {
-    return "Sale";
+    return "Nhân viên tư vấn";
   }
 
   if (roleKey === "CUSTOMER") return "Khách hàng";
@@ -306,13 +377,23 @@ const isMessageMine = (message, currentUserId) => {
 };
 
 const getConversationTitle = (conversation) => {
-  return (
+  const explicitTitle =
     conversation?.title ||
     conversation?.customerName ||
     conversation?.customer?.fullName ||
-    conversation?.relatedType ||
-    "Cuộc trò chuyện"
-  );
+    conversation?.customerFullName ||
+    conversation?.createdByName ||
+    "";
+
+  if (explicitTitle) {
+    return String(explicitTitle);
+  }
+
+  if (conversation?.relatedType) {
+    return getRelatedTypeLabel(conversation.relatedType);
+  }
+
+  return "Cuộc trò chuyện hỗ trợ";
 };
 
 const getStaffName = (conversation) => {
@@ -344,19 +425,39 @@ const hasAssignedStaff = (conversation) => {
   return Boolean(getStaffName(conversation));
 };
 
+const getConversationRelatedCode = (conversation) => {
+  return (
+    conversation?.relatedCode ||
+    conversation?.orderCode ||
+    conversation?.requestCode ||
+    conversation?.consignmentCode ||
+    conversation?.purchaseRequestCode ||
+    conversation?.relatedId ||
+    ""
+  );
+};
+
 const getConversationSubtitle = (conversation) => {
   const relatedType = conversation?.relatedType;
-  const relatedId = conversation?.relatedId;
+  const relatedCode = getConversationRelatedCode(conversation);
 
-  if (relatedType && relatedId) {
-    return `${relatedType} • ${String(relatedId).slice(0, 8)}...`;
+  if (relatedType) {
+    const typeLabel = getRelatedTypeLabel(relatedType);
+
+    if (relatedCode) {
+      const displayCode = String(relatedCode);
+      const shortCode =
+        displayCode.length > 12
+          ? `${displayCode.slice(0, 10)}…`
+          : displayCode;
+
+      return `${typeLabel} · ${shortCode}`;
+    }
+
+    return typeLabel;
   }
 
-  if (conversation?.lastMessage) {
-    return conversation.lastMessage;
-  }
-
-  return "Trao đổi với CSKH";
+  return "Yêu cầu hỗ trợ chung";
 };
 
 const getConversationLastMessage = (conversation) => {
@@ -452,13 +553,21 @@ const formatDateTime = (value) => {
     return "";
   }
 
-  return new Intl.DateTimeFormat("vi-VN", {
+  const parts = new Intl.DateTimeFormat("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh",
     hour: "2-digit",
     minute: "2-digit",
     day: "2-digit",
     month: "2-digit",
-  }).format(date);
+    hour12: false,
+  }).formatToParts(date);
+
+  const getPart = (type) =>
+    parts.find((part) => part.type === type)?.value || "";
+
+  return `${getPart("hour")}:${getPart("minute")} · ${getPart(
+    "day"
+  )}/${getPart("month")}`;
 };
 
 const getCreatedTime = (item) => {
@@ -571,8 +680,8 @@ const getRelatedItemLabel = (item, relatedType) => {
   const id = getRelatedItemId(item, relatedType);
   const code = getRelatedItemCode(item, relatedType);
   const name = getRelatedItemName(item, relatedType);
-  const status = getRelatedItemStatus(item);
-  const typeLabel = RELATED_TYPE_LABELS[relatedType] || "Liên kết";
+  const status = getStatusDisplayName(getRelatedItemStatus(item));
+  const typeLabel = getRelatedTypeLabel(relatedType);
   const shortId = id ? String(id).slice(0, 8) : "N/A";
 
   const parts = [
@@ -677,9 +786,10 @@ export default function CustomerServiceChat() {
   const currentUserId = useMemo(() => getCurrentUserId(), []);
 
   const detailAbortRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const sendImageInputRef = useRef(null);
-  const createImageInputRef = useRef(null);
+  const detailRequestVersionRef = useRef(0);
+  const selectedConversationIdRef = useRef("");
+  const messageAreaRef = useRef(null);
+  const copyTimerRef = useRef(null);
 
   const messagesSignatureRef = useRef("");
   const isSilentRefreshingRef = useRef(false);
@@ -702,6 +812,7 @@ export default function CustomerServiceChat() {
   const [isLoadingRelatedOptions, setIsLoadingRelatedOptions] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   const hasConversation = conversations.length > 0;
@@ -711,13 +822,127 @@ export default function CustomerServiceChat() {
     ? getConversationTitle(selectedConversation)
     : "Chọn cuộc trò chuyện";
 
+  const isCreateFormValid = useMemo(() => {
+    const relatedType = String(createForm.relatedType || "").trim();
+    const relatedId = String(createForm.relatedId || "").trim();
+    const message = String(createForm.message || "").trim();
+
+    return Boolean(
+      message &&
+        (!relatedType || relatedId) &&
+        !isLoadingRelatedOptions
+    );
+  }, [
+    createForm.message,
+    createForm.relatedId,
+    createForm.relatedType,
+    isLoadingRelatedOptions,
+  ]);
+
+  const createFormHint = useMemo(() => {
+    const relatedType = String(createForm.relatedType || "").trim();
+    const relatedId = String(createForm.relatedId || "").trim();
+    const message = String(createForm.message || "").trim();
+
+    if (!message) {
+      return "Nhập nội dung cần hỗ trợ để tiếp tục";
+    }
+
+    if (relatedType && !relatedId) {
+      return "Chọn đơn hàng cần hỗ trợ để tiếp tục";
+    }
+
+    if (isLoadingRelatedOptions) {
+      return "Đang tải danh sách đơn hàng";
+    }
+
+    return "Đã đủ thông tin để tạo yêu cầu";
+  }, [
+    createForm.message,
+    createForm.relatedId,
+    createForm.relatedType,
+    isLoadingRelatedOptions,
+  ]);
+
   const scrollMessagesToBottom = (behavior = "smooth") => {
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({
-        behavior,
-        block: "end",
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const messageArea = messageAreaRef.current;
+
+        if (!messageArea) {
+          return;
+        }
+
+        const top = Math.max(
+          0,
+          messageArea.scrollHeight - messageArea.clientHeight
+        );
+
+        if (typeof messageArea.scrollTo === "function") {
+          messageArea.scrollTo({ top, behavior });
+          return;
+        }
+
+        messageArea.scrollTop = top;
       });
     });
+  };
+
+  const copyTextToClipboard = async (value) => {
+    const text = String(value || "").trim();
+
+    if (!text) {
+      return false;
+    }
+
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textarea);
+
+    return copied;
+  };
+
+  const handleCopyMessage = async (message, index) => {
+    const content = getMessageContent(message);
+    const attachmentUrl = getMessageAttachment(message);
+    const valueToCopy = content || attachmentUrl;
+    const messageId = String(getMessageId(message, index));
+
+    try {
+      const copied = await copyTextToClipboard(valueToCopy);
+
+      if (!copied) {
+        throw new Error("Không thể sao chép nội dung.");
+      }
+
+      setCopiedMessageId(messageId);
+      notifySuccess("Đã sao chép", "Nội dung tin nhắn đã được sao chép.");
+
+      if (copyTimerRef.current) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+
+      copyTimerRef.current = window.setTimeout(() => {
+        setCopiedMessageId("");
+      }, 1600);
+    } catch (error) {
+      notifyError(
+        "Sao chép thất bại",
+        error?.message || "Không thể sao chép nội dung tin nhắn."
+      );
+    }
   };
 
   const clearCreateAttachment = () => {
@@ -751,6 +976,69 @@ export default function CustomerServiceChat() {
     return uploadedUrl;
   };
 
+  const updateConversationSummary = (
+    conversationId,
+    detail,
+    messageList = []
+  ) => {
+    if (!conversationId) {
+      return;
+    }
+
+    const latestMessage =
+      messageList.length > 0
+        ? messageList[messageList.length - 1]
+        : null;
+
+    const summary =
+      detail && typeof detail === "object"
+        ? { ...detail }
+        : {};
+
+    delete summary.messages;
+    delete summary.conversationMessages;
+    delete summary.data;
+
+    const latestContent = latestMessage
+      ? getMessageContent(latestMessage) ||
+        (getMessageAttachment(latestMessage) ? "Đã gửi một hình ảnh" : "")
+      : "";
+
+    const latestTime = latestMessage
+      ? getCreatedTime(latestMessage)
+      : getCreatedTime(detail);
+
+    setConversations((current) =>
+      current.map((conversation) => {
+        if (getConversationId(conversation) !== conversationId) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          ...summary,
+          ...(latestContent
+            ? {
+                lastMessage: latestContent,
+                latestMessage: latestContent,
+              }
+            : {}),
+          ...(latestTime
+            ? {
+                lastMessageAt: latestTime,
+                latestMessageAt: latestTime,
+                lastMessageAtUtc: normalizeApiTimeToUtc(latestTime),
+                latestMessageAtUtc: normalizeApiTimeToUtc(latestTime),
+              }
+            : {}),
+          unreadCount: 0,
+          unreadMessages: 0,
+          unread: 0,
+        };
+      })
+    );
+  };
+
   const loadConversations = async () => {
     setIsLoadingList(true);
     setErrorMessage("");
@@ -763,10 +1051,16 @@ export default function CustomerServiceChat() {
 
       setConversations(list);
 
-      if (!selectedConversationId && list.length > 0) {
-        const firstId = getConversationId(list[0]);
+      const activeConversationId =
+        selectedConversationIdRef.current || selectedConversationId;
+
+      if (!activeConversationId && list.length > 0) {
+        const firstConversation = list[0];
+        const firstId = getConversationId(firstConversation);
 
         if (firstId) {
+          selectedConversationIdRef.current = firstId;
+          setSelectedConversation(firstConversation);
           setSelectedConversationId(firstId);
         }
       }
@@ -787,6 +1081,7 @@ export default function CustomerServiceChat() {
     detailAbortRef.current?.abort();
 
     const controller = new AbortController();
+    const requestVersion = ++detailRequestVersionRef.current;
 
     detailAbortRef.current = controller;
 
@@ -798,6 +1093,14 @@ export default function CustomerServiceChat() {
         signal: controller.signal,
       });
 
+      if (
+        controller.signal.aborted ||
+        requestVersion !== detailRequestVersionRef.current ||
+        conversationId !== selectedConversationIdRef.current
+      ) {
+        return;
+      }
+
       const detail = normalizeConversationDetailTime(
         normalizeConversationDetail(response)
       );
@@ -806,14 +1109,14 @@ export default function CustomerServiceChat() {
       setSelectedConversation(detail);
       setMessages(messageList);
       messagesSignatureRef.current = getMessagesSignature(messageList);
+      updateConversationSummary(conversationId, detail, messageList);
 
       try {
         await markConversationAsReadApi(conversationId);
+        updateConversationSummary(conversationId, detail, messageList);
       } catch {
-        // Không chặn UI nếu mark read lỗi.
+        // Không chặn UI nếu đánh dấu đã đọc lỗi.
       }
-
-      await loadConversations();
     } catch (error) {
       if (
         error?.code === "ERR_CANCELED" ||
@@ -823,13 +1126,19 @@ export default function CustomerServiceChat() {
         return;
       }
 
+      if (requestVersion !== detailRequestVersionRef.current) {
+        return;
+      }
+
       setErrorMessage(
         getApiErrorText(error, "Không thể tải chi tiết cuộc trò chuyện.")
       );
     } finally {
-      setIsLoadingDetail(false);
-
-      if (detailAbortRef.current === controller) {
+      if (
+        detailAbortRef.current === controller &&
+        requestVersion === detailRequestVersionRef.current
+      ) {
+        setIsLoadingDetail(false);
         detailAbortRef.current = null;
       }
     }
@@ -853,10 +1162,11 @@ export default function CustomerServiceChat() {
     isSilentRefreshingRef.current = true;
 
     try {
-      const [detailResponse, listResponse] = await Promise.all([
-        getConversationDetailApi(conversationId),
-        getConversationsApi(),
-      ]);
+      const detailResponse = await getConversationDetailApi(conversationId);
+
+      if (conversationId !== selectedConversationIdRef.current) {
+        return;
+      }
 
       const detail = normalizeConversationDetailTime(
         normalizeConversationDetail(detailResponse)
@@ -866,24 +1176,23 @@ export default function CustomerServiceChat() {
       const hasChanged = nextSignature !== messagesSignatureRef.current;
 
       setSelectedConversation(detail);
+      updateConversationSummary(conversationId, detail, messageList);
 
       if (hasChanged || options.forceUpdate) {
         setMessages(messageList);
         messagesSignatureRef.current = nextSignature;
 
-        scrollMessagesToBottom(options.forceScroll ? "smooth" : "auto");
+        scrollMessagesToBottom(
+          options.forceScroll ? "smooth" : "auto"
+        );
 
         try {
           await markConversationAsReadApi(conversationId);
+          updateConversationSummary(conversationId, detail, messageList);
         } catch {
-          // Không chặn UI nếu mark read lỗi.
+          // Không chặn UI nếu đánh dấu đã đọc lỗi.
         }
       }
-
-      const list = normalizeConversationList(listResponse).map(
-        normalizeConversationTime
-      );
-      setConversations(list);
     } catch (error) {
       console.debug(
         "Silent chat refresh failed:",
@@ -956,9 +1265,17 @@ export default function CustomerServiceChat() {
 
     return () => {
       detailAbortRef.current?.abort();
+
+      if (copyTimerRef.current) {
+        window.clearTimeout(copyTimerRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
 
   useEffect(() => {
     if (selectedConversationId) {
@@ -1017,16 +1334,91 @@ export default function CustomerServiceChat() {
   const handleSelectConversation = (conversation) => {
     const id = getConversationId(conversation);
 
-    if (!id || id === selectedConversationId) {
+    if (!id || id === selectedConversationIdRef.current) {
       return;
     }
 
+    detailAbortRef.current?.abort();
+    detailRequestVersionRef.current += 1;
+    selectedConversationIdRef.current = id;
+    messagesSignatureRef.current = "";
+
+    setErrorMessage("");
+    setSelectedConversation(normalizeConversationTime(conversation));
+    setMessages([]);
+    setMessageForm(INITIAL_MESSAGE_FORM);
+    clearMessageAttachment();
+    setIsLoadingDetail(true);
     setSelectedConversationId(id);
+
+    setConversations((current) =>
+      current.map((item) =>
+        getConversationId(item) === id
+          ? {
+              ...item,
+              unreadCount: 0,
+              unreadMessages: 0,
+              unread: 0,
+            }
+          : item
+      )
+    );
   };
 
-  const handleCreateChange = (event) => {
+  const handleMessageChange = (event) => {
     const { name, value } = event.target;
 
+    setMessageForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handlePickCreateImage = (file) => {
+    if (!file) {
+      return false;
+    }
+
+    try {
+      validateImageFile(file);
+      clearCreateAttachment();
+
+      setCreateAttachment({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        name: file.name,
+      });
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(error?.message || "Không thể chọn ảnh.");
+    }
+
+    return false;
+  };
+
+  const handlePickMessageImage = (file) => {
+    if (!file) {
+      return false;
+    }
+
+    try {
+      validateImageFile(file);
+      clearMessageAttachment();
+
+      setMessageAttachment({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        name: file.name,
+      });
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(error?.message || "Không thể chọn ảnh.");
+    }
+
+    return false;
+  };
+
+  const updateCreateField = (name, value) => {
     setCreateForm((current) => {
       if (name === "relatedType") {
         return {
@@ -1043,58 +1435,18 @@ export default function CustomerServiceChat() {
     });
   };
 
-  const handleMessageChange = (event) => {
-    const { name, value } = event.target;
-
-    setMessageForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
-  };
-
-  const handlePickCreateImage = (event) => {
-    const file = event.target.files?.[0];
-
-    event.target.value = "";
-
-    if (!file) {
+  const handleMessagePressEnter = (event) => {
+    if (event.shiftKey || event.nativeEvent?.isComposing) {
       return;
     }
 
-    try {
-      validateImageFile(file);
-      clearCreateAttachment();
+    event.preventDefault();
 
-      setCreateAttachment({
-        file,
-        previewUrl: URL.createObjectURL(file),
-        name: file.name,
-      });
-    } catch (error) {
-      setErrorMessage(error?.message || "Không thể chọn ảnh.");
-    }
-  };
-
-  const handlePickMessageImage = (event) => {
-    const file = event.target.files?.[0];
-
-    event.target.value = "";
-
-    if (!file) {
-      return;
-    }
-
-    try {
-      validateImageFile(file);
-      clearMessageAttachment();
-
-      setMessageAttachment({
-        file,
-        previewUrl: URL.createObjectURL(file),
-        name: file.name,
-      });
-    } catch (error) {
-      setErrorMessage(error?.message || "Không thể chọn ảnh.");
+    if (
+      !isSending &&
+      (messageForm.content.trim() || messageAttachment.file)
+    ) {
+      handleSendMessage(event);
     }
   };
 
@@ -1164,7 +1516,15 @@ export default function CustomerServiceChat() {
       await loadConversations();
 
       if (conversationId) {
-        setSelectedConversationId(conversationId);
+        const nextConversationId = String(conversationId);
+
+        detailAbortRef.current?.abort();
+        detailRequestVersionRef.current += 1;
+        selectedConversationIdRef.current = nextConversationId;
+        messagesSignatureRef.current = "";
+        setSelectedConversation(null);
+        setMessages([]);
+        setSelectedConversationId(nextConversationId);
       }
     } catch (error) {
       console.error("CREATE CONVERSATION ERROR:", {
@@ -1241,7 +1601,19 @@ export default function CustomerServiceChat() {
 
     try {
       await markConversationAsReadApi(selectedConversationId);
-      await loadConversations();
+
+      setConversations((current) =>
+        current.map((conversation) =>
+          getConversationId(conversation) === selectedConversationId
+            ? {
+                ...conversation,
+                unreadCount: 0,
+                unreadMessages: 0,
+                unread: 0,
+              }
+            : conversation
+        )
+      );
     } catch (error) {
       setErrorMessage(getApiErrorText(error, "Không thể đánh dấu đã đọc."));
     }
@@ -1256,485 +1628,696 @@ export default function CustomerServiceChat() {
   };
 
   return (
-    <div className="cskh-chat-page">
-      <div className="cskh-chat-bg cskh-chat-bg--one" />
-      <div className="cskh-chat-bg cskh-chat-bg--two" />
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#2563eb",
+          colorInfo: "#2563eb",
+          colorSuccess: "#16a34a",
+          colorError: "#d34f4f",
+          colorText: "#1e293b",
+          colorTextSecondary: "#64748b",
+          borderRadius: 12,
+          controlHeight: 44,
+          fontFamily:
+            'Inter, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        },
+        components: {
+          Button: {
+            fontWeight: 800,
+            primaryShadow: "0 12px 26px rgba(37, 99, 235, 0.24)",
+          },
+          Input: {
+            activeBorderColor: "#2563eb",
+            hoverBorderColor: "#93c5fd",
+          },
+          Select: {
+            activeBorderColor: "#2563eb",
+            hoverBorderColor: "#93c5fd",
+            optionSelectedBg: "#eff6ff",
+          },
+          Modal: {
+            borderRadiusLG: 24,
+          },
+        },
+      }}
+    >
+      <div className="cskh-chat-page">
+        <div className="cskh-chat-bg cskh-chat-bg--one" />
+        <div className="cskh-chat-bg cskh-chat-bg--two" />
 
-      <section className="cskh-chat-shell">
-        <aside className="cskh-chat-sidebar">
-          <div className="cskh-chat-sidebar__header">
-            <div>
-              <p className="cskh-chat-eyebrow">Customer Service</p>
-              <h2>Tin nhắn CSKH</h2>
-              <span>Trao đổi trực tiếp với nhân viên hỗ trợ.</span>
+        <section className="cskh-chat-shell">
+          <aside className="cskh-chat-sidebar">
+            <div className="cskh-chat-sidebar__header">
+              <div>
+                <p className="cskh-chat-eyebrow">CHĂM SÓC KHÁCH HÀNG</p>
+                <h2>Trung tâm hỗ trợ</h2>
+                <span>Trao đổi trực tiếp và theo dõi phản hồi từ CSKH.</span>
+              </div>
+
+              <Tooltip title="Làm mới dữ liệu">
+                <Button
+                  type="text"
+                  shape="circle"
+                  className="cskh-icon-button"
+                  icon={<ReloadOutlined spin={isLoadingList || isLoadingDetail} />}
+                  onClick={handleRefresh}
+                  disabled={isLoadingList || isLoadingDetail}
+                  aria-label="Làm mới danh sách trò chuyện"
+                />
+              </Tooltip>
             </div>
 
-            <button
-              type="button"
-              className="cskh-icon-button"
-              onClick={handleRefresh}
-              disabled={isLoadingList || isLoadingDetail}
-              title="Làm mới"
+            <Button
+              type="primary"
+              className="cskh-create-button"
+              icon={<PlusOutlined />}
+              onClick={handleOpenCreateModal}
+              block
             >
-              <ReloadOutlined />
-            </button>
-          </div>
+              Tạo cuộc trò chuyện
+            </Button>
 
-          <button
-            type="button"
-            className="cskh-create-button"
-            onClick={handleOpenCreateModal}
-          >
-            <PlusOutlined />
-            <span>Tạo cuộc trò chuyện</span>
-          </button>
-
-          {errorMessage && <div className="cskh-alert">{errorMessage}</div>}
-
-          <div className="cskh-conversation-list">
-            {isLoadingList && (
-              <div className="cskh-state-box">
-                <span className="cskh-spinner" />
-                Đang tải danh sách...
-              </div>
+            {errorMessage && !isCreateOpen && (
+              <Alert
+                className="cskh-alert"
+                type="error"
+                showIcon
+                closable
+                message={errorMessage}
+                onClose={() => setErrorMessage("")}
+              />
             )}
 
-            {!isLoadingList && !hasConversation && (
-              <div className="cskh-empty">
-                <InboxOutlined />
-                <strong>Chưa có cuộc trò chuyện</strong>
-                <span>Hãy tạo cuộc trò chuyện mới để được hỗ trợ.</span>
-              </div>
-            )}
-
-            {!isLoadingList &&
-              conversations.map((conversation) => {
-                const id = getConversationId(conversation);
-                const unreadCount = getUnreadCount(conversation);
-                const isActive = id === selectedConversationId;
-
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    className={[
-                      "cskh-conversation-item",
-                      isActive && "is-active",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onClick={() => handleSelectConversation(conversation)}
-                  >
-                    <span className="cskh-conversation-avatar">
-                      <CustomerServiceOutlined />
-                    </span>
-
-                    <span className="cskh-conversation-main">
-                      <span className="cskh-conversation-top">
-                        <strong>{getConversationTitle(conversation)}</strong>
-                        <em>{formatDateTime(getCreatedTime(conversation))}</em>
-                      </span>
-
-                      <span className="cskh-conversation-subtitle">
-                        {getConversationSubtitle(conversation)}
-                      </span>
-
-                      {hasAssignedStaff(conversation) && (
-                        <span className="cskh-staff-line has-staff">
-                          <CustomerServiceOutlined />
-                          {getStaffDisplayName(conversation)}
-                        </span>
-                      )}
-
-                      <span className="cskh-conversation-message">
-                        {getConversationLastMessage(conversation)}
-                      </span>
-                    </span>
-
-                    {unreadCount > 0 && (
-                      <span className="cskh-unread-badge">
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-          </div>
-        </aside>
-
-        <main className="cskh-chat-main">
-          {!hasSelectedConversation && (
-            <div className="cskh-welcome-panel">
-              <div className="cskh-welcome-icon">
-                <MessageOutlined />
-              </div>
-
-              <h1>Trò chuyện với CSKH</h1>
-
-              <p>
-                Chọn một cuộc trò chuyện ở bên trái hoặc tạo cuộc trò chuyện
-                mới để bắt đầu trao đổi.
-              </p>
-
-              <button
-                type="button"
-                className="cskh-primary-button"
-                onClick={handleOpenCreateModal}
-              >
-                <PlusOutlined />
-                Tạo cuộc trò chuyện
-              </button>
-            </div>
-          )}
-
-          {hasSelectedConversation && (
-            <>
-              <header className="cskh-chat-main__header">
-                <div className="cskh-chat-title">
-                  <span className="cskh-chat-title__avatar">
-                    <CustomerServiceOutlined />
-                  </span>
-
-                  <div>
-                    <h1>{selectedConversationTitle}</h1>
-
-                    <p>
-                      <i />
-                      {hasAssignedStaff(selectedConversation)
-                        ? `Nhân viên phụ trách: ${getStaffDisplayName(
-                            selectedConversation
-                          )}`
-                        : "Đang hỗ trợ trực tuyến"}
-                    </p>
-                  </div>
+            <div
+              className="cskh-conversation-list"
+              tabIndex={0}
+              role="region"
+              aria-label="Danh sách cuộc trò chuyện"
+            >
+              {isLoadingList && (
+                <div className="cskh-state-box">
+                  <Spin size="small" />
+                  <span>Đang tải danh sách...</span>
                 </div>
+              )}
 
-                <button
-                  type="button"
-                  className="cskh-read-button"
-                  onClick={handleMarkRead}
-                >
-                  <CheckCircleOutlined />
-                  Đã đọc
-                </button>
-              </header>
-
-              <section className="cskh-message-area">
-                {isLoadingDetail && (
-                  <div className="cskh-loading-overlay">
-                    <span className="cskh-spinner" />
-                    Đang tải tin nhắn...
-                  </div>
-                )}
-
-                {!isLoadingDetail && messages.length === 0 && (
-                  <div className="cskh-empty cskh-empty--messages">
-                    <CommentOutlined />
-                    <strong>Chưa có tin nhắn</strong>
+              {!isLoadingList && !hasConversation && (
+                <Empty
+                  className="cskh-empty cskh-empty--sidebar"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
                     <span>
-                      Hãy gửi tin nhắn đầu tiên trong cuộc trò chuyện này.
+                      Chưa có cuộc trò chuyện.
+                      <br />
+                      Hãy tạo yêu cầu hỗ trợ mới.
                     </span>
-                  </div>
-                )}
+                  }
+                />
+              )}
 
-                {!isLoadingDetail &&
-                  messages.map((item, index) => {
-                    const mine = isMessageMine(item, currentUserId);
-                    const content = getMessageContent(item);
-                    const attachmentUrl = getMessageAttachment(item);
+              {!isLoadingList &&
+                conversations.map((conversation) => {
+                  const id = getConversationId(conversation);
+                  const unreadCount = getUnreadCount(conversation);
+                  const isActive = id === selectedConversationId;
+                  const staffName = getStaffDisplayName(conversation);
 
-                    return (
-                      <div
-                        key={getMessageId(item, index)}
-                        className={[
-                          "cskh-message-row",
-                          mine ? "is-mine" : "is-other",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                      >
-                        {!mine && (
-                          <span className="cskh-message-avatar">
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className={[
+                        "cskh-conversation-item",
+                        isActive && "is-active",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => handleSelectConversation(conversation)}
+                      aria-busy={isActive && isLoadingDetail}
+                    >
+                      <Avatar
+                        size={44}
+                        className="cskh-conversation-avatar"
+                        icon={<CustomerServiceOutlined />}
+                      />
+
+                      <span className="cskh-conversation-main">
+                        <span className="cskh-conversation-top">
+                          <strong>{getConversationTitle(conversation)}</strong>
+                          <em>{formatDateTime(getCreatedTime(conversation))}</em>
+                        </span>
+
+                        <span className="cskh-conversation-subtitle">
+                          {getConversationSubtitle(conversation)}
+                        </span>
+
+                        {staffName && (
+                          <span className="cskh-staff-line">
                             <CustomerServiceOutlined />
+                            {staffName}
                           </span>
                         )}
 
-                        <div className="cskh-message-bubble">
-                          <div className="cskh-message-meta">
-                            <strong>
-                              {mine ? "Bạn" : getMessageSenderName(item)}
-                            </strong>
+                        <span className="cskh-conversation-message">
+                          {getConversationLastMessage(conversation)}
+                        </span>
+                      </span>
 
-                            <span>{formatDateTime(getCreatedTime(item))}</span>
-                          </div>
+                      {unreadCount > 0 && (
+                        <Badge
+                          count={unreadCount}
+                          overflowCount={99}
+                          className="cskh-unread-badge"
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+            </div>
+          </aside>
 
-                          {content && <p>{content}</p>}
+          <main
+            className={[
+              "cskh-chat-main",
+              hasSelectedConversation ? "has-conversation" : "is-empty",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {!hasSelectedConversation && (
+              <div className="cskh-welcome-panel">
+                <div className="cskh-welcome-icon">
+                  <MessageOutlined />
+                </div>
 
-                          {attachmentUrl && (
-                            <a
-                              className="cskh-attachment-preview"
-                              href={attachmentUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {isImageUrl(attachmentUrl) ? (
-                                <img
-                                  src={attachmentUrl}
-                                  alt="Ảnh đính kèm"
-                                />
-                              ) : (
-                                <span>
-                                  <PaperClipOutlined />
-                                  Xem tệp đính kèm
-                                </span>
-                              )}
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <span className="cskh-welcome-kicker">HỖ TRỢ TRỰC TUYẾN</span>
+                <h1>Chúng tôi luôn sẵn sàng hỗ trợ</h1>
 
-                <div ref={messagesEndRef} />
-              </section>
+                <p>
+                  Chọn một cuộc trò chuyện bên trái hoặc tạo yêu cầu mới để
+                  bắt đầu trao đổi với đội ngũ chăm sóc khách hàng.
+                </p>
 
-              <form
-                className="cskh-send-form"
-                onSubmit={handleSendMessage}
-              >
-                {messageAttachment.previewUrl && (
-                  <div className="cskh-selected-image">
-                    <img
-                      src={messageAttachment.previewUrl}
-                      alt="Ảnh chuẩn bị gửi"
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<PlusOutlined />}
+                  className="cskh-welcome-button"
+                  onClick={handleOpenCreateModal}
+                >
+                  Tạo cuộc trò chuyện
+                </Button>
+              </div>
+            )}
+
+            {hasSelectedConversation && (
+              <>
+                <header className="cskh-chat-main__header">
+                  <div className="cskh-chat-title">
+                    <Avatar
+                      size={46}
+                      className="cskh-chat-title__avatar"
+                      icon={<CustomerServiceOutlined />}
                     />
 
-                    <div>
-                      <strong>{messageAttachment.name}</strong>
-                      <span>Ảnh sẽ được upload khi bấm gửi.</span>
+                    <div className="cskh-chat-title__content">
+                      <h1>{selectedConversationTitle}</h1>
+
+                      <div className="cskh-chat-title__status">
+                        <Tag className="cskh-online-tag">
+                          <span className="cskh-online-dot" />
+                          {hasAssignedStaff(selectedConversation)
+                            ? `Phụ trách: ${getStaffDisplayName(
+                                selectedConversation
+                              )}`
+                            : "Đang hỗ trợ trực tuyến"}
+                        </Tag>
+                      </div>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={clearMessageAttachment}
-                      disabled={isSending}
-                    >
-                      <DeleteOutlined />
-                    </button>
                   </div>
-                )}
 
-                <div className="cskh-message-input-row">
-                  <input
-                    ref={sendImageInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePickMessageImage}
-                    className="cskh-hidden-file"
-                  />
+                  <Tooltip title="Đánh dấu cuộc trò chuyện đã đọc">
+                    <Button
+                      type="default"
+                      className="cskh-read-button"
+                      icon={<CheckCircleOutlined />}
+                      onClick={handleMarkRead}
+                    >
+                      <span className="cskh-read-button__label">Đã đọc</span>
+                    </Button>
+                  </Tooltip>
+                </header>
 
-                  <button
-                    type="button"
-                    className="cskh-upload-button"
-                    onClick={() => sendImageInputRef.current?.click()}
-                    disabled={isSending}
-                    title="Chọn ảnh"
-                  >
-                    <PictureOutlined />
-                  </button>
+                <section
+                  ref={messageAreaRef}
+                  className="cskh-message-area"
+                  tabIndex={0}
+                  role="log"
+                  aria-live="polite"
+                  aria-label="Nội dung cuộc trò chuyện"
+                >
+                  {isLoadingDetail && (
+                    <div className="cskh-loading-overlay">
+                      <Spin />
+                      <span>Đang tải tin nhắn...</span>
+                    </div>
+                  )}
 
-                  <input
-                    name="content"
-                    value={messageForm.content}
-                    onChange={handleMessageChange}
-                    placeholder="Nhập tin nhắn..."
-                    disabled={isSending}
-                  />
+                  {!isLoadingDetail && messages.length === 0 && (
+                    <div className="cskh-empty cskh-empty--messages">
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <span>
+                            Chưa có tin nhắn.
+                            <br />
+                            Hãy gửi nội dung đầu tiên để bắt đầu trao đổi.
+                          </span>
+                        }
+                      />
+                    </div>
+                  )}
 
-                  <button
-                    type="submit"
-                    className="cskh-send-button"
-                    disabled={
-                      isSending ||
-                      (!messageForm.content.trim() && !messageAttachment.file)
-                    }
-                  >
-                    {isSending ? (
-                      <span className="cskh-spinner cskh-spinner--light" />
-                    ) : (
-                      <SendOutlined />
-                    )}
+                  {!isLoadingDetail &&
+                    messages.map((item, index) => {
+                      const mine = isMessageMine(item, currentUserId);
+                      const content = getMessageContent(item);
+                      const attachmentUrl = getMessageAttachment(item);
+                      const messageId = String(getMessageId(item, index));
+                      const isCopied = copiedMessageId === messageId;
 
-                    <span>Gửi</span>
-                  </button>
-                </div>
-              </form>
-            </>
-          )}
-        </main>
-      </section>
+                      return (
+                        <div
+                          key={messageId}
+                          className={[
+                            "cskh-message-row",
+                            mine ? "is-mine" : "is-other",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {!mine && (
+                            <Avatar
+                              size={34}
+                              className="cskh-message-avatar"
+                              icon={<CustomerServiceOutlined />}
+                            />
+                          )}
 
-      {isCreateOpen && (
-        <div className="cskh-modal-backdrop">
-          <section className="cskh-modal">
-            <header className="cskh-modal__header">
-              <div>
-                <p className="cskh-chat-eyebrow">New conversation</p>
-                <h3>Tạo cuộc trò chuyện</h3>
+                          <div className="cskh-message-group">
+                            <div className="cskh-message-bubble">
+                              <div className="cskh-message-meta">
+                                <div className="cskh-message-meta__identity">
+                                  <strong>
+                                    {mine
+                                      ? "Khách hàng"
+                                      : getMessageSenderName(item)}
+                                  </strong>
+                                  <span>{formatDateTime(getCreatedTime(item))}</span>
+                                </div>
+
+                                {(content || attachmentUrl) && (
+                                  <Tooltip
+                                    title={
+                                      isCopied
+                                        ? "Đã sao chép"
+                                        : "Sao chép nội dung"
+                                    }
+                                  >
+                                    <Button
+                                      type="text"
+                                      shape="circle"
+                                      size="small"
+                                      className={[
+                                        "cskh-message-copy-button",
+                                        isCopied && "is-copied",
+                                      ]
+                                        .filter(Boolean)
+                                        .join(" ")}
+                                      icon={
+                                        isCopied ? (
+                                          <CheckCircleOutlined />
+                                        ) : (
+                                          <CopyOutlined />
+                                        )
+                                      }
+                                      onClick={() =>
+                                        handleCopyMessage(item, index)
+                                      }
+                                      aria-label="Sao chép tin nhắn"
+                                    />
+                                  </Tooltip>
+                                )}
+                              </div>
+
+                              {content && <p>{content}</p>}
+
+                              {attachmentUrl && (
+                                <a
+                                  className="cskh-attachment-preview"
+                                  href={attachmentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {isImageUrl(attachmentUrl) ? (
+                                    <img
+                                      src={attachmentUrl}
+                                      alt="Tệp ảnh đính kèm"
+                                      onLoad={() => scrollMessagesToBottom("auto")}
+                                    />
+                                  ) : (
+                                    <span>
+                                      <PaperClipOutlined />
+                                      Xem tệp đính kèm
+                                    </span>
+                                  )}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  <div className="cskh-messages-end" aria-hidden="true" />
+                </section>
+
+                <form className="cskh-send-form" onSubmit={handleSendMessage}>
+                  {messageAttachment.previewUrl && (
+                    <div className="cskh-selected-image">
+                      <img
+                        src={messageAttachment.previewUrl}
+                        alt="Ảnh chuẩn bị gửi"
+                      />
+
+                      <div>
+                        <strong>{messageAttachment.name}</strong>
+                        <span>Ảnh sẽ được tải lên khi gửi tin nhắn.</span>
+                      </div>
+
+                      <Tooltip title="Xóa ảnh">
+                        <Button
+                          type="text"
+                          shape="circle"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={clearMessageAttachment}
+                          disabled={isSending}
+                        />
+                      </Tooltip>
+                    </div>
+                  )}
+
+                  <div className="cskh-message-input-row">
+                    <Tooltip title="Đính kèm ảnh">
+                      <Upload
+                        accept="image/*"
+                        maxCount={1}
+                        showUploadList={false}
+                        beforeUpload={handlePickMessageImage}
+                        disabled={isSending}
+                      >
+                        <Button
+                          type="text"
+                          shape="circle"
+                          className="cskh-upload-button"
+                          icon={<PictureOutlined />}
+                          disabled={isSending}
+                          aria-label="Chọn ảnh"
+                        />
+                      </Upload>
+                    </Tooltip>
+
+                    <Input.TextArea
+                      name="content"
+                      value={messageForm.content}
+                      onChange={handleMessageChange}
+                      onPressEnter={handleMessagePressEnter}
+                      autoSize={{ minRows: 1, maxRows: 4 }}
+                      maxLength={2000}
+                      placeholder="Nhập tin nhắn... (Enter để gửi, Shift + Enter để xuống dòng)"
+                      disabled={isSending}
+                      className="cskh-message-input"
+                    />
+
+                    <Button
+                      htmlType="submit"
+                      type="primary"
+                      className="cskh-send-button"
+                      icon={<SendOutlined />}
+                      loading={isSending}
+                      disabled={
+                        isSending ||
+                        (!messageForm.content.trim() && !messageAttachment.file)
+                      }
+                    >
+                      <span>Gửi</span>
+                    </Button>
+                  </div>
+                </form>
+              </>
+            )}
+          </main>
+        </section>
+
+        <Modal
+          open={isCreateOpen}
+          centered
+          width={590}
+          className="cskh-create-modal"
+          wrapClassName="cskh-create-modal-wrap"
+          title={null}
+          footer={null}
+          closeIcon={null}
+          maskClosable={!isCreating}
+          keyboard={!isCreating}
+          onCancel={handleCloseCreateModal}
+          destroyOnClose={false}
+        >
+          <form
+            className="cskh-create-modal__form"
+            onSubmit={handleCreateConversation}
+          >
+            <div className="cskh-create-modal__header">
+              <div className="cskh-create-modal__header-icon">
+                <CustomerServiceOutlined />
               </div>
 
-              <button
-                type="button"
-                className="cskh-icon-button"
-                onClick={handleCloseCreateModal}
-                disabled={isCreating}
-              >
-                <CloseOutlined />
-              </button>
-            </header>
+              <div>
+                <span>HỖ TRỢ KHÁCH HÀNG</span>
+                <h2>Tạo yêu cầu hỗ trợ</h2>
+                <p>
+                  Chọn đơn hàng liên quan và mô tả rõ nội dung để nhân viên
+                  hỗ trợ bạn nhanh hơn.
+                </p>
+              </div>
 
-            <form
-              className="cskh-create-form"
-              onSubmit={handleCreateConversation}
-            >
-              <label>
-                Loại liên kết
-                <select
-                  name="relatedType"
-                  value={createForm.relatedType}
-                  onChange={handleCreateChange}
+              <Tooltip title="Đóng">
+                <Button
+                  type="text"
+                  shape="circle"
+                  className="cskh-create-modal__close"
+                  icon={<CloseOutlined />}
+                  onClick={handleCloseCreateModal}
                   disabled={isCreating}
-                >
-                  {RELATED_TYPE_OPTIONS.map((item) => (
-                    <option
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  aria-label="Đóng cửa sổ"
+                />
+              </Tooltip>
+            </div>
 
-              <label>
-                Mã liên kết
-                <select
-                  name="relatedId"
-                  value={createForm.relatedId}
-                  onChange={handleCreateChange}
+            <div className="cskh-create-modal__body">
+              {errorMessage && (
+                <Alert
+                  type="error"
+                  showIcon
+                  closable
+                  message={errorMessage}
+                  onClose={() => setErrorMessage("")}
+                />
+              )}
+
+              <div className="cskh-form-field">
+                <label htmlFor="cskh-related-type">
+                  Liên kết với loại yêu cầu
+                  <span className="cskh-form-field__optional">Tùy chọn</span>
+                </label>
+
+                <Select
+                  id="cskh-related-type"
+                  value={createForm.relatedType}
+                  onChange={(value) => updateCreateField("relatedType", value)}
+                  options={RELATED_TYPE_OPTIONS}
+                  disabled={isCreating}
+                  placeholder="Chọn loại yêu cầu"
+                  className="cskh-form-control"
+                />
+
+                <small>
+                  Có thể chọn “Không liên kết” khi cần hỗ trợ chung.
+                </small>
+              </div>
+
+              <div className="cskh-form-field">
+                <label htmlFor="cskh-related-id">
+                  Đơn hàng cần hỗ trợ
+                  {createForm.relatedType && <b>*</b>}
+                </label>
+
+                <Select
+                  id="cskh-related-id"
+                  showSearch
+                  allowClear
+                  value={createForm.relatedId || undefined}
+                  onChange={(value) =>
+                    updateCreateField("relatedId", value || "")
+                  }
+                  options={relatedOptions.map((item) => ({
+                    value: item.value,
+                    label: item.label,
+                  }))}
+                  optionFilterProp="label"
+                  loading={isLoadingRelatedOptions}
                   disabled={
                     isCreating ||
                     !createForm.relatedType ||
                     isLoadingRelatedOptions ||
                     relatedOptions.length === 0
                   }
-                >
-                  <option value="">
-                    {isLoadingRelatedOptions
-                      ? "Đang tải mã liên kết..."
+                  placeholder={
+                    isLoadingRelatedOptions
+                      ? "Đang tải danh sách..."
                       : createForm.relatedType
-                        ? "Chọn mã liên kết"
-                        : "Không cần chọn mã liên kết"}
-                  </option>
+                        ? "Chọn yêu cầu cần hỗ trợ"
+                        : "Chọn loại yêu cầu trước"
+                  }
+                  notFoundContent={
+                    isLoadingRelatedOptions ? (
+                      <div className="cskh-select-loading">
+                        <Spin size="small" />
+                        <span>Đang tải...</span>
+                      </div>
+                    ) : (
+                      "Không tìm thấy dữ liệu"
+                    )
+                  }
+                  className="cskh-form-control"
+                />
 
-                  {relatedOptions.map((item) => (
-                    <option
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <small>Chọn đúng đơn hàng để nhân viên tra cứu nhanh hơn.</small>
+              </div>
 
-              <label>
-                Nội dung cần hỗ trợ
-                <textarea
-                  name="message"
+              <div className="cskh-form-field">
+                <label htmlFor="cskh-create-message">
+                  Nội dung cần hỗ trợ <b>*</b>
+                  <span className="cskh-form-field__counter">
+                    {createForm.message.length}/1000
+                  </span>
+                </label>
+
+                <Input.TextArea
+                  id="cskh-create-message"
                   value={createForm.message}
-                  onChange={handleCreateChange}
-                  placeholder="Ví dụ: Tôi muốn hỏi thêm về yêu cầu mua hộ này..."
-                  rows={4}
+                  onChange={(event) =>
+                    updateCreateField("message", event.target.value)
+                  }
+                  autoSize={{ minRows: 5, maxRows: 8 }}
+                  maxLength={1000}
                   disabled={isCreating}
+                  placeholder="Ví dụ: Tôi muốn kiểm tra tình trạng báo giá hoặc cần hỗ trợ cập nhật thông tin đơn hàng..."
+                  className="cskh-create-textarea"
                 />
-              </label>
+              </div>
 
-              <div className="cskh-create-image-box">
-                <input
-                  ref={createImageInputRef}
-                  type="file"
+              <div className="cskh-create-upload">
+                <div>
+                  <strong>Ảnh đính kèm</strong>
+                  <span>PNG, JPG hoặc WEBP, tối đa {MAX_IMAGE_SIZE_MB}MB.</span>
+                </div>
+
+                <Upload
                   accept="image/*"
-                  onChange={handlePickCreateImage}
-                  className="cskh-hidden-file"
-                />
-
-                <button
-                  type="button"
-                  className="cskh-create-image-button"
-                  onClick={() => createImageInputRef.current?.click()}
+                  maxCount={1}
+                  showUploadList={false}
+                  beforeUpload={handlePickCreateImage}
                   disabled={isCreating}
                 >
-                  <PictureOutlined />
-                  Chọn ảnh từ thư viện
-                </button>
+                  <Button
+                    type="default"
+                    icon={<PictureOutlined />}
+                    disabled={isCreating}
+                  >
+                    Chọn ảnh
+                  </Button>
+                </Upload>
+              </div>
 
-                {createAttachment.previewUrl && (
-                  <div className="cskh-selected-image cskh-selected-image--modal">
-                    <img
-                      src={createAttachment.previewUrl}
-                      alt="Ảnh đính kèm"
-                    />
+              {createAttachment.previewUrl && (
+                <div className="cskh-selected-image cskh-selected-image--modal">
+                  <img
+                    src={createAttachment.previewUrl}
+                    alt="Ảnh đính kèm"
+                  />
 
-                    <div>
-                      <strong>{createAttachment.name}</strong>
-                      <span>Ảnh sẽ được upload khi tạo trò chuyện.</span>
-                    </div>
+                  <div>
+                    <strong>{createAttachment.name}</strong>
+                    <span>Ảnh sẽ được gửi kèm yêu cầu hỗ trợ.</span>
+                  </div>
 
-                    <button
-                      type="button"
+                  <Tooltip title="Xóa ảnh">
+                    <Button
+                      type="text"
+                      shape="circle"
+                      danger
+                      icon={<DeleteOutlined />}
                       onClick={clearCreateAttachment}
                       disabled={isCreating}
-                    >
-                      <DeleteOutlined />
-                    </button>
-                  </div>
-                )}
+                    />
+                  </Tooltip>
+                </div>
+              )}
+            </div>
+
+            <div className="cskh-create-modal__footer">
+              <div
+                className={[
+                  "cskh-create-modal__footer-status",
+                  isCreateFormValid && "is-ready",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {isCreateFormValid && <CheckCircleOutlined />}
+                <span>{createFormHint}</span>
               </div>
 
-              <div className="cskh-modal__actions">
-                <button
-                  type="button"
-                  className="cskh-secondary-button"
-                  onClick={handleCloseCreateModal}
-                  disabled={isCreating}
-                >
-                  Hủy
-                </button>
+              <Button
+                type="default"
+                onClick={handleCloseCreateModal}
+                disabled={isCreating}
+              >
+                Hủy
+              </Button>
 
-                <button
-                  type="submit"
-                  className="cskh-primary-button"
-                  disabled={
-                    isCreating ||
-                    isLoadingRelatedOptions ||
-                    !createForm.message.trim() ||
-                    (createForm.relatedType && !createForm.relatedId)
-                  }
-                >
-                  {isCreating ? (
-                    <span className="cskh-spinner cskh-spinner--light" />
-                  ) : (
-                    <PlusOutlined />
-                  )}
-
-                  Tạo trò chuyện
-                </button>
-              </div>
-            </form>
-          </section>
-        </div>
-      )}
-    </div>
+              <Button
+                htmlType="submit"
+                type="primary"
+                icon={<PlusOutlined />}
+                loading={isCreating}
+                disabled={!isCreateFormValid || isCreating}
+                className={[
+                  "cskh-create-modal__submit",
+                  isCreateFormValid && !isCreating && "is-ready",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {isCreating ? "Đang tạo..." : "Tạo cuộc trò chuyện"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      </div>
+    </ConfigProvider>
   );
 }

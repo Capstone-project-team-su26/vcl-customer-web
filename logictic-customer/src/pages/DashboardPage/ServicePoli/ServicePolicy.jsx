@@ -13,9 +13,8 @@ import ServicePolicyDetail from "./ServicePoliDetail/ServicePolicyDetail";
 import "./ServicePolicy.css";
 
 const COLUMN_LABELS = {
-  id: "Mã bảng giá",
-  servicePricingId: "Mã bảng giá",
-  carrierId: "Mã đơn vị vận chuyển",
+
+
   serviceType: "Loại dịch vụ",
   originCountry: "Quốc gia gửi",
   destinationCountry: "Quốc gia nhận",
@@ -35,14 +34,16 @@ const PRIORITY_COLUMNS = [
   "currency",
   "effectiveDate",
   "status",
-  "id",
-  "carrierId",
+  
+
 ];
 const HIDDEN_COLUMNS = [
   "serviceCode",
   "description",
   "unit",
   "unitType",
+  "carrierId",
+  "id"
 ];
 
 const STATUS_LABELS = {

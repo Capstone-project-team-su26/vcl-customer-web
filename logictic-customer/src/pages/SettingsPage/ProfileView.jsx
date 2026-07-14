@@ -211,15 +211,15 @@ export default function ProfileView({
     //   type: "status",
     //   value: getStatusLabel(status),
     // },
-    {
-      icon: <IdcardOutlined />,
-      label: "Mã khách hàng",
-      value:
-        profile?.userId ||
-        profile?.id ||
-        profile?.customerId ||
-        "—",
-    },
+    // {
+    //   icon: <IdcardOutlined />,
+    //   label: "Mã khách hàng",
+    //   value:
+    //     profile?.userId ||
+    //     profile?.id ||
+    //     profile?.customerId ||
+    //     "—",
+    // },
   ];
 
   return (
