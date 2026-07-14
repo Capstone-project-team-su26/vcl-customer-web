@@ -25,7 +25,7 @@ import {
   CheckCircleOutlined,
   CloseOutlined,
   CopyOutlined,
-  CustomerServiceOutlined,
+  MessageFilled,
   DeleteOutlined,
   MessageOutlined,
   PaperClipOutlined,
@@ -1759,7 +1759,7 @@ export default function CustomerServiceChat() {
                       <Avatar
                         size={44}
                         className="cskh-conversation-avatar"
-                        icon={<CustomerServiceOutlined />}
+                        icon={<MessageFilled />}
                       />
 
                       <span className="cskh-conversation-main">
@@ -1774,7 +1774,7 @@ export default function CustomerServiceChat() {
 
                         {staffName && (
                           <span className="cskh-staff-line">
-                            <CustomerServiceOutlined />
+                            <MessageFilled />
                             {staffName}
                           </span>
                         )}
@@ -1838,7 +1838,7 @@ export default function CustomerServiceChat() {
                     <Avatar
                       size={46}
                       className="cskh-chat-title__avatar"
-                      icon={<CustomerServiceOutlined />}
+                      icon={<MessageFilled />}
                     />
 
                     <div className="cskh-chat-title__content">
@@ -1951,7 +1951,7 @@ export default function CustomerServiceChat() {
                             <Avatar
                               size={34}
                               className="cskh-message-avatar"
-                              icon={<CustomerServiceOutlined />}
+                              icon={<MessageFilled />}
                             />
                           )}
 
@@ -2131,7 +2131,7 @@ export default function CustomerServiceChat() {
           >
             <div className="cskh-create-modal__header">
               <div className="cskh-create-modal__header-icon">
-                <CustomerServiceOutlined />
+                <MessageFilled />
               </div>
 
               <div>
