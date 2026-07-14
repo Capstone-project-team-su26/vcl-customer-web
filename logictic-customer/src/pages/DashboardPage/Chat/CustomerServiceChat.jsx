@@ -1844,16 +1844,46 @@ export default function CustomerServiceChat() {
                     <div className="cskh-chat-title__content">
                       <h1>{selectedConversationTitle}</h1>
 
-                      <div className="cskh-chat-title__status">
-                        <Tag className="cskh-online-tag">
-                          <span className="cskh-online-dot" />
-                          {hasAssignedStaff(selectedConversation)
-                            ? `Phụ trách: ${getStaffDisplayName(
-                                selectedConversation
-                              )}`
-                            : "Đang hỗ trợ trực tuyến"}
-                        </Tag>
-                      </div>
+                      <div
+  className="cskh-chat-title__status"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    marginTop: 6,
+  }}
+>
+  <div
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "6px 14px",
+      borderRadius: 999,
+      background: "#ecfdf5",
+      border: "1px solid #bbf7d0",
+      color: "#166534",
+      fontSize: 12,
+      fontWeight: 600,
+      lineHeight: 1,
+      whiteSpace: "nowrap",
+      boxShadow: "0 2px 8px rgba(34,197,94,.08)",
+    }}
+  >
+    <span
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        background: "#22c55e",
+        boxShadow: "0 0 0 4px rgba(34,197,94,.18)",
+        animation: "onlinePulse 1.8s infinite",
+      }}
+    />
+    {hasAssignedStaff(selectedConversation)
+      ? `Nhân viên: ${getStaffDisplayName(selectedConversation)}`
+      : "Đang hỗ trợ trực tuyến"}
+  </div>
+</div>
                     </div>
                   </div>
 
