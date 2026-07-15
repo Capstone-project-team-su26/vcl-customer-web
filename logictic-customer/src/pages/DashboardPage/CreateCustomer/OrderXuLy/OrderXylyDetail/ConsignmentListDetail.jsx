@@ -348,13 +348,11 @@ const calculateDimWeight = (
   length,
   width,
   height,
-  quantity,
   volumetricDivisor
 ) => {
   const lengthValue = Number(length);
   const widthValue = Number(width);
   const heightValue = Number(height);
-  const quantityValue = Number(quantity);
   const divisorValue = Number(
     volumetricDivisor
   );
@@ -363,28 +361,23 @@ const calculateDimWeight = (
     !Number.isFinite(lengthValue) ||
     !Number.isFinite(widthValue) ||
     !Number.isFinite(heightValue) ||
-    !Number.isFinite(quantityValue) ||
+    
     !Number.isFinite(divisorValue) ||
     lengthValue <= 0 ||
     widthValue <= 0 ||
     heightValue <= 0 ||
-    quantityValue <= 0 ||
     divisorValue <= 0
   ) {
     return null;
   }
 
   /*
-   * DIM = (Dài × Rộng × Cao × Số lượng)
+   * DIM = (Dài × Rộng × Cao)
    *       / Hệ số DIM
    */
   const rawDimWeight =
-    (
-      lengthValue *
-      widthValue *
-      heightValue *
-      quantityValue
-    ) / divisorValue;
+  (lengthValue * widthValue * heightValue) /
+  divisorValue;
 
   return roundDimWeightUp(
     rawDimWeight
@@ -1666,7 +1659,7 @@ const ConsignmentListDetail = () => {
       },
       {
         title: volumetricDivisor
-          ? `DIM = (Dài × Rộng × Cao × Số lượng) / ${formatWeight(
+          ? `DIM = (Dài × Rộng × Cao) / ${formatWeight(
               volumetricDivisor
             )}`
           : "DIM (chưa có hệ số từ API)",
@@ -1681,15 +1674,14 @@ const ConsignmentListDetail = () => {
             );
           }
 
-          const quantityValue =
-            Number(record.quantity);
+          // const quantityValue =
+          //   Number(record.quantity);
 
           const dimWeight =
             calculateDimWeight(
               record.length,
               record.width,
               record.height,
-              quantityValue,
               volumetricDivisor
             );
 
@@ -1706,8 +1698,7 @@ const ConsignmentListDetail = () => {
               (
               {record.length} ×{" "}
               {record.width} ×{" "}
-              {record.height} ×{" "}
-              {quantityValue}
+              {record.height}         
               ) /{" "}
               {formatWeight(
                 volumetricDivisor
@@ -1927,7 +1918,7 @@ const ConsignmentListDetail = () => {
   const totalProductQuantity =
     items.reduce(
       (total, item) =>
-        total +
+    
         (Number(item.quantity) || 0),
       0
     );
@@ -1942,7 +1933,6 @@ const ConsignmentListDetail = () => {
                 item.length,
                 item.width,
                 item.height,
-                item.quantity,
                 volumetricDivisor
               );
 
