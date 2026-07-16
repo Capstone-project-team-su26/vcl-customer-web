@@ -359,6 +359,160 @@ export const cancelConsignmentApi = async (
   }
 };
 
+/* ==================== VALIDATE CONSIGNMENT ITEMS ==================== */
+
+export const validateConsignmentItemsApi = async (
+  items,
+  options = {}
+) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error(
+      "Danh sách sản phẩm kiểm tra không hợp lệ."
+    );
+  }
+
+  const normalizedItems = items.map((item, index) => {
+    const productName = String(
+      item?.productName || ""
+    ).trim();
+
+    const productType = String(
+      item?.productType || ""
+    ).trim();
+
+    const quantity = Number(item?.quantity);
+    const weight = Number(item?.weight);
+    const width = Number(item?.width);
+    const height = Number(item?.height);
+    const length = Number(item?.length);
+    const declaredValue = Number(
+      item?.declaredValue
+    );
+
+    const referenceUrl = String(
+      item?.referenceUrl || ""
+    ).trim();
+
+    const domesticTrackingCode = String(
+      item?.domesticTrackingCode || ""
+    ).trim();
+
+    if (!productName) {
+      throw new Error(
+        `Sản phẩm ${index + 1}: Tên sản phẩm không hợp lệ.`
+      );
+    }
+
+    if (!productType) {
+      throw new Error(
+        `Sản phẩm ${index + 1}: Loại sản phẩm không hợp lệ.`
+      );
+    }
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity <= 0
+    ) {
+      throw new Error(
+        `Sản phẩm ${index + 1}: Số lượng phải là số nguyên lớn hơn 0.`
+      );
+    }
+
+    if (
+      quantity > 2147483647
+    ) {
+      throw new Error(
+        `Sản phẩm ${index + 1}: Số lượng vượt quá giới hạn cho phép.`
+      );
+    }
+
+    const positiveNumberFields = [
+      {
+        value: weight,
+        label: "Cân nặng",
+      },
+      {
+        value: width,
+        label: "Chiều rộng",
+      },
+      {
+        value: height,
+        label: "Chiều cao",
+      },
+      {
+        value: length,
+        label: "Chiều dài",
+      },
+      {
+        value: declaredValue,
+        label: "Giá trị kiện hàng",
+      },
+    ];
+
+    positiveNumberFields.forEach(
+      ({ value, label }) => {
+        if (
+          !Number.isFinite(value) ||
+          value <= 0
+        ) {
+          throw new Error(
+            `Sản phẩm ${index + 1}: ${label} phải lớn hơn 0.`
+          );
+        }
+      }
+    );
+
+    if (!referenceUrl) {
+      throw new Error(
+        `Sản phẩm ${index + 1}: Ảnh sản phẩm không hợp lệ.`
+      );
+    }
+
+    return {
+      productName,
+      productType,
+      quantity,
+      weight,
+      width,
+      height,
+      length,
+      declaredValue,
+      referenceUrl,
+      domesticTrackingCode:
+        domesticTrackingCode || null,
+    };
+  });
+
+  try {
+    const response = await axiosInstance.post(
+      "/api/orders/consignments/validate-items",
+      {
+        items: normalizedItems,
+      },
+      {
+        signal: getSignal(options),
+        headers: {
+          Accept: "text/plain, application/json",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi kiểm tra thông tin kiện hàng:",
+        error?.response?.data ||
+          error?.message
+      );
+    }
+
+    throw error;
+  }
+};
+
+
 export const updateConsignmentStatusApi = async (
   orderId,
   status,

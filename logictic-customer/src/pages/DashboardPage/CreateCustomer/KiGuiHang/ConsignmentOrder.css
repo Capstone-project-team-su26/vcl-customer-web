@@ -2259,3 +2259,87 @@
   color: #0958d9;
   transform: scale(1.1);
 }
+/* ==================================
+   FIELD LABEL TOOLTIP
+================================== */
+
+.field-label-tooltip-row {
+  width: 100%;
+  min-height: 20px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.field-label-tooltip-row .field-label {
+  width: auto;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.4;
+}
+
+.field-label-tooltip-button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #1890ff;
+  font-size: 14px;
+  line-height: 1;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  border-radius: 50%;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.field-label-tooltip-button:hover {
+  color: #0958d9;
+  background: rgba(24, 144, 255, 0.1);
+  transform: scale(1.08);
+}
+
+.field-label-tooltip-button:focus-visible {
+  color: #0958d9;
+  background: rgba(24, 144, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.16);
+}
+
+.field-label-tooltip-button .anticon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.field-label-tooltip-button {
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
+  padding: 0;
+  margin-left: 2px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #1890ff;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  outline: none;
+
+  font-size: 14px;
+  line-height: 1;
+
+  /* Bàn tay khi rê chuột, không hiện dấu hỏi */
+  cursor: pointer;
+}

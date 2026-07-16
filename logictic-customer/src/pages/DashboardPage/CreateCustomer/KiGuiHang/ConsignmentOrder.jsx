@@ -19,13 +19,14 @@ import {
   PlusOutlined,
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
-
+import FieldLabelTooltip from "../../../../components/DashboardComponents/CustomerKiguiComponents/ToltipLapelComponents/FieldLabelTooltip";
 import uploadImage from "../../../../api/Upload/UploadImage";
 import ConsignmentOrderConfirm from "../../../../components/DashboardComponents/CustomerKiguiComponents/ConfirmKigui/ConsignmentOrderConfirm";
 import "./ConsignmentOrder.css";
 import AuthNotify from "../../../../utils/AuthNotify";
 import {
   createConsignmentApi,
+  validateConsignmentItemsApi,
   createDeliveryAddressApi,
   deleteDeliveryAddressApi,
   getConsignmentRoutesApi,
@@ -56,78 +57,30 @@ const ACCEPTED_IMAGE_TYPES = [
 const PACKAGE_NUMBER_FIELDS = [
   {
     field: "weight",
-    label: (
-      <span className="field-label-with-tooltip">
-        CÂN NẶNG KIỆN HÀNG(KG)
-
-        <Tooltip title="Nhập tổng cân nặng của kiện hàng theo đơn vị kilogram (kg).">
-          <InfoCircleOutlined
-            style={{
-              color: "#1890ff",
-              cursor: "pointer",
-              marginLeft: 6,
-            }}
-          />
-        </Tooltip>
-      </span>
-    ),
+    label: "CÂN NẶNG KIỆN HÀNG (KG)",
+    tooltip:
+      "Nhập tổng cân nặng của kiện hàng theo đơn vị kilogram (kg).",
     placeholder: "Nhập cân nặng...",
   },
   {
     field: "length",
-    label: (
-      <span className="field-label-with-tooltip">
-        DÀI (CM)
-
-        <Tooltip title="Nhập chiều dài của kiện hàng theo đơn vị centimet (cm).">
-          <InfoCircleOutlined
-            style={{
-              color: "#1890ff",
-              cursor: "pointer",
-              marginLeft: 6,
-            }}
-          />
-        </Tooltip>
-      </span>
-    ),
+    label: "DÀI (CM)",
+    tooltip:
+      "Nhập chiều dài của kiện hàng theo đơn vị centimet (cm).",
     placeholder: "Nhập chiều dài...",
   },
   {
     field: "width",
-    label: (
-      <span className="field-label-with-tooltip">
-        RỘNG (CM)
-
-        <Tooltip title="Nhập chiều rộng của kiện hàng theo đơn vị centimet (cm).">
-          <InfoCircleOutlined
-            style={{
-              color: "#1890ff",
-              cursor: "pointer",
-              marginLeft: 6,
-            }}
-          />
-        </Tooltip>
-      </span>
-    ),
+    label: "RỘNG (CM)",
+    tooltip:
+      "Nhập chiều rộng của kiện hàng theo đơn vị centimet (cm).",
     placeholder: "Nhập chiều rộng...",
   },
   {
     field: "height",
-    label: (
-      <span className="field-label-with-tooltip">
-        CAO (CM)
-
-        <Tooltip title="Nhập chiều cao của kiện hàng theo đơn vị centimet (cm).">
-          <InfoCircleOutlined
-            style={{
-              color: "#1890ff",
-              cursor: "pointer",
-              marginLeft: 6,
-            }}
-          />
-        </Tooltip>
-      </span>
-    ),
+    label: "CAO (CM)",
+    tooltip:
+      "Nhập chiều cao của kiện hàng theo đơn vị centimet (cm).",
     placeholder: "Nhập chiều cao...",
   },
 ];
@@ -1630,6 +1583,12 @@ export default function ConsignmentOrder() {
       }
 
       setSubmitMessage(
+        "Đang kiểm tra thông tin kiện hàng..."
+      );
+
+      await validateConsignmentItemsApi(items);
+
+      setSubmitMessage(
         "Đang gửi yêu cầu tạo đơn ký gửi..."
       );
 
@@ -2332,35 +2291,38 @@ export default function ConsignmentOrder() {
                   </div>
 
                   <div className="form-row-2col">
-                    <div className="input-field-group">
-                      <label className="field-label required-label">
-                        TÊN SẢN PHẨM
-                      </label>
+                  <div className="input-field-group">
+  <FieldLabelTooltip
+    label="TÊN SẢN PHẨM"
+    style={{
+      color: "#1890ff",
+      cursor: "pointer",
+      marginLeft: 6,
+    }}
+    required
+    tooltip="Nhập đúng và đầy đủ tên sản phẩm có trong kiện hàng, ví dụ: Áo thun nam, điện thoại iPhone 15 hoặc mỹ phẩm chăm sóc da."
+  />
 
-                      <input
-                        type="text"
-                        value={pkg.productName}
-                        disabled={isSubmitting}
-                        placeholder="Nhập tên sản phẩm..."
-                        className={getFieldClassName(
-                          "custom-input",
-                          errors.productName
-                        )}
-                        onChange={(event) =>
-                          handleInputChange(
-                            pkg.id,
-                            "productName",
-                            event.target.value
-                          )
-                        }
-                      />
+  <input
+    type="text"
+    value={pkg.productName}
+    disabled={isSubmitting}
+    placeholder="Nhập tên sản phẩm..."
+    className={getFieldClassName(
+      "custom-input",
+      errors.productName
+    )}
+    onChange={(event) =>
+      handleInputChange(
+        pkg.id,
+        "productName",
+        event.target.value
+      )
+    }
+  />
 
-                      <FieldError
-                        message={
-                          errors.productName
-                        }
-                      />
-                    </div>
+  <FieldError message={errors.productName} />
+</div>
 
                     <div className="input-field-group">
                       <label className="field-label required-label">
@@ -2490,9 +2452,12 @@ export default function ConsignmentOrder() {
                           key={fieldItem.field}
                           className="input-field-group"
                         >
-                          <label className="field-label required-label">
-                            {fieldItem.label}
-                          </label>
+                        <FieldLabelTooltip
+  label={fieldItem.label}
+  required
+  tooltip={fieldItem.tooltip}
+  className="package-dimension-label"
+/>
 
                           <input
                             type="text"
@@ -2723,26 +2688,38 @@ export default function ConsignmentOrder() {
               </div>
 
               <div className="input-field-group">
-                <label className="field-label required-label">
-                  GHI CHÚ ĐƠN HÀNG
-                </label>
+  <FieldLabelTooltip
+    label="GHI CHÚ ĐƠN HÀNG"
+    required
+    tooltip="Nhập các yêu cầu chung cho đơn ký gửi như cách đóng gói, lưu ý hàng dễ vỡ, yêu cầu bảo quản hoặc những thông tin cần nhân viên xử lý biết."
+  />
 
-                <textarea
-                  rows={4}
-                  value={form.note}
-                  disabled={isSubmitting}
-                  placeholder="Nhập ghi chú chung, yêu cầu đóng gói hoặc thông tin cần lưu ý cho toàn bộ đơn ký gửi..."
-                  className={getFieldClassName(
-                    "custom-textarea",
-                    formErrors.note
-                  )}
-                  onChange={(event) =>
-                    updateForm("note", event.target.value)
-                  }
-                />
+  <textarea
+    rows={4}
+    value={form.note}
+    disabled={isSubmitting}
+    maxLength={1000}
+    placeholder="Nhập ghi chú chung, yêu cầu đóng gói hoặc thông tin cần lưu ý cho toàn bộ đơn ký gửi..."
+    className={getFieldClassName(
+      "custom-textarea",
+      formErrors.note
+    )}
+    onChange={(event) =>
+      updateForm(
+        "note",
+        event.target.value
+      )
+    }
+  />
 
-                <FieldError message={formErrors.note} />
-              </div>
+  <div className="textarea-character-count">
+    {form.note.length}/1000 ký tự
+  </div>
+
+  <FieldError
+    message={formErrors.note}
+  />
+</div>
             </div>
 
             <div className="sticky-action-notice-bar">

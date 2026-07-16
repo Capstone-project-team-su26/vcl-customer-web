@@ -2076,13 +2076,13 @@ const ConsignmentListDetail = () => {
             </div>
 
             <div className="detail-order-metadata">
-              <span>
+              {/* <span>
                 Mã đơn hàng:
                 <strong>
                   {consignment.orderId ||
                     "-"}
                 </strong>
-              </span>
+              </span> */}
 
               <span>
                 Loại đơn:
@@ -2236,12 +2236,12 @@ const ConsignmentListDetail = () => {
               )}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Mã khách hàng">
+            {/* <Descriptions.Item label="Mã khách hàng">
               <span className="detail-id-value">
                 {customer.customerId ||
                   "-"}
               </span>
-            </Descriptions.Item>
+            </Descriptions.Item> */}
           </Descriptions>
         </section>
 

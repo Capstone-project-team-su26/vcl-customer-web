@@ -60,14 +60,7 @@ const normalizeText = (value) => {
 const PRODUCT_NAME_SEPARATOR =
   /\r?\n|[,;|•]+|\s+(?:và|and)\s+/giu;
 
-/**
- * Chuẩn hóa tên sản phẩm từ nhiều kiểu dữ liệu API:
- * - "Sản phẩm 1, Sản phẩm 2"
- * - "Sản phẩm 1 và Sản phẩm 2"
- * - "Sản phẩm 1\nSản phẩm 2"
- * - ["Sản phẩm 1", "Sản phẩm 2"]
- * - [{ productName: "Sản phẩm 1" }]
- */
+
 const collectProductNames = (source) => {
   if (
     source === null ||
@@ -301,30 +294,14 @@ const isPendingApprovalStatus = (
   );
 };
 
-/* =========================================================
-   UTC TIME HELPERS
-   ========================================================= */
 
-/**
- * Chuẩn hóa thời gian API về UTC ISO.
- *
- * API có thể trả:
- * - 2026-06-29T14:00:32.8526551
- * - 2026-06-29T14:00:32Z
- * - 2026-06-29T14:00:32+07:00
- *
- * Output luôn chuẩn:
- * - 2026-06-29T14:00:32.852Z
- */
 const normalizeApiTimeToUtc = (value) => {
   return apiToUtcIso(value, {
     apiTimeMode: "utc",
   });
 };
 
-/**
- * Lấy YYYY-MM-DD theo UTC để lọc ngày không lệch múi giờ.
- */
+
 const getUtcDateOnly = (value) => {
   const utcIso = normalizeApiTimeToUtc(value);
 
@@ -335,9 +312,7 @@ const getUtcDateOnly = (value) => {
   return utcIso.slice(0, 10);
 };
 
-/**
- * Gắn field UTC vào từng item lấy từ API.
- */
+
 const normalizeConsignmentTime = (item) => {
   if (!item) {
     return item;
@@ -353,9 +328,7 @@ const normalizeConsignmentTime = (item) => {
   };
 };
 
-/**
- * Hiển thị thời gian cho user Việt Nam.
- */
+
 const formatDate = (value) => {
   const utcIso = normalizeApiTimeToUtc(value);
 
@@ -369,9 +342,7 @@ const formatDate = (value) => {
   });
 };
 
-/**
- * Tooltip / title nếu cần xem UTC gốc.
- */
+
 const formatDateUtcTitle = (value) => {
   const utcIso = normalizeApiTimeToUtc(value);
 
@@ -405,9 +376,6 @@ const ConsignmentList = () => {
     useState("");
   const copyResetTimerRef = useRef(null);
 
-  /* =========================================================
-     FETCH ALL CONSIGNMENTS
-     ========================================================= */
 
   const fetchAllConsignments = useCallback(
     async (signal) => {
@@ -545,9 +513,7 @@ const ConsignmentList = () => {
     );
   }, [statusOptions]);
 
-  /* =========================================================
-     DATE RANGE
-     ========================================================= */
+
 
   const disabledRangeDate = (
     currentDate,
@@ -606,18 +572,12 @@ const ConsignmentList = () => {
     setPageNumber(1);
   };
 
-  /* =========================================================
-     FILTER
-     ========================================================= */
+
 
   const filteredConsignments = useMemo(() => {
     const normalizedSearch = normalizeText(searchInput);
 
-    /*
-     * RangePicker chọn ngày UI.
-     * Mình convert sang YYYY-MM-DD để so với createdAtUtc.
-     * Không dùng Date object để tránh trình duyệt tự đổi timezone.
-     */
+  
     const startDate =
       dateRangeInput?.[0]?.format(
         "YYYY-MM-DD"
@@ -694,9 +654,6 @@ const ConsignmentList = () => {
     statusLabelMap,
   ]);
 
-  /* =========================================================
-     CLIENT PAGINATION
-     ========================================================= */
 
   const totalPages = Math.max(
     1,
@@ -725,9 +682,7 @@ const ConsignmentList = () => {
     }
   }, [pageNumber, totalPages]);
 
-  /* =========================================================
-     EVENT HANDLERS
-     ========================================================= */
+ 
 
   const handleSearchChange = (event) => {
     setSearchInput(event.target.value);
@@ -838,9 +793,7 @@ const ConsignmentList = () => {
     }
   };
 
-  /* =========================================================
-     DISPLAY HELPERS
-     ========================================================= */
+
 
   const getStatusLabel = (status) => {
     const normalizedStatus = String(
@@ -894,13 +847,13 @@ const ConsignmentList = () => {
     return String(trackingCode || "").trim() || "-";
   };
 
-  const getOrderCode = (item) => {
-    const orderCode =
-      item?.orderCode ||
-      item?.orderId;
+  // const getOrderCode = (item) => {
+  //   const orderCode =
+  //     item?.orderCode ||
+  //     item?.orderId;
 
-    return String(orderCode || "").trim() || "-";
-  };
+  //   return String(orderCode || "").trim() || "-";
+  // };
 
 
   const hasActiveFilter = Boolean(
@@ -1260,9 +1213,9 @@ const ConsignmentList = () => {
                               )}
                             </div>
 
-                            <div className="sku-tag">
+                            {/* <div className="sku-tag">
                               Mã đơn: {getOrderCode(item)}
-                            </div>
+                            </div> */}
 
                             <div className="receiver-phone">
                               <span>Số điện thoại:</span>{" "}
