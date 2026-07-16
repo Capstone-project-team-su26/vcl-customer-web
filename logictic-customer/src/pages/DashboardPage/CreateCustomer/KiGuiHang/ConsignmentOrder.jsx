@@ -221,8 +221,13 @@ const getFieldClassName = (baseClassName, errorMessage) =>
     .filter(Boolean)
     .join(" ");
 
-const sanitizeInteger = (value) =>
-  String(value ?? "").replace(/\D/g, "");
+const sanitizeInteger = (value) => {
+  const digits = String(value ?? "").replace(/\D/g, "");
+
+  // Không cho giữ giá trị 0 hoặc các số 0 đứng đầu.
+  // Ví dụ: "0" -> "", "0005" -> "5", "10" -> "10".
+  return digits.replace(/^0+/, "");
+};
 
 const sanitizeDecimal = (value) => {
   let normalized = String(value ?? "")
@@ -469,10 +474,10 @@ const validatePackage = (pkg) => {
     errors.declaredValue = "Vui lòng nhập giá trị khai báo.";
   } else if (
     !Number.isFinite(declaredValue) ||
-    declaredValue < 0
+    declaredValue <= 0
   ) {
     errors.declaredValue =
-      "Giá trị khai báo không được là số âm.";
+      "Giá trị kiện hàng phải lớn hơn 0.";
   }
 
   [
@@ -1332,6 +1337,42 @@ export default function ConsignmentOrder() {
     const normalizedValue = value.endsWith(".")
       ? value.slice(0, -1)
       : value;
+
+    const numericValue = Number(normalizedValue);
+
+    // Cho phép người dùng nhập tạm "0." để tiếp tục thành "0.5",
+    // nhưng khi rời ô thì không chấp nhận giá trị bằng 0.
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      const fieldLabels = {
+        weight: "Cân nặng",
+        length: "Chiều dài",
+        width: "Chiều rộng",
+        height: "Chiều cao",
+      };
+
+      setPackages((previous) =>
+        previous.map((pkg) =>
+          pkg.id === packageId
+            ? {
+                ...pkg,
+                [field]: "",
+              }
+            : pkg
+        )
+      );
+
+      setPackageErrors((previous) => ({
+        ...previous,
+        [packageId]: {
+          ...(previous[packageId] || {}),
+          [field]: `${
+            fieldLabels[field] || "Giá trị"
+          } phải lớn hơn 0.`,
+        },
+      }));
+
+      return;
+    }
 
     handleInputChange(
       packageId,
@@ -2427,9 +2468,8 @@ export default function ConsignmentOrder() {
                           handleInputChange(
                             pkg.id,
                             "declaredValue",
-                            event.target.value.replace(
-                              /\D/g,
-                              ""
+                            sanitizeInteger(
+                              event.target.value
                             )
                           )
                         }
