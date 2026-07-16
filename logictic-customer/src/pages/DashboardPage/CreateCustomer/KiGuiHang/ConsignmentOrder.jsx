@@ -2376,7 +2376,7 @@ export default function ConsignmentOrder() {
                   <div className="form-row-2col">
                     <div className="input-field-group">
                       <label className="field-label required-label">
-                        SỐ LƯỢNG
+                        SỐ LƯỢNG SẢN PHẨM
                       </label>
 
                       <input
@@ -2538,10 +2538,14 @@ export default function ConsignmentOrder() {
                   </div>
 
                   <div className="input-field-group package-image-section">
-                    <label className="field-label required-label">
-                      ẢNH SẢN PHẨM KIỆN{" "}
-                      {index + 1}
-                    </label>
+                  <FieldLabelTooltip
+  label={`ẢNH SẢN PHẨM KIỆN ${
+    index + 1
+  }`}
+  required
+  placement="top"
+  tooltip="Tải ảnh rõ nét của sản phẩm trong kiện hàng. Hỗ trợ JPG, PNG và WEBP, dung lượng tối đa 5MB cho mỗi ảnh."
+/>
 
                     <input
                       type="file"

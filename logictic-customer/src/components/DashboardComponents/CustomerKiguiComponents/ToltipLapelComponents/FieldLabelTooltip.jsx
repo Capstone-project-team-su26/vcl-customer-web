@@ -13,6 +13,7 @@ import {
 } from "@ant-design/icons";
 import {
   Popover,
+  Tooltip,
 } from "antd";
 
 import {
@@ -21,13 +22,48 @@ import {
 
 import "./FieldLabelTooltip.css";
 
+/* =========================
+   TEXT HELPER
+========================= */
+
 const normalizeText = (value) =>
   String(value ?? "").trim();
+
+/* =========================
+   REQUEST HELPER
+========================= */
 
 const isCanceledRequest = (error) =>
   error?.code === "ERR_CANCELED" ||
   error?.name === "CanceledError" ||
   error?.name === "AbortError";
+
+const getApiErrorMessage = (
+  error,
+  fallbackMessage
+) => {
+  const responseData =
+    error?.response?.data;
+
+  if (
+    typeof responseData === "string" &&
+    responseData.trim()
+  ) {
+    return responseData;
+  }
+
+  return (
+    responseData?.message ||
+    responseData?.title ||
+    responseData?.error ||
+    error?.message ||
+    fallbackMessage
+  );
+};
+
+/* =========================
+   RESTRICTED ITEM HELPER
+========================= */
 
 const getRestrictedItemName = (
   item,
@@ -92,139 +128,227 @@ const getRestrictedItemKey = (
   return `${name}-${index}`;
 };
 
+/* =========================
+   COMPONENT
+========================= */
+
 export default function FieldLabelTooltip({
-  
   label,
+  tooltip = "",
   required = false,
-  placement = "bottomLeft",
+  placement = "top",
   className = "",
 }) {
+  const controllerRef =
+    useRef(null);
+
+  const requestRunningRef =
+    useRef(false);
+
   const [open, setOpen] =
     useState(false);
-    const controllerRef = useRef(null);
-    const requestRunningRef = useRef(false);
-  const [restrictedItems, setRestrictedItems] =
-    useState([]);
+
+  const [
+    restrictedItems,
+    setRestrictedItems,
+  ] = useState([]);
 
   const [loading, setLoading] =
     useState(false);
 
-  const [loadError, setLoadError] =
-    useState("");
+  const [
+    loadError,
+    setLoadError,
+  ] = useState("");
 
-  const [hasLoaded, setHasLoaded] =
-    useState(false);
+  const [
+    hasLoaded,
+    setHasLoaded,
+  ] = useState(false);
+
+  /* =========================
+     LABEL TYPE
+  ========================= */
 
   const normalizedLabel = useMemo(() => {
     if (typeof label !== "string") {
       return "";
     }
 
-    return normalizeText(label).toUpperCase();
+    return normalizeText(
+      label
+    ).toUpperCase();
   }, [label]);
 
- 
+  /*
+   * TÊN SẢN PHẨM:
+   * Hiện icon và mở popup API.
+   */
   const showRestrictedItems =
-    normalizedLabel === "TÊN SẢN PHẨM";
+    normalizedLabel ===
+    "TÊN SẢN PHẨM";
 
-    const loadRestrictedItems = useCallback(async () => {
-      if (requestRunningRef.current) {
+  /*
+   * ẢNH SẢN PHẨM KIỆN 1, 2, 3...
+   * Hiện icon hướng dẫn.
+   */
+  const isPackageImageLabel =
+    normalizedLabel.startsWith(
+      "ẢNH SẢN PHẨM KIỆN"
+    );
+
+  /*
+   * GHI CHÚ ĐƠN HÀNG:
+   * Hiện icon hướng dẫn.
+   */
+  const isOrderNoteLabel =
+    normalizedLabel ===
+    "GHI CHÚ ĐƠN HÀNG";
+
+  /*
+   * Chỉ ảnh sản phẩm và ghi chú
+   * mới hiện tooltip hướng dẫn.
+   *
+   * Cân nặng, dài, rộng, cao
+   * sẽ không hiện icon dù có truyền tooltip.
+   */
+  const showGuideTooltip =
+    !showRestrictedItems &&
+    Boolean(normalizeText(tooltip)) &&
+    (
+      isPackageImageLabel ||
+      isOrderNoteLabel
+    );
+
+  /* =========================
+     LOAD RESTRICTED ITEMS
+  ========================= */
+
+  const loadRestrictedItems =
+    useCallback(async () => {
+      if (
+        requestRunningRef.current
+      ) {
         return;
       }
-    
+
       controllerRef.current?.abort();
-    
-      const controller = new AbortController();
-    
-      controllerRef.current = controller;
-      requestRunningRef.current = true;
-    
+
+      const controller =
+        new AbortController();
+
+      controllerRef.current =
+        controller;
+
+      requestRunningRef.current =
+        true;
+
       try {
         setLoading(true);
         setLoadError("");
-    
-        const list = await getRestrictedItemListApi({
-          signal: controller.signal,
-        });
-    
-        if (controller.signal.aborted) {
+
+        const list =
+          await getRestrictedItemListApi(
+            {
+              signal:
+                controller.signal,
+            }
+          );
+
+        if (
+          controller.signal.aborted
+        ) {
           return;
         }
-    
+
         setRestrictedItems(
           Array.isArray(list)
             ? list.filter(Boolean)
             : []
         );
-    
+
         setHasLoaded(true);
       } catch (error) {
-        const isCanceled =
-          error?.code === "ERR_CANCELED" ||
-          error?.name === "CanceledError" ||
-          error?.name === "AbortError";
-    
         if (
-          isCanceled ||
+          isCanceledRequest(error) ||
           controller.signal.aborted
         ) {
           return;
         }
-    
-        const responseData =
-          error?.response?.data;
-    
+
         setLoadError(
-          typeof responseData === "string"
-            ? responseData
-            : responseData?.message ||
-                responseData?.title ||
-                error?.message ||
-                "Không thể tải danh sách hàng hóa hạn chế."
+          getApiErrorMessage(
+            error,
+            "Không thể tải danh sách hàng hóa hạn chế."
+          )
         );
       } finally {
-        if (!controller.signal.aborted) {
+        if (
+          !controller.signal.aborted
+        ) {
           setLoading(false);
         }
-    
-        requestRunningRef.current = false;
+
+        requestRunningRef.current =
+          false;
       }
     }, []);
 
-    useEffect(() => {
-      if (
-        !open ||
-        !showRestrictedItems ||
-        hasLoaded
-      ) {
-        return;
-      }
-    
-      loadRestrictedItems();
-    }, [
-      open,
-      showRestrictedItems,
-      hasLoaded,
-      loadRestrictedItems,
-    ]);
+  /*
+   * Chỉ gọi API khi popup
+   * tên sản phẩm được mở.
+   */
+  useEffect(() => {
+    if (
+      !open ||
+      !showRestrictedItems ||
+      hasLoaded
+    ) {
+      return;
+    }
 
-    const handleRetry = () => {
-      controllerRef.current?.abort();
-    
-      requestRunningRef.current = false;
-    
-      setRestrictedItems([]);
-      setLoadError("");
-      setHasLoaded(false);
-    
-      loadRestrictedItems();
-    };
+    loadRestrictedItems();
+  }, [
+    open,
+    showRestrictedItems,
+    hasLoaded,
+    loadRestrictedItems,
+  ]);
 
+  /*
+   * Hủy request khi component unmount.
+   */
   useEffect(() => {
     return () => {
       controllerRef.current?.abort();
     };
   }, []);
+
+  /* =========================
+     RETRY
+  ========================= */
+
+  const handleRetry = () => {
+    if (loading) {
+      return;
+    }
+
+    controllerRef.current?.abort();
+
+    requestRunningRef.current =
+      false;
+
+    setRestrictedItems([]);
+    setLoadError("");
+    setHasLoaded(false);
+
+    loadRestrictedItems();
+  };
+
+  /* =========================
+     RESTRICTED POPUP
+  ========================= */
+
   const popupContent = (
     <div className="restricted-items-popover">
       <div className="restricted-items-popover__header">
@@ -264,7 +388,9 @@ export default function FieldLabelTooltip({
           <div className="restricted-items-popover__error">
             <InfoCircleOutlined />
 
-            <p>{loadError}</p>
+            <p>
+              {loadError}
+            </p>
 
             <button
               type="button"
@@ -272,10 +398,12 @@ export default function FieldLabelTooltip({
               onClick={handleRetry}
             >
               <ReloadOutlined />
+
               Tải lại
             </button>
           </div>
-        ) : restrictedItems.length > 0 ? (
+        ) : restrictedItems.length >
+          0 ? (
           <div className="restricted-items-popover__list">
             {restrictedItems.map(
               (item, index) => {
@@ -340,6 +468,10 @@ export default function FieldLabelTooltip({
     </div>
   );
 
+  /* =========================
+     RENDER
+  ========================= */
+
   return (
     <div
       className={[
@@ -350,7 +482,9 @@ export default function FieldLabelTooltip({
         .join(" ")}
     >
       <label className="field-label field-label-tooltip-text">
-        <span>{label}</span>
+        <span>
+          {label}
+        </span>
 
         {required && (
           <span
@@ -362,10 +496,11 @@ export default function FieldLabelTooltip({
         )}
       </label>
 
+      {/* TÊN SẢN PHẨM: POPUP API */}
       {showRestrictedItems && (
         <Popover
           content={popupContent}
-          placement={placement}
+          placement="bottomLeft"
           trigger="click"
           open={open}
           onOpenChange={setOpen}
@@ -381,6 +516,27 @@ export default function FieldLabelTooltip({
             <InfoCircleOutlined />
           </button>
         </Popover>
+      )}
+
+      {/* ẢNH SẢN PHẨM VÀ GHI CHÚ: TOOLTIP */}
+      {showGuideTooltip && (
+        <Tooltip
+          title={tooltip}
+          placement={placement}
+          trigger="click"
+          overlayClassName="field-guide-tooltip-overlay"
+          zIndex={10050}
+        >
+          <button
+            type="button"
+            className="field-label-tooltip-button"
+            aria-label={`Xem hướng dẫn ${normalizeText(
+              label
+            )}`}
+          >
+            <InfoCircleOutlined />
+          </button>
+        </Tooltip>
       )}
     </div>
   );

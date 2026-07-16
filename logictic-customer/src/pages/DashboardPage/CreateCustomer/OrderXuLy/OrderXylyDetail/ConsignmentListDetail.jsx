@@ -2135,7 +2135,7 @@ const ConsignmentListDetail = () => {
         />
 
         <SummaryCard
-          label="Tổng trọng lượng"
+          label="Tổng trọng lượng kiện hàng"
           value={formatWeight(
             consignment.totalWeight
           )}
@@ -2144,7 +2144,7 @@ const ConsignmentListDetail = () => {
         />
 
         <SummaryCard
-          label="Tổng thể tích"
+          label="Tổng thể tích kiện hàng"
           value={
             consignment.totalVolume ?? 0
           }
@@ -2153,14 +2153,14 @@ const ConsignmentListDetail = () => {
         />
 
         <SummaryCard
-          label="Tổng số lượng sản phẩm"
+          label="Tổng số lượng kiện hàng"
           value={totalProductQuantity}
-          suffix="sản phẩm"
+          suffix="kiện hàng"
           onOpen={handleOpenFullText}
         />
 
         <SummaryCard
-          label="Tổng khối lượng DIM"
+          label="Tổng khối lượng DIM kiện hàng"
           value={
             Number.isFinite(
               totalDimWeight
@@ -2325,7 +2325,7 @@ const ConsignmentListDetail = () => {
 
             <p>
               Có {items.length} dòng sản
-              phẩm trong lô hàng
+              phẩm trong kiện hàng
             </p>
           </div>
         </div>
@@ -2407,7 +2407,7 @@ const ConsignmentListDetail = () => {
               {consignment.route || "-"}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Ghi chú">
+            <Descriptions.Item label="Ghi chú kiện hàng">
               {consignment.note ||
                 "Không có ghi chú"}
             </Descriptions.Item>
