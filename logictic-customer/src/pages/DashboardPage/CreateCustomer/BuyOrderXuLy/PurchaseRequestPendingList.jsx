@@ -958,10 +958,10 @@ const PurchaseRequestPendingList = () => {
                               Người nhận: {item.receiverName || "-"}
                             </div>
 
-                            <div className="purchase-pending-sku-tag">
+                            {/* <div className="purchase-pending-sku-tag">
                               Mã yêu cầu:{" "}
                               {getPurchaseId(item) || "-"}
-                            </div>
+                            </div> */}
 
                             <div className="purchase-pending-products">
                               <div className="purchase-pending-products-title">

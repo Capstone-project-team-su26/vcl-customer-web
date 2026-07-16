@@ -1530,12 +1530,12 @@ const ConsignmentList = () => {
                               )}
                             </div>
 
-                            <div className="sku-tag">
+                            {/* <div className="sku-tag">
                               Mã đơn:{" "}
                               {getOrderCode(
                                 item
                               )}
-                            </div>
+                            </div> */}
 
                             <div className="receiver-phone">
                               SĐT:{" "}

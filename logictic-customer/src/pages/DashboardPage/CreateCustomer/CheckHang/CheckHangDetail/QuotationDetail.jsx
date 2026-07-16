@@ -114,6 +114,16 @@ const CALCULATION_TYPE_LABELS = {
   PERCENTAGE: "Phần trăm",
 };
 
+/*
+ * Các khoản phí đã có field riêng trong báo giá.
+ * Không cộng lại lần hai từ additionalFees.
+ */
+const BASE_COST_FEE_CODES = new Set([
+  "MAIN_SERVICE",
+  "SERVICE_FEE",
+  "TAX_DUTY",
+]);
+
 /* =========================================================
    COMMON HELPERS
    ========================================================= */
@@ -375,6 +385,14 @@ const formatNumber = (
   ).format(number);
 };
 
+const formatWeightKg = (value) => {
+  return formatNumber(value, 4);
+};
+
+const formatVolumeCm3 = (value) => {
+  return formatNumber(value, 4);
+};
+
 const formatFeeQuantity = (quantity) => {
   if (
     quantity === null ||
@@ -602,9 +620,25 @@ const normalizeFeeToCostItem = (
 };
 
 const getCostItems = (quotation) => {
-  return getAdditionalFees(quotation).map(
-    normalizeFeeToCostItem
-  );
+  return getAdditionalFees(quotation)
+    .map(normalizeFeeToCostItem)
+    .filter((item) => {
+      const normalizedCode =
+        normalizeStatus(item?.code);
+
+      /*
+       * MAIN_SERVICE đã nằm trong estimatedFreightCharge.
+       * SERVICE_FEE đã nằm trong serviceFee.
+       * TAX_DUTY đã nằm trong taxAndDuty.
+       *
+       * Chỉ giữ lại các phụ phí thật như:
+       * WOOD_CRATE, SUR_INSPECTION,
+       * SUR_INSURANCE_3PERCENT...
+       */
+      return !BASE_COST_FEE_CODES.has(
+        normalizedCode
+      );
+    });
 };
 
 const getActiveCostItems = (
@@ -1720,7 +1754,7 @@ const QuotationDetail = () => {
             </div>
 
             <div className="quotation-meta-row">
-              <span>
+              {/* <span>
                 Mã báo giá:
                 <strong>
                   {displayQuotationCode}
@@ -1734,7 +1768,7 @@ const QuotationDetail = () => {
                     orderId ||
                     "-"}
                 </strong>
-              </span>
+              </span> */}
 
               <span>
                 Loại báo giá:
@@ -1816,10 +1850,10 @@ const QuotationDetail = () => {
           </span>
 
           <strong>
-            {formatNumber(
+            {formatWeightKg(
               quotation.totalWeight
             )}
-            <small>kg</small>
+            <small> kg</small>
           </strong>
         </div>
 
@@ -1833,10 +1867,10 @@ const QuotationDetail = () => {
           </span>
 
           <strong>
-            {formatNumber(
+            {formatWeightKg(
               quotation.volumetricWeight
             )}
-            <small>kg</small>
+            <small> kg</small>
           </strong>
         </div>
 
@@ -1850,10 +1884,10 @@ const QuotationDetail = () => {
           </span>
 
           <strong>
-            {formatNumber(
+            {formatWeightKg(
               quotation.chargeableWeight
             )}
-            <small>kg</small>
+            <small> kg</small>
           </strong>
         </div>
       </section>
@@ -2131,7 +2165,7 @@ const QuotationDetail = () => {
               </div>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Mã báo giá">
+            {/* <Descriptions.Item label="Mã báo giá">
               <span className="quotation-id-text">
                 {displayQuotationCode}
               </span>
@@ -2143,7 +2177,7 @@ const QuotationDetail = () => {
                   orderId ||
                   "-"}
               </span>
-            </Descriptions.Item>
+            </Descriptions.Item> */}
 
             <Descriptions.Item label="Loại báo giá">
               <Tag color="blue">
@@ -2170,28 +2204,28 @@ const QuotationDetail = () => {
             </Descriptions.Item>
 
             <Descriptions.Item label="Tổng trọng lượng">
-              {formatNumber(
+              {formatWeightKg(
                 quotation.totalWeight
               )}{" "}
               kg
             </Descriptions.Item>
 
             <Descriptions.Item label="Tổng thể tích">
-              {formatNumber(
+              {formatVolumeCm3(
                 quotation.totalVolume
               )}{" "}
               cm³
             </Descriptions.Item>
 
             <Descriptions.Item label="Trọng lượng quy đổi">
-              {formatNumber(
+              {formatWeightKg(
                 quotation.volumetricWeight
               )}{" "}
               kg
             </Descriptions.Item>
 
             <Descriptions.Item label="Trọng lượng tính cước">
-              {formatNumber(
+              {formatWeightKg(
                 quotation.chargeableWeight
               )}{" "}
               kg
@@ -2387,7 +2421,7 @@ const QuotationDetail = () => {
                       </strong>
                     </div>
 
-                    <div>
+                    {/* <div>
                       <span>Mã định danh phí</span>
                       <strong className="quotation-id-text">
                         {getSafeText(
@@ -2403,7 +2437,7 @@ const QuotationDetail = () => {
                           fee.pricingRuleId
                         )}
                       </strong>
-                    </div>
+                    </div> */}
 
                     <div>
                       <span>Ngày tạo phí</span>

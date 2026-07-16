@@ -612,14 +612,14 @@ const PurchaseRequestDetail = () => {
               )}
             </h1>
 
-            <p>
+            {/* <p>
               Mã yêu cầu:{" "}
               <strong>
                 {safeText(
                   purchaseRequest.purchaseRequestId
                 )}
               </strong>
-            </p>
+            </p> */}
           </div>
         </div>
 
@@ -714,16 +714,16 @@ const PurchaseRequestDetail = () => {
             />
 
             <InfoRow
-              label="Người tạo"
+              label="Người tạo mua hộ"
               value={purchaseRequest.createdByName}
             />
 
-            <InfoRow
+            {/* <InfoRow
               label="Customer ID"
               value={purchaseRequest.customerId}
               copyable
               onCopy={handleCopy}
-            />
+            /> */}
           </div>
         </div>
 

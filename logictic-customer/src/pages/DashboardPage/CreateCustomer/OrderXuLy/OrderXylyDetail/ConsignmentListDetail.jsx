@@ -309,8 +309,9 @@ const getStatusClassName = (status) => {
 };
 
 
-const DIM_DECIMAL_PLACES = 2;
-const MIN_DIM_WEIGHT = 0.01;
+const DIM_DECIMAL_PLACES = 4;
+const MIN_DIM_WEIGHT = 0.0001;
+const DIM_ROUNDING_EPSILON = 1e-12;
 
 const roundDimWeightUp = (value) => {
   const number = Number(value);
@@ -326,16 +327,21 @@ const roundDimWeightUp = (value) => {
     10 ** DIM_DECIMAL_PLACES;
 
   /*
-   * Làm tròn LÊN đến 2 chữ số thập phân.
+   * Làm tròn LÊN đến 4 chữ số thập phân.
+   *
    * Ví dụ:
-   * 0.001  -> 0.01
-   * 0.011  -> 0.02
-   * 1.231  -> 1.24
+   * 0.00001  -> 0.0001
+   * 0.00101  -> 0.0011
+   * 0.01111  -> 0.0112
+   * 1.23101  -> 1.2311
+   * 1.23450  -> 1.2345
    */
   const roundedValue =
     Math.ceil(
-      (number - 1e-10) *
-        multiplier
+      (
+        number -
+        DIM_ROUNDING_EPSILON
+      ) * multiplier
     ) / multiplier;
 
   return Math.max(
@@ -1688,7 +1694,7 @@ const ConsignmentListDetail = () => {
           if (dimWeight === null) {
             return (
               <span className="detail-pending-value">
-                Thiếu kích thước hoặc số lượng
+                Thiếu thông tin kích thước
               </span>
             );
           }
@@ -1915,13 +1921,17 @@ const ConsignmentListDetail = () => {
   const quotation =
     consignment.quotation || null;
 
-  const totalProductQuantity =
-    items.reduce(
-      (total, item) =>
-    
-        (Number(item.quantity) || 0),
-      0
-    );
+  /*
+   * Tổng số kiện hàng được tính theo số phần tử trong items.
+   *
+   * 1 item/kiện => 1 kiện.
+   * 2 item/kiện => 2 kiện.
+   *
+   * Không cộng quantity vì quantity là số lượng sản phẩm
+   * nằm bên trong từng kiện.
+   */
+  const totalPackageCount =
+    items.length;
 
 
   const calculatedTotalDimWeight =
@@ -2153,9 +2163,9 @@ const ConsignmentListDetail = () => {
         />
 
         <SummaryCard
-          label="Tổng số lượng kiện hàng"
-          value={totalProductQuantity}
-          suffix="kiện hàng"
+          label="Tổng số kiện hàng"
+          value={totalPackageCount}
+          suffix="kiện"
           onOpen={handleOpenFullText}
         />
 
