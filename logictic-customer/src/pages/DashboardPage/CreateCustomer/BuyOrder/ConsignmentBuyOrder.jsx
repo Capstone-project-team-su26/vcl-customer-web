@@ -164,8 +164,13 @@ const getFieldClassName = (
     .filter(Boolean)
     .join(" ");
 
-const sanitizeInteger = (value) =>
-  String(value ?? "").replace(/\D/g, "");
+const sanitizeInteger = (value) => {
+  const digits = String(value ?? "").replace(/\D/g, "");
+
+  // Không cho nhập 0 hoặc nhiều số 0 ở đầu.
+  // Ví dụ: "0", "00" => ""; "01" => "1"; "10" vẫn giữ nguyên.
+  return digits.replace(/^0+/, "");
+};
 
 const preventInvalidNumberKeys = (
   event
