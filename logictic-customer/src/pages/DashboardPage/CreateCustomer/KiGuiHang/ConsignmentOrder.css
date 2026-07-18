@@ -6,7 +6,7 @@
   flex-direction: column;
 }
 
-/* NĂ„â€Ă‚ÂT QUAY LÄ‚Â¡Ă‚Âº I */
+/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT QUAY LĂ„â€Ă‚Â¡Ä‚â€Ă‚Âº I */
 .back-navigation {
   display: inline-flex;
   align-items: center;
@@ -26,7 +26,7 @@
   font-size: 10px;
 }
 
-/* GRID LAYOUT CHIA Ä‚â€Ă‚ÂĂ„â€Ă¢â‚¬ÂI */
+/* GRID LAYOUT CHIA Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‚ÂI */
 .consignment-layout-grid {
   display: grid;
   grid-template-columns: 340px 1fr;
@@ -35,7 +35,7 @@
   min-height: 0;
 }
 
-/* ================= CÄ‚Â¡Ă‚Â»Ă‹Å“T TRĂ„â€Ă‚ÂI CÄ‚Â¡Ă‚Â»Ă‚Â Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‚ÂNH ================= */
+/* ================= CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œT TRÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂI CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂNH ================= */
 .layout-left-fixed-sidebar {
   display: flex;
   flex-direction: column;
@@ -87,7 +87,7 @@
   border-top: 1px dashed #e2e8f0;
 }
 
-/* THĂ„â€Ă¢â€Â¬NH PHÄ‚Â¡Ă‚ÂºĂ‚Â¦N BOX Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‚ÂA CHÄ‚Â¡Ă‚Â»Ă‹â€  TÄ‚â€Ă‚Â¨NH */
+/* THÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NH PHĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¦N BOX Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂA CHĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă¢â‚¬  TĂ„â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¨NH */
 .static-display-box {
   width: 100%;
   min-height: 40px;
@@ -241,7 +241,7 @@
   line-height: 1.3;
 }
 
-/* ================= CÄ‚Â¡Ă‚Â»Ă‹Å“T PHÄ‚Â¡Ă‚ÂºĂ‚Â¢I CUÄ‚Â¡Ă‚Â»Ă‹Å“N KIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N HĂ„â€Ă¢â€Â¬NG ================= */
+/* ================= CĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œT PHĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¢I CUĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œN KIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N HÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NG ================= */
 .layout-right-scrollable-form {
   height: 100%;
   overflow-y: auto;
@@ -415,7 +415,7 @@
   color: #94a3b8;
 }
 
-/* THÄ‚â€ Ă‚Â¯ VIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N LÄ‚â€ Ă‚Â¯Ä‚Â¡Ă‚Â»Ă‚ÂI GALLERY Ä‚Â¡Ă‚ÂºĂ‚Â¢NH ASPECT RATIO 1/1 CHUÄ‚Â¡Ă‚ÂºĂ‚Â¨N Ä‚â€Ă‚ÂÄ‚Â¡Ă‚ÂºĂ‚Â¸P */
+/* THĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯ VIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N LĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚ÂI GALLERY Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¢NH ASPECT RATIO 1/1 CHUĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¨N Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¸P */
 .image-previews-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
@@ -464,7 +464,7 @@
   background-color: #ef4444;
 }
 
-/* NĂ„â€Ă‚ÂT THĂ„â€Ă‚ÂM KIÄ‚Â¡Ă‚Â»Ă¢â‚¬ N HĂ„â€Ă¢â€Â¬NG */
+/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂT THÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂM KIĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬ N HÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â‚¬ÂĂ‚Â¬NG */
 .add-package-dashed-trigger {
   width: 100%;
   border: 2px dashed #cbd5e1;
@@ -494,7 +494,7 @@
   color: #475569;
 }
 
-/* THANH LÄ‚â€ Ă‚Â¯U Ă„â€Ă‚Â PHĂ„â€Ă‚ÂA Ä‚â€Ă‚ÂĂ„â€Ă‚ÂY */
+/* THANH LĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â¯U Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â PHÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂA Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂY */
 .sticky-action-notice-bar {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -545,7 +545,7 @@
   background-color: #f59e0b;
 }
 
-/* ================= OVERLAY PHĂ„â€Ă¢â‚¬Å“NG TO / THU NHÄ‚Â¡Ă‚Â»Ă‚Â LIGHTBOX TÄ‚Â¡Ă‚Â»Ă‚Â° Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‹Å“NG ================= */
+/* ================= OVERLAY PHÄ‚â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă…â€œNG TO / THU NHĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â LIGHTBOX TĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â° Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€¹Ă…â€œNG ================= */
 .lightbox-overlay-modal {
   position: fixed;
   top: 0;
@@ -586,7 +586,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Animations hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡u Ä‚Â¡Ă‚Â»Ă‚Â©ng mÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă‚Â£t */
+/* Animations hiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡u Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â©ng mĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â£t */
 .animate-zoom-in {
   animation: zoomIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -786,7 +786,7 @@
   margin-right: 7px;
 }
 
-/* Ä‚Â¡Ă‚ÂºĂ‚Â¨n nĂ„â€Ă‚Âºt tÄ‚â€Ă†â€™ng giÄ‚Â¡Ă‚ÂºĂ‚Â£m mÄ‚Â¡Ă‚ÂºĂ‚Â·c Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¹nh cÄ‚Â¡Ă‚Â»Ă‚Â§a input number */
+/* Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¨n nÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt tĂ„â€Ă¢â‚¬ÂÄ‚â€ Ă¢â‚¬â„¢ng giĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£m mĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â·c Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¹nh cĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â§a input number */
 
 .custom-input[type="number"]::-webkit-inner-spin-button,
 .custom-input[type="number"]::-webkit-outer-spin-button {
@@ -1052,9 +1052,9 @@
 }
 
 /* =========================================================
-   TYPOGRAPHY SYSTEM Ä‚Â¢Ă¢â€Â¬Ă¢â‚¬Â WEB UI
-   ChuÄ‚Â¡Ă‚ÂºĂ‚Â©n hĂ„â€Ă‚Â³a font, kĂ„â€Ă‚Â­ch thÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă¢â‚¬Âºc, Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â€Â¢ Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚ÂºĂ‚Â­m vĂ„â€  khÄ‚Â¡Ă‚ÂºĂ‚Â£ nÄ‚â€Ă†â€™ng Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Âc.
-   GiÄ‚Â¡Ă‚Â»Ă‚Â¯ nguyĂ„â€Ă‚Âªn toĂ„â€ n bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ layout, mĂ„â€ u sÄ‚Â¡Ă‚ÂºĂ‚Â¯c vĂ„â€  hĂ„â€ nh vi hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n tÄ‚Â¡Ă‚ÂºĂ‚Â¡i.
+   TYPOGRAPHY SYSTEM Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚Â¢Ă¢â€Â¬Ă‚Â WEB UI
+   ChuĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â©n hÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³a font, kÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â­ch thĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºc, Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â­m vÄ‚â€Ă¢â‚¬Â  khĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£ nĂ„â€Ă¢â‚¬ÂÄ‚â€ Ă¢â‚¬â„¢ng Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âc.
+   GiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â¯ nguyÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªn toÄ‚â€Ă¢â‚¬Â n bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ layout, mÄ‚â€Ă¢â‚¬Â u sĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¯c vÄ‚â€Ă¢â‚¬Â  hÄ‚â€Ă¢â‚¬Â nh vi hiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡i.
    ========================================================= */
 
 .consignment-container {
@@ -1095,7 +1095,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Ä‚â€Ă‚ÂiÄ‚Â¡Ă‚Â»Ă‚Âu hÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă¢â‚¬Âºng */
+/* Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âu hĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºng */
 .back-navigation {
   font-size: 13px;
   font-weight: 600;
@@ -1108,7 +1108,7 @@
   line-height: 1;
 }
 
-/* TiĂ„â€Ă‚Âªu Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Â trang */
+/* TiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªu Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â trang */
 .title-text-group h2 {
   font-size: var(--font-size-page-title);
   font-weight: 700;
@@ -1124,7 +1124,7 @@
   letter-spacing: 0;
 }
 
-/* NÄ‚Â¡Ă‚Â»Ă¢â€Â¢i dung vĂ„â€  Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¹a chÄ‚Â¡Ă‚Â»Ă¢â‚¬Â° */
+/* NĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢i dung vÄ‚â€Ă¢â‚¬Â  Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¹a chĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â° */
 .static-display-box {
   font-size: 14px;
   font-weight: 500;
@@ -1491,7 +1491,7 @@
   }
 }
 
-/* NĂ„â€Ă‚Âºt bÄ‚Â¡Ă‚ÂºĂ‚Â¥m */
+/* NÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt bĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¥m */
 .btn-add-address,
 .btn-inline-save,
 .btn-inline-cancel,
@@ -1544,7 +1544,7 @@
   line-height: 1.5;
 }
 
-/* Header tÄ‚Â¡Ă‚Â»Ă‚Â«ng kiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n hĂ„â€ ng */
+/* Header tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â«ng kiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n hÄ‚â€Ă¢â‚¬Â ng */
 .step-number-circle {
   font-size: 12px;
   font-weight: 700;
@@ -1558,7 +1558,7 @@
   letter-spacing: -0.01em;
 }
 
-/* Label vĂ„â€  trÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă‚Âng nhÄ‚Â¡Ă‚ÂºĂ‚Â­p liÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡u */
+/* Label vÄ‚â€Ă¢â‚¬Â  trĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âng nhĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â­p liĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡u */
 .field-label {
   font-size: var(--font-size-label);
   font-weight: 600;
@@ -1607,7 +1607,7 @@
   font-weight: 400;
 }
 
-/* Khu vÄ‚Â¡Ă‚Â»Ă‚Â±c tÄ‚Â¡Ă‚ÂºĂ‚Â£i Ä‚Â¡Ă‚ÂºĂ‚Â£nh */
+/* Khu vĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â±c tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£i Ă„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£nh */
 .upload-main-text {
   font-size: 14px;
   font-weight: 600;
@@ -1626,7 +1626,7 @@
   line-height: 1;
 }
 
-/* Thanh lÄ‚â€ Ă‚Â°u Ă„â€Ă‚Â½ vĂ„â€  lightbox */
+/* Thanh lĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°u Ä‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â½ vÄ‚â€Ă¢â‚¬Â  lightbox */
 .notice-left-message p {
   font-size: 13px;
   font-weight: 400;
@@ -1679,7 +1679,7 @@
   line-height: 1.45;
 }
 
-/* TrÄ‚Â¡Ă‚ÂºĂ‚Â¡ng thĂ„â€Ă‚Â¡i disabled vÄ‚Â¡Ă‚ÂºĂ‚Â«n dÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¦ Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Âc */
+/* TrĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡ng thÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡i disabled vĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â«n dĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¦ Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âc */
 .consignment-container :where(input, textarea, select, button):disabled {
   font-weight: inherit;
 }
@@ -1698,7 +1698,7 @@
   .custom-input,
   .custom-select,
   .custom-textarea {
-    /* TrĂ„â€Ă‚Â¡nh trĂ„â€Ă‚Â¬nh duyÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡t iOS tÄ‚Â¡Ă‚Â»Ă‚Â± phĂ„â€Ă‚Â³ng to khi focus */
+    /* TrÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡nh trÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¬nh duyĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡t iOS tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â± phÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â³ng to khi focus */
     font-size: 16px;
   }
 
@@ -1806,8 +1806,8 @@
 }
 
 /* =========================================================
-   FINAL FIX â€” ADDRESS SELECT + SCROLL LOCK SAFE
-   Scope chá»‰ trong ConsignmentOrder
+   FINAL FIX Ă¢â‚¬â€ ADDRESS SELECT + SCROLL LOCK SAFE
+   Scope chĂ¡Â»â€° trong ConsignmentOrder
    ========================================================= */
 
 .consignment-container {
@@ -2060,7 +2060,7 @@
   min-height: 92px;
 }
 
-/* KhĂ´ng cho pháº§n upload/image lĂ m vá»¡ ngang layout */
+/* KhÄ‚Â´ng cho phĂ¡ÂºÂ§n upload/image lÄ‚ m vĂ¡Â»Â¡ ngang layout */
 .package-image-section,
 .image-previews-grid,
 .preview-image-item,
@@ -2069,7 +2069,7 @@
   max-width: 100%;
 }
 
-/* Sticky bar Ä‘áº¹p vĂ  khĂ´ng trĂ n */
+/* Sticky bar Ă„â€˜Ă¡ÂºÂ¹p vÄ‚  khÄ‚Â´ng trÄ‚ n */
 .sticky-action-notice-bar {
   position: sticky;
   bottom: 0;
@@ -2078,7 +2078,7 @@
   -webkit-backdrop-filter: blur(10px);
 }
 
-/* Loading overlay giá»¯ nguyĂªn trong mĂ n hĂ¬nh */
+/* Loading overlay giĂ¡Â»Â¯ nguyÄ‚Âªn trong mÄ‚ n hÄ‚Â¬nh */
 .create-order-loading-overlay {
   position: fixed;
   inset: 0;
@@ -2329,5 +2329,597 @@
   .route-select-section .custom-select {
     min-height: 42px;
     height: 42px;
+  }
+}
+/* =========================================================
+   GHI CHĂ CHUNG + Dá»CH Vá»¤ Bá»” SUNG
+   ========================================================= */
+
+.consignment-general-note-card {
+  --general-note-primary: #f59e0b;
+  --general-note-primary-dark: #b45309;
+  --general-note-primary-light: #fffbeb;
+  --general-note-border: #fde68a;
+  --general-note-text: #0f172a;
+  --general-note-muted: #64748b;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  margin-top: 20px !important;
+  margin-bottom: 24px !important;
+  padding: 24px;
+  color: var(--general-note-text);
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      rgba(245, 158, 11, 0.09),
+      transparent 250px
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+  border: 1px solid var(--general-note-border);
+  border-radius: 20px;
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.06),
+    0 2px 8px rgba(245, 158, 11, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  box-sizing: border-box;
+  animation: consignmentGeneralNoteEnter 0.42s cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.consignment-general-note-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #fbbf24,
+    #f59e0b,
+    transparent
+  );
+  border-radius: 0 0 999px 999px;
+  opacity: 0.9;
+}
+
+.consignment-general-note-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -90px;
+  right: -90px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(
+    circle,
+    rgba(251, 191, 36, 0.1),
+    transparent 68%
+  );
+  pointer-events: none;
+}
+
+/* Header */
+.consignment-general-note-card .form-step-header {
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 22px;
+  padding: 0 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.consignment-general-note-card .step-header-left {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.consignment-general-note-card .step-number-circle {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(145deg, #fbbf24, #f59e0b, #d97706);
+  border: 1px solid rgba(217, 119, 6, 0.24);
+  border-radius: 11px;
+  font-size: 16px;
+  line-height: 1;
+  box-shadow:
+    0 8px 18px rgba(245, 158, 11, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  animation: consignmentGeneralNoteIconPulse 2.8s ease-in-out infinite;
+}
+
+.consignment-general-note-card .step-number-circle .anticon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.consignment-general-note-card .form-step-header h3 {
+  min-width: 0;
+  margin: 0;
+  color: #172033;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+/* Label */
+.consignment-general-note-card .field-label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.consignment-general-note-card > .field-label,
+.consignment-general-note-card > [class*="field-label"] {
+  margin-bottom: 9px;
+}
+
+.consignment-general-note-card .field-label .anticon-info-circle,
+.consignment-general-note-card [class*="tooltip"] .anticon-info-circle {
+  color: #1677ff;
+  cursor: pointer !important;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.consignment-general-note-card .field-label .anticon-info-circle:hover,
+.consignment-general-note-card [class*="tooltip"] .anticon-info-circle:hover {
+  color: #0958d9;
+  transform: scale(1.12);
+}
+
+/* Package optional services */
+.consignment-general-note-card > .package-services-trigger {
+  width: 100%;
+  min-width: 0;
+  margin: 8px 0 24px;
+  border-color: #f3d48c;
+  box-shadow:
+    0 7px 18px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  animation: consignmentServiceTriggerEnter 0.45s 0.08s
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.consignment-general-note-card
+  .package-services-trigger:hover:not(:disabled) {
+  border-color: #f59e0b;
+  box-shadow:
+    0 11px 24px rgba(245, 158, 11, 0.12),
+    0 0 0 4px rgba(245, 158, 11, 0.07);
+  transform: translateY(-2px);
+}
+
+.consignment-general-note-card
+  .package-services-trigger:active:not(:disabled) {
+  transform: translateY(0) scale(0.995);
+}
+
+.consignment-general-note-card .package-services-trigger:focus-visible {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.14),
+    0 9px 22px rgba(15, 23, 42, 0.08);
+}
+
+.consignment-general-note-card .package-services-trigger__icon {
+  color: #b45309;
+  background: linear-gradient(145deg, #fff7df, #fef3c7);
+  border-color: #fde68a;
+  box-shadow: 0 5px 12px rgba(245, 158, 11, 0.11);
+}
+
+.consignment-general-note-card
+  .package-services-trigger__title-row
+  strong {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+.consignment-general-note-card .package-services-trigger__description {
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 450;
+  line-height: 1.55;
+}
+
+/* KhĂ´ng báº¯t buá»™c */
+.consignment-general-note-card
+  .package-services-trigger__status:not(.is-active) {
+  position: relative;
+  color: #92400e;
+  background: linear-gradient(180deg, #fffbeb, #fef3c7);
+  border: 1px solid #fcd34d;
+  box-shadow:
+    0 4px 10px rgba(245, 158, 11, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.consignment-general-note-card
+  .package-services-trigger__status:not(.is-active)::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  display: inline-block;
+  margin-right: 6px;
+  background-color: #f59e0b;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
+  animation: consignmentOptionalStatusPulse 2s ease-in-out infinite;
+}
+
+/* ÄĂ£ chá»n dá»‹ch vá»¥ */
+.consignment-general-note-card
+  .package-services-trigger__status.is-active {
+  color: #166534;
+  background: linear-gradient(180deg, #f0fdf4, #dcfce7);
+  border-color: #86efac;
+  box-shadow: 0 4px 10px rgba(34, 197, 94, 0.1);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.consignment-general-note-card .package-services-trigger__chips {
+  gap: 6px;
+}
+
+.consignment-general-note-card .package-services-trigger__chips > span {
+  color: #166534;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.07);
+  animation: consignmentServiceChipEnter 0.28s ease both;
+}
+
+/* Ghi chĂº Ä‘Æ¡n hĂ ng */
+.consignment-general-note-card > .input-field-group {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  padding-top: 23px;
+  gap: 8px;
+  border-top: 1px dashed #e2e8f0;
+  animation: consignmentNoteFieldEnter 0.45s 0.14s
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.consignment-general-note-card .custom-textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 120px;
+  max-height: 280px;
+  padding: 13px 14px 34px;
+  color: #1e293b;
+  background-color: #ffffff;
+  border: 1px solid #dbe3ed;
+  border-radius: 12px;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 1.62;
+  letter-spacing: 0;
+  outline: none;
+  resize: vertical;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.025);
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.consignment-general-note-card .custom-textarea:hover:not(:disabled) {
+  border-color: #fbbf24;
+}
+
+.consignment-general-note-card .custom-textarea:focus {
+  background-color: #ffffff;
+  border-color: #f59e0b;
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.11),
+    0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.consignment-general-note-card .custom-textarea::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+  opacity: 1;
+}
+
+.consignment-general-note-card .custom-textarea:disabled {
+  color: #94a3b8;
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.8;
+  resize: none;
+}
+
+.consignment-general-note-card .textarea-character-count {
+  align-self: flex-end;
+  min-width: 82px;
+  margin-top: -38px;
+  margin-right: 10px;
+  margin-bottom: 12px;
+  padding: 4px 8px;
+  color: #64748b;
+  background-color: rgba(248, 250, 252, 0.94);
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 650;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.consignment-general-note-card
+  .custom-textarea:focus
+  + .textarea-character-count {
+  color: #b45309;
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
+/* Validation */
+.consignment-general-note-card .custom-textarea.input-has-error {
+  color: #991b1b;
+  background-color: #fffafa;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.09);
+}
+
+.consignment-general-note-card .custom-textarea.input-has-error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
+.consignment-general-note-card .field-error-message {
+  margin-top: 3px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.45;
+}
+
+/* Animations */
+@keyframes consignmentGeneralNoteEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.988);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes consignmentServiceTriggerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes consignmentNoteFieldEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes consignmentGeneralNoteIconPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 18px rgba(245, 158, 11, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  50% {
+    box-shadow:
+      0 10px 22px rgba(245, 158, 11, 0.3),
+      0 0 0 5px rgba(245, 158, 11, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes consignmentOptionalStatusPulse {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes consignmentServiceChipEnter {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .consignment-general-note-card {
+    margin-top: 16px !important;
+    margin-bottom: 20px !important;
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .consignment-general-note-card::before {
+    left: 18px;
+    right: 18px;
+  }
+
+  .consignment-general-note-card .form-step-header {
+    margin-bottom: 18px;
+    padding-bottom: 15px;
+  }
+
+  .consignment-general-note-card .step-header-left {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .consignment-general-note-card .step-number-circle {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+    border-radius: 10px;
+  }
+
+  .consignment-general-note-card .form-step-header h3 {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .consignment-general-note-card > .package-services-trigger {
+    margin-bottom: 20px;
+  }
+
+  .consignment-general-note-card > .input-field-group {
+    padding-top: 20px;
+  }
+
+  .consignment-general-note-card .custom-textarea {
+    min-height: 130px;
+    padding: 12px 12px 34px;
+    font-size: 16px;
+  }
+
+  .consignment-general-note-card .custom-textarea::placeholder {
+    font-size: 13px;
+  }
+
+  .consignment-general-note-card .textarea-character-count {
+    margin-right: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .consignment-general-note-card {
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .consignment-general-note-card .form-step-header {
+    margin-bottom: 16px;
+  }
+
+  .consignment-general-note-card .form-step-header h3 {
+    font-size: 13.5px;
+  }
+
+  .consignment-general-note-card .package-services-trigger {
+    align-items: flex-start;
+  }
+
+  .consignment-general-note-card .package-services-trigger__status {
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  .consignment-general-note-card .custom-textarea {
+    min-height: 145px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consignment-general-note-card,
+  .consignment-general-note-card *,
+  .consignment-general-note-card *::before,
+  .consignment-general-note-card *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

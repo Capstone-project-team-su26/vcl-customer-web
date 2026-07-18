@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -26,6 +21,10 @@ import { Switch, Tooltip } from "antd";
 
 import AuthNotify from "../../../../utils/AuthNotify";
 import uploadImage from "../../../../api/Upload/UploadImage";
+import FieldLabelTooltip from "../../../../components/DashboardComponents/CustomerKiguiComponents/ToltipLapelComponents/FieldLabelTooltip";
+import PackageOptionalServices, {
+  EMPTY_PACKAGE_SERVICES,
+} from "../../../../components/DashboardComponents/CustomerKiguiComponents/PackageOptionalServices/PackageOptionalServices";
 
 import {
   createDeliveryAddressApi,
@@ -35,9 +34,7 @@ import {
   getProductTypesApi,
 } from "../../../../api/OrderApi/consignmentApi";
 
-import {
-  createPurchaseRequestApi,
-} from "../../../../api/OrderApi/purchaseRequestApi";
+import { createPurchaseRequestApi } from "../../../../api/OrderApi/purchaseRequestApi";
 
 import {
   getDistrictsByProvinceCode,
@@ -57,7 +54,6 @@ import "./ConsignmentBuyOrder.css";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
-
 const INITIAL_FORM = {
   route: "",
   receiverName: "",
@@ -65,6 +61,9 @@ const INITIAL_FORM = {
   selectedDeliveryAddress: "",
   requiresInspection: true,
   requiresQuantityCheck: true,
+  optionalServices: {
+    ...EMPTY_PACKAGE_SERVICES,
+  },
   generalNote: "",
 };
 
@@ -82,9 +81,7 @@ const createUniqueId = () => {
     return crypto.randomUUID();
   }
 
-  return `${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}`;
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
 const createEmptyItem = () => ({
@@ -112,27 +109,16 @@ const isCanceledRequest = (error) =>
   error?.name === "CanceledError" ||
   error?.name === "AbortError";
 
-const getApiErrorMessage = (
-  error,
-  fallbackMessage = "Đã xảy ra lỗi."
-) => {
-  const responseData =
-    error?.response?.data;
+const getApiErrorMessage = (error, fallbackMessage = "Đã xảy ra lỗi.") => {
+  const responseData = error?.response?.data;
 
-  if (
-    typeof responseData === "string" &&
-    responseData.trim()
-  ) {
+  if (typeof responseData === "string" && responseData.trim()) {
     return responseData;
   }
 
-  const validationErrors =
-    responseData?.errors;
+  const validationErrors = responseData?.errors;
 
-  if (
-    validationErrors &&
-    typeof validationErrors === "object"
-  ) {
+  if (validationErrors && typeof validationErrors === "object") {
     return Object.entries(validationErrors)
       .map(([field, value]) => {
         const messages = Array.isArray(value)
@@ -153,14 +139,8 @@ const getApiErrorMessage = (
   );
 };
 
-const getFieldClassName = (
-  baseClassName,
-  errorMessage
-) =>
-  [
-    baseClassName,
-    errorMessage && "purchase-buy-input-has-error",
-  ]
+const getFieldClassName = (baseClassName, errorMessage) =>
+  [baseClassName, errorMessage && "purchase-buy-input-has-error"]
     .filter(Boolean)
     .join(" ");
 
@@ -172,22 +152,13 @@ const sanitizeInteger = (value) => {
   return digits.replace(/^0+/, "");
 };
 
-const preventInvalidNumberKeys = (
-  event
-) => {
-  if (
-    ["-", "+", "e", "E", ".", ","].includes(
-      event.key
-    )
-  ) {
+const preventInvalidNumberKeys = (event) => {
+  if (["-", "+", "e", "E", ".", ","].includes(event.key)) {
     event.preventDefault();
   }
 };
 
-const findArrayFromResult = (
-  result,
-  extraKeys = []
-) => {
+const findArrayFromResult = (result, extraKeys = []) => {
   const candidates = [
     result,
     result?.data,
@@ -195,32 +166,17 @@ const findArrayFromResult = (
     result?.results,
     result?.data?.items,
     result?.data?.results,
-    ...extraKeys.flatMap((key) => [
-      result?.[key],
-      result?.data?.[key],
-    ]),
+    ...extraKeys.flatMap((key) => [result?.[key], result?.data?.[key]]),
   ];
 
-  return (
-    candidates.find(Array.isArray) || []
-  );
+  return candidates.find(Array.isArray) || [];
 };
 
-const normalizeOptionList = (
-  result,
-  extraKeys = []
-) =>
-  findArrayFromResult(
-    result,
-    extraKeys
-  )
+const normalizeOptionList = (result, extraKeys = []) =>
+  findArrayFromResult(result, extraKeys)
     .map((item) => {
-      if (
-        typeof item === "string" ||
-        typeof item === "number"
-      ) {
-        const value =
-          String(item).trim();
+      if (typeof item === "string" || typeof item === "number") {
+        const value = String(item).trim();
 
         return {
           value,
@@ -236,7 +192,7 @@ const normalizeOptionList = (
           item?.routeId ??
           item?.productTypeId ??
           item?.id ??
-          ""
+          "",
       ).trim();
 
       const label = String(
@@ -246,7 +202,7 @@ const normalizeOptionList = (
           item?.routeName ??
           item?.productTypeName ??
           item?.description ??
-          value
+          value,
       ).trim();
 
       return {
@@ -254,16 +210,9 @@ const normalizeOptionList = (
         label,
       };
     })
-    .filter(
-      (item) =>
-        item.value &&
-        item.label
-    );
+    .filter((item) => item.value && item.label);
 
-const normalizeDeliveryAddress = (
-  item,
-  index = 0
-) => {
+const normalizeDeliveryAddress = (item, index = 0) => {
   if (!item) {
     return null;
   }
@@ -294,7 +243,7 @@ const normalizeDeliveryAddress = (
       item.receiverAddress ||
       item.fullAddress ||
       item.deliveryAddress ||
-      ""
+      "",
   ).trim();
 
   if (!address) {
@@ -302,10 +251,7 @@ const normalizeDeliveryAddress = (
   }
 
   const apiId = String(
-    item.deliveryAddressId ||
-      item.addressId ||
-      item.id ||
-      ""
+    item.deliveryAddressId || item.addressId || item.id || "",
   ).trim();
 
   return {
@@ -320,25 +266,16 @@ const normalizeDeliveryAddress = (
     districtName: item.districtName || item.district_name || "",
     wardCode: item.wardCode || item.ward_code || "",
     wardName: item.wardName || item.ward_name || "",
-    isDefault: Boolean(
-      item.isDefault
-    ),
+    isDefault: Boolean(item.isDefault),
   };
 };
 
-const normalizeDeliveryAddressList = (
-  result
-) =>
-  findArrayFromResult(result, [
-    "addresses",
-    "deliveryAddresses",
-  ])
+const normalizeDeliveryAddressList = (result) =>
+  findArrayFromResult(result, ["addresses", "deliveryAddresses"])
     .map(normalizeDeliveryAddress)
     .filter(Boolean);
 
-const extractUploadedImageUrl = (
-  result
-) => {
+const extractUploadedImageUrl = (result) => {
   const candidates = [
     result,
     result?.url,
@@ -358,11 +295,9 @@ const extractUploadedImageUrl = (
   ];
 
   return (
-    candidates.find(
-      (item) =>
-        typeof item === "string" &&
-        item.trim()
-    )?.trim() || ""
+    candidates
+      .find((item) => typeof item === "string" && item.trim())
+      ?.trim() || ""
   );
 };
 
@@ -371,13 +306,7 @@ const uploadPackageImage = async (file) => {
     throw new Error("File ảnh không hợp lệ.");
   }
 
-  if (
-    ![
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ].includes(file.type)
-  ) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
     throw new Error("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.");
   }
 
@@ -389,9 +318,7 @@ const uploadPackageImage = async (file) => {
   const imageUrl = extractUploadedImageUrl(uploadResult);
 
   if (!imageUrl) {
-    throw new Error(
-      "API upload ảnh không trả về đường dẫn ảnh hợp lệ."
-    );
+    throw new Error("API upload ảnh không trả về đường dẫn ảnh hợp lệ.");
   }
 
   return imageUrl;
@@ -399,31 +326,19 @@ const uploadPackageImage = async (file) => {
 
 const isValidHttpUrl = (value) => {
   try {
-    const url = new URL(
-      String(value || "").trim()
-    );
+    const url = new URL(String(value || "").trim());
 
-    return (
-      url.protocol === "http:" ||
-      url.protocol === "https:"
-    );
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
   }
 };
 
-const getSourceWebsiteFromLink = (
-  value
-) => {
+const getSourceWebsiteFromLink = (value) => {
   try {
-    const url = new URL(
-      String(value || "").trim()
-    );
+    const url = new URL(String(value || "").trim());
 
-    return url.hostname.replace(
-      /^www\./,
-      ""
-    );
+    return url.hostname.replace(/^www\./, "");
   } catch {
     return "";
   }
@@ -431,9 +346,8 @@ const getSourceWebsiteFromLink = (
 
 const getAddressOptionName = (options, value) => {
   return (
-    options.find(
-      (option) => String(option.value) === String(value)
-    )?.label || ""
+    options.find((option) => String(option.value) === String(value))?.label ||
+    ""
   );
 };
 
@@ -454,125 +368,78 @@ const validateItem = (item) => {
   const errors = {};
 
   if (!item.productLink.trim()) {
-    errors.productLink =
-      "Vui lòng nhập liên kết sản phẩm.";
-  } else if (
-    !isValidHttpUrl(
-      item.productLink
-    )
-  ) {
+    errors.productLink = "Vui lòng nhập liên kết sản phẩm.";
+  } else if (!isValidHttpUrl(item.productLink)) {
     errors.productLink =
       "Liên kết sản phẩm phải bắt đầu bằng http:// hoặc https://.";
   }
 
   if (!item.sourceWebsite.trim()) {
-    errors.sourceWebsite =
-      "Vui lòng nhập website nguồn.";
+    errors.sourceWebsite = "Vui lòng nhập website nguồn.";
   }
 
   if (!item.productType) {
-    errors.productType =
-      "Vui lòng chọn loại sản phẩm.";
+    errors.productType = "Vui lòng chọn loại sản phẩm.";
   }
 
   if (!item.productName.trim()) {
-    errors.productName =
-      "Vui lòng nhập tên sản phẩm.";
+    errors.productName = "Vui lòng nhập tên sản phẩm.";
   }
 
-  const quantity =
-    Number(item.quantity);
+  const quantity = Number(item.quantity);
 
   if (item.quantity === "") {
-    errors.quantity =
-      "Vui lòng nhập số lượng.";
-  } else if (
-    !Number.isInteger(quantity) ||
-    quantity < 1
-  ) {
-    errors.quantity =
-      "Số lượng phải là số nguyên từ 1 trở lên.";
-  } else if (
-    quantity > 2147483647
-  ) {
-    errors.quantity =
-      "Số lượng vượt quá giới hạn cho phép.";
+    errors.quantity = "Vui lòng nhập số lượng.";
+  } else if (!Number.isInteger(quantity) || quantity < 1) {
+    errors.quantity = "Số lượng phải là số nguyên từ 1 trở lên.";
+  } else if (quantity > 2147483647) {
+    errors.quantity = "Số lượng vượt quá giới hạn cho phép.";
   }
 
   if (!item.attributes.trim()) {
-    errors.attributes =
-      "Vui lòng nhập thuộc tính sản phẩm.";
+    errors.attributes = "Vui lòng nhập thuộc tính sản phẩm.";
   }
 
   if (!item.image) {
-    errors.image =
-      "Vui lòng tải ảnh sản phẩm.";
+    errors.image = "Vui lòng tải ảnh sản phẩm.";
   }
 
   return errors;
 };
 
-const validateBuyOrderForm = ({
-  form,
-  items,
-}) => {
-  const formErrors =
-    createEmptyFormErrors();
+const validateBuyOrderForm = ({ form, items }) => {
+  const formErrors = createEmptyFormErrors();
 
   if (!form.route) {
-    formErrors.route =
-      "Hệ thống chưa tải được tuyến hàng. Vui lòng làm mới trang.";
+    formErrors.route = "Vui lòng chọn tuyến hàng.";
   }
 
   if (!form.receiverName.trim()) {
-    formErrors.receiverName =
-      "Vui lòng nhập tên người nhận.";
-  } else if (
-    form.receiverName.trim().length <
-    2
-  ) {
-    formErrors.receiverName =
-      "Tên người nhận phải có ít nhất 2 ký tự.";
+    formErrors.receiverName = "Vui lòng nhập tên người nhận.";
+  } else if (form.receiverName.trim().length < 2) {
+    formErrors.receiverName = "Tên người nhận phải có ít nhất 2 ký tự.";
   }
 
   if (!form.receiverPhone.trim()) {
-    formErrors.receiverPhone =
-      "Vui lòng nhập số điện thoại.";
-  } else if (
-    !/^0\d{9}$/.test(
-      form.receiverPhone.trim()
-    )
-  ) {
+    formErrors.receiverPhone = "Vui lòng nhập số điện thoại.";
+  } else if (!/^0\d{9}$/.test(form.receiverPhone.trim())) {
     formErrors.receiverPhone =
       "Số điện thoại phải có 10 số và bắt đầu bằng số 0.";
   }
 
-  if (
-    !form.selectedDeliveryAddress.trim()
-  ) {
+  if (!form.selectedDeliveryAddress.trim()) {
     formErrors.selectedDeliveryAddress =
       "Vui lòng thêm và chọn địa chỉ nhận hàng.";
   }
 
-  const itemErrors =
-    Object.fromEntries(
-      items.map((item) => [
-        item.id,
-        validateItem(item),
-      ])
-    );
+  const itemErrors = Object.fromEntries(
+    items.map((item) => [item.id, validateItem(item)]),
+  );
 
   const isValid =
-    !Object.values(
-      formErrors
-    ).some(Boolean) &&
-    Object.values(
-      itemErrors
-    ).every(
-      (errors) =>
-        !Object.values(
-          errors
-        ).some(Boolean)
+    !Object.values(formErrors).some(Boolean) &&
+    Object.values(itemErrors).every(
+      (errors) => !Object.values(errors).some(Boolean),
     );
 
   return {
@@ -582,9 +449,7 @@ const validateBuyOrderForm = ({
   };
 };
 
-const FieldError = ({
-  message,
-}) => {
+const FieldError = ({ message }) => {
   if (!message) {
     return null;
   }
@@ -615,31 +480,15 @@ const SelectField = ({
 
     <select
       value={value}
-      disabled={
-        disabled || loading
-      }
+      disabled={disabled || loading}
       aria-invalid={Boolean(error)}
-      className={getFieldClassName(
-        "purchase-buy-custom-select",
-        error
-      )}
-      onChange={(event) =>
-        onChange(
-          event.target.value
-        )
-      }
+      className={getFieldClassName("purchase-buy-custom-select", error)}
+      onChange={(event) => onChange(event.target.value)}
     >
-      <option value="">
-        {loading
-          ? "Đang tải dữ liệu..."
-          : placeholder}
-      </option>
+      <option value="">{loading ? "Đang tải dữ liệu..." : placeholder}</option>
 
       {options.map((option) => (
-        <option
-          key={option.value}
-          value={option.value}
-        >
+        <option key={option.value} value={option.value}>
           {option.label}
         </option>
       ))}
@@ -652,173 +501,82 @@ const SelectField = ({
 export default function ConsignmentBuyOrder() {
   const navigate = useNavigate();
 
-  const fileInputRefs =
-    useRef({});
+  const fileInputRefs = useRef({});
 
-  const itemsRef =
-    useRef([]);
+  const itemsRef = useRef([]);
 
-  const [form, setForm] =
-    useState(INITIAL_FORM);
+  const [form, setForm] = useState(INITIAL_FORM);
 
-  const [items, setItems] =
-    useState([
-      createEmptyItem(),
-    ]);
+  const [items, setItems] = useState([createEmptyItem()]);
 
-  const [
-    formErrors,
-    setFormErrors,
-  ] = useState(
-    createEmptyFormErrors()
+  const [formErrors, setFormErrors] = useState(createEmptyFormErrors());
+
+  const [itemErrors, setItemErrors] = useState({});
+
+  const [routeOptions, setRouteOptions] = useState([]);
+
+  const [productTypeOptions, setProductTypeOptions] = useState([]);
+
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+
+  const [addressList, setAddressList] = useState([]);
+
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
+
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+
+  const [deletingAddressId, setDeletingAddressId] = useState("");
+
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+
+  const [newAddressInput, setNewAddressInput] = useState("");
+
+  const [newAddressError, setNewAddressError] = useState("");
+
+  const [newAddressSelect, setNewAddressSelect] = useState(
+    INITIAL_ADDRESS_SELECT,
   );
 
-  const [
-    itemErrors,
-    setItemErrors,
-  ] = useState({});
+  const [provinceOptions, setProvinceOptions] = useState([]);
 
-  const [
-    routeOptions,
-    setRouteOptions,
-  ] = useState([]);
+  const [districtOptions, setDistrictOptions] = useState([]);
 
-  const [
-    productTypeOptions,
-    setProductTypeOptions,
-  ] = useState([]);
+  const [wardOptions, setWardOptions] = useState([]);
 
-  const [
-    isLoadingOptions,
-    setIsLoadingOptions,
-  ] = useState(true);
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
 
-  const [
-    addressList,
-    setAddressList,
-  ] = useState([]);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
 
-  const [
-    isLoadingAddresses,
-    setIsLoadingAddresses,
-  ] = useState(true);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
 
-  const [
-    isSavingAddress,
-    setIsSavingAddress,
-  ] = useState(false);
+  const [activeLightboxImg, setActiveLightboxImg] = useState(null);
 
-  const [
-    deletingAddressId,
-    setDeletingAddressId,
-  ] = useState("");
+  const [isConfirming, setIsConfirming] = useState(false);
 
-  const [
-    isAddingAddress,
-    setIsAddingAddress,
-  ] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [
-    newAddressInput,
-    setNewAddressInput,
-  ] = useState("");
-
-  const [
-    newAddressError,
-    setNewAddressError,
-  ] = useState("");
-
-  const [
-    newAddressSelect,
-    setNewAddressSelect,
-  ] = useState(
-    INITIAL_ADDRESS_SELECT
+  const [submitMessage, setSubmitMessage] = useState(
+    "Đang chuẩn bị tạo yêu cầu...",
   );
 
-  const [
-    provinceOptions,
-    setProvinceOptions,
-  ] = useState([]);
+  const clearFormError = (field) => {
+    setFormErrors((previous) => ({
+      ...previous,
+      [field]: "",
+    }));
+  };
 
-  const [
-    districtOptions,
-    setDistrictOptions,
-  ] = useState([]);
-
-  const [
-    wardOptions,
-    setWardOptions,
-  ] = useState([]);
-
-  const [
-    isLoadingProvinces,
-    setIsLoadingProvinces,
-  ] = useState(false);
-
-  const [
-    isLoadingDistricts,
-    setIsLoadingDistricts,
-  ] = useState(false);
-
-  const [
-    isLoadingWards,
-    setIsLoadingWards,
-  ] = useState(false);
-
-  const [
-    activeLightboxImg,
-    setActiveLightboxImg,
-  ] = useState(null);
-
-  const [
-    isConfirming,
-    setIsConfirming,
-  ] = useState(false);
-
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
-
-  const [
-    submitMessage,
-    setSubmitMessage,
-  ] = useState(
-    "Đang chuẩn bị tạo yêu cầu..."
-  );
-
-  const clearFormError = (
-    field
-  ) => {
-    setFormErrors(
-      (previous) => ({
-        ...previous,
+  const clearItemError = (itemId, field) => {
+    setItemErrors((previous) => ({
+      ...previous,
+      [itemId]: {
+        ...(previous[itemId] || {}),
         [field]: "",
-      })
-    );
+      },
+    }));
   };
 
-  const clearItemError = (
-    itemId,
-    field
-  ) => {
-    setItemErrors(
-      (previous) => ({
-        ...previous,
-        [itemId]: {
-          ...(previous[
-            itemId
-          ] || {}),
-          [field]: "",
-        },
-      })
-    );
-  };
-
-  const updateForm = (
-    field,
-    value
-  ) => {
+  const updateForm = (field, value) => {
     setForm((previous) => ({
       ...previous,
       [field]: value,
@@ -827,526 +585,344 @@ export default function ConsignmentBuyOrder() {
     clearFormError(field);
   };
 
-  const loadDeliveryAddresses =
-    useCallback(
-      async (
-        options = {}
-      ) => {
-        const result =
-          await getDeliveryAddressesApi(
-            options
-          );
+  const handleOptionalServicesChange = (nextServices) => {
+    if (isSubmitting) {
+      return;
+    }
 
-        const list =
-          normalizeDeliveryAddressList(
-            result
-          );
-
-        setAddressList(list);
-
-        return list;
+    setForm((previous) => ({
+      ...previous,
+      optionalServices: {
+        requiresPacking: Boolean(nextServices?.requiresPacking),
+        requiresWoodenCrate: Boolean(nextServices?.requiresWoodenCrate),
+        requiresInsurance: Boolean(nextServices?.requiresInsurance),
       },
-      []
-    );
+    }));
+  };
+
+  const loadDeliveryAddresses = useCallback(async (options = {}) => {
+    const result = await getDeliveryAddressesApi(options);
+
+    const list = normalizeDeliveryAddressList(result);
+
+    setAddressList(list);
+
+    return list;
+  }, []);
 
   useEffect(() => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
-    const loadOptions =
-      async () => {
-        try {
-          setIsLoadingOptions(
-            true
-          );
+    const loadOptions = async () => {
+      try {
+        setIsLoadingOptions(true);
 
-          const [
-            routesResult,
-            productTypesResult,
-          ] =
-            await Promise.all([
-              getConsignmentRoutesApi({
-                signal:
-                  controller.signal,
-              }),
-              getProductTypesApi({
-                signal:
-                  controller.signal,
-              }),
-            ]);
+        const [routesResult, productTypesResult] = await Promise.all([
+          getConsignmentRoutesApi({
+            signal: controller.signal,
+          }),
+          getProductTypesApi({
+            signal: controller.signal,
+          }),
+        ]);
 
-          const normalizedRoutes =
-            normalizeOptionList(
-              routesResult,
-              ["routes"]
-            );
+        const normalizedRoutes = normalizeOptionList(routesResult, ["routes"]);
 
-          const normalizedProductTypes =
-            normalizeOptionList(
-              productTypesResult,
-              ["productTypes"]
-            );
+        const normalizedProductTypes = normalizeOptionList(productTypesResult, [
+          "productTypes",
+        ]);
 
-          setRouteOptions(
-            normalizedRoutes
-          );
+        setRouteOptions(normalizedRoutes);
 
-          setProductTypeOptions(
-            normalizedProductTypes
-          );
+        setProductTypeOptions(normalizedProductTypes);
 
-          /*
-           * Tuyến hàng được API cấp tự động.
-           * Người dùng chỉ xem, không chọn lại.
-           */
-          setForm((previous) => {
-            const currentRouteExists =
-              normalizedRoutes.some(
-                (option) =>
-                  String(option.value) ===
-                  String(previous.route)
-              );
-
-            const nextRoute =
-              currentRouteExists
-                ? previous.route
-                : normalizedRoutes[0]?.value ||
-                  "";
-
-            if (
-              nextRoute ===
-              previous.route
-            ) {
-              return previous;
-            }
-
-            return {
-              ...previous,
-              route: nextRoute,
-            };
-          });
-
-          if (
-            normalizedRoutes.length > 0
-          ) {
-            setFormErrors(
-              (previous) => ({
-                ...previous,
-                route: "",
-              })
-            );
-          }
-        } catch (error) {
-          if (
-            !isCanceledRequest(error)
-          ) {
-            AuthNotify.error(
-              "Không tải được dữ liệu",
-              getApiErrorMessage(
-                error,
-                "Không thể tải tuyến hàng hoặc loại sản phẩm."
-              )
-            );
-          }
-        } finally {
-          if (
-            !controller.signal
-              .aborted
-          ) {
-            setIsLoadingOptions(
-              false
-            );
-          }
+        if (!normalizedRoutes.length) {
+          setFormErrors((previous) => ({
+            ...previous,
+            route: "Chưa có dữ liệu tuyến hàng. Vui lòng tải lại trang.",
+          }));
         }
-      };
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được dữ liệu",
+            getApiErrorMessage(
+              error,
+              "Không thể tải tuyến hàng hoặc loại sản phẩm.",
+            ),
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingOptions(false);
+        }
+      }
+    };
 
     loadOptions();
 
-    return () =>
-      controller.abort();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
-    const loadAddresses =
-      async () => {
-        try {
-          setIsLoadingAddresses(
-            true
-          );
+    const loadAddresses = async () => {
+      try {
+        setIsLoadingAddresses(true);
 
-          const list =
-            await loadDeliveryAddresses({
-              signal:
-                controller.signal,
-            });
+        const list = await loadDeliveryAddresses({
+          signal: controller.signal,
+        });
 
-          const defaultAddress =
-            list.find(
-              (item) =>
-                item.isDefault
-            );
+        const defaultAddress = list.find((item) => item.isDefault);
 
-          if (defaultAddress) {
-            updateForm(
-              "selectedDeliveryAddress",
-              defaultAddress.address
-            );
-          }
-        } catch (error) {
-          if (
-            !isCanceledRequest(error)
-          ) {
-            AuthNotify.error(
-              "Không tải được địa chỉ",
-              getApiErrorMessage(
-                error,
-                "Không thể tải danh sách địa chỉ nhận hàng."
-              )
-            );
-          }
-        } finally {
-          if (
-            !controller.signal
-              .aborted
-          ) {
-            setIsLoadingAddresses(
-              false
-            );
-          }
+        if (defaultAddress) {
+          updateForm("selectedDeliveryAddress", defaultAddress.address);
         }
-      };
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được địa chỉ",
+            getApiErrorMessage(
+              error,
+              "Không thể tải danh sách địa chỉ nhận hàng.",
+            ),
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingAddresses(false);
+        }
+      }
+    };
 
     loadAddresses();
 
-    return () =>
-      controller.abort();
-  }, [
-    loadDeliveryAddresses,
-  ]);
+    return () => controller.abort();
+  }, [loadDeliveryAddresses]);
 
   useEffect(() => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
-    const loadProvinces =
-      async () => {
-        try {
-          setIsLoadingProvinces(
-            true
+    const loadProvinces = async () => {
+      try {
+        setIsLoadingProvinces(true);
+
+        const provinces = await getProvinces({
+          signal: controller.signal,
+        });
+
+        setProvinceOptions(provinces);
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được tỉnh/thành",
+            getApiErrorMessage(
+              error,
+              "Không thể tải danh sách tỉnh/thành phố.",
+            ),
           );
-
-          const provinces =
-            await getProvinces({
-              signal:
-                controller.signal,
-            });
-
-          setProvinceOptions(
-            provinces
-          );
-        } catch (error) {
-          if (
-            !isCanceledRequest(error)
-          ) {
-            AuthNotify.error(
-              "Không tải được tỉnh/thành",
-              getApiErrorMessage(
-                error,
-                "Không thể tải danh sách tỉnh/thành phố."
-              )
-            );
-          }
-        } finally {
-          if (
-            !controller.signal
-              .aborted
-          ) {
-            setIsLoadingProvinces(
-              false
-            );
-          }
         }
-      };
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingProvinces(false);
+        }
+      }
+    };
 
     loadProvinces();
 
-    return () =>
-      controller.abort();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
-    const loadDistricts =
-      async () => {
-        if (
-          !newAddressSelect.provinceCode
-        ) {
-          setDistrictOptions([]);
-          setWardOptions([]);
-          return;
-        }
+    const loadDistricts = async () => {
+      if (!newAddressSelect.provinceCode) {
+        setDistrictOptions([]);
+        setWardOptions([]);
+        return;
+      }
 
-        try {
-          setIsLoadingDistricts(
-            true
+      try {
+        setIsLoadingDistricts(true);
+
+        const districts = await getDistrictsByProvinceCode(
+          newAddressSelect.provinceCode,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        setDistrictOptions(districts);
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được quận/huyện",
+            getApiErrorMessage(error, "Không thể tải danh sách quận/huyện."),
           );
-
-          const districts =
-            await getDistrictsByProvinceCode(
-              newAddressSelect.provinceCode,
-              {
-                signal:
-                  controller.signal,
-              }
-            );
-
-          setDistrictOptions(
-            districts
-          );
-        } catch (error) {
-          if (
-            !isCanceledRequest(error)
-          ) {
-            AuthNotify.error(
-              "Không tải được quận/huyện",
-              getApiErrorMessage(
-                error,
-                "Không thể tải danh sách quận/huyện."
-              )
-            );
-          }
-        } finally {
-          if (
-            !controller.signal
-              .aborted
-          ) {
-            setIsLoadingDistricts(
-              false
-            );
-          }
         }
-      };
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingDistricts(false);
+        }
+      }
+    };
 
     loadDistricts();
 
-    return () =>
-      controller.abort();
-  }, [
-    newAddressSelect.provinceCode,
-  ]);
+    return () => controller.abort();
+  }, [newAddressSelect.provinceCode]);
 
   useEffect(() => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
-    const loadWards =
-      async () => {
-        if (
-          !newAddressSelect.districtCode
-        ) {
-          setWardOptions([]);
-          return;
-        }
+    const loadWards = async () => {
+      if (!newAddressSelect.districtCode) {
+        setWardOptions([]);
+        return;
+      }
 
-        try {
-          setIsLoadingWards(
-            true
+      try {
+        setIsLoadingWards(true);
+
+        const wards = await getWardsByDistrictCode(
+          newAddressSelect.districtCode,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        setWardOptions(wards);
+      } catch (error) {
+        if (!isCanceledRequest(error)) {
+          AuthNotify.error(
+            "Không tải được phường/xã",
+            getApiErrorMessage(error, "Không thể tải danh sách phường/xã."),
           );
-
-          const wards =
-            await getWardsByDistrictCode(
-              newAddressSelect.districtCode,
-              {
-                signal:
-                  controller.signal,
-              }
-            );
-
-          setWardOptions(wards);
-        } catch (error) {
-          if (
-            !isCanceledRequest(error)
-          ) {
-            AuthNotify.error(
-              "Không tải được phường/xã",
-              getApiErrorMessage(
-                error,
-                "Không thể tải danh sách phường/xã."
-              )
-            );
-          }
-        } finally {
-          if (
-            !controller.signal
-              .aborted
-          ) {
-            setIsLoadingWards(
-              false
-            );
-          }
         }
-      };
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingWards(false);
+        }
+      }
+    };
 
     loadWards();
 
-    return () =>
-      controller.abort();
-  }, [
-    newAddressSelect.districtCode,
-  ]);
+    return () => controller.abort();
+  }, [newAddressSelect.districtCode]);
 
   useEffect(() => {
-    itemsRef.current =
-      items;
+    itemsRef.current = items;
   }, [items]);
 
   useEffect(
     () => () => {
-      itemsRef.current.forEach(
-        (item) => {
-          if (
-            item.image
-              ?.previewUrl
-          ) {
-            URL.revokeObjectURL(
-              item.image
-                .previewUrl
-            );
-          }
+      itemsRef.current.forEach((item) => {
+        if (item.image?.previewUrl) {
+          URL.revokeObjectURL(item.image.previewUrl);
         }
-      );
+      });
     },
-    []
+    [],
   );
 
-  const scrollToFirstError =
-    () => {
-      window.setTimeout(() => {
-        document
-          .querySelector(
-            ".purchase-buy-input-has-error, .purchase-buy-upload-has-error, .purchase-buy-address-list-has-error"
-          )
-          ?.scrollIntoView({
-            behavior:
-              "smooth",
-            block: "center",
-          });
-      }, 100);
-    };
+  const scrollToFirstError = () => {
+    window.setTimeout(() => {
+      document
+        .querySelector(
+          ".purchase-buy-input-has-error, .purchase-buy-upload-has-error, .purchase-buy-address-list-has-error",
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+    }, 100);
+  };
 
   /* ================= ADDRESS ================= */
 
   const resetNewAddressForm = () => {
-    setNewAddressSelect(
-      INITIAL_ADDRESS_SELECT
-    );
+    setNewAddressSelect(INITIAL_ADDRESS_SELECT);
     setNewAddressInput("");
     setDistrictOptions([]);
     setWardOptions([]);
   };
 
-  const updateNewAddressSelect = (
-    field,
-    value
-  ) => {
-    setNewAddressSelect(
-      (previous) => {
-        if (field === "provinceCode") {
-          return {
-            provinceCode: value,
-            districtCode: "",
-            wardCode: "",
-          };
-        }
-
-        if (field === "districtCode") {
-          return {
-            ...previous,
-            districtCode: value,
-            wardCode: "",
-          };
-        }
-
+  const updateNewAddressSelect = (field, value) => {
+    setNewAddressSelect((previous) => {
+      if (field === "provinceCode") {
         return {
-          ...previous,
-          [field]: value,
+          provinceCode: value,
+          districtCode: "",
+          wardCode: "",
         };
       }
-    );
+
+      if (field === "districtCode") {
+        return {
+          ...previous,
+          districtCode: value,
+          wardCode: "",
+        };
+      }
+
+      return {
+        ...previous,
+        [field]: value,
+      };
+    });
 
     setNewAddressError("");
   };
 
   const buildAddressPayload = async () => {
-    const detailAddress =
-      newAddressInput.trim();
+    const detailAddress = newAddressInput.trim();
 
     if (!newAddressSelect.provinceCode) {
-      throw new Error(
-        "Vui lòng chọn tỉnh/thành phố."
-      );
+      throw new Error("Vui lòng chọn tỉnh/thành phố.");
     }
 
     if (!newAddressSelect.districtCode) {
-      throw new Error(
-        "Vui lòng chọn quận/huyện."
-      );
+      throw new Error("Vui lòng chọn quận/huyện.");
     }
 
     if (!newAddressSelect.wardCode) {
-      throw new Error(
-        "Vui lòng chọn phường/xã."
-      );
+      throw new Error("Vui lòng chọn phường/xã.");
     }
 
     if (!detailAddress) {
-      throw new Error(
-        "Vui lòng nhập số nhà, tên đường."
-      );
+      throw new Error("Vui lòng nhập số nhà, tên đường.");
     }
 
-    const provinceName =
-      getAddressOptionName(
-        provinceOptions,
-        newAddressSelect.provinceCode
-      );
+    const provinceName = getAddressOptionName(
+      provinceOptions,
+      newAddressSelect.provinceCode,
+    );
 
-    const districtName =
-      getAddressOptionName(
-        districtOptions,
-        newAddressSelect.districtCode
-      );
+    const districtName = getAddressOptionName(
+      districtOptions,
+      newAddressSelect.districtCode,
+    );
 
-    const wardName =
-      getAddressOptionName(
-        wardOptions,
-        newAddressSelect.wardCode
-      );
+    const wardName = getAddressOptionName(
+      wardOptions,
+      newAddressSelect.wardCode,
+    );
 
-    const addressResult =
-      await getFullAddressByCodes({
-        provinceCode:
-          newAddressSelect.provinceCode,
-        districtCode:
-          newAddressSelect.districtCode,
-        wardCode:
-          newAddressSelect.wardCode,
-        detailAddress,
-      });
+    const addressResult = await getFullAddressByCodes({
+      provinceCode: newAddressSelect.provinceCode,
+      districtCode: newAddressSelect.districtCode,
+      wardCode: newAddressSelect.wardCode,
+      detailAddress,
+    });
 
     const fullAddress =
       addressResult?.fullAddress ||
-      [
-        detailAddress,
-        wardName,
-        districtName,
-        provinceName,
-      ]
+      [detailAddress, wardName, districtName, provinceName]
         .filter(Boolean)
         .join(", ");
 
@@ -1354,243 +930,156 @@ export default function ConsignmentBuyOrder() {
       address: fullAddress,
       fullAddress,
       detailAddress,
-      provinceCode:
-        newAddressSelect.provinceCode,
+      provinceCode: newAddressSelect.provinceCode,
       provinceName,
-      districtCode:
-        newAddressSelect.districtCode,
+      districtCode: newAddressSelect.districtCode,
       districtName,
-      wardCode:
-        newAddressSelect.wardCode,
+      wardCode: newAddressSelect.wardCode,
       wardName,
       ...getClientTimePayload(),
     };
   };
 
-  const handleSaveAddress =
-    async () => {
-      if (
-        isSubmitting ||
-        isSavingAddress
-      ) {
-        return;
-      }
+  const handleSaveAddress = async () => {
+    if (isSubmitting || isSavingAddress) {
+      return;
+    }
 
-      let addressPayload;
+    let addressPayload;
 
-      try {
-        addressPayload =
-          await buildAddressPayload();
-      } catch (error) {
-        const message =
-          error?.message ||
-          "Vui lòng kiểm tra lại địa chỉ.";
+    try {
+      addressPayload = await buildAddressPayload();
+    } catch (error) {
+      const message = error?.message || "Vui lòng kiểm tra lại địa chỉ.";
 
-        setNewAddressError(message);
-        return;
-      }
+      setNewAddressError(message);
+      return;
+    }
 
-      const address =
-        addressPayload.address.trim();
+    const address = addressPayload.address.trim();
 
-      const addressExists =
-        addressList.some(
-          (item) =>
-            item.address
-              .trim()
-              .toLowerCase() ===
-            address.toLowerCase()
-        );
+    const addressExists = addressList.some(
+      (item) => item.address.trim().toLowerCase() === address.toLowerCase(),
+    );
 
-      if (addressExists) {
-        setNewAddressError(
-          "Địa chỉ này đã có trong danh sách."
-        );
-        return;
-      }
+    if (addressExists) {
+      setNewAddressError("Địa chỉ này đã có trong danh sách.");
+      return;
+    }
+
+    try {
+      setIsSavingAddress(true);
+      setNewAddressError("");
+
+      const createdResult = await createDeliveryAddressApi(addressPayload);
+
+      let refreshedAddresses;
 
       try {
-        setIsSavingAddress(
-          true
-        );
-        setNewAddressError("");
+        refreshedAddresses = await loadDeliveryAddresses();
+      } catch {
+        const createdAddress = normalizeDeliveryAddress(
+          createdResult?.data || createdResult || addressPayload,
+          addressList.length,
+        ) || {
+          id: createUniqueId(),
+          apiId: "",
+          ...addressPayload,
+          isDefault: false,
+        };
 
-        const createdResult =
-          await createDeliveryAddressApi(
-            addressPayload
-          );
+        refreshedAddresses = [...addressList, createdAddress];
 
-        let refreshedAddresses;
+        setAddressList(refreshedAddresses);
+      }
 
-        try {
-          refreshedAddresses =
-            await loadDeliveryAddresses();
-        } catch {
-          const createdAddress =
-            normalizeDeliveryAddress(
-              createdResult?.data ||
-                createdResult ||
-                addressPayload,
-              addressList.length
-            ) || {
-              id: createUniqueId(),
-              apiId: "",
-              ...addressPayload,
-              isDefault: false,
-            };
+      const selectedAddress =
+        refreshedAddresses.find(
+          (item) => item.address.trim().toLowerCase() === address.toLowerCase(),
+        )?.address || address;
 
-          refreshedAddresses = [
-            ...addressList,
-            createdAddress,
-          ];
+      updateForm("selectedDeliveryAddress", selectedAddress);
 
-          setAddressList(
-            refreshedAddresses
-          );
-        }
+      resetNewAddressForm();
+      setNewAddressError("");
+      setIsAddingAddress(false);
 
-        const selectedAddress =
-          refreshedAddresses.find(
-            (item) =>
-              item.address
-                .trim()
-                .toLowerCase() ===
-              address.toLowerCase()
-          )?.address || address;
+      AuthNotify.success(
+        "Đã thêm địa chỉ",
+        "Địa chỉ nhận hàng mới đã được lưu.",
+      );
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(
+        error,
+        "Không thể lưu địa chỉ nhận hàng.",
+      );
 
+      setNewAddressError(errorMessage);
+
+      AuthNotify.error("Lưu địa chỉ thất bại", errorMessage);
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
+
+  const handleDeleteAddress = async (event, addressItem) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (isSubmitting || isSavingAddress || deletingAddressId) {
+      return;
+    }
+
+    const addressId = String(addressItem?.apiId || "").trim();
+
+    if (!addressId) {
+      AuthNotify.error(
+        "Không thể xóa địa chỉ",
+        "Địa chỉ này không có ID hợp lệ.",
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa địa chỉ "${addressItem.address}" không?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingAddressId(addressId);
+
+      await deleteDeliveryAddressApi(addressId);
+
+      const remainingAddresses = addressList.filter(
+        (item) => item.apiId !== addressId,
+      );
+
+      setAddressList(remainingAddresses);
+
+      if (form.selectedDeliveryAddress === addressItem.address) {
         updateForm(
           "selectedDeliveryAddress",
-          selectedAddress
-        );
-
-        resetNewAddressForm();
-        setNewAddressError("");
-        setIsAddingAddress(
-          false
-        );
-
-        AuthNotify.success(
-          "Đã thêm địa chỉ",
-          "Địa chỉ nhận hàng mới đã được lưu."
-        );
-      } catch (error) {
-        const errorMessage =
-          getApiErrorMessage(
-            error,
-            "Không thể lưu địa chỉ nhận hàng."
-          );
-
-        setNewAddressError(
-          errorMessage
-        );
-
-        AuthNotify.error(
-          "Lưu địa chỉ thất bại",
-          errorMessage
-        );
-      } finally {
-        setIsSavingAddress(
-          false
+          remainingAddresses[0]?.address || "",
         );
       }
-    };
 
-  const handleDeleteAddress =
-    async (
-      event,
-      addressItem
-    ) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (
-        isSubmitting ||
-        isSavingAddress ||
-        deletingAddressId
-      ) {
-        return;
-      }
-
-      const addressId =
-        String(
-          addressItem?.apiId ||
-            ""
-        ).trim();
-
-      if (!addressId) {
-        AuthNotify.error(
-          "Không thể xóa địa chỉ",
-          "Địa chỉ này không có ID hợp lệ."
-        );
-        return;
-      }
-
-      const confirmed =
-        window.confirm(
-          `Bạn có chắc muốn xóa địa chỉ "${addressItem.address}" không?`
-        );
-
-      if (!confirmed) {
-        return;
-      }
-
-      try {
-        setDeletingAddressId(
-          addressId
-        );
-
-        await deleteDeliveryAddressApi(
-          addressId
-        );
-
-        const remainingAddresses =
-          addressList.filter(
-            (item) =>
-              item.apiId !==
-              addressId
-          );
-
-        setAddressList(
-          remainingAddresses
-        );
-
-        if (
-          form.selectedDeliveryAddress ===
-          addressItem.address
-        ) {
-          updateForm(
-            "selectedDeliveryAddress",
-            remainingAddresses[0]
-              ?.address || ""
-          );
-        }
-
-        AuthNotify.success(
-          "Đã xóa địa chỉ",
-          "Địa chỉ nhận hàng đã được xóa."
-        );
-      } catch (error) {
-        AuthNotify.error(
-          "Xóa địa chỉ thất bại",
-          getApiErrorMessage(
-            error,
-            "Không thể xóa địa chỉ nhận hàng."
-          )
-        );
-      } finally {
-        setDeletingAddressId(
-          ""
-        );
-      }
-    };
+      AuthNotify.success("Đã xóa địa chỉ", "Địa chỉ nhận hàng đã được xóa.");
+    } catch (error) {
+      AuthNotify.error(
+        "Xóa địa chỉ thất bại",
+        getApiErrorMessage(error, "Không thể xóa địa chỉ nhận hàng."),
+      );
+    } finally {
+      setDeletingAddressId("");
+    }
+  };
 
   /* ================= ITEMS ================= */
 
-  const handleItemChange = (
-    itemId,
-    field,
-    value
-  ) => {
+  const handleItemChange = (itemId, field, value) => {
     setItems((previous) =>
       previous.map((item) =>
         item.id === itemId
@@ -1598,49 +1087,32 @@ export default function ConsignmentBuyOrder() {
               ...item,
               [field]: value,
             }
-          : item
-      )
+          : item,
+      ),
     );
 
-    clearItemError(
-      itemId,
-      field
-    );
+    clearItemError(itemId, field);
   };
 
-  const handleProductLinkBlur = (
-    item
-  ) => {
-    if (
-      item.sourceWebsite.trim() ||
-      !isValidHttpUrl(
-        item.productLink
-      )
-    ) {
+  const handleProductLinkBlur = (item) => {
+    if (item.sourceWebsite.trim() || !isValidHttpUrl(item.productLink)) {
       return;
     }
 
     handleItemChange(
       item.id,
       "sourceWebsite",
-      getSourceWebsiteFromLink(
-        item.productLink
-      )
+      getSourceWebsiteFromLink(item.productLink),
     );
   };
 
   const handleAddItem = () => {
     if (!isSubmitting) {
-      setItems((previous) => [
-        ...previous,
-        createEmptyItem(),
-      ]);
+      setItems((previous) => [...previous, createEmptyItem()]);
     }
   };
 
-  const handleDeleteItem = (
-    itemId
-  ) => {
+  const handleDeleteItem = (itemId) => {
     if (isSubmitting) {
       return;
     }
@@ -1648,60 +1120,36 @@ export default function ConsignmentBuyOrder() {
     if (items.length <= 1) {
       AuthNotify.warning(
         "Không thể xóa",
-        "Yêu cầu mua hộ phải có tối thiểu 1 sản phẩm."
+        "Yêu cầu mua hộ phải có tối thiểu 1 sản phẩm.",
       );
       return;
     }
 
-    const targetItem =
-      items.find(
-        (item) =>
-          item.id === itemId
-      );
+    const targetItem = items.find((item) => item.id === itemId);
 
-    if (
-      targetItem?.image
-        ?.previewUrl
-    ) {
-      URL.revokeObjectURL(
-        targetItem.image
-          .previewUrl
-      );
+    if (targetItem?.image?.previewUrl) {
+      URL.revokeObjectURL(targetItem.image.previewUrl);
     }
 
-    setItems((previous) =>
-      previous.filter(
-        (item) =>
-          item.id !== itemId
-      )
-    );
+    setItems((previous) => previous.filter((item) => item.id !== itemId));
 
-    setItemErrors(
-      (previous) => {
-        const nextErrors = {
-          ...previous,
-        };
+    setItemErrors((previous) => {
+      const nextErrors = {
+        ...previous,
+      };
 
-        delete nextErrors[
-          itemId
-        ];
+      delete nextErrors[itemId];
 
-        return nextErrors;
-      }
-    );
+      return nextErrors;
+    });
 
-    delete fileInputRefs
-      .current[itemId];
+    delete fileInputRefs.current[itemId];
   };
 
   /* ================= IMAGE ================= */
 
-  const handleFileChange = (
-    itemId,
-    event
-  ) => {
-    const file =
-      event.target.files?.[0];
+  const handleFileChange = (itemId, event) => {
+    const file = event.target.files?.[0];
 
     event.target.value = "";
 
@@ -1709,81 +1157,48 @@ export default function ConsignmentBuyOrder() {
       return;
     }
 
-    if (
-      ![
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-      ].includes(file.type)
-    ) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       AuthNotify.warning(
         "File không hợp lệ",
-        `Ảnh "${file.name}" không phải JPG, PNG hoặc WEBP.`
+        `Ảnh "${file.name}" không phải JPG, PNG hoặc WEBP.`,
       );
       return;
     }
 
-    if (
-      file.size >
-      MAX_IMAGE_SIZE
-    ) {
-      AuthNotify.warning(
-        "Ảnh quá lớn",
-        `Ảnh "${file.name}" vượt quá 5MB.`
-      );
+    if (file.size > MAX_IMAGE_SIZE) {
+      AuthNotify.warning("Ảnh quá lớn", `Ảnh "${file.name}" vượt quá 5MB.`);
       return;
     }
 
     const newImage = {
       id: createUniqueId(),
       fileObj: file,
-      previewUrl:
-        URL.createObjectURL(
-          file
-        ),
+      previewUrl: URL.createObjectURL(file),
     };
 
     setItems((previous) =>
       previous.map((item) => {
-        if (
-          item.id !== itemId
-        ) {
+        if (item.id !== itemId) {
           return item;
         }
 
-        if (
-          item.image
-            ?.previewUrl
-        ) {
-          URL.revokeObjectURL(
-            item.image
-              .previewUrl
-          );
+        if (item.image?.previewUrl) {
+          URL.revokeObjectURL(item.image.previewUrl);
         }
 
         return {
           ...item,
           image: newImage,
         };
-      })
+      }),
     );
 
-    clearItemError(
-      itemId,
-      "image"
-    );
+    clearItemError(itemId, "image");
 
-    AuthNotify.success(
-      "Đã chọn ảnh",
-      "Ảnh sản phẩm đã được thêm."
-    );
+    AuthNotify.success("Đã chọn ảnh", "Ảnh sản phẩm đã được thêm.");
   };
 
-  const handleRemoveImage = (
-    event,
-    itemId,
-    previewUrl
-  ) => {
+  const handleRemoveImage = (event, itemId, previewUrl) => {
     event.stopPropagation();
 
     if (isSubmitting) {
@@ -1797,60 +1212,43 @@ export default function ConsignmentBuyOrder() {
               ...item,
               image: null,
             }
-          : item
-      )
+          : item,
+      ),
     );
 
-    setItemErrors(
-      (previous) => ({
-        ...previous,
-        [itemId]: {
-          ...(previous[
-            itemId
-          ] || {}),
-          image:
-            "Vui lòng tải ảnh sản phẩm.",
-        },
-      })
-    );
+    setItemErrors((previous) => ({
+      ...previous,
+      [itemId]: {
+        ...(previous[itemId] || {}),
+        image: "Vui lòng tải ảnh sản phẩm.",
+      },
+    }));
 
     if (previewUrl) {
-      URL.revokeObjectURL(
-        previewUrl
-      );
+      URL.revokeObjectURL(previewUrl);
     }
 
-    if (
-      activeLightboxImg ===
-      previewUrl
-    ) {
-      setActiveLightboxImg(
-        null
-      );
+    if (activeLightboxImg === previewUrl) {
+      setActiveLightboxImg(null);
     }
   };
 
   /* ================= VALIDATE & SUBMIT ================= */
 
   const validateForm = () => {
-    const result =
-      validateBuyOrderForm({
-        form,
-        items,
-      });
+    const result = validateBuyOrderForm({
+      form,
+      items,
+    });
 
-    setFormErrors(
-      result.formErrors
-    );
+    setFormErrors(result.formErrors);
 
-    setItemErrors(
-      result.itemErrors
-    );
+    setItemErrors(result.itemErrors);
 
     if (!result.isValid) {
       AuthNotify.warning(
         "Thông tin chưa đầy đủ",
-        "Vui lòng kiểm tra các trường được đánh dấu màu đỏ."
+        "Vui lòng kiểm tra các trường được đánh dấu màu đỏ.",
       );
 
       scrollToFirstError();
@@ -1859,195 +1257,126 @@ export default function ConsignmentBuyOrder() {
     return result.isValid;
   };
 
-  const handleOpenConfirmation =
-    () => {
-      if (
-        isSubmitting ||
-        !validateForm()
-      ) {
-        return;
-      }
+  const handleOpenConfirmation = () => {
+    if (isSubmitting || !validateForm()) {
+      return;
+    }
 
-      setIsConfirming(true);
+    setIsConfirming(true);
 
-      window.setTimeout(() => {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth",
-        });
-      }, 0);
-    };
+    window.setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }, 0);
+  };
 
-  const handleCloseConfirmation =
-    () => {
-      if (isSubmitting) {
-        return;
-      }
+  const handleCloseConfirmation = () => {
+    if (isSubmitting) {
+      return;
+    }
 
-      setIsConfirming(false);
+    setIsConfirming(false);
 
-      window.setTimeout(() => {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth",
-        });
-      }, 0);
-    };
+    window.setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }, 0);
+  };
 
-  const handleCreateBuyOrder =
-    async () => {
-      if (
-        isSubmitting ||
-        !validateForm()
-      ) {
-        return;
-      }
+  const handleCreateBuyOrder = async () => {
+    if (isSubmitting || !validateForm()) {
+      return;
+    }
 
-      try {
-        setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
 
-        const requestItems = [];
+      const requestItems = [];
 
-        for (
-          let index = 0;
-          index < items.length;
-          index += 1
-        ) {
-          const item =
-            items[index];
-
-          setSubmitMessage(
-            `Đang upload ảnh sản phẩm ${index + 1}/${items.length}...`
-          );
-
-          const imageUrl =
-            await uploadPackageImage(
-              item.image.fileObj
-            );
-
-          requestItems.push({
-            productLink:
-              item.productLink.trim(),
-            sourceWebsite:
-              item.sourceWebsite.trim(),
-            productType:
-              item.productType,
-            productName:
-              item.productName.trim(),
-            quantity: Number(
-              item.quantity
-            ),
-            attributes:
-              item.attributes.trim(),
-            note:
-              item.note.trim(),
-            imageUrl,
-          });
-        }
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
 
         setSubmitMessage(
-          "Đang gửi yêu cầu mua hộ..."
+          `Đang upload ảnh sản phẩm ${index + 1}/${items.length}...`,
         );
 
-        const selectedAddress =
-          addressList.find(
-            (addressItem) =>
-              addressItem.address ===
-              form.selectedDeliveryAddress
-          );
+        const imageUrl = await uploadPackageImage(item.image.fileObj);
 
-        const timePayload =
-          getClientTimePayload();
-
-        const result =
-          await createPurchaseRequestApi({
-            route: form.route,
-            receiverName:
-              form.receiverName.trim(),
-            receiverPhone:
-              form.receiverPhone.trim(),
-            receiverAddress:
-              form.selectedDeliveryAddress.trim(),
-            receiverAddressInfo:
-              selectedAddress
-                ? {
-                    address:
-                      selectedAddress.address,
-                    fullAddress:
-                      selectedAddress.fullAddress ||
-                      selectedAddress.address,
-                    detailAddress:
-                      selectedAddress.detailAddress ||
-                      "",
-                    provinceCode:
-                      selectedAddress.provinceCode ||
-                      "",
-                    provinceName:
-                      selectedAddress.provinceName ||
-                      "",
-                    districtCode:
-                      selectedAddress.districtCode ||
-                      "",
-                    districtName:
-                      selectedAddress.districtName ||
-                      "",
-                    wardCode:
-                      selectedAddress.wardCode ||
-                      "",
-                    wardName:
-                      selectedAddress.wardName ||
-                      "",
-                  }
-                : null,
-            requiresInspection:
-              form.requiresInspection,
-            requiresQuantityCheck:
-              form.requiresQuantityCheck,
-            generalNote:
-              form.generalNote.trim(),
-            items: requestItems,
-            ...timePayload,
-          });
-
-        AuthNotify.success(
-          "Tạo yêu cầu thành công",
-          result?.message ||
-            "Yêu cầu mua hộ đã được tiếp nhận."
-        );
-
-        navigate("/processing-orders/purchase-requests");
-      } catch (error) {
-        AuthNotify.error(
-          "Tạo yêu cầu thất bại",
-          getApiErrorMessage(
-            error,
-            "Không thể tạo yêu cầu mua hộ. Vui lòng thử lại."
-          )
-        );
-      } finally {
-        setIsSubmitting(false);
-
-        setSubmitMessage(
-          "Đang chuẩn bị tạo yêu cầu..."
-        );
+        requestItems.push({
+          productLink: item.productLink.trim(),
+          sourceWebsite: item.sourceWebsite.trim(),
+          productType: item.productType,
+          productName: item.productName.trim(),
+          quantity: Number(item.quantity),
+          attributes: item.attributes.trim(),
+          note: item.note.trim(),
+          imageUrl,
+        });
       }
-    };
 
-  const selectedRouteOption =
-    routeOptions.find(
-      (option) =>
-        String(option.value) ===
-        String(form.route)
-    );
+      setSubmitMessage("Đang gửi yêu cầu mua hộ...");
 
-  const routeDisplayValue =
-    selectedRouteOption?.label ||
-    form.route ||
-    (
-      isLoadingOptions
-        ? "Đang tải tuyến hàng..."
-        : "Chưa có dữ liệu tuyến hàng"
-    );
+      const selectedAddress = addressList.find(
+        (addressItem) => addressItem.address === form.selectedDeliveryAddress,
+      );
+
+      const timePayload = getClientTimePayload();
+
+      const result = await createPurchaseRequestApi({
+        route: form.route,
+        receiverName: form.receiverName.trim(),
+        receiverPhone: form.receiverPhone.trim(),
+        receiverAddress: form.selectedDeliveryAddress.trim(),
+        receiverAddressInfo: selectedAddress
+          ? {
+              address: selectedAddress.address,
+              fullAddress:
+                selectedAddress.fullAddress || selectedAddress.address,
+              detailAddress: selectedAddress.detailAddress || "",
+              provinceCode: selectedAddress.provinceCode || "",
+              provinceName: selectedAddress.provinceName || "",
+              districtCode: selectedAddress.districtCode || "",
+              districtName: selectedAddress.districtName || "",
+              wardCode: selectedAddress.wardCode || "",
+              wardName: selectedAddress.wardName || "",
+            }
+          : null,
+        requiresInspection: form.requiresInspection,
+        requiresQuantityCheck: form.requiresQuantityCheck,
+        requiresPacking: Boolean(form.optionalServices?.requiresPacking),
+        requiresWoodenCrate: Boolean(
+          form.optionalServices?.requiresWoodenCrate,
+        ),
+        requiresInsurance: Boolean(form.optionalServices?.requiresInsurance),
+        generalNote: form.generalNote.trim(),
+        items: requestItems,
+        ...timePayload,
+      });
+
+      AuthNotify.success(
+        "Tạo yêu cầu thành công",
+        result?.message || "Yêu cầu mua hộ đã được tiếp nhận.",
+      );
+
+      navigate("/processing-orders/purchase-requests");
+    } catch (error) {
+      AuthNotify.error(
+        "Tạo yêu cầu thất bại",
+        getApiErrorMessage(
+          error,
+          "Không thể tạo yêu cầu mua hộ. Vui lòng thử lại.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+
+      setSubmitMessage("Đang chuẩn bị tạo yêu cầu...");
+    }
+  };
 
   if (isConfirming) {
     return (
@@ -2055,21 +1384,11 @@ export default function ConsignmentBuyOrder() {
         form={form}
         items={items}
         routeOptions={routeOptions}
-        productTypeOptions={
-          productTypeOptions
-        }
-        isSubmitting={
-          isSubmitting
-        }
-        submitMessage={
-          submitMessage
-        }
-        onBack={
-          handleCloseConfirmation
-        }
-        onConfirm={
-          handleCreateBuyOrder
-        }
+        productTypeOptions={productTypeOptions}
+        isSubmitting={isSubmitting}
+        submitMessage={submitMessage}
+        onBack={handleCloseConfirmation}
+        onConfirm={handleCreateBuyOrder}
       />
     );
   }
@@ -2078,8 +1397,7 @@ export default function ConsignmentBuyOrder() {
     <div
       className={[
         "purchase-buy-order-page",
-        isSubmitting &&
-          "purchase-buy-consignment-is-submitting",
+        isSubmitting && "purchase-buy-consignment-is-submitting",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -2088,9 +1406,7 @@ export default function ConsignmentBuyOrder() {
         type="button"
         className="purchase-buy-back-navigation"
         disabled={isSubmitting}
-        onClick={() =>
-          navigate(-1)
-        }
+        onClick={() => navigate(-1)}
       >
         <LeftOutlined className="purchase-buy-back-icon" />
         <span>QUAY LẠI</span>
@@ -2111,61 +1427,24 @@ export default function ConsignmentBuyOrder() {
 
           <div className="purchase-buy-left-unified-wrapper-box">
             <div className="purchase-buy-left-inner-section">
-              <div className="purchase-buy-input-field-group">
-                <label className="purchase-buy-field-label purchase-buy-required-label">
-                  <EnvironmentOutlined />
-                  TUYẾN HÀNG
-                </label>
+              <SelectField
+                label="TUYẾN HÀNG"
+                value={form.route}
+                error={formErrors.route}
+                options={routeOptions}
+                loading={isLoadingOptions}
+                disabled={isSubmitting}
+                placeholder="-- Chọn tuyến hàng --"
+                onChange={(value) => updateForm("route", value)}
+              />
 
-                <input
-                  type="text"
-                  value={routeDisplayValue}
-                  disabled
-                  readOnly
-                  title={routeDisplayValue}
-                  aria-label={`Tuyến hàng được hệ thống tự động áp dụng: ${routeDisplayValue}`}
-                  className={getFieldClassName(
-                    "purchase-buy-custom-input purchase-buy-route-readonly-input",
-                    formErrors.route
-                  )}
-                  style={{
-                    color: "#64748b",
-                    fontWeight: 700,
-                    backgroundColor: "#f1f5f9",
-                    borderColor: "#cbd5e1",
-                    cursor: "not-allowed",
-                    opacity: 0.82,
-                    WebkitTextFillColor: "#64748b",
-                  }}
-                />
+              <div className="purchase-buy-route-select-helper">
+                <InfoCircleOutlined />
 
-                <div
-                  className="purchase-buy-route-readonly-helper"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginTop: 7,
-                    color: "#94a3b8",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <InfoCircleOutlined />
-
-                  <span>
-                    Tuyến hàng được hệ thống
-                    tự động áp dụng và không
-                    thể chỉnh sửa.
-                  </span>
-                </div>
-
-                <FieldError
-                  message={
-                    formErrors.route
-                  }
-                />
+                <span>
+                  Chọn tuyến vận chuyển phù hợp với quốc gia mua hàng và địa chỉ
+                  nhận hàng.
+                </span>
               </div>
             </div>
 
@@ -2182,30 +1461,19 @@ export default function ConsignmentBuyOrder() {
 
                 <input
                   type="text"
-                  value={
-                    form.receiverName
-                  }
-                  disabled={
-                    isSubmitting
-                  }
+                  value={form.receiverName}
+                  disabled={isSubmitting}
                   placeholder="Nhập tên người nhận..."
                   className={getFieldClassName(
                     "purchase-buy-custom-input",
-                    formErrors.receiverName
+                    formErrors.receiverName,
                   )}
                   onChange={(event) =>
-                    updateForm(
-                      "receiverName",
-                      event.target.value
-                    )
+                    updateForm("receiverName", event.target.value)
                   }
                 />
 
-                <FieldError
-                  message={
-                    formErrors.receiverName
-                  }
-                />
+                <FieldError message={formErrors.receiverName} />
               </div>
 
               <div className="purchase-buy-input-field-group">
@@ -2217,38 +1485,22 @@ export default function ConsignmentBuyOrder() {
                   type="text"
                   inputMode="numeric"
                   maxLength={10}
-                  value={
-                    form.receiverPhone
-                  }
-                  disabled={
-                    isSubmitting
-                  }
+                  value={form.receiverPhone}
+                  disabled={isSubmitting}
                   placeholder="Nhập số điện thoại..."
                   className={getFieldClassName(
                     "purchase-buy-custom-input",
-                    formErrors.receiverPhone
+                    formErrors.receiverPhone,
                   )}
                   onChange={(event) =>
                     updateForm(
                       "receiverPhone",
-                      event.target.value
-                        .replace(
-                          /\D/g,
-                          ""
-                        )
-                        .slice(
-                          0,
-                          10
-                        )
+                      event.target.value.replace(/\D/g, "").slice(0, 10),
                     )
                   }
                 />
 
-                <FieldError
-                  message={
-                    formErrors.receiverPhone
-                  }
-                />
+                <FieldError message={formErrors.receiverPhone} />
               </div>
             </div>
 
@@ -2261,18 +1513,13 @@ export default function ConsignmentBuyOrder() {
               <div
                 className={getFieldClassName(
                   "purchase-buy-static-display-box purchase-buy-address-received-highlight",
-                  formErrors.selectedDeliveryAddress
+                  formErrors.selectedDeliveryAddress,
                 )}
               >
-                {form.selectedDeliveryAddress ||
-                  "Chưa chọn địa chỉ"}
+                {form.selectedDeliveryAddress || "Chưa chọn địa chỉ"}
               </div>
 
-              <FieldError
-                message={
-                  formErrors.selectedDeliveryAddress
-                }
-              />
+              <FieldError message={formErrors.selectedDeliveryAddress} />
             </div>
 
             <div className="purchase-buy-left-inner-section purchase-buy-border-top-dash">
@@ -2289,17 +1536,11 @@ export default function ConsignmentBuyOrder() {
                       isSubmitting ||
                       isLoadingAddresses ||
                       isSavingAddress ||
-                      Boolean(
-                        deletingAddressId
-                      )
+                      Boolean(deletingAddressId)
                     }
                     onClick={() => {
-                      setIsAddingAddress(
-                        true
-                      );
-                      setNewAddressError(
-                        ""
-                      );
+                      setIsAddingAddress(true);
+                      setNewAddressError("");
                     }}
                   >
                     <PlusOutlined />
@@ -2309,9 +1550,7 @@ export default function ConsignmentBuyOrder() {
                   {isLoadingAddresses ? (
                     <div className="purchase-buy-address-empty-message">
                       <LoadingOutlined spin />
-                      <span>
-                        Đang tải danh sách địa chỉ...
-                      </span>
+                      <span>Đang tải danh sách địa chỉ...</span>
                     </div>
                   ) : addressList.length ? (
                     <div
@@ -2323,106 +1562,81 @@ export default function ConsignmentBuyOrder() {
                         .filter(Boolean)
                         .join(" ")}
                     >
-                      {addressList.map(
-                        (
-                          addressItem,
-                          index
-                        ) => {
-                          const isSelected =
-                            form.selectedDeliveryAddress ===
-                            addressItem.address;
+                      {addressList.map((addressItem, index) => {
+                        const isSelected =
+                          form.selectedDeliveryAddress === addressItem.address;
 
-                          const isDeleting =
-                            deletingAddressId ===
-                            addressItem.apiId;
+                        const isDeleting =
+                          deletingAddressId === addressItem.apiId;
 
-                          return (
-                            <div
-                              key={
-                                addressItem.id ||
-                                `${addressItem.address}-${index}`
-                              }
-                              role="button"
-                              tabIndex={0}
-                              className={[
-                                "purchase-buy-address-item-clickable",
-                                isSelected &&
-                                  "purchase-buy-is-active",
-                                isDeleting &&
-                                  "purchase-buy-is-deleting",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                              onClick={() =>
+                        return (
+                          <div
+                            key={
+                              addressItem.id ||
+                              `${addressItem.address}-${index}`
+                            }
+                            role="button"
+                            tabIndex={0}
+                            className={[
+                              "purchase-buy-address-item-clickable",
+                              isSelected && "purchase-buy-is-active",
+                              isDeleting && "purchase-buy-is-deleting",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            onClick={() =>
+                              updateForm(
+                                "selectedDeliveryAddress",
+                                addressItem.address,
+                              )
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+
                                 updateForm(
                                   "selectedDeliveryAddress",
-                                  addressItem.address
-                                )
+                                  addressItem.address,
+                                );
                               }
-                              onKeyDown={(
-                                event
-                              ) => {
-                                if (
-                                  event.key ===
-                                    "Enter" ||
-                                  event.key ===
-                                    " "
-                                ) {
-                                  event.preventDefault();
+                            }}
+                          >
+                            <span className="purchase-buy-address-text-truncate">
+                              <strong>{addressItem.address}</strong>
+                            </span>
 
-                                  updateForm(
-                                    "selectedDeliveryAddress",
-                                    addressItem.address
-                                  );
-                                }
-                              }}
-                            >
-                              <span className="purchase-buy-address-text-truncate">
-                                <strong>
-                                  {addressItem.address}
-                                </strong>
+                            {addressItem.isDefault && (
+                              <span className="purchase-buy-address-default-badge">
+                                Mặc định
                               </span>
+                            )}
 
-                              {addressItem.isDefault && (
-                                <span className="purchase-buy-address-default-badge">
-                                  Mặc định
-                                </span>
+                            {isSelected && (
+                              <CheckOutlined className="purchase-buy-check-active-icon" />
+                            )}
+
+                            <button
+                              type="button"
+                              className="purchase-buy-btn-delete-address"
+                              disabled={
+                                !addressItem.apiId ||
+                                isSubmitting ||
+                                isSavingAddress ||
+                                Boolean(deletingAddressId)
+                              }
+                              onClick={(event) =>
+                                handleDeleteAddress(event, addressItem)
+                              }
+                            >
+                              {isDeleting ? (
+                                <LoadingOutlined spin />
+                              ) : (
+                                <DeleteOutlined />
                               )}
-
-                              {isSelected && (
-                                <CheckOutlined className="purchase-buy-check-active-icon" />
-                              )}
-
-                              <button
-                                type="button"
-                                className="purchase-buy-btn-delete-address"
-                                disabled={
-                                  !addressItem.apiId ||
-                                  isSubmitting ||
-                                  isSavingAddress ||
-                                  Boolean(
-                                    deletingAddressId
-                                  )
-                                }
-                                onClick={(
-                                  event
-                                ) =>
-                                  handleDeleteAddress(
-                                    event,
-                                    addressItem
-                                  )
-                                }
-                              >
-                                {isDeleting ? (
-                                  <LoadingOutlined spin />
-                                ) : (
-                                  <DeleteOutlined />
-                                )}
-                              </button>
-                            </div>
-                          );
-                        }
-                      )}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div
@@ -2451,25 +1665,20 @@ export default function ConsignmentBuyOrder() {
                       </label>
 
                       <select
-                        value={
-                          newAddressSelect.provinceCode
-                        }
+                        value={newAddressSelect.provinceCode}
                         disabled={
-                          isSubmitting ||
-                          isSavingAddress ||
-                          isLoadingProvinces
+                          isSubmitting || isSavingAddress || isLoadingProvinces
                         }
                         className={getFieldClassName(
                           "purchase-buy-custom-select",
-                          newAddressError &&
-                            !newAddressSelect.provinceCode
+                          newAddressError && !newAddressSelect.provinceCode
                             ? newAddressError
-                            : ""
+                            : "",
                         )}
                         onChange={(event) =>
                           updateNewAddressSelect(
                             "provinceCode",
-                            event.target.value
+                            event.target.value,
                           )
                         }
                       >
@@ -2479,16 +1688,11 @@ export default function ConsignmentBuyOrder() {
                             : "Chọn tỉnh/thành"}
                         </option>
 
-                        {provinceOptions.map(
-                          (province) => (
-                            <option
-                              key={province.value}
-                              value={province.value}
-                            >
-                              {province.label}
-                            </option>
-                          )
-                        )}
+                        {provinceOptions.map((province) => (
+                          <option key={province.value} value={province.value}>
+                            {province.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -2498,9 +1702,7 @@ export default function ConsignmentBuyOrder() {
                       </label>
 
                       <select
-                        value={
-                          newAddressSelect.districtCode
-                        }
+                        value={newAddressSelect.districtCode}
                         disabled={
                           isSubmitting ||
                           isSavingAddress ||
@@ -2511,7 +1713,7 @@ export default function ConsignmentBuyOrder() {
                         onChange={(event) =>
                           updateNewAddressSelect(
                             "districtCode",
-                            event.target.value
+                            event.target.value,
                           )
                         }
                       >
@@ -2521,16 +1723,11 @@ export default function ConsignmentBuyOrder() {
                             : "Chọn quận/huyện"}
                         </option>
 
-                        {districtOptions.map(
-                          (district) => (
-                            <option
-                              key={district.value}
-                              value={district.value}
-                            >
-                              {district.label}
-                            </option>
-                          )
-                        )}
+                        {districtOptions.map((district) => (
+                          <option key={district.value} value={district.value}>
+                            {district.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -2540,9 +1737,7 @@ export default function ConsignmentBuyOrder() {
                       </label>
 
                       <select
-                        value={
-                          newAddressSelect.wardCode
-                        }
+                        value={newAddressSelect.wardCode}
                         disabled={
                           isSubmitting ||
                           isSavingAddress ||
@@ -2551,10 +1746,7 @@ export default function ConsignmentBuyOrder() {
                         }
                         className="purchase-buy-custom-select"
                         onChange={(event) =>
-                          updateNewAddressSelect(
-                            "wardCode",
-                            event.target.value
-                          )
+                          updateNewAddressSelect("wardCode", event.target.value)
                         }
                       >
                         <option value="">
@@ -2563,50 +1755,30 @@ export default function ConsignmentBuyOrder() {
                             : "Chọn phường/xã"}
                         </option>
 
-                        {wardOptions.map(
-                          (ward) => (
-                            <option
-                              key={ward.value}
-                              value={ward.value}
-                            >
-                              {ward.label}
-                            </option>
-                          )
-                        )}
+                        {wardOptions.map((ward) => (
+                          <option key={ward.value} value={ward.value}>
+                            {ward.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
                   <input
                     type="text"
-                    value={
-                      newAddressInput
-                    }
-                    disabled={
-                      isSubmitting ||
-                      isSavingAddress
-                    }
+                    value={newAddressInput}
+                    disabled={isSubmitting || isSavingAddress}
                     placeholder="Số nhà, tên đường..."
                     className={getFieldClassName(
                       "purchase-buy-custom-input purchase-buy-small-input",
-                      newAddressError
+                      newAddressError,
                     )}
                     onChange={(event) => {
-                      setNewAddressInput(
-                        event.target.value
-                      );
-                      setNewAddressError(
-                        ""
-                      );
+                      setNewAddressInput(event.target.value);
+                      setNewAddressError("");
                     }}
-                    onKeyDown={(
-                      event
-                    ) => {
-                      if (
-                        event.key ===
-                          "Enter" &&
-                        !isSavingAddress
-                      ) {
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !isSavingAddress) {
                         event.preventDefault();
 
                         handleSaveAddress();
@@ -2621,45 +1793,33 @@ export default function ConsignmentBuyOrder() {
                         newAddressInput.trim(),
                         getAddressOptionName(
                           wardOptions,
-                          newAddressSelect.wardCode
+                          newAddressSelect.wardCode,
                         ),
                         getAddressOptionName(
                           districtOptions,
-                          newAddressSelect.districtCode
+                          newAddressSelect.districtCode,
                         ),
                         getAddressOptionName(
                           provinceOptions,
-                          newAddressSelect.provinceCode
+                          newAddressSelect.provinceCode,
                         ),
                       ]
                         .filter(Boolean)
-                        .join(", ") ||
-                        "Chưa đủ thông tin địa chỉ"}
+                        .join(", ") || "Chưa đủ thông tin địa chỉ"}
                     </strong>
                   </div>
 
-                  <FieldError
-                    message={
-                      newAddressError
-                    }
-                  />
+                  <FieldError message={newAddressError} />
 
                   <div className="purchase-buy-inline-form-actions">
                     <button
                       type="button"
                       className="purchase-buy-btn-inline-cancel"
-                      disabled={
-                        isSubmitting ||
-                        isSavingAddress
-                      }
+                      disabled={isSubmitting || isSavingAddress}
                       onClick={() => {
-                        setIsAddingAddress(
-                          false
-                        );
+                        setIsAddingAddress(false);
                         resetNewAddressForm();
-                        setNewAddressError(
-                          ""
-                        );
+                        setNewAddressError("");
                       }}
                     >
                       Hủy
@@ -2668,13 +1828,8 @@ export default function ConsignmentBuyOrder() {
                     <button
                       type="button"
                       className="purchase-buy-btn-inline-save"
-                      disabled={
-                        isSubmitting ||
-                        isSavingAddress
-                      }
-                      onClick={
-                        handleSaveAddress
-                      }
+                      disabled={isSubmitting || isSavingAddress}
+                      onClick={handleSaveAddress}
                     >
                       {isSavingAddress ? (
                         <>
@@ -2700,24 +1855,13 @@ export default function ConsignmentBuyOrder() {
 
               <div className="purchase-buy-toggle-text-info">
                 <h4>YÊU CẦU KIỂM HÀNG</h4>
-                <p>
-                  Kiểm tra tình trạng sản phẩm khi về kho.
-                </p>
+                <p>Kiểm tra tình trạng sản phẩm khi về kho.</p>
               </div>
 
               <Switch
-                checked={
-                  form.requiresInspection
-                }
-                disabled={
-                  isSubmitting
-                }
-                onChange={(value) =>
-                  updateForm(
-                    "requiresInspection",
-                    value
-                  )
-                }
+                checked={form.requiresInspection}
+                disabled={isSubmitting}
+                onChange={(value) => updateForm("requiresInspection", value)}
               />
             </div>
 
@@ -2728,644 +1872,460 @@ export default function ConsignmentBuyOrder() {
 
               <div className="purchase-buy-toggle-text-info">
                 <h4>KIỂM SỐ LƯỢNG</h4>
-                <p>
-                  Đối chiếu số lượng sản phẩm thực nhận.
-                </p>
+                <p>Đối chiếu số lượng sản phẩm thực nhận.</p>
               </div>
 
               <Switch
-                checked={
-                  form.requiresQuantityCheck
-                }
-                disabled={
-                  isSubmitting
-                }
-                onChange={(value) =>
-                  updateForm(
-                    "requiresQuantityCheck",
-                    value
-                  )
-                }
+                checked={form.requiresQuantityCheck}
+                disabled={isSubmitting}
+                onChange={(value) => updateForm("requiresQuantityCheck", value)}
               />
-            </div>
-
-            <div className="purchase-buy-left-inner-section purchase-buy-border-top-dash">
-              <div className="purchase-buy-input-field-group">
-                <label className="purchase-buy-field-label">
-                  GHI CHÚ CHUNG
-                </label>
-
-                <textarea
-                  rows={4}
-                  value={
-                    form.generalNote
-                  }
-                  disabled={
-                    isSubmitting
-                  }
-                  maxLength={1000}
-                  placeholder="Nhập yêu cầu hoặc lưu ý chung..."
-                  className="purchase-buy-custom-textarea"
-                  onChange={(event) =>
-                    updateForm(
-                      "generalNote",
-                      event.target.value
-                    )
-                  }
-                />
-
-                <div className="purchase-buy-sub-helper-text">
-                  {form.generalNote.length}/1000 ký tự
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
         <div className="purchase-buy-layout-right-scrollable-form">
           <div className="purchase-buy-scrollable-content-wrapper">
-            {items.map(
-              (item, index) => {
-                const errors =
-                  itemErrors[
-                    item.id
-                  ] || {};
+            {items.map((item, index) => {
+              const errors = itemErrors[item.id] || {};
 
-                return (
-                  <section
-                    key={item.id}
-                    className="purchase-buy-form-main-card"
-                  >
-                    <div className="purchase-buy-form-step-header">
-                      <div className="purchase-buy-step-header-left">
-                        <div className="purchase-buy-step-number-circle">
-                          {index + 1}
-                        </div>
-
-                        <h3>
-                          THÔNG TIN SẢN PHẨM{" "}
-                          {index + 1}
-                        </h3>
+              return (
+                <section key={item.id} className="purchase-buy-form-main-card">
+                  <div className="purchase-buy-form-step-header">
+                    <div className="purchase-buy-step-header-left">
+                      <div className="purchase-buy-step-number-circle">
+                        {index + 1}
                       </div>
 
-                      {items.length >
-                        1 && (
-                        <button
-                          type="button"
-                          disabled={
-                            isSubmitting
-                          }
-                          className="purchase-buy-btn-delete-package"
-                          onClick={() =>
-                            handleDeleteItem(
-                              item.id
-                            )
-                          }
-                        >
-                          <DeleteOutlined />
-                          Xóa sản phẩm
-                        </button>
+                      <h3>THÔNG TIN SẢN PHẨM {index + 1}</h3>
+                    </div>
+
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        className="purchase-buy-btn-delete-package"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
+                        <DeleteOutlined />
+                        Xóa sản phẩm
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="purchase-buy-input-field-group purchase-buy-product-link-field">
+                    <label className="purchase-buy-field-label purchase-buy-required-label">
+                      <LinkOutlined />
+                      LINK SẢN PHẨM
+                    </label>
+
+                    <input
+                      type="url"
+                      value={item.productLink}
+                      disabled={isSubmitting}
+                      placeholder="https://example.com/san-pham..."
+                      className={getFieldClassName(
+                        "purchase-buy-custom-input",
+                        errors.productLink,
                       )}
-                    </div>
+                      onChange={(event) =>
+                        handleItemChange(
+                          item.id,
+                          "productLink",
+                          event.target.value,
+                        )
+                      }
+                      onBlur={() => handleProductLinkBlur(item)}
+                    />
 
-                    <div className="purchase-buy-input-field-group purchase-buy-product-link-field">
-                      <label className="purchase-buy-field-label purchase-buy-required-label">
-                        <LinkOutlined />
-                        LINK SẢN PHẨM
-                      </label>
+                    <FieldError message={errors.productLink} />
+                  </div>
 
-                      <input
-                        type="url"
-                        value={
-                          item.productLink
-                        }
-                        disabled={
-                          isSubmitting
-                        }
-                        placeholder="https://example.com/san-pham..."
-                        className={getFieldClassName(
-                          "purchase-buy-custom-input",
-                          errors.productLink
-                        )}
-                        onChange={(
-                          event
-                        ) =>
-                          handleItemChange(
-                            item.id,
-                            "productLink",
-                            event.target.value
-                          )
-                        }
-                        onBlur={() =>
-                          handleProductLinkBlur(
-                            item
-                          )
-                        }
-                      />
-
-                      <FieldError
-                        message={
-                          errors.productLink
-                        }
-                      />
-                    </div>
-
-                    <div className="purchase-buy-form-row-2col purchase-buy-product-basic-grid">
-                      <div className="purchase-buy-input-field-group">
-                        <div className="purchase-buy-field-label-row">
-                          <label className="purchase-buy-field-label purchase-buy-required-label">
-                            WEBSITE NGUỒN
-                          </label>
-
-                          <Tooltip
-    title="Nhập tên website bán sản phẩm, ví dụ: amazon.com, shopee.vn hoặc taobao.com."
-    placement="top"
-  >
-    <InfoCircleOutlined
-      style={{
-        color: "#1890ff",
-        cursor: "pointer",
-        fontSize: "14px",
-        flexShrink: 0,
-      }}
-    />
-  </Tooltip>
-                        </div>
-
-                        <input
-                          type="text"
-                          value={
-                            item.sourceWebsite
-                          }
-                          disabled={
-                            isSubmitting
-                          }
-                          placeholder="Ví dụ: amazon.com"
-                          className={getFieldClassName(
-                            "purchase-buy-custom-input",
-                            errors.sourceWebsite
-                          )}
-                          onChange={(
-                            event
-                          ) =>
-                            handleItemChange(
-                              item.id,
-                              "sourceWebsite",
-                              event.target.value
-                            )
-                          }
-                        />
-
-                        <FieldError
-                          message={
-                            errors.sourceWebsite
-                          }
-                        />
-                      </div>
-
-                      <div className="purchase-buy-input-field-group">
-                        <label className="purchase-buy-field-label purchase-buy-required-label">
-                          LOẠI SẢN PHẨM
-                        </label>
-
-                        <select
-                          value={
-                            item.productType
-                          }
-                          disabled={
-                            isSubmitting ||
-                            isLoadingOptions
-                          }
-                          className={getFieldClassName(
-                            "purchase-buy-custom-select",
-                            errors.productType
-                          )}
-                          onChange={(
-                            event
-                          ) =>
-                            handleItemChange(
-                              item.id,
-                              "productType",
-                              event.target.value
-                            )
-                          }
-                        >
-                          <option value="">
-                            {isLoadingOptions
-                              ? "Đang tải loại sản phẩm..."
-                              : "-- Chọn loại sản phẩm --"}
-                          </option>
-
-                          {productTypeOptions.map(
-                            (
-                              option
-                            ) => (
-                              <option
-                                key={
-                                  option.value
-                                }
-                                value={
-                                  option.value
-                                }
-                              >
-                                {
-                                  option.label
-                                }
-                              </option>
-                            )
-                          )}
-                        </select>
-
-                        <FieldError
-                          message={
-                            errors.productType
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="purchase-buy-form-row-2col">
-                      <div className="purchase-buy-input-field-group">
-                        <label className="purchase-buy-field-label purchase-buy-required-label">
-                          TÊN SẢN PHẨM
-                        </label>
-
-                        <input
-                          type="text"
-                          value={
-                            item.productName
-                          }
-                          disabled={
-                            isSubmitting
-                          }
-                          placeholder="Nhập tên sản phẩm..."
-                          className={getFieldClassName(
-                            "purchase-buy-custom-input",
-                            errors.productName
-                          )}
-                          onChange={(
-                            event
-                          ) =>
-                            handleItemChange(
-                              item.id,
-                              "productName",
-                              event.target.value
-                            )
-                          }
-                        />
-
-                        <FieldError
-                          message={
-                            errors.productName
-                          }
-                        />
-                      </div>
-
-                      <div className="purchase-buy-input-field-group">
-                        <label className="purchase-buy-field-label purchase-buy-required-label">
-                          SỐ LƯỢNG
-                        </label>
-
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={
-                            item.quantity
-                          }
-                          disabled={
-                            isSubmitting
-                          }
-                          placeholder="Nhập số lượng..."
-                          className={getFieldClassName(
-                            "purchase-buy-custom-input",
-                            errors.quantity
-                          )}
-                          onKeyDown={
-                            preventInvalidNumberKeys
-                          }
-                          onChange={(
-                            event
-                          ) =>
-                            handleItemChange(
-                              item.id,
-                              "quantity",
-                              sanitizeInteger(
-                                event.target.value
-                              )
-                            )
-                          }
-                        />
-
-                        <FieldError
-                          message={
-                            errors.quantity
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="purchase-buy-input-field-group purchase-buy-product-attributes-field">
+                  <div className="purchase-buy-form-row-2col purchase-buy-product-basic-grid">
+                    <div className="purchase-buy-input-field-group">
                       <div className="purchase-buy-field-label-row">
                         <label className="purchase-buy-field-label purchase-buy-required-label">
-                          THUỘC TÍNH SẢN PHẨM
+                          WEBSITE NGUỒN
                         </label>
 
                         <Tooltip
-  title="Nhập đặc điểm cần mua chính xác như màu sắc, kích thước, phiên bản hoặc dung lượng."
-  placement="top"
->
-  <InfoCircleOutlined
-    role="button"
-    tabIndex={0}
-    aria-label="Hướng dẫn nhập thuộc tính sản phẩm"
-    style={{
-      color: "#1890ff",
-      cursor: "pointer",
-      fontSize: "14px",
-      flexShrink: 0,
-      marginLeft: "6px",
-    }}
-  />
-</Tooltip>
+                          title="Nhập tên website bán sản phẩm, ví dụ: amazon.com, shopee.vn hoặc taobao.com."
+                          placement="top"
+                        >
+                          <InfoCircleOutlined
+                            style={{
+                              color: "#1890ff",
+                              cursor: "pointer",
+                              fontSize: "14px",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </Tooltip>
                       </div>
 
                       <input
                         type="text"
-                        value={
-                          item.attributes
-                        }
-                        disabled={
-                          isSubmitting
-                        }
-                        placeholder="Ví dụ: Màu đen, Size M, phiên bản 256GB..."
+                        value={item.sourceWebsite}
+                        disabled={isSubmitting}
+                        placeholder="Ví dụ: amazon.com"
                         className={getFieldClassName(
                           "purchase-buy-custom-input",
-                          errors.attributes
+                          errors.sourceWebsite,
                         )}
-                        onChange={(
-                          event
-                        ) =>
+                        onChange={(event) =>
                           handleItemChange(
                             item.id,
-                            "attributes",
-                            event.target.value
+                            "sourceWebsite",
+                            event.target.value,
                           )
                         }
                       />
 
-                      <FieldError
-                        message={
-                          errors.attributes
-                        }
-                      />
+                      <FieldError message={errors.sourceWebsite} />
                     </div>
 
                     <div className="purchase-buy-input-field-group">
-                      <label className="purchase-buy-field-label">
-                        GHI CHÚ SẢN PHẨM
+                      <label className="purchase-buy-field-label purchase-buy-required-label">
+                        LOẠI SẢN PHẨM
                       </label>
 
-                      <textarea
-                        rows={3}
-                        value={
-                          item.note
-                        }
-                        disabled={
-                          isSubmitting
-                        }
-                        maxLength={500}
-                        placeholder="Nhập yêu cầu riêng cho sản phẩm..."
-                        className="purchase-buy-custom-textarea"
-                        onChange={(
-                          event
-                        ) =>
+                      <select
+                        value={item.productType}
+                        disabled={isSubmitting || isLoadingOptions}
+                        className={getFieldClassName(
+                          "purchase-buy-custom-select",
+                          errors.productType,
+                        )}
+                        onChange={(event) =>
                           handleItemChange(
                             item.id,
-                            "note",
-                            event.target.value
+                            "productType",
+                            event.target.value,
                           )
                         }
-                      />
+                      >
+                        <option value="">
+                          {isLoadingOptions
+                            ? "Đang tải loại sản phẩm..."
+                            : "-- Chọn loại sản phẩm --"}
+                        </option>
 
-                      <div className="purchase-buy-sub-helper-text">
-                        {item.note.length}/500 ký tự
-                      </div>
+                        {productTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <FieldError message={errors.productType} />
                     </div>
+                  </div>
 
-                    <div className="purchase-buy-input-field-group purchase-buy-package-image-section">
+                  <div className="purchase-buy-form-row-2col">
+                    <div className="purchase-buy-input-field-group">
                       <label className="purchase-buy-field-label purchase-buy-required-label">
-                        ẢNH SẢN PHẨM
+                        TÊN SẢN PHẨM
                       </label>
 
                       <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        disabled={
-                          isSubmitting
-                        }
-                        style={{
-                          display:
-                            "none",
-                        }}
-                        ref={(element) => {
-                          fileInputRefs.current[
-                            item.id
-                          ] = element;
-                        }}
-                        onChange={(
-                          event
-                        ) =>
-                          handleFileChange(
+                        type="text"
+                        value={item.productName}
+                        disabled={isSubmitting}
+                        placeholder="Nhập tên sản phẩm..."
+                        className={getFieldClassName(
+                          "purchase-buy-custom-input",
+                          errors.productName,
+                        )}
+                        onChange={(event) =>
+                          handleItemChange(
                             item.id,
-                            event
+                            "productName",
+                            event.target.value,
                           )
                         }
                       />
 
-                      {!item.image ? (
-                        <div
+                      <FieldError message={errors.productName} />
+                    </div>
+
+                    <div className="purchase-buy-input-field-group">
+                      <label className="purchase-buy-field-label purchase-buy-required-label">
+                        SỐ LƯỢNG
+                      </label>
+
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={item.quantity}
+                        disabled={isSubmitting}
+                        placeholder="Nhập số lượng..."
+                        className={getFieldClassName(
+                          "purchase-buy-custom-input",
+                          errors.quantity,
+                        )}
+                        onKeyDown={preventInvalidNumberKeys}
+                        onChange={(event) =>
+                          handleItemChange(
+                            item.id,
+                            "quantity",
+                            sanitizeInteger(event.target.value),
+                          )
+                        }
+                      />
+
+                      <FieldError message={errors.quantity} />
+                    </div>
+                  </div>
+
+                  <div className="purchase-buy-input-field-group purchase-buy-product-attributes-field">
+                    <div className="purchase-buy-field-label-row">
+                      <label className="purchase-buy-field-label purchase-buy-required-label">
+                        THUỘC TÍNH SẢN PHẨM
+                      </label>
+
+                      <Tooltip
+                        title="Nhập đặc điểm cần mua chính xác như màu sắc, kích thước, phiên bản hoặc dung lượng."
+                        placement="top"
+                      >
+                        <InfoCircleOutlined
                           role="button"
                           tabIndex={0}
-                          className={[
-                            "purchase-buy-upload-dropzone-box-clickable",
-                            errors.image &&
-                              "purchase-buy-upload-has-error",
-                            isSubmitting &&
-                              "purchase-buy-upload-is-disabled",
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                          onClick={() =>
-                            fileInputRefs.current[
-                              item.id
-                            ]?.click()
-                          }
-                          onKeyDown={(
-                            event
-                          ) => {
-                            if (
-                              event.key ===
-                                "Enter" ||
-                              event.key ===
-                                " "
-                            ) {
-                              event.preventDefault();
+                          aria-label="Hướng dẫn nhập thuộc tính sản phẩm"
+                          style={{
+                            color: "#1890ff",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            flexShrink: 0,
+                            marginLeft: "6px",
+                          }}
+                        />
+                      </Tooltip>
+                    </div>
 
-                              fileInputRefs.current[
-                                item.id
-                              ]?.click();
+                    <input
+                      type="text"
+                      value={item.attributes}
+                      disabled={isSubmitting}
+                      placeholder="Ví dụ: Màu đen, Size M, phiên bản 256GB..."
+                      className={getFieldClassName(
+                        "purchase-buy-custom-input",
+                        errors.attributes,
+                      )}
+                      onChange={(event) =>
+                        handleItemChange(
+                          item.id,
+                          "attributes",
+                          event.target.value,
+                        )
+                      }
+                    />
+
+                    <FieldError message={errors.attributes} />
+                  </div>
+
+                  <div className="purchase-buy-input-field-group">
+                    <label className="purchase-buy-field-label">
+                      GHI CHÚ SẢN PHẨM
+                    </label>
+
+                    <textarea
+                      rows={3}
+                      value={item.note}
+                      disabled={isSubmitting}
+                      maxLength={500}
+                      placeholder="Nhập yêu cầu riêng cho sản phẩm..."
+                      className="purchase-buy-custom-textarea"
+                      onChange={(event) =>
+                        handleItemChange(item.id, "note", event.target.value)
+                      }
+                    />
+
+                    <div className="purchase-buy-sub-helper-text">
+                      {item.note.length}/500 ký tự
+                    </div>
+                  </div>
+
+                  <div className="purchase-buy-input-field-group purchase-buy-package-image-section">
+                    <label className="purchase-buy-field-label purchase-buy-required-label">
+                      ẢNH SẢN PHẨM
+                    </label>
+
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      disabled={isSubmitting}
+                      style={{
+                        display: "none",
+                      }}
+                      ref={(element) => {
+                        fileInputRefs.current[item.id] = element;
+                      }}
+                      onChange={(event) => handleFileChange(item.id, event)}
+                    />
+
+                    {!item.image ? (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className={[
+                          "purchase-buy-upload-dropzone-box-clickable",
+                          errors.image && "purchase-buy-upload-has-error",
+                          isSubmitting && "purchase-buy-upload-is-disabled",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        onClick={() => fileInputRefs.current[item.id]?.click()}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+
+                            fileInputRefs.current[item.id]?.click();
+                          }
+                        }}
+                      >
+                        <CloudUploadOutlined className="purchase-buy-upload-big-icon" />
+
+                        <span className="purchase-buy-upload-main-text">
+                          Bấm để chọn ảnh sản phẩm
+                        </span>
+
+                        <span className="purchase-buy-upload-sub-text">
+                          JPG, PNG, WEBP — tối đa 5MB
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="purchase-buy-image-previews-grid purchase-buy-animation-fade-in">
+                        <div
+                          className="purchase-buy-preview-image-item"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() =>
+                            setActiveLightboxImg(item.image.previewUrl)
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setActiveLightboxImg(item.image.previewUrl);
                             }
                           }}
                         >
-                          <CloudUploadOutlined className="purchase-buy-upload-big-icon" />
+                          <img
+                            src={item.image.previewUrl}
+                            alt={item.productName || `Sản phẩm ${index + 1}`}
+                          />
 
-                          <span className="purchase-buy-upload-main-text">
-                            Bấm để chọn ảnh sản phẩm
-                          </span>
-
-                          <span className="purchase-buy-upload-sub-text">
-                            JPG, PNG, WEBP — tối đa 5MB
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="purchase-buy-image-previews-grid purchase-buy-animation-fade-in">
-                          <div
-                            className="purchase-buy-preview-image-item"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() =>
-                              setActiveLightboxImg(
-                                item.image.previewUrl
+                          <button
+                            type="button"
+                            className="purchase-buy-btn-remove-preview-img"
+                            disabled={isSubmitting}
+                            aria-label="Xóa ảnh sản phẩm"
+                            onClick={(event) =>
+                              handleRemoveImage(
+                                event,
+                                item.id,
+                                item.image.previewUrl,
                               )
                             }
-                            onKeyDown={(event) => {
-                              if (
-                                event.key === "Enter" ||
-                                event.key === " "
-                              ) {
-                                event.preventDefault();
-                                setActiveLightboxImg(
-                                  item.image.previewUrl
-                                );
-                              }
-                            }}
                           >
-                            <img
-                              src={
-                                item.image.previewUrl
-                              }
-                              alt={
-                                item.productName ||
-                                `Sản phẩm ${index + 1}`
-                              }
-                            />
-
-                            <button
-                              type="button"
-                              className="purchase-buy-btn-remove-preview-img"
-                              disabled={
-                                isSubmitting
-                              }
-                              aria-label="Xóa ảnh sản phẩm"
-                              onClick={(event) =>
-                                handleRemoveImage(
-                                  event,
-                                  item.id,
-                                  item.image.previewUrl
-                                )
-                              }
-                            >
-                              <CloseOutlined />
-                            </button>
-                          </div>
+                            <CloseOutlined />
+                          </button>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      <FieldError
-                        message={
-                          errors.image
-                        }
-                      />
-                    </div>
-                  </section>
-                );
-              }
-            )}
+                    <FieldError message={errors.image} />
+                  </div>
+                </section>
+              );
+            })}
 
             <button
               type="button"
-              disabled={
-                isSubmitting
-              }
+              disabled={isSubmitting}
               className={[
                 "purchase-buy-add-package-dashed-trigger",
-                isSubmitting &&
-                  "purchase-buy-add-package-disabled",
+                isSubmitting && "purchase-buy-add-package-disabled",
               ]
                 .filter(Boolean)
                 .join(" ")}
-              onClick={
-                handleAddItem
-              }
+              onClick={handleAddItem}
             >
               <PlusCircleOutlined className="purchase-buy-plus-dashed-icon" />
-              <span>
-                THÊM SẢN PHẨM MUA HỘ
-              </span>
+              <span>THÊM SẢN PHẨM MUA HỘ</span>
             </button>
-            <div className="purchase-buy-input-field-group">
-                <label className="purchase-buy-field-label">
-                  GHI CHÚ CHUNG
-                </label>
+            <div
+              className="purchase-buy-form-main-card purchase-buy-general-note-card"
+              style={{
+                marginTop: "1.25rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <div className="purchase-buy-form-step-header">
+                <div className="purchase-buy-step-header-left">
+                  <div className="purchase-buy-step-number-circle">
+                    <InfoCircleOutlined />
+                  </div>
 
-                <textarea
-                  rows={4}
-                  value={
-                    form.generalNote
-                  }
-                  disabled={
-                    isSubmitting
-                  }
-                  maxLength={1000}
-                  placeholder="Nhập yêu cầu hoặc lưu ý chung..."
-                  className="purchase-buy-custom-textarea"
-                  onChange={(event) =>
-                    updateForm(
-                      "generalNote",
-                      event.target.value
-                    )
-                  }
-                />
-
-                <div className="purchase-buy-sub-helper-text">
-                  {form.generalNote.length}/1000 ký tự
+                  <h3>GHI CHÚ CHUNG VÀ DỊCH VỤ BỔ SUNG</h3>
                 </div>
               </div>
 
+              <div className="purchase-buy-general-note-section">
+                <FieldLabelTooltip
+                  label="CHỌN DỊCH VỤ BỔ SUNG"
+                  tooltip="Các dịch vụ này không bắt buộc. Chi phí chính thức sẽ được kiểm tra và xác nhận trong báo giá."
+                />
+
+                <PackageOptionalServices
+                  value={form.optionalServices}
+                  disabled={isSubmitting}
+                  onChange={handleOptionalServicesChange}
+                />
+              </div>
+
+              <div className="purchase-buy-general-note-divider" />
+
+              <div className="purchase-buy-input-field-group">
+                <FieldLabelTooltip
+                  label="GHI CHÚ ĐƠN HÀNG"
+                  tooltip="Nhập các yêu cầu chung cho đơn mua hộ như thuộc tính cần lưu ý, cách đóng gói, yêu cầu bảo quản hoặc thông tin cần nhân viên xử lý biết."
+                />
+
+                <textarea
+                  rows={4}
+                  value={form.generalNote}
+                  disabled={isSubmitting}
+                  maxLength={1000}
+                  placeholder="Nhập ghi chú chung, yêu cầu đóng gói hoặc thông tin cần lưu ý cho toàn bộ yêu cầu mua hộ..."
+                  className="purchase-buy-custom-textarea"
+                  onChange={(event) =>
+                    updateForm("generalNote", event.target.value)
+                  }
+                />
+
+                <div className="purchase-buy-textarea-meta">
+                 
+
+                  <strong>{form.generalNote.length}/1000 ký tự</strong>
+                </div>
+              </div>
+            </div>
 
             <div className="purchase-buy-sticky-action-notice-bar">
               <div className="purchase-buy-notice-left-message">
                 <InfoCircleOutlined className="purchase-buy-info-notice-icon" />
 
                 <p>
-                  <strong>
-                    LƯU Ý:
-                  </strong>{" "}
-                  Việt Nam Logictic sẽ kiểm tra link,
-                  thuộc tính và số lượng
-                  trước khi tiến hành báo giá.
+                  <strong>LƯU Ý:</strong> Việt Nam Logictic sẽ kiểm tra link,
+                  thuộc tính và số lượng trước khi tiến hành báo giá.
                 </p>
               </div>
 
               <button
                 type="button"
                 className="purchase-buy-btn-final-submit-order"
-                disabled={
-                  isSubmitting
-                }
-                onClick={
-                  handleOpenConfirmation
-                }
+                disabled={isSubmitting}
+                onClick={handleOpenConfirmation}
               >
                 {isSubmitting ? (
                   <>
@@ -3395,9 +2355,7 @@ export default function ConsignmentBuyOrder() {
               <LoadingOutlined spin />
             </div>
 
-            <h3>
-              ĐANG TẠO YÊU CẦU MUA HỘ
-            </h3>
+            <h3>ĐANG TẠO YÊU CẦU MUA HỘ</h3>
 
             <p>{submitMessage}</p>
 
@@ -3405,9 +2363,7 @@ export default function ConsignmentBuyOrder() {
               <span />
             </div>
 
-            <small>
-              Vui lòng không đóng hoặc tải lại trang.
-            </small>
+            <small>Vui lòng không đóng hoặc tải lại trang.</small>
           </div>
         </div>
       )}
@@ -3415,22 +2371,14 @@ export default function ConsignmentBuyOrder() {
       {activeLightboxImg && (
         <div
           className="purchase-buy-lightbox-overlay-modal"
-          onClick={() =>
-            setActiveLightboxImg(
-              null
-            )
-          }
+          onClick={() => setActiveLightboxImg(null)}
         >
           <div
             className="purchase-buy-lightbox-content-box purchase-buy-animate-zoom-in"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => event.stopPropagation()}
           >
             <img
-              src={
-                activeLightboxImg
-              }
+              src={activeLightboxImg}
               alt="Phóng to"
               className="purchase-buy-lightbox-main-img"
             />

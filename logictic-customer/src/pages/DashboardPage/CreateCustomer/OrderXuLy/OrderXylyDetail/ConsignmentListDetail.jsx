@@ -7,25 +7,11 @@ import React, {
 } from "react";
 
 import axios from "axios";
-import {
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-import {
-  Descriptions,
-  Image,
-  Modal,
-  Table,
-  Tag,
-  Tooltip,
-} from "antd";
+import { Descriptions, Image, Modal, Table, Tag, Tooltip } from "antd";
 
-import {
-  Button,
-  CircularProgress,
-} from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import AuthNotify from "../../../../../utils/AuthNotify";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
@@ -54,8 +40,6 @@ import {
 
 import "./ConsignmentListDetail.css";
 
-
-
 /* =========================================================
    LOẠI SẢN PHẨM
    ========================================================= */
@@ -75,15 +59,11 @@ const normalizeProductTypeOptions = (apiResult) => {
     apiResult?.data?.productTypes,
   ];
 
-  const rawProductTypes =
-    candidates.find(Array.isArray) || [];
+  const rawProductTypes = candidates.find(Array.isArray) || [];
 
   return rawProductTypes
     .map((item) => {
-      if (
-        typeof item === "string" ||
-        typeof item === "number"
-      ) {
+      if (typeof item === "string" || typeof item === "number") {
         const value = String(item).trim();
 
         return {
@@ -99,7 +79,7 @@ const normalizeProductTypeOptions = (apiResult) => {
           item?.productTypeCode ||
           item?.productTypeId ||
           item?.id ||
-          ""
+          "",
       ).trim();
 
       const label = String(
@@ -108,7 +88,7 @@ const normalizeProductTypeOptions = (apiResult) => {
           item?.displayName ||
           item?.productTypeName ||
           item?.description ||
-          value
+          value,
       ).trim();
 
       return {
@@ -116,27 +96,17 @@ const normalizeProductTypeOptions = (apiResult) => {
         label,
       };
     })
-    .filter(
-      (option) =>
-        option.value &&
-        option.label
-    );
+    .filter((option) => option.value && option.label);
 };
 
 const toFiniteNumberOrNull = (value) => {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
+  if (value === null || value === undefined || value === "") {
     return null;
   }
 
   const number = Number(value);
 
-  return Number.isFinite(number)
-    ? number
-    : null;
+  return Number.isFinite(number) ? number : null;
 };
 
 /* =========================================================
@@ -146,22 +116,15 @@ const toFiniteNumberOrNull = (value) => {
 const normalizeVolumetricDivisorRule = (rule) => {
   if (
     !rule ||
-    normalizeStatus(rule.ruleCode) !==
-      "VOLUMETRIC_DIVISOR" ||
-    normalizeStatus(rule.status) !==
-      "ACTIVE"
+    normalizeStatus(rule.ruleCode) !== "VOLUMETRIC_DIVISOR" ||
+    normalizeStatus(rule.status) !== "ACTIVE"
   ) {
     return null;
   }
 
-  const value = toFiniteNumberOrNull(
-    rule.value
-  );
+  const value = toFiniteNumberOrNull(rule.value);
 
-  if (
-    !Number.isFinite(value) ||
-    value <= 0
-  ) {
+  if (!Number.isFinite(value) || value <= 0) {
     return null;
   }
 
@@ -206,9 +169,7 @@ const formatStatusCode = (status) => {
     return "-";
   }
 
-  return normalizedStatus
-    .replaceAll("_", " ")
-    .replaceAll("-", " ");
+  return normalizedStatus.replaceAll("_", " ").replaceAll("-", " ");
 };
 
 const normalizeStatusOptions = (apiResult) => {
@@ -221,15 +182,11 @@ const normalizeStatusOptions = (apiResult) => {
     apiResult?.data?.statuses,
   ];
 
-  const rawStatuses =
-    candidates.find(Array.isArray) || [];
+  const rawStatuses = candidates.find(Array.isArray) || [];
 
   return rawStatuses
     .map((item) => {
-      if (
-        typeof item === "string" ||
-        typeof item === "number"
-      ) {
+      if (typeof item === "string" || typeof item === "number") {
         const value = normalizeStatus(item);
 
         return {
@@ -243,7 +200,7 @@ const normalizeStatusOptions = (apiResult) => {
           item?.code ||
           item?.status ||
           item?.statusCode ||
-          item?.id
+          item?.id,
       );
 
       const label = String(
@@ -252,7 +209,7 @@ const normalizeStatusOptions = (apiResult) => {
           item?.displayName ||
           item?.statusName ||
           item?.description ||
-          formatStatusCode(value)
+          formatStatusCode(value),
       ).trim();
 
       return {
@@ -260,31 +217,19 @@ const normalizeStatusOptions = (apiResult) => {
         label,
       };
     })
-    .filter(
-      (option) =>
-        option.value &&
-        option.label
-    );
+    .filter((option) => option.value && option.label);
 };
 
 const getQuotationStatusLabel = (status) => {
   const normalizedStatus = normalizeStatus(status);
 
-  return (
-    QUOTATION_STATUS_LABELS[normalizedStatus] ||
-    normalizedStatus ||
-    "-"
-  );
+  return QUOTATION_STATUS_LABELS[normalizedStatus] || normalizedStatus || "-";
 };
 
 const getQuoteTypeLabel = (type) => {
   const normalizedType = normalizeStatus(type);
 
-  return (
-    QUOTE_TYPE_LABELS[normalizedType] ||
-    normalizedType ||
-    "-"
-  );
+  return QUOTE_TYPE_LABELS[normalizedType] || normalizedType || "-";
 };
 
 const getConsignmentTypeLabel = (type) => {
@@ -308,7 +253,6 @@ const getStatusClassName = (status) => {
     .replaceAll("_", "-");
 };
 
-
 const DIM_DECIMAL_PLACES = 4;
 const MIN_DIM_WEIGHT = 0.0001;
 const DIM_ROUNDING_EPSILON = 1e-12;
@@ -316,15 +260,11 @@ const DIM_ROUNDING_EPSILON = 1e-12;
 const roundDimWeightUp = (value) => {
   const number = Number(value);
 
-  if (
-    !Number.isFinite(number) ||
-    number <= 0
-  ) {
+  if (!Number.isFinite(number) || number <= 0) {
     return null;
   }
 
-  const multiplier =
-    10 ** DIM_DECIMAL_PLACES;
+  const multiplier = 10 ** DIM_DECIMAL_PLACES;
 
   /*
    * Làm tròn LÊN đến 4 chữ số thập phân.
@@ -337,37 +277,21 @@ const roundDimWeightUp = (value) => {
    * 1.23450  -> 1.2345
    */
   const roundedValue =
-    Math.ceil(
-      (
-        number -
-        DIM_ROUNDING_EPSILON
-      ) * multiplier
-    ) / multiplier;
+    Math.ceil((number - DIM_ROUNDING_EPSILON) * multiplier) / multiplier;
 
-  return Math.max(
-    roundedValue,
-    MIN_DIM_WEIGHT
-  );
+  return Math.max(roundedValue, MIN_DIM_WEIGHT);
 };
 
-const calculateDimWeight = (
-  length,
-  width,
-  height,
-  volumetricDivisor
-) => {
+const calculateDimWeight = (length, width, height, volumetricDivisor) => {
   const lengthValue = Number(length);
   const widthValue = Number(width);
   const heightValue = Number(height);
-  const divisorValue = Number(
-    volumetricDivisor
-  );
+  const divisorValue = Number(volumetricDivisor);
 
   if (
     !Number.isFinite(lengthValue) ||
     !Number.isFinite(widthValue) ||
     !Number.isFinite(heightValue) ||
-    
     !Number.isFinite(divisorValue) ||
     lengthValue <= 0 ||
     widthValue <= 0 ||
@@ -381,26 +305,29 @@ const calculateDimWeight = (
    * DIM = (Dài × Rộng × Cao)
    *       / Hệ số DIM
    */
-  const rawDimWeight =
-  (lengthValue * widthValue * heightValue) /
-  divisorValue;
+  const rawDimWeight = (lengthValue * widthValue * heightValue) / divisorValue;
 
-  return roundDimWeightUp(
-    rawDimWeight
-  );
+  return roundDimWeightUp(rawDimWeight);
 };
 
 const formatDimWeight = (value) => {
-  const roundedValue =
-    roundDimWeightUp(value);
+  const roundedValue = roundDimWeightUp(value);
 
   if (roundedValue === null) {
     return "-";
   }
 
-  return roundedValue.toFixed(
-    DIM_DECIMAL_PLACES
-  );
+  /*
+   * Quy tắc hiển thị:
+   * - DIM nhỏ hơn 1 kg: luôn hiển thị đủ 4 chữ số thập phân.
+   *   Ví dụ: 0.0001 -> 0,0001; 0.5 -> 0,5000.
+   * - DIM từ 1 kg trở lên: bỏ các số 0 thập phân không cần thiết.
+   *   Ví dụ: 1.1 -> 1,1; 12 -> 12; 12.3456 -> 12,3456.
+   */
+  return new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: roundedValue < 1 ? DIM_DECIMAL_PLACES : 0,
+    maximumFractionDigits: DIM_DECIMAL_PLACES,
+  }).format(roundedValue);
 };
 
 /**
@@ -520,15 +447,8 @@ const getDisplayCode = (consignment) => {
     consignment?.waybillCode ||
     consignment?.shipmentCode;
 
-  return (
-    String(code || "").trim() ||
-    "Chưa được cấp mã"
-  );
+  return String(code || "").trim() || "Chưa được cấp mã";
 };
-
-
-
-
 
 const copyTextToClipboard = async (text) => {
   const value = String(text || "").trim();
@@ -537,10 +457,7 @@ const copyTextToClipboard = async (text) => {
     throw new Error("Không có nội dung để sao chép.");
   }
 
-  if (
-    navigator.clipboard?.writeText &&
-    window.isSecureContext
-  ) {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
     await navigator.clipboard.writeText(value);
     return;
   }
@@ -565,17 +482,10 @@ const copyTextToClipboard = async (text) => {
   }
 };
 
-const getApiErrorMessage = (
-  error,
-  fallbackMessage = "Đã xảy ra lỗi."
-) => {
-  const responseData =
-    error?.response?.data;
+const getApiErrorMessage = (error, fallbackMessage = "Đã xảy ra lỗi.") => {
+  const responseData = error?.response?.data;
 
-  if (
-    typeof responseData === "string" &&
-    responseData.trim()
-  ) {
+  if (typeof responseData === "string" && responseData.trim()) {
     return responseData;
   }
 
@@ -592,90 +502,55 @@ const getApiErrorMessage = (
    THẺ TỔNG QUAN HIỆN ĐẦY ĐỦ KHI RÊ CHUỘT
    ========================================================= */
 
-const SummaryCard = ({
-  label,
-  value,
-  suffix = "",
-}) => {
+const SummaryCard = ({ label, value, suffix = "" }) => {
   const labelRef = useRef(null);
   const valueRef = useRef(null);
 
-  const [isOverflowing, setIsOverflowing] =
-    useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
 
   const displayValue =
-    value === null ||
-    value === undefined ||
-    value === ""
-      ? "-"
-      : String(value);
+    value === null || value === undefined || value === "" ? "-" : String(value);
 
-  const fullValue = suffix
-    ? `${displayValue} ${suffix}`
-    : displayValue;
+  const fullValue = suffix ? `${displayValue} ${suffix}` : displayValue;
 
   const checkOverflow = useCallback(() => {
     const labelElement = labelRef.current;
     const valueElement = valueRef.current;
 
     const labelOverflow = Boolean(
-      labelElement &&
-        labelElement.scrollWidth >
-          labelElement.clientWidth + 1
+      labelElement && labelElement.scrollWidth > labelElement.clientWidth + 1,
     );
 
     const valueOverflow = Boolean(
-      valueElement &&
-        valueElement.scrollWidth >
-          valueElement.clientWidth + 1
+      valueElement && valueElement.scrollWidth > valueElement.clientWidth + 1,
     );
 
-    setIsOverflowing(
-      labelOverflow || valueOverflow
-    );
+    setIsOverflowing(labelOverflow || valueOverflow);
   }, [displayValue, label, suffix]);
 
   useEffect(() => {
-    const frameId =
-      window.requestAnimationFrame(
-        checkOverflow
-      );
+    const frameId = window.requestAnimationFrame(checkOverflow);
 
     let resizeObserver;
 
-    if (
-      typeof ResizeObserver !==
-      "undefined"
-    ) {
-      resizeObserver = new ResizeObserver(
-        checkOverflow
-      );
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(checkOverflow);
 
       if (labelRef.current) {
-        resizeObserver.observe(
-          labelRef.current
-        );
+        resizeObserver.observe(labelRef.current);
       }
 
       if (valueRef.current) {
-        resizeObserver.observe(
-          valueRef.current
-        );
+        resizeObserver.observe(valueRef.current);
       }
     }
 
-    window.addEventListener(
-      "resize",
-      checkOverflow
-    );
+    window.addEventListener("resize", checkOverflow);
 
     return () => {
       window.cancelAnimationFrame(frameId);
       resizeObserver?.disconnect();
-      window.removeEventListener(
-        "resize",
-        checkOverflow
-      );
+      window.removeEventListener("resize", checkOverflow);
     };
   }, [checkOverflow]);
 
@@ -723,9 +598,7 @@ const SummaryCard = ({
         className="detail-summary-card"
         aria-label={`${label}: ${fullValue}`}
         style={{
-          cursor: isOverflowing
-            ? "help"
-            : "default",
+          cursor: isOverflowing ? "help" : "default",
         }}
       >
         <span
@@ -781,69 +654,37 @@ const ConsignmentListDetail = () => {
    * Component vẫn gọi API để lấy đầy đủ customer,
    * items và quotation.
    */
-  const summaryData =
-    location.state?.consignment || null;
+  const summaryData = location.state?.consignment || null;
 
-  const [consignment, setConsignment] =
-    useState(null);
+  const [consignment, setConsignment] = useState(null);
 
-  const [
-    copiedConsignmentCode,
-    setCopiedConsignmentCode,
-  ] = useState("");
+  const [copiedConsignmentCode, setCopiedConsignmentCode] = useState("");
 
-  const copyResetTimerRef =
-    useRef(null);
+  const copyResetTimerRef = useRef(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [errorMessage, setErrorMessage] =
-    useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [statusOptions, setStatusOptions] =
-    useState([]);
+  const [statusOptions, setStatusOptions] = useState([]);
 
-  const [
-    productTypeOptions,
-    setProductTypeOptions,
-  ] = useState([]);
+  const [productTypeOptions, setProductTypeOptions] = useState([]);
 
-  const [
-    volumetricDivisorRule,
-    setVolumetricDivisorRule,
-  ] = useState(null);
+  const [volumetricDivisorRule, setVolumetricDivisorRule] = useState(null);
 
-  const [
-    volumetricRuleError,
-    setVolumetricRuleError,
-  ] = useState("");
+  const [volumetricRuleError, setVolumetricRuleError] = useState("");
 
-  const [
-    volumetricRuleLoading,
-    setVolumetricRuleLoading,
-  ] = useState(true);
+  const [volumetricRuleLoading, setVolumetricRuleLoading] = useState(true);
 
-  const [
-    isCancelModalOpen,
-    setIsCancelModalOpen,
-  ] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
-  const [cancelReason, setCancelReason] =
-    useState("");
+  const [cancelReason, setCancelReason] = useState("");
 
-  const [
-    cancelReasonError,
-    setCancelReasonError,
-  ] = useState("");
+  const [cancelReasonError, setCancelReasonError] = useState("");
 
-  const [isCancelling, setIsCancelling] =
-    useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
-  const [
-    fullTextPreview,
-    setFullTextPreview,
-  ] = useState({
+  const [fullTextPreview, setFullTextPreview] = useState({
     open: false,
     title: "",
     content: "",
@@ -853,67 +694,57 @@ const ConsignmentListDetail = () => {
      LẤY RIÊNG HỆ SỐ QUY ĐỔI THỂ TÍCH
      ======================================================= */
 
-  const fetchVolumetricDivisorRule =
-    useCallback(async (signal) => {
-      try {
-        setVolumetricRuleLoading(true);
-        setVolumetricRuleError("");
+  const fetchVolumetricDivisorRule = useCallback(async (signal) => {
+    try {
+      setVolumetricRuleLoading(true);
+      setVolumetricRuleError("");
 
-        console.info(
-          "[Consignment Detail] GET /api/pricing-rules → VOLUMETRIC_DIVISOR"
+      console.info(
+        "[Consignment Detail] GET /api/pricing-rules → VOLUMETRIC_DIVISOR",
+      );
+
+      const result = await pricingRuleService.getVolumetricDivisorRule({
+        signal,
+      });
+
+      const normalizedRule = normalizeVolumetricDivisorRule(result);
+
+      if (!normalizedRule) {
+        throw new Error(
+          "Không tìm thấy quy tắc VOLUMETRIC_DIVISOR đang ACTIVE hoặc value không hợp lệ.",
         );
-
-        const result =
-          await pricingRuleService.getVolumetricDivisorRule({
-            signal,
-          });
-
-        const normalizedRule =
-          normalizeVolumetricDivisorRule(
-            result
-          );
-
-        if (!normalizedRule) {
-          throw new Error(
-            "Không tìm thấy quy tắc VOLUMETRIC_DIVISOR đang ACTIVE hoặc value không hợp lệ."
-          );
-        }
-
-        setVolumetricDivisorRule(
-          normalizedRule
-        );
-
-        console.info(
-          "[Consignment Detail] VOLUMETRIC_DIVISOR đang áp dụng:",
-          normalizedRule
-        );
-      } catch (error) {
-        if (
-          axios.isCancel(error) ||
-          error?.code === "ERR_CANCELED" ||
-          error?.name === "AbortError"
-        ) {
-          return;
-        }
-
-        console.error(
-          "[Consignment Detail] Lỗi tải VOLUMETRIC_DIVISOR:",
-          error
-        );
-
-        setVolumetricDivisorRule(null);
-        setVolumetricRuleError(
-          getApiErrorMessage(
-            error,
-            "Không thể tải hệ số quy đổi thể tích từ API."
-          )
-        );
-      } finally {
-        if (!signal?.aborted) {
-          setVolumetricRuleLoading(false);
-        }
       }
-    }, []);
+
+      setVolumetricDivisorRule(normalizedRule);
+
+      console.info(
+        "[Consignment Detail] VOLUMETRIC_DIVISOR đang áp dụng:",
+        normalizedRule,
+      );
+    } catch (error) {
+      if (
+        axios.isCancel(error) ||
+        error?.code === "ERR_CANCELED" ||
+        error?.name === "AbortError"
+      ) {
+        return;
+      }
+
+      console.error("[Consignment Detail] Lỗi tải VOLUMETRIC_DIVISOR:", error);
+
+      setVolumetricDivisorRule(null);
+      setVolumetricRuleError(
+        getApiErrorMessage(
+          error,
+          "Không thể tải hệ số quy đổi thể tích từ API.",
+        ),
+      );
+    } finally {
+      if (!signal?.aborted) {
+        setVolumetricRuleLoading(false);
+      }
+    }
+  }, []);
 
   /* =======================================================
      LẤY CHI TIẾT KÝ GỬI
@@ -922,9 +753,7 @@ const ConsignmentListDetail = () => {
   const fetchConsignmentDetail = useCallback(
     async (signal) => {
       if (!orderId) {
-        setErrorMessage(
-          "Không tìm thấy mã đơn hàng."
-        );
+        setErrorMessage("Không tìm thấy mã đơn hàng.");
 
         setLoading(false);
 
@@ -935,103 +764,64 @@ const ConsignmentListDetail = () => {
         setLoading(true);
         setErrorMessage("");
 
-        const [
-          detailResult,
-          statusesResult,
-          productTypesResult,
-        ] = await Promise.allSettled([
-          getConsignmentDetailApi(
-            orderId,
-            {
+        const [detailResult, statusesResult, productTypesResult] =
+          await Promise.allSettled([
+            getConsignmentDetailApi(orderId, {
               signal,
-            }
-          ),
-          getConsignmentStatusesApi({
-            signal,
-          }),
-          getProductTypesApi({
-            signal,
-          }),
-        ]);
+            }),
+            getConsignmentStatusesApi({
+              signal,
+            }),
+            getProductTypesApi({
+              signal,
+            }),
+          ]);
 
-        if (
-          detailResult.status ===
-          "rejected"
-        ) {
+        if (detailResult.status === "rejected") {
           throw detailResult.reason;
         }
 
-        const detailResponse =
-          detailResult.value;
+        const detailResponse = detailResult.value;
 
-        const responseData =
-          detailResponse?.data ||
-          detailResponse;
+        const responseData = detailResponse?.data || detailResponse;
 
         if (!responseData) {
-          throw new Error(
-            "API không trả về dữ liệu chi tiết lô hàng."
-          );
+          throw new Error("API không trả về dữ liệu chi tiết lô hàng.");
         }
 
         setConsignment(normalizeConsignmentTime(responseData));
 
-        if (
-          statusesResult.status ===
-          "fulfilled"
-        ) {
-          setStatusOptions(
-            normalizeStatusOptions(
-              statusesResult.value
-            )
-          );
+        if (statusesResult.status === "fulfilled") {
+          setStatusOptions(normalizeStatusOptions(statusesResult.value));
         } else if (
-          !axios.isCancel(
-            statusesResult.reason
-          ) &&
-          statusesResult.reason?.code !==
-            "ERR_CANCELED"
+          !axios.isCancel(statusesResult.reason) &&
+          statusesResult.reason?.code !== "ERR_CANCELED"
         ) {
           console.error(
             "Lỗi khi lấy danh sách trạng thái:",
-            statusesResult.reason
+            statusesResult.reason,
           );
         }
 
-        if (
-          productTypesResult.status ===
-          "fulfilled"
-        ) {
+        if (productTypesResult.status === "fulfilled") {
           setProductTypeOptions(
-            normalizeProductTypeOptions(
-              productTypesResult.value
-            )
+            normalizeProductTypeOptions(productTypesResult.value),
           );
         } else if (
-          !axios.isCancel(
-            productTypesResult.reason
-          ) &&
-          productTypesResult.reason?.code !==
-            "ERR_CANCELED"
+          !axios.isCancel(productTypesResult.reason) &&
+          productTypesResult.reason?.code !== "ERR_CANCELED"
         ) {
           console.error(
             "Lỗi khi lấy danh sách loại sản phẩm:",
-            productTypesResult.reason
+            productTypesResult.reason,
           );
         }
-
       } catch (error) {
-        if (
-          axios.isCancel(error) ||
-          error?.code === "ERR_CANCELED"
-        ) {
+        if (axios.isCancel(error) || error?.code === "ERR_CANCELED") {
           return;
         }
 
-        console.error(
-          "Lỗi khi lấy chi tiết ký gửi:",
-          error
-        );
+        console.error("Lỗi khi lấy chi tiết ký gửi:", error);
 
         const apiMessage =
           error?.response?.data?.message ||
@@ -1051,17 +841,14 @@ const ConsignmentListDetail = () => {
           setConsignment(null);
         }
 
-        AuthNotify.error(
-          "Không tải được dữ liệu",
-          apiMessage
-        );
+        AuthNotify.error("Không tải được dữ liệu", apiMessage);
       } finally {
         if (!signal?.aborted) {
           setLoading(false);
         }
       }
     },
-    [orderId, summaryData]
+    [orderId, summaryData],
   );
 
   useEffect(() => {
@@ -1077,9 +864,7 @@ const ConsignmentListDetail = () => {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetchVolumetricDivisorRule(
-      controller.signal
-    );
+    fetchVolumetricDivisorRule(controller.signal);
 
     return () => {
       controller.abort();
@@ -1089,86 +874,61 @@ const ConsignmentListDetail = () => {
   useEffect(
     () => () => {
       if (copyResetTimerRef.current) {
-        window.clearTimeout(
-          copyResetTimerRef.current
-        );
+        window.clearTimeout(copyResetTimerRef.current);
       }
     },
-    []
+    [],
   );
 
   const handleReload = () => {
-    const detailController =
-      new AbortController();
-    const pricingController =
-      new AbortController();
+    const detailController = new AbortController();
+    const pricingController = new AbortController();
 
-    fetchConsignmentDetail(
-      detailController.signal
-    );
-    fetchVolumetricDivisorRule(
-      pricingController.signal
-    );
+    fetchConsignmentDetail(detailController.signal);
+    fetchVolumetricDivisorRule(pricingController.signal);
   };
 
   const handleBack = () => {
     navigate(-1);
   };
 
-  const handleCopyConsignmentCode = async (
-    event
-  ) => {
+  const handleCopyConsignmentCode = async (event) => {
     event.preventDefault();
     event.stopPropagation();
 
-    const consignmentCode =
-      getDisplayCode(consignment);
+    const consignmentCode = getDisplayCode(consignment);
 
-    if (
-      !consignmentCode ||
-      consignmentCode ===
-        "Chưa được cấp mã"
-    ) {
+    if (!consignmentCode || consignmentCode === "Chưa được cấp mã") {
       AuthNotify.warning(
         "Chưa có mã vận đơn",
-        "Đơn ký gửi chưa được cấp mã vận đơn để sao chép."
+        "Đơn ký gửi chưa được cấp mã vận đơn để sao chép.",
       );
       return;
     }
 
     try {
-      await copyTextToClipboard(
-        consignmentCode
-      );
+      await copyTextToClipboard(consignmentCode);
 
-      setCopiedConsignmentCode(
-        consignmentCode
-      );
+      setCopiedConsignmentCode(consignmentCode);
 
       AuthNotify.success(
         "Sao chép thành công",
-        `Đã sao chép mã vận đơn ${consignmentCode}.`
+        `Đã sao chép mã vận đơn ${consignmentCode}.`,
       );
 
       if (copyResetTimerRef.current) {
-        window.clearTimeout(
-          copyResetTimerRef.current
-        );
+        window.clearTimeout(copyResetTimerRef.current);
       }
 
-      copyResetTimerRef.current =
-        window.setTimeout(() => {
-          setCopiedConsignmentCode("");
-        }, 1800);
+      copyResetTimerRef.current = window.setTimeout(() => {
+        setCopiedConsignmentCode("");
+      }, 1800);
     } catch (error) {
-      console.error(
-        "Không thể sao chép mã vận đơn:",
-        error
-      );
+      console.error("Không thể sao chép mã vận đơn:", error);
 
       AuthNotify.error(
         "Sao chép thất bại",
-        "Không thể sao chép mã vận đơn. Vui lòng thử lại."
+        "Không thể sao chép mã vận đơn. Vui lòng thử lại.",
       );
     }
   };
@@ -1177,19 +937,15 @@ const ConsignmentListDetail = () => {
     if (!consignment || !orderId) {
       AuthNotify.error(
         "Không thể hủy đơn",
-        "Không tìm thấy thông tin đơn hàng để hủy."
+        "Không tìm thấy thông tin đơn hàng để hủy.",
       );
       return;
     }
 
-    if (
-      normalizeStatus(
-        consignment.status
-      ) === "CANCELLED"
-    ) {
+    if (normalizeStatus(consignment.status) === "CANCELLED") {
       AuthNotify.warning(
         "Đơn đã được hủy",
-        "Đơn ký gửi này đã được hủy trước đó."
+        "Đơn ký gửi này đã được hủy trước đó.",
       );
       return;
     }
@@ -1213,33 +969,21 @@ const ConsignmentListDetail = () => {
     const reason = cancelReason.trim();
 
     if (!reason) {
-      const validationMessage =
-        "Vui lòng nhập lý do hủy đơn.";
+      const validationMessage = "Vui lòng nhập lý do hủy đơn.";
 
-      setCancelReasonError(
-        validationMessage
-      );
+      setCancelReasonError(validationMessage);
 
-      AuthNotify.warning(
-        "Thiếu lý do hủy",
-        validationMessage
-      );
+      AuthNotify.warning("Thiếu lý do hủy", validationMessage);
 
       return;
     }
 
     if (reason.length < 5) {
-      const validationMessage =
-        "Lý do hủy phải có ít nhất 5 ký tự.";
+      const validationMessage = "Lý do hủy phải có ít nhất 5 ký tự.";
 
-      setCancelReasonError(
-        validationMessage
-      );
+      setCancelReasonError(validationMessage);
 
-      AuthNotify.warning(
-        "Lý do chưa hợp lệ",
-        validationMessage
-      );
+      AuthNotify.warning("Lý do chưa hợp lệ", validationMessage);
 
       return;
     }
@@ -1248,19 +992,16 @@ const ConsignmentListDetail = () => {
       setIsCancelling(true);
       setCancelReasonError("");
 
-      await cancelConsignmentApi(
-        orderId,
-        reason
-      );
+      await cancelConsignmentApi(orderId, reason);
 
       setIsCancelModalOpen(false);
       setCancelReason("");
 
       AuthNotify.success(
         "Hủy đơn thành công",
-        "Đơn ký gửi đã được hủy và chuyển vào lịch sử."
+        "Đơn ký gửi đã được hủy và chuyển vào lịch sử.",
       );
-      
+
       navigate("/history/consignment", {
         replace: true,
         state: {
@@ -1269,12 +1010,9 @@ const ConsignmentListDetail = () => {
         },
       });
 
-      const refreshController =
-        new AbortController();
+      const refreshController = new AbortController();
 
-      await fetchConsignmentDetail(
-        refreshController.signal
-      );
+      await fetchConsignmentDetail(refreshController.signal);
     } catch (error) {
       if (
         axios.isCancel(error) ||
@@ -1284,38 +1022,26 @@ const ConsignmentListDetail = () => {
         return;
       }
 
-      const responseStatus =
-        error?.response?.status;
+      const responseStatus = error?.response?.status;
 
-      const apiMessage =
-        getApiErrorMessage(
-          error,
-          "Không thể hủy đơn ký gửi."
-        );
+      const apiMessage = getApiErrorMessage(error, "Không thể hủy đơn ký gửi.");
 
       setCancelReasonError(apiMessage);
 
       if (responseStatus === 401) {
-        sessionStorage.removeItem(
-          "accessToken"
-        );
-        localStorage.removeItem(
-          "accessToken"
-        );
+        sessionStorage.removeItem("accessToken");
+        localStorage.removeItem("accessToken");
 
         AuthNotify.error(
           "Phiên đăng nhập hết hạn",
-          "Vui lòng đăng nhập lại để tiếp tục."
+          "Vui lòng đăng nhập lại để tiếp tục.",
         );
 
         navigate("/login");
         return;
       }
 
-      AuthNotify.error(
-        "Hủy đơn thất bại",
-        apiMessage
-      );
+      AuthNotify.error("Hủy đơn thất bại", apiMessage);
     } finally {
       setIsCancelling(false);
     }
@@ -1327,136 +1053,102 @@ const ConsignmentListDetail = () => {
         statusOptions.map((option) => [
           normalizeStatus(option.value),
           option.label,
-        ])
+        ]),
       ),
-    [statusOptions]
+    [statusOptions],
   );
 
   const getStatusLabel = useCallback(
     (status) => {
-      const normalizedStatus =
-        normalizeStatus(status);
+      const normalizedStatus = normalizeStatus(status);
 
       return (
-        statusLabelMap.get(
-          normalizedStatus
-        ) ||
-        formatStatusCode(
-          normalizedStatus
-        ) ||
+        statusLabelMap.get(normalizedStatus) ||
+        formatStatusCode(normalizedStatus) ||
         "-"
       );
     },
-    [statusLabelMap]
+    [statusLabelMap],
   );
 
   const productTypeLabelMap = useMemo(
     () =>
       new Map(
-        productTypeOptions.map(
-          (option) => [
-            normalizeProductType(
-              option.value
-            ),
-            option.label,
-          ]
-        )
+        productTypeOptions.map((option) => [
+          normalizeProductType(option.value),
+          option.label,
+        ]),
       ),
-    [productTypeOptions]
+    [productTypeOptions],
   );
 
   const getProductTypeLabel = useCallback(
     (productType) => {
-      const normalizedProductType =
-        normalizeProductType(
-          productType
-        );
+      const normalizedProductType = normalizeProductType(productType);
 
       if (!normalizedProductType) {
         return "-";
       }
 
       return (
-        productTypeLabelMap.get(
-          normalizedProductType
-        ) ||
+        productTypeLabelMap.get(normalizedProductType) ||
         String(productType).trim()
       );
     },
-    [productTypeLabelMap]
+    [productTypeLabelMap],
   );
 
   const volumetricDivisor = useMemo(
-    () =>
-      toFiniteNumberOrNull(
-        volumetricDivisorRule?.value
-      ),
-    [volumetricDivisorRule]
+    () => toFiniteNumberOrNull(volumetricDivisorRule?.value),
+    [volumetricDivisorRule],
   );
 
-  const getRecordProductType = useCallback(
-    (record) => {
-      const productType =
-        record?.productType;
+  const getRecordProductType = useCallback((record) => {
+    const productType = record?.productType;
 
-      if (
-        productType &&
-        typeof productType === "object"
-      ) {
-        return (
-          productType.value ||
-          productType.code ||
-          productType.productTypeCode ||
-          productType.productTypeId ||
-          productType.id ||
-          productType.name ||
-          productType.productTypeName ||
-          ""
-        );
-      }
-
+    if (productType && typeof productType === "object") {
       return (
-        productType ||
-        record?.productTypeCode ||
-        record?.productTypeId ||
-        record?.productTypeName ||
+        productType.value ||
+        productType.code ||
+        productType.productTypeCode ||
+        productType.productTypeId ||
+        productType.id ||
+        productType.name ||
+        productType.productTypeName ||
         ""
       );
-    },
-    []
-  );
+    }
 
-  const handleOpenFullText = useCallback(
-    (title, content) => {
-      const normalizedContent =
-        String(content ?? "").trim();
+    return (
+      productType ||
+      record?.productTypeCode ||
+      record?.productTypeId ||
+      record?.productTypeName ||
+      ""
+    );
+  }, []);
 
-      if (
-        !normalizedContent ||
-        normalizedContent === "-"
-      ) {
-        return;
-      }
+  const handleOpenFullText = useCallback((title, content) => {
+    const normalizedContent = String(content ?? "").trim();
 
-      setFullTextPreview({
-        open: true,
-        title,
-        content: normalizedContent,
-      });
-    },
-    []
-  );
+    if (!normalizedContent || normalizedContent === "-") {
+      return;
+    }
 
-  const handleCloseFullText = useCallback(
-    () => {
-      setFullTextPreview({
-        open: false,
-        title: "",
-        content: "",
-      });
-    },
-    []
-  );
+    setFullTextPreview({
+      open: true,
+      title,
+      content: normalizedContent,
+    });
+  }, []);
+
+  const handleCloseFullText = useCallback(() => {
+    setFullTextPreview({
+      open: false,
+      title: "",
+      content: "",
+    });
+  }, []);
 
   /* =======================================================
      CỘT BẢNG SẢN PHẨM
@@ -1469,8 +1161,7 @@ const ConsignmentListDetail = () => {
         key: "index",
         width: 65,
         align: "center",
-        render: (_, __, index) =>
-          index + 1,
+        render: (_, __, index) => index + 1,
       },
       {
         title: "Hình ảnh",
@@ -1478,10 +1169,7 @@ const ConsignmentListDetail = () => {
         key: "referenceUrl",
         width: 95,
         align: "center",
-        render: (
-          referenceUrl,
-          record
-        ) => {
+        render: (referenceUrl, record) => {
           if (!referenceUrl) {
             return (
               <div className="detail-no-image">
@@ -1493,10 +1181,7 @@ const ConsignmentListDetail = () => {
           return (
             <Image
               src={referenceUrl}
-              alt={
-                record.productName ||
-                "Sản phẩm"
-              }
+              alt={record.productName || "Sản phẩm"}
               width={58}
               height={58}
               className="detail-product-image"
@@ -1513,10 +1198,7 @@ const ConsignmentListDetail = () => {
         dataIndex: "productName",
         key: "productName",
         width: 210,
-        render: (
-          productName,
-          record
-        ) => {
+        render: (productName, record) => {
           const displayProductName =
             productName ||
             record?.name ||
@@ -1533,10 +1215,7 @@ const ConsignmentListDetail = () => {
                 title="Bấm để xem đầy đủ"
                 aria-label={`Xem đầy đủ tên sản phẩm ${displayProductName}`}
                 onClick={() =>
-                  handleOpenFullText(
-                    "Tên sản phẩm",
-                    displayProductName
-                  )
+                  handleOpenFullText("Tên sản phẩm", displayProductName)
                 }
                 style={{
                   display: "block",
@@ -1575,22 +1254,12 @@ const ConsignmentListDetail = () => {
         width: 170,
         align: "center",
         render: (_, record) => {
-          const productTypeLabel =
-            getProductTypeLabel(
-              getRecordProductType(
-                record
-              )
-            );
+          const productTypeLabel = getProductTypeLabel(
+            getRecordProductType(record),
+          );
 
-          if (
-            !productTypeLabel ||
-            productTypeLabel === "-"
-          ) {
-            return (
-              <span className="detail-pending-value">
-                Chưa cập nhật
-              </span>
-            );
+          if (!productTypeLabel || productTypeLabel === "-") {
+            return <span className="detail-pending-value">Chưa cập nhật</span>;
           }
 
           return (
@@ -1599,10 +1268,7 @@ const ConsignmentListDetail = () => {
               title="Bấm để xem đầy đủ"
               aria-label={`Xem đầy đủ loại sản phẩm ${productTypeLabel}`}
               onClick={() =>
-                handleOpenFullText(
-                  "Loại sản phẩm",
-                  productTypeLabel
-                )
+                handleOpenFullText("Loại sản phẩm", productTypeLabel)
               }
               style={{
                 maxWidth: "100%",
@@ -1636,8 +1302,7 @@ const ConsignmentListDetail = () => {
         key: "quantity",
         width: 100,
         align: "center",
-        render: (quantity) =>
-          quantity ?? 0,
+        render: (quantity) => quantity ?? 0,
       },
       {
         title: "Trọng lượng",
@@ -1657,39 +1322,32 @@ const ConsignmentListDetail = () => {
         width: 180,
         render: (_, record) => (
           <span className="detail-dimension-text">
-            {record.length ?? 0} ×{" "}
-            {record.width ?? 0} ×{" "}
-            {record.height ?? 0} cm
+            {record.length ?? 0} × {record.width ?? 0} × {record.height ?? 0} cm
           </span>
         ),
       },
       {
         title: volumetricDivisor
-          ? `DIM = (Dài × Rộng × Cao) / ${formatWeight(
-              volumetricDivisor
-            )}`
+          ? `DIM = (Dài × Rộng × Cao) / ${formatWeight(volumetricDivisor)}`
           : "DIM (chưa có hệ số từ API)",
         key: "dimensionalWeight",
         width: 310,
         render: (_, record) => {
           if (!volumetricDivisor) {
             return (
-              <span className="detail-pending-value">
-                Chưa có hệ số DIM
-              </span>
+              <span className="detail-pending-value">Chưa có hệ số DIM</span>
             );
           }
 
           // const quantityValue =
           //   Number(record.quantity);
 
-          const dimWeight =
-            calculateDimWeight(
-              record.length,
-              record.width,
-              record.height,
-              volumetricDivisor
-            );
+          const dimWeight = calculateDimWeight(
+            record.length,
+            record.width,
+            record.height,
+            volumetricDivisor,
+          );
 
           if (dimWeight === null) {
             return (
@@ -1701,21 +1359,9 @@ const ConsignmentListDetail = () => {
 
           return (
             <span className="detail-dimension-text">
-              (
-              {record.length} ×{" "}
-              {record.width} ×{" "}
-              {record.height}         
-              ) /{" "}
-              {formatWeight(
-                volumetricDivisor
-              )}{" "}
-              ={" "}
-              <strong>
-                {formatDimWeight(
-                  dimWeight
-                )}{" "}
-                kg
-              </strong>
+              ({record.length} × {record.width} × {record.height}) /{" "}
+              {formatWeight(volumetricDivisor)} ={" "}
+              <strong>{formatDimWeight(dimWeight)} kg</strong>
             </span>
           );
         },
@@ -1728,22 +1374,17 @@ const ConsignmentListDetail = () => {
         align: "right",
         render: (declaredValue) => (
           <strong className="detail-money-value">
-            {formatMoney(
-              declaredValue
-            )}
+            {formatMoney(declaredValue)}
           </strong>
         ),
       },
       {
         title: "Mã vận đơn nội địa",
-        dataIndex:
-          "domesticTrackingCode",
+        dataIndex: "domesticTrackingCode",
         key: "domesticTrackingCode",
         width: 180,
         render: (trackingCode) => {
-          const displayTrackingCode =
-            trackingCode ||
-            "Chưa cập nhật";
+          const displayTrackingCode = trackingCode || "Chưa cập nhật";
 
           if (!trackingCode) {
             return (
@@ -1759,10 +1400,7 @@ const ConsignmentListDetail = () => {
               title="Bấm để xem đầy đủ"
               aria-label={`Xem đầy đủ mã vận đơn nội địa ${displayTrackingCode}`}
               onClick={() =>
-                handleOpenFullText(
-                  "Mã vận đơn nội địa",
-                  displayTrackingCode
-                )
+                handleOpenFullText("Mã vận đơn nội địa", displayTrackingCode)
               }
               style={{
                 display: "block",
@@ -1796,9 +1434,7 @@ const ConsignmentListDetail = () => {
               target="_blank"
               rel="noreferrer"
               className="detail-product-link"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
+              onClick={(event) => event.stopPropagation()}
               aria-label="Mở liên kết sản phẩm"
             >
               <OpenInNewIcon fontSize="small" />
@@ -1811,7 +1447,7 @@ const ConsignmentListDetail = () => {
       getRecordProductType,
       handleOpenFullText,
       volumetricDivisor,
-    ]
+    ],
   );
 
   /* =======================================================
@@ -1825,14 +1461,9 @@ const ConsignmentListDetail = () => {
           <CircularProgress size={42} />
 
           <div>
-            <strong>
-              Đang tải chi tiết lô hàng
-            </strong>
+            <strong>Đang tải chi tiết lô hàng</strong>
 
-            <span>
-              Vui lòng chờ trong giây
-              lát...
-            </span>
+            <span>Vui lòng chờ trong giây lát...</span>
           </div>
         </div>
       </div>
@@ -1847,26 +1478,17 @@ const ConsignmentListDetail = () => {
     return (
       <div className="consignment-detail-page">
         <div className="detail-error-container">
-          <div className="detail-error-icon">
-            📦
-          </div>
+          <div className="detail-error-icon">📦</div>
 
-          <h2>
-            Không tìm thấy lô hàng
-          </h2>
+          <h2>Không tìm thấy lô hàng</h2>
 
-          <p>
-            {errorMessage ||
-              "Lô hàng không tồn tại hoặc đã bị xóa."}
-          </p>
+          <p>{errorMessage || "Lô hàng không tồn tại hoặc đã bị xóa."}</p>
 
           <div className="detail-error-actions">
             <Button
               variant="outlined"
               color="inherit"
-              startIcon={
-                <ArrowBackIcon />
-              }
+              startIcon={<ArrowBackIcon />}
               onClick={handleBack}
             >
               Quay lại
@@ -1874,9 +1496,7 @@ const ConsignmentListDetail = () => {
 
             <Button
               variant="contained"
-              startIcon={
-                <RefreshIcon />
-              }
+              startIcon={<RefreshIcon />}
               onClick={handleReload}
             >
               Thử lại
@@ -1891,35 +1511,22 @@ const ConsignmentListDetail = () => {
      CHUẨN BỊ DỮ LIỆU HIỂN THỊ
      ======================================================= */
 
-  const displayCode =
-    getDisplayCode(consignment);
+  const displayCode = getDisplayCode(consignment);
 
-  const statusClass =
-    getStatusClassName(
-      consignment.status
-    );
+  const statusClass = getStatusClassName(consignment.status);
 
   const isAlreadyCancelled =
-    normalizeStatus(
-      consignment.status
-    ) === "CANCELLED";
+    normalizeStatus(consignment.status) === "CANCELLED";
 
-  const quotationStatusClass =
-    getStatusClassName(
-      consignment.quotation?.status
-    );
+  const quotationStatusClass = getStatusClassName(
+    consignment.quotation?.status,
+  );
 
-  const items = Array.isArray(
-    consignment.items
-  )
-    ? consignment.items
-    : [];
+  const items = Array.isArray(consignment.items) ? consignment.items : [];
 
-  const customer =
-    consignment.customer || {};
+  const customer = consignment.customer || {};
 
-  const quotation =
-    consignment.quotation || null;
+  const quotation = consignment.quotation || null;
 
   /*
    * Tổng số kiện hàng được tính theo số phần tử trong items.
@@ -1930,43 +1537,28 @@ const ConsignmentListDetail = () => {
    * Không cộng quantity vì quantity là số lượng sản phẩm
    * nằm bên trong từng kiện.
    */
-  const totalPackageCount =
-    items.length;
+  const totalPackageCount = items.length;
 
+  const calculatedTotalDimWeight = volumetricDivisor
+    ? items.reduce((total, item) => {
+        const dimWeight = calculateDimWeight(
+          item.length,
+          item.width,
+          item.height,
+          volumetricDivisor,
+        );
 
-  const calculatedTotalDimWeight =
-    volumetricDivisor
-      ? items.reduce(
-          (total, item) => {
-            const dimWeight =
-              calculateDimWeight(
-                item.length,
-                item.width,
-                item.height,
-                volumetricDivisor
-              );
+        return total + (dimWeight ?? 0);
+      }, 0)
+    : null;
 
-            return (
-              total +
-              (dimWeight ?? 0)
-            );
-          },
-          0
-        )
-      : null;
+  const apiVolumetricWeight = toFiniteNumberOrNull(
+    consignment.volumetricWeight ?? quotation?.volumetricWeight,
+  );
 
-  const apiVolumetricWeight =
-    toFiniteNumberOrNull(
-      consignment.volumetricWeight ??
-        quotation?.volumetricWeight
-    );
-
-  const totalDimWeight =
-    Number.isFinite(
-      calculatedTotalDimWeight
-    )
-      ? calculatedTotalDimWeight
-      : apiVolumetricWeight;
+  const totalDimWeight = Number.isFinite(calculatedTotalDimWeight)
+    ? calculatedTotalDimWeight
+    : apiVolumetricWeight;
 
   /* =======================================================
      GIAO DIỆN CHÍNH
@@ -1980,9 +1572,7 @@ const ConsignmentListDetail = () => {
         <Button
           variant="outlined"
           color="inherit"
-          startIcon={
-            <ArrowBackIcon />
-          }
+          startIcon={<ArrowBackIcon />}
           onClick={handleBack}
           className="detail-back-button"
         >
@@ -1992,31 +1582,25 @@ const ConsignmentListDetail = () => {
         <span className="detail-navigation-text">
           Danh sách ký gửi / Chi tiết
         </span>
-
       </div>
 
       {/* Cảnh báo khi chỉ có dữ liệu tóm tắt */}
 
       {errorMessage && summaryData && (
         <div className="detail-warning-message">
-          Không thể tải dữ liệu mới nhất.
-          Đang hiển thị dữ liệu từ danh
-          sách.
+          Không thể tải dữ liệu mới nhất. Đang hiển thị dữ liệu từ danh sách.
         </div>
       )}
 
       {volumetricRuleLoading && (
         <div className="detail-warning-message">
-          Đang tải riêng quy tắc
-          VOLUMETRIC_DIVISOR từ API
-          /api/pricing-rules...
+          Đang tải riêng quy tắc VOLUMETRIC_DIVISOR từ API /api/pricing-rules...
         </div>
       )}
 
       {volumetricRuleError && (
         <div className="detail-warning-message">
-          {volumetricRuleError} Phần DIM
-          không dùng hệ số cố định thay thế.
+          {volumetricRuleError} Phần DIM không dùng hệ số cố định thay thế.
         </div>
       )}
 
@@ -2031,37 +1615,25 @@ const ConsignmentListDetail = () => {
           <div className="detail-hero-content">
             <div className="detail-title-row">
               <div className="detail-code-group">
-                <span className="detail-code-label">
-                  MÃ VẬN ĐƠN
-                </span>
+                <span className="detail-code-label">MÃ VẬN ĐƠN</span>
 
                 <div className="detail-code-row">
-                  <h1 title={displayCode}>
-                    {displayCode}
-                  </h1>
+                  <h1 title={displayCode}>{displayCode}</h1>
 
                   <button
                     type="button"
                     className={[
                       "detail-copy-code-button",
-                      copiedConsignmentCode ===
-                        displayCode &&
-                        "is-copied",
+                      copiedConsignmentCode === displayCode && "is-copied",
                     ]
                       .filter(Boolean)
                       .join(" ")}
-                    onClick={
-                      handleCopyConsignmentCode
-                    }
-                    disabled={
-                      displayCode ===
-                      "Chưa được cấp mã"
-                    }
+                    onClick={handleCopyConsignmentCode}
+                    disabled={displayCode === "Chưa được cấp mã"}
                     aria-label={`Sao chép mã vận đơn ${displayCode}`}
                     title="Sao chép mã vận đơn"
                   >
-                    {copiedConsignmentCode ===
-                    displayCode ? (
+                    {copiedConsignmentCode === displayCode ? (
                       <>
                         <CheckRoundedIcon />
                         <span>Đã chép</span>
@@ -2076,12 +1648,8 @@ const ConsignmentListDetail = () => {
                 </div>
               </div>
 
-              <span
-                className={`detail-status-badge status-${statusClass}`}
-              >
-                {getStatusLabel(
-                  consignment.status
-                )}
+              <span className={`detail-status-badge status-${statusClass}`}>
+                {getStatusLabel(consignment.status)}
               </span>
             </div>
 
@@ -2097,11 +1665,9 @@ const ConsignmentListDetail = () => {
               <span>
                 Loại đơn:
                 <strong>
-                  {consignment.orderType ===
-                  "CONSIGNMENT"
+                  {consignment.orderType === "CONSIGNMENT"
                     ? "KÝ GỬI"
-                    : consignment.orderType ||
-                      "-"}
+                    : consignment.orderType || "-"}
                 </strong>
               </span>
             </div>
@@ -2109,20 +1675,14 @@ const ConsignmentListDetail = () => {
         </div>
 
         <div className="detail-created-time">
-          <span>
-            Ngày tạo yêu cầu
-          </span>
+          <span>Ngày tạo yêu cầu</span>
 
           <strong
             title={formatDateTimeUtcTitle(
-              consignment.createdAtUtc ||
-                consignment.createdAt
+              consignment.createdAtUtc || consignment.createdAt,
             )}
           >
-            {formatDateTime(
-              consignment.createdAtUtc ||
-                consignment.createdAt
-            )}
+            {formatDateTime(consignment.createdAtUtc || consignment.createdAt)}
           </strong>
         </div>
       </section>
@@ -2132,9 +1692,7 @@ const ConsignmentListDetail = () => {
       <section className="detail-summary-grid">
         <SummaryCard
           label="Loại vận chuyển"
-          value={getConsignmentTypeLabel(
-            consignment.consignmentType
-          )}
+          value={getConsignmentTypeLabel(consignment.consignmentType)}
           onOpen={handleOpenFullText}
         />
 
@@ -2146,18 +1704,14 @@ const ConsignmentListDetail = () => {
 
         <SummaryCard
           label="Tổng trọng lượng kiện hàng"
-          value={formatWeight(
-            consignment.totalWeight
-          )}
+          value={formatWeight(consignment.totalWeight)}
           suffix="kg"
           onOpen={handleOpenFullText}
         />
 
         <SummaryCard
           label="Tổng thể tích kiện hàng"
-          value={
-            consignment.totalVolume ?? 0
-          }
+          value={consignment.totalVolume ?? 0}
           suffix="cm³"
           onOpen={handleOpenFullText}
         />
@@ -2172,21 +1726,11 @@ const ConsignmentListDetail = () => {
         <SummaryCard
           label="Tổng khối lượng DIM kiện hàng"
           value={
-            Number.isFinite(
-              totalDimWeight
-            )
-              ? formatDimWeight(
-                  totalDimWeight
-                )
+            Number.isFinite(totalDimWeight)
+              ? formatDimWeight(totalDimWeight)
               : "-"
           }
-          suffix={
-            Number.isFinite(
-              totalDimWeight
-            )
-              ? "kg"
-              : ""
-          }
+          suffix={Number.isFinite(totalDimWeight) ? "kg" : ""}
           onOpen={handleOpenFullText}
         />
       </section>
@@ -2201,14 +1745,9 @@ const ConsignmentListDetail = () => {
             </div>
 
             <div>
-              <h2>
-                Thông tin khách hàng
-              </h2>
+              <h2>Thông tin khách hàng</h2>
 
-              <p>
-                Thông tin người gửi yêu
-                cầu ký gửi
-              </p>
+              <p>Thông tin người gửi yêu cầu ký gửi</p>
             </div>
           </div>
 
@@ -2224,11 +1763,7 @@ const ConsignmentListDetail = () => {
 
             <Descriptions.Item label="Email">
               {customer.email ? (
-                <a
-                  href={`mailto:${customer.email}`}
-                >
-                  {customer.email}
-                </a>
+                <a href={`mailto:${customer.email}`}>{customer.email}</a>
               ) : (
                 "-"
               )}
@@ -2236,11 +1771,7 @@ const ConsignmentListDetail = () => {
 
             <Descriptions.Item label="Số điện thoại">
               {customer.phone ? (
-                <a
-                  href={`tel:${customer.phone}`}
-                >
-                  {customer.phone}
-                </a>
+                <a href={`tel:${customer.phone}`}>{customer.phone}</a>
               ) : (
                 "-"
               )}
@@ -2262,14 +1793,9 @@ const ConsignmentListDetail = () => {
             </div>
 
             <div>
-              <h2>
-                Thông tin nhận hàng
-              </h2>
+              <h2>Thông tin nhận hàng</h2>
 
-              <p>
-                Thông tin người nhận tại
-                Việt Nam
-              </p>
+              <p>Thông tin người nhận tại Việt Nam</p>
             </div>
           </div>
 
@@ -2280,18 +1806,13 @@ const ConsignmentListDetail = () => {
             className="detail-descriptions"
           >
             <Descriptions.Item label="Người nhận">
-              {consignment.receiverName ||
-                "-"}
+              {consignment.receiverName || "-"}
             </Descriptions.Item>
 
             <Descriptions.Item label="Số điện thoại">
               {consignment.receiverPhone ? (
-                <a
-                  href={`tel:${consignment.receiverPhone}`}
-                >
-                  {
-                    consignment.receiverPhone
-                  }
+                <a href={`tel:${consignment.receiverPhone}`}>
+                  {consignment.receiverPhone}
                 </a>
               ) : (
                 "-"
@@ -2299,18 +1820,11 @@ const ConsignmentListDetail = () => {
             </Descriptions.Item>
 
             <Descriptions.Item label="Địa chỉ nhận hàng">
-              {consignment.receiverAddress ||
-                "-"}
+              {consignment.receiverAddress || "-"}
             </Descriptions.Item>
 
             <Descriptions.Item label="Kiểm hàng">
-              <Tag
-                color={
-                  consignment.requiresInspection
-                    ? "green"
-                    : "default"
-                }
-              >
+              <Tag color={consignment.requiresInspection ? "green" : "default"}>
                 {consignment.requiresInspection
                   ? "CÓ KIỂM HÀNG"
                   : "KHÔNG KIỂM HÀNG"}
@@ -2329,14 +1843,9 @@ const ConsignmentListDetail = () => {
           </div>
 
           <div>
-            <h2>
-              Danh sách sản phẩm
-            </h2>
+            <h2>Danh sách sản phẩm</h2>
 
-            <p>
-              Có {items.length} dòng sản
-              phẩm trong kiện hàng
-            </p>
+            <p>Có {items.length} dòng sản phẩm trong kiện hàng</p>
           </div>
         </div>
 
@@ -2353,8 +1862,7 @@ const ConsignmentListDetail = () => {
             x: 1500,
           }}
           locale={{
-            emptyText:
-              "Chưa có sản phẩm trong lô hàng.",
+            emptyText: "Chưa có sản phẩm trong lô hàng.",
           }}
           className="detail-product-table"
         />
@@ -2370,14 +1878,9 @@ const ConsignmentListDetail = () => {
             </div>
 
             <div>
-              <h2>
-                Thông tin vận chuyển
-              </h2>
+              <h2>Thông tin vận chuyển</h2>
 
-              <p>
-                Thông tin chung của yêu
-                cầu ký gửi
-              </p>
+              <p>Thông tin chung của yêu cầu ký gửi</p>
             </div>
           </div>
 
@@ -2391,26 +1894,18 @@ const ConsignmentListDetail = () => {
               {consignment.consignmentCode?.trim() ? (
                 consignment.consignmentCode
               ) : (
-                <span className="detail-pending-value">
-                  Chưa được cấp mã
-                </span>
+                <span className="detail-pending-value">Chưa được cấp mã</span>
               )}
             </Descriptions.Item>
 
             <Descriptions.Item label="Trạng thái">
-              <span
-                className={`detail-inline-status status-${statusClass}`}
-              >
-                {getStatusLabel(
-                  consignment.status
-                )}
+              <span className={`detail-inline-status status-${statusClass}`}>
+                {getStatusLabel(consignment.status)}
               </span>
             </Descriptions.Item>
 
             <Descriptions.Item label="Loại vận chuyển">
-              {getConsignmentTypeLabel(
-                consignment.consignmentType
-              )}
+              {getConsignmentTypeLabel(consignment.consignmentType)}
             </Descriptions.Item>
 
             <Descriptions.Item label="Tuyến">
@@ -2418,8 +1913,7 @@ const ConsignmentListDetail = () => {
             </Descriptions.Item>
 
             <Descriptions.Item label="Ghi chú kiện hàng">
-              {consignment.note ||
-                "Không có ghi chú"}
+              {consignment.note || "Không có ghi chú"}
             </Descriptions.Item>
           </Descriptions>
         </section>
@@ -2431,14 +1925,9 @@ const ConsignmentListDetail = () => {
             </div>
 
             <div>
-              <h2>
-                Thông tin báo giá
-              </h2>
+              <h2>Thông tin báo giá</h2>
 
-              <p>
-                Chi phí dự kiến của lô
-                hàng
-              </p>
+              <p>Chi phí dự kiến của lô hàng</p>
             </div>
           </div>
 
@@ -2446,109 +1935,71 @@ const ConsignmentListDetail = () => {
             <>
               <div className="quotation-heading">
                 <div>
-                  <span>
-                    Loại báo giá
-                  </span>
+                  <span>Loại báo giá</span>
 
-                  <strong>
-                    {getQuoteTypeLabel(
-                      quotation.quoteType
-                    )}
-                  </strong>
+                  <strong>{getQuoteTypeLabel(quotation.quoteType)}</strong>
                 </div>
 
                 <span
                   className={`quotation-status status-${quotationStatusClass}`}
                 >
-                  {getQuotationStatusLabel(
-                    quotation.status
-                  )}
+                  {getQuotationStatusLabel(quotation.status)}
                 </span>
               </div>
 
               <div className="quotation-price-list">
                 <div>
-                  <span>
-                    Cước vận chuyển dự kiến
-                  </span>
+                  <span>Cước vận chuyển dự kiến</span>
 
                   <strong>
-                    {formatMoney(
-                      quotation.estimatedFreightCharge
-                    )}
+                    {formatMoney(quotation.estimatedFreightCharge)}
                   </strong>
                 </div>
 
                 <div>
-                  <span>
-                    Phí dịch vụ
-                  </span>
+                  <span>Phí dịch vụ</span>
 
-                  <strong>
-                    {formatMoney(
-                      quotation.serviceFee
-                    )}
-                  </strong>
+                  <strong>{formatMoney(quotation.serviceFee)}</strong>
                 </div>
 
                 <div>
-                  <span>
-                    Thuế và phí nhập khẩu
-                  </span>
+                  <span>Thuế và phí nhập khẩu</span>
 
-                  <strong>
-                    {formatMoney(
-                      quotation.taxAndDuty
-                    )}
-                  </strong>
+                  <strong>{formatMoney(quotation.taxAndDuty)}</strong>
                 </div>
 
                 <div className="quotation-total-row">
-                  <span>
-                    Tổng chi phí dự kiến
-                  </span>
+                  <span>Tổng chi phí dự kiến</span>
 
-                  <strong>
-                    {formatMoney(
-                      quotation.totalEstimatedCost
-                    )}
-                  </strong>
+                  <strong>{formatMoney(quotation.totalEstimatedCost)}</strong>
                 </div>
               </div>
 
               <div className="quotation-time-grid">
                 <div>
-                  <span>
-                    Ngày tạo báo giá
-                  </span>
+                  <span>Ngày tạo báo giá</span>
 
                   <strong
                     title={formatDateTimeUtcTitle(
-                      quotation.createdAtUtc ||
-                        quotation.createdAt
+                      quotation.createdAtUtc || quotation.createdAt,
                     )}
                   >
                     {formatDateTime(
-                      quotation.createdAtUtc ||
-                        quotation.createdAt
+                      quotation.createdAtUtc || quotation.createdAt,
                     )}
                   </strong>
                 </div>
 
                 <div>
-                  <span>
-                    Ngày hết hạn
-                  </span>
+                  <span>Ngày hết hạn</span>
 
                   <strong
                     title={formatDateTimeUtcTitle(
-                      quotation.expiredAtUtc ||
-                        quotation.expiredAt
+                      quotation.expiredAtUtc || quotation.expiredAt,
                     )}
                   >
                     {formatDateTime(
-                      quotation.expiredAtUtc ||
-                        quotation.expiredAt
+                      quotation.expiredAtUtc || quotation.expiredAt,
                     )}
                   </strong>
                 </div>
@@ -2556,13 +2007,11 @@ const ConsignmentListDetail = () => {
             </>
           ) : (
             <div className="quotation-empty">
-              Chưa có báo giá cho lô hàng
-              này.
+              Chưa có báo giá cho lô hàng này.
             </div>
           )}
         </section>
       </div>
-
 
       {/* Hủy đơn ở cuối trang */}
       <section className="detail-cancel-bottom-section">
@@ -2570,26 +2019,20 @@ const ConsignmentListDetail = () => {
           <h3>Hủy yêu cầu ký gửi</h3>
 
           <p>
-            Nhấn Hủy đơn, nhập lý do và xác nhận. Hệ thống sẽ
-            hiển thị thông báo ngay sau khi Backend xử lý yêu cầu.
+            Nhấn Hủy đơn, nhập lý do và xác nhận. Hệ thống sẽ hiển thị thông báo
+            ngay sau khi Backend xử lý yêu cầu.
           </p>
         </div>
 
         <button
           type="button"
           className="detail-cancel-order-button"
-          disabled={
-            isCancelling ||
-            isAlreadyCancelled
-          }
+          disabled={isCancelling || isAlreadyCancelled}
           onClick={handleOpenCancelModal}
         >
           {isCancelling ? (
             <>
-              <CircularProgress
-                size={16}
-                color="inherit"
-              />
+              <CircularProgress size={16} color="inherit" />
               Đang hủy...
             </>
           ) : isAlreadyCancelled ? (
@@ -2636,10 +2079,7 @@ const ConsignmentListDetail = () => {
           className="cancel-order-overlay"
           role="presentation"
           onMouseDown={(event) => {
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
+            if (event.target === event.currentTarget) {
               handleCloseCancelModal();
             }
           }}
@@ -2655,20 +2095,14 @@ const ConsignmentListDetail = () => {
             </div>
 
             <div className="cancel-order-modal-content">
-              <h2 id="cancel-order-title">
-                Hủy đơn ký gửi
-              </h2>
+              <h2 id="cancel-order-title">Hủy đơn ký gửi</h2>
 
               <p>
-                Đơn hàng sau khi hủy sẽ không
-                thể tiếp tục xử lý. Vui lòng
-                nhập lý do hủy.
+                Đơn hàng sau khi hủy sẽ không thể tiếp tục xử lý. Vui lòng nhập
+                lý do hủy.
               </p>
 
-              <label
-                htmlFor="cancel-reason"
-                className="cancel-order-label"
-              >
+              <label htmlFor="cancel-reason" className="cancel-order-label">
                 Lý do hủy
               </label>
 
@@ -2681,15 +2115,12 @@ const ConsignmentListDetail = () => {
                 placeholder="Ví dụ: Tôi nhập sai thông tin đơn hàng..."
                 className={[
                   "cancel-order-textarea",
-                  cancelReasonError &&
-                    "has-error",
+                  cancelReasonError && "has-error",
                 ]
                   .filter(Boolean)
                   .join(" ")}
                 onChange={(event) => {
-                  setCancelReason(
-                    event.target.value
-                  );
+                  setCancelReason(event.target.value);
 
                   if (cancelReasonError) {
                     setCancelReasonError("");
@@ -2702,9 +2133,7 @@ const ConsignmentListDetail = () => {
               </div>
 
               {cancelReasonError && (
-                <div className="cancel-order-error">
-                  {cancelReasonError}
-                </div>
+                <div className="cancel-order-error">{cancelReasonError}</div>
               )}
             </div>
 
@@ -2721,20 +2150,12 @@ const ConsignmentListDetail = () => {
               <button
                 type="button"
                 className="cancel-order-confirm-button"
-                disabled={
-                  isCancelling ||
-                  cancelReason.trim().length < 5
-                }
-                onClick={
-                  handleCancelConsignment
-                }
+                disabled={isCancelling || cancelReason.trim().length < 5}
+                onClick={handleCancelConsignment}
               >
                 {isCancelling ? (
                   <>
-                    <CircularProgress
-                      size={16}
-                      color="inherit"
-                    />
+                    <CircularProgress size={16} color="inherit" />
                     Đang hủy...
                   </>
                 ) : (
