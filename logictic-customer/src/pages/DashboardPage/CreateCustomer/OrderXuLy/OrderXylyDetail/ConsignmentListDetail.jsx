@@ -1721,7 +1721,7 @@ const ConsignmentListDetail = () => {
         },
       },
       {
-        title: "Giá trị sản phẩm",
+        title: "Giá trị kiện hàng ",
         dataIndex: "declaredValue",
         key: "declaredValue",
         width: 155,
