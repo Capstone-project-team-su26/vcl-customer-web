@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckOutlined,
@@ -45,47 +40,38 @@ import {
   getSyncedNowUtcIso,
 } from "../../../../utils/timeUtc";
 import { Switch, Tooltip } from "antd";
+import PackageOptionalServices from "../../../../components/DashboardComponents/CustomerKiguiComponents/PackageOptionalServices/PackageOptionalServices";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_IMAGES_PER_PACKAGE = 3;
 
-const ACCEPTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
-
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const PACKAGE_NUMBER_FIELDS = [
   {
     field: "weight",
     label: "CÂN NẶNG KIỆN HÀNG (KG)",
-    tooltip:
-      "Nhập tổng cân nặng của kiện hàng theo đơn vị kilogram (kg).",
+    tooltip: "Nhập tổng cân nặng của kiện hàng theo đơn vị kilogram (kg).",
     placeholder: "Nhập cân nặng...",
   },
   {
     field: "length",
     label: "DÀI (CM)",
-    tooltip:
-      "Nhập chiều dài của kiện hàng theo đơn vị centimet (cm).",
+    tooltip: "Nhập chiều dài của kiện hàng theo đơn vị centimet (cm).",
     placeholder: "Nhập chiều dài...",
   },
   {
     field: "width",
     label: "RỘNG (CM)",
-    tooltip:
-      "Nhập chiều rộng của kiện hàng theo đơn vị centimet (cm).",
+    tooltip: "Nhập chiều rộng của kiện hàng theo đơn vị centimet (cm).",
     placeholder: "Nhập chiều rộng...",
   },
   {
     field: "height",
     label: "CAO (CM)",
-    tooltip:
-      "Nhập chiều cao của kiện hàng theo đơn vị centimet (cm).",
+    tooltip: "Nhập chiều cao của kiện hàng theo đơn vị centimet (cm).",
     placeholder: "Nhập chiều cao...",
   },
 ];
-
-
 
 const INITIAL_FORM = {
   route: "",
@@ -95,6 +81,11 @@ const INITIAL_FORM = {
   selectedDeliveryAddress: "",
   note: "",
   inspectPackage: true,
+  optionalServices: {
+    requiresPacking: false,
+    requiresWoodenCrate: false,
+    requiresInsurance: false,
+  },
 };
 
 const createUniqueId = () => {
@@ -150,10 +141,7 @@ const isCanceledRequest = (error) =>
   error?.name === "CanceledError" ||
   error?.name === "AbortError";
 
-const getApiErrorMessage = (
-  error,
-  fallbackMessage = "Đã xảy ra lỗi."
-) => {
+const getApiErrorMessage = (error, fallbackMessage = "Đã xảy ra lỗi.") => {
   const responseData = error?.response?.data;
 
   if (typeof responseData === "string" && responseData.trim()) {
@@ -170,9 +158,7 @@ const getApiErrorMessage = (
 };
 
 const getFieldClassName = (baseClassName, errorMessage) =>
-  [baseClassName, errorMessage && "input-has-error"]
-    .filter(Boolean)
-    .join(" ");
+  [baseClassName, errorMessage && "input-has-error"].filter(Boolean).join(" ");
 
 const sanitizeInteger = (value) => {
   const digits = String(value ?? "").replace(/\D/g, "");
@@ -195,17 +181,13 @@ const sanitizeDecimal = (value) => {
       normalized.slice(firstDotIndex + 1).replace(/\./g, "");
   }
 
-  return normalized.startsWith(".")
-    ? `0${normalized}`
-    : normalized;
+  return normalized.startsWith(".") ? `0${normalized}` : normalized;
 };
 
 const formatVnd = (value) => {
   const digits = String(value ?? "").replace(/\D/g, "");
 
-  return digits
-    ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-    : "";
+  return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "";
 };
 
 const preventInvalidNumberKeys = (event) => {
@@ -228,10 +210,7 @@ const findArrayFromResult = (result, extraKeys = []) => {
     result?.results,
     result?.data?.items,
     result?.data?.results,
-    ...extraKeys.flatMap((key) => [
-      result?.[key],
-      result?.data?.[key],
-    ]),
+    ...extraKeys.flatMap((key) => [result?.[key], result?.data?.[key]]),
   ];
 
   return candidates.find(Array.isArray) || [];
@@ -255,7 +234,7 @@ const normalizeOptionList = (result, extraKeys = []) =>
           item?.shippingOptionId ??
           item?.productTypeId ??
           item?.id ??
-          ""
+          "",
       ).trim();
 
       const label = String(
@@ -266,7 +245,7 @@ const normalizeOptionList = (result, extraKeys = []) =>
           item?.shippingOptionName ??
           item?.productTypeName ??
           item?.description ??
-          value
+          value,
       ).trim();
 
       return { value, label };
@@ -283,10 +262,7 @@ const normalizeOptionCode = (value) => {
     .replaceAll("-", "_");
 };
 
-const getShippingOptionLabel = (
-  value,
-  label
-) => {
+const getShippingOptionLabel = (value, label) => {
   const normalizedValues = [
     normalizeOptionCode(value),
     normalizeOptionCode(label),
@@ -295,9 +271,7 @@ const getShippingOptionLabel = (
   if (
     normalizedValues.some(
       (item) =>
-        item === "EXPRESS" ||
-        item === "HOA_TOC" ||
-        item.includes("EXPRESS")
+        item === "EXPRESS" || item === "HOA_TOC" || item.includes("EXPRESS"),
     )
   ) {
     return "Hỏa tốc";
@@ -308,31 +282,19 @@ const getShippingOptionLabel = (
       (item) =>
         item === "STANDARD" ||
         item === "TIEU_CHUAN" ||
-        item.includes("STANDARD")
+        item.includes("STANDARD"),
     )
   ) {
     return "Tiêu chuẩn";
   }
 
-  return (
-    String(label ?? "").trim() ||
-    String(value ?? "").trim() ||
-    "-"
-  );
+  return String(label ?? "").trim() || String(value ?? "").trim() || "-";
 };
 
-const normalizeShippingOptionList = (
-  result
-) => {
-  return normalizeOptionList(
-    result,
-    ["shippingOptions"]
-  ).map((option) => ({
+const normalizeShippingOptionList = (result) => {
+  return normalizeOptionList(result, ["shippingOptions"]).map((option) => ({
     ...option,
-    label: getShippingOptionLabel(
-      option.value,
-      option.label
-    ),
+    label: getShippingOptionLabel(option.value, option.label),
   }));
 };
 
@@ -368,7 +330,7 @@ const normalizeDeliveryAddress = (item, index = 0) => {
       item.receiverAddress ||
       item.fullAddress ||
       item.deliveryAddress ||
-      ""
+      "",
   ).trim();
 
   if (!address) {
@@ -376,10 +338,7 @@ const normalizeDeliveryAddress = (item, index = 0) => {
   }
 
   const apiId = String(
-    item.deliveryAddressId ||
-      item.addressId ||
-      item.id ||
-      ""
+    item.deliveryAddressId || item.addressId || item.id || "",
   ).trim();
 
   return {
@@ -400,10 +359,7 @@ const normalizeDeliveryAddress = (item, index = 0) => {
 };
 
 const normalizeDeliveryAddressList = (result) =>
-  findArrayFromResult(result, [
-    "addresses",
-    "deliveryAddresses",
-  ])
+  findArrayFromResult(result, ["addresses", "deliveryAddresses"])
     .map(normalizeDeliveryAddress)
     .filter(Boolean);
 
@@ -427,9 +383,9 @@ const extractUploadedImageUrl = (result) => {
   ];
 
   return (
-    candidates.find(
-      (item) => typeof item === "string" && item.trim()
-    )?.trim() || ""
+    candidates
+      .find((item) => typeof item === "string" && item.trim())
+      ?.trim() || ""
   );
 };
 
@@ -437,7 +393,7 @@ const uploadPackageImage = async (file) => {
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.");
   }
-  
+
   if (file.size > MAX_IMAGE_SIZE) {
     throw new Error("Dung lượng ảnh không được vượt quá 5MB.");
   }
@@ -480,20 +436,15 @@ const validatePackage = (pkg) => {
   if (pkg.quantity === "") {
     errors.quantity = "Vui lòng nhập số lượng.";
   } else if (!Number.isInteger(quantity) || quantity < 1) {
-    errors.quantity =
-      "Số lượng phải là số nguyên từ 1 trở lên.";
+    errors.quantity = "Số lượng phải là số nguyên từ 1 trở lên.";
   }
 
   const declaredValue = Number(pkg.declaredValue);
 
   if (pkg.declaredValue === "") {
     errors.declaredValue = "Vui lòng nhập giá trị khai báo.";
-  } else if (
-    !Number.isFinite(declaredValue) ||
-    declaredValue <= 0
-  ) {
-    errors.declaredValue =
-      "Giá trị kiện hàng phải lớn hơn 0.";
+  } else if (!Number.isFinite(declaredValue) || declaredValue <= 0) {
+    errors.declaredValue = "Giá trị kiện hàng phải lớn hơn 0.";
   }
 
   [
@@ -516,33 +467,25 @@ const validatePackage = (pkg) => {
   return errors;
 };
 
-const validateConsignmentForm = ({
-  form,
-  packages,
-}) => {
+const validateConsignmentForm = ({ form, packages }) => {
   const formErrors = createEmptyFormErrors();
 
   if (!form.route) {
-    formErrors.route =
-      "Hệ thống chưa tải được tuyến hàng. Vui lòng làm mới trang.";
+    formErrors.route = "Vui lòng chọn tuyến hàng.";
   }
 
   if (!form.shippingOption) {
-    formErrors.shippingOption =
-      "Vui lòng chọn phương thức vận chuyển.";
+    formErrors.shippingOption = "Vui lòng chọn phương thức vận chuyển.";
   }
 
   if (!form.receiverName.trim()) {
-    formErrors.receiverName =
-      "Vui lòng nhập tên người nhận.";
+    formErrors.receiverName = "Vui lòng nhập tên người nhận.";
   } else if (form.receiverName.trim().length < 2) {
-    formErrors.receiverName =
-      "Tên người nhận phải có ít nhất 2 ký tự.";
+    formErrors.receiverName = "Tên người nhận phải có ít nhất 2 ký tự.";
   }
 
   if (!form.receiverPhone.trim()) {
-    formErrors.receiverPhone =
-      "Vui lòng nhập số điện thoại.";
+    formErrors.receiverPhone = "Vui lòng nhập số điện thoại.";
   } else if (!/^0\d{9}$/.test(form.receiverPhone.trim())) {
     formErrors.receiverPhone =
       "Số điện thoại phải có 10 số và bắt đầu bằng số 0.";
@@ -558,13 +501,13 @@ const validateConsignmentForm = ({
   }
 
   const packageErrors = Object.fromEntries(
-    packages.map((pkg) => [pkg.id, validatePackage(pkg)])
+    packages.map((pkg) => [pkg.id, validatePackage(pkg)]),
   );
 
   const isValid =
     !Object.values(formErrors).some(Boolean) &&
     Object.values(packageErrors).every(
-      (errors) => !Object.values(errors).some(Boolean)
+      (errors) => !Object.values(errors).some(Boolean),
     );
 
   return {
@@ -610,9 +553,7 @@ const SelectField = ({
       className={getFieldClassName("custom-select", error)}
       onChange={(event) => onChange(event.target.value)}
     >
-      <option value="">
-        {loading ? "Đang tải dữ liệu..." : placeholder}
-      </option>
+      <option value="">{loading ? "Đang tải dữ liệu..." : placeholder}</option>
 
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -631,12 +572,8 @@ export default function ConsignmentOrder() {
   const packagesRef = useRef([]);
 
   const [form, setForm] = useState(INITIAL_FORM);
-  const [packages, setPackages] = useState([
-    createEmptyPackage(),
-  ]);
-  const [formErrors, setFormErrors] = useState(
-    createEmptyFormErrors()
-  );
+  const [packages, setPackages] = useState([createEmptyPackage()]);
+  const [formErrors, setFormErrors] = useState(createEmptyFormErrors());
   const [packageErrors, setPackageErrors] = useState({});
 
   const [routeOptions, setRouteOptions] = useState([]);
@@ -645,16 +582,15 @@ export default function ConsignmentOrder() {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
   const [addressList, setAddressList] = useState([]);
-  const [isLoadingAddresses, setIsLoadingAddresses] =
-    useState(true);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [deletingAddressId, setDeletingAddressId] = useState("");
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [newAddressForm, setNewAddressForm] = useState(
-    createEmptyAddressForm()
+    createEmptyAddressForm(),
   );
   const [newAddressErrors, setNewAddressErrors] = useState(
-    createEmptyAddressErrors()
+    createEmptyAddressErrors(),
   );
   const [newAddressError, setNewAddressError] = useState("");
 
@@ -662,18 +598,15 @@ export default function ConsignmentOrder() {
   const [districtOptions, setDistrictOptions] = useState([]);
   const [wardOptions, setWardOptions] = useState([]);
 
-  const [isLoadingProvinces, setIsLoadingProvinces] =
-    useState(false);
-  const [isLoadingDistricts, setIsLoadingDistricts] =
-    useState(false);
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
   const [isLoadingWards, setIsLoadingWards] = useState(false);
 
-  const [activeLightboxImg, setActiveLightboxImg] =
-    useState(null);
+  const [activeLightboxImg, setActiveLightboxImg] = useState(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(
-    "Đang chuẩn bị tạo đơn..."
+    "Đang chuẩn bị tạo đơn...",
   );
 
   const clearFormError = (field) => {
@@ -764,10 +697,8 @@ export default function ConsignmentOrder() {
   };
 
   const getAddressOptionName = (options, code) =>
-    options.find((item) => String(item.code) === String(code))
-      ?.name ||
-    options.find((item) => String(item.value) === String(code))
-      ?.label ||
+    options.find((item) => String(item.code) === String(code))?.name ||
+    options.find((item) => String(item.value) === String(code))?.label ||
     "";
 
   const validateNewAddressForm = () => {
@@ -795,16 +726,13 @@ export default function ConsignmentOrder() {
     return !Object.values(errors).some(Boolean);
   };
 
-  const loadDeliveryAddresses = useCallback(
-    async (options = {}) => {
-      const result = await getDeliveryAddressesApi(options);
-      const list = normalizeDeliveryAddressList(result);
+  const loadDeliveryAddresses = useCallback(async (options = {}) => {
+    const result = await getDeliveryAddressesApi(options);
+    const list = normalizeDeliveryAddressList(result);
 
-      setAddressList(list);
-      return list;
-    },
-    []
-  );
+    setAddressList(list);
+    return list;
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -813,94 +741,39 @@ export default function ConsignmentOrder() {
       try {
         setIsLoadingOptions(true);
 
-        const [
-          routesResult,
-          shippingResult,
-          productTypesResult,
-        ] = await Promise.all([
-          getConsignmentRoutesApi({
-            signal: controller.signal,
-          }),
-          getConsignmentShippingOptionsApi({
-            signal: controller.signal,
-          }),
-          getProductTypesApi({
-            signal: controller.signal,
-          }),
-        ]);
+        const [routesResult, shippingResult, productTypesResult] =
+          await Promise.all([
+            getConsignmentRoutesApi({
+              signal: controller.signal,
+            }),
+            getConsignmentShippingOptionsApi({
+              signal: controller.signal,
+            }),
+            getProductTypesApi({
+              signal: controller.signal,
+            }),
+          ]);
 
-        const normalizedRoutes =
-          normalizeOptionList(
-            routesResult,
-            ["routes"]
-          );
+        const normalizedRoutes = normalizeOptionList(routesResult, ["routes"]);
 
         const normalizedShippingOptions =
-          normalizeShippingOptionList(
-            shippingResult
-          );
+          normalizeShippingOptionList(shippingResult);
 
-        const normalizedProductTypes =
-          normalizeOptionList(
-            productTypesResult,
-            ["productTypes"]
-          );
+        const normalizedProductTypes = normalizeOptionList(productTypesResult, [
+          "productTypes",
+        ]);
 
-        setRouteOptions(
-          normalizedRoutes
-        );
+        setRouteOptions(normalizedRoutes);
 
-        setShippingOptions(
-          normalizedShippingOptions
-        );
+        setShippingOptions(normalizedShippingOptions);
 
-        setProductTypeOptions(
-          normalizedProductTypes
-        );
+        setProductTypeOptions(normalizedProductTypes);
 
-        /*
-         * Tuyến hàng không cho người dùng chọn.
-         * Hệ thống tự động lấy tuyến đầu tiên API trả về.
-         *
-         * Nếu form đã có route và route đó vẫn hợp lệ
-         * thì giữ nguyên giá trị hiện tại.
-         */
-        setForm((previous) => {
-          const currentRouteExists =
-            normalizedRoutes.some(
-              (option) =>
-                String(option.value) ===
-                String(previous.route)
-            );
-
-          const nextRoute =
-            currentRouteExists
-              ? previous.route
-              : normalizedRoutes[0]?.value ||
-                "";
-
-          if (
-            nextRoute ===
-            previous.route
-          ) {
-            return previous;
-          }
-
-          return {
+        if (!normalizedRoutes.length) {
+          setFormErrors((previous) => ({
             ...previous,
-            route: nextRoute,
-          };
-        });
-
-        if (
-          normalizedRoutes.length > 0
-        ) {
-          setFormErrors(
-            (previous) => ({
-              ...previous,
-              route: "",
-            })
-          );
+            route: "Chưa có dữ liệu tuyến hàng. Vui lòng thử tải lại trang.",
+          }));
         }
       } catch (error) {
         if (!isCanceledRequest(error)) {
@@ -908,8 +781,8 @@ export default function ConsignmentOrder() {
             "Không tải được dữ liệu",
             getApiErrorMessage(
               error,
-              "Không thể tải tuyến hàng, hình thức vận chuyển hoặc loại hàng hóa."
-            )
+              "Không thể tải tuyến hàng, hình thức vận chuyển hoặc loại hàng hóa.",
+            ),
           );
         }
       } finally {
@@ -935,15 +808,10 @@ export default function ConsignmentOrder() {
           signal: controller.signal,
         });
 
-        const defaultAddress = list.find(
-          (item) => item.isDefault
-        );
+        const defaultAddress = list.find((item) => item.isDefault);
 
         if (defaultAddress) {
-          updateForm(
-            "selectedDeliveryAddress",
-            defaultAddress.address
-          );
+          updateForm("selectedDeliveryAddress", defaultAddress.address);
         }
       } catch (error) {
         if (!isCanceledRequest(error)) {
@@ -951,8 +819,8 @@ export default function ConsignmentOrder() {
             "Không tải được địa chỉ",
             getApiErrorMessage(
               error,
-              "Không thể tải danh sách địa chỉ nhận hàng."
-            )
+              "Không thể tải danh sách địa chỉ nhận hàng.",
+            ),
           );
         }
       } finally {
@@ -985,8 +853,8 @@ export default function ConsignmentOrder() {
             "Không tải được địa chỉ",
             getApiErrorMessage(
               error,
-              "Không thể tải danh sách tỉnh/thành phố."
-            )
+              "Không thể tải danh sách tỉnh/thành phố.",
+            ),
           );
         }
       } finally {
@@ -1018,7 +886,7 @@ export default function ConsignmentOrder() {
           newAddressForm.provinceCode,
           {
             signal: controller.signal,
-          }
+          },
         );
 
         setDistrictOptions(data);
@@ -1026,10 +894,7 @@ export default function ConsignmentOrder() {
         if (!isCanceledRequest(error)) {
           AuthNotify.error(
             "Không tải được quận/huyện",
-            getApiErrorMessage(
-              error,
-              "Không thể tải danh sách quận/huyện."
-            )
+            getApiErrorMessage(error, "Không thể tải danh sách quận/huyện."),
           );
         }
       } finally {
@@ -1056,22 +921,16 @@ export default function ConsignmentOrder() {
       try {
         setIsLoadingWards(true);
 
-        const data = await getWardsByDistrictCode(
-          newAddressForm.districtCode,
-          {
-            signal: controller.signal,
-          }
-        );
+        const data = await getWardsByDistrictCode(newAddressForm.districtCode, {
+          signal: controller.signal,
+        });
 
         setWardOptions(data);
       } catch (error) {
         if (!isCanceledRequest(error)) {
           AuthNotify.error(
             "Không tải được phường/xã",
-            getApiErrorMessage(
-              error,
-              "Không thể tải danh sách phường/xã."
-            )
+            getApiErrorMessage(error, "Không thể tải danh sách phường/xã."),
           );
         }
       } finally {
@@ -1100,14 +959,14 @@ export default function ConsignmentOrder() {
         });
       });
     },
-    []
+    [],
   );
 
   const scrollToFirstError = () => {
     window.setTimeout(() => {
       document
         .querySelector(
-          ".input-has-error, .upload-has-error, .address-list-has-error"
+          ".input-has-error, .upload-has-error, .address-list-has-error",
         )
         ?.scrollIntoView({
           behavior: "smooth",
@@ -1149,15 +1008,15 @@ export default function ConsignmentOrder() {
 
       const fallbackProvinceName = getAddressOptionName(
         provinceOptions,
-        newAddressForm.provinceCode
+        newAddressForm.provinceCode,
       );
       const fallbackDistrictName = getAddressOptionName(
         districtOptions,
-        newAddressForm.districtCode
+        newAddressForm.districtCode,
       );
       const fallbackWardName = getAddressOptionName(
         wardOptions,
-        newAddressForm.wardCode
+        newAddressForm.wardCode,
       );
 
       const provinceName =
@@ -1168,12 +1027,7 @@ export default function ConsignmentOrder() {
 
       const address =
         addressResult?.fullAddress ||
-        [
-          detailAddress,
-          wardName,
-          districtName,
-          provinceName,
-        ]
+        [detailAddress, wardName, districtName, provinceName]
           .filter(Boolean)
           .join(", ");
 
@@ -1186,8 +1040,7 @@ export default function ConsignmentOrder() {
 
       const addressExists = addressList.some(
         (item) =>
-          item.address.trim().toLowerCase() ===
-          normalizedAddress.toLowerCase()
+          item.address.trim().toLowerCase() === normalizedAddress.toLowerCase(),
       );
 
       if (addressExists) {
@@ -1216,57 +1069,49 @@ export default function ConsignmentOrder() {
         clientUtcOffsetMinutes: browserTimeInfo.utcOffsetMinutes,
       };
 
-      const createdResult = await createDeliveryAddressApi(
-        addressPayload
-      );
+      const createdResult = await createDeliveryAddressApi(addressPayload);
 
       let refreshedAddresses;
 
       try {
         refreshedAddresses = await loadDeliveryAddresses();
       } catch {
-        const createdAddress =
-          normalizeDeliveryAddress(
-            createdResult?.data || createdResult,
-            addressList.length
-          ) || {
-            id: createUniqueId(),
-            apiId: "",
-            address: normalizedAddress,
-            fullAddress: normalizedAddress,
-            detailAddress,
-            provinceCode: String(newAddressForm.provinceCode),
-            provinceName,
-            districtCode: String(newAddressForm.districtCode),
-            districtName,
-            wardCode: String(newAddressForm.wardCode),
-            wardName,
-            isDefault: false,
-            raw: addressPayload,
-          };
+        const createdAddress = normalizeDeliveryAddress(
+          createdResult?.data || createdResult,
+          addressList.length,
+        ) || {
+          id: createUniqueId(),
+          apiId: "",
+          address: normalizedAddress,
+          fullAddress: normalizedAddress,
+          detailAddress,
+          provinceCode: String(newAddressForm.provinceCode),
+          provinceName,
+          districtCode: String(newAddressForm.districtCode),
+          districtName,
+          wardCode: String(newAddressForm.wardCode),
+          wardName,
+          isDefault: false,
+          raw: addressPayload,
+        };
 
         refreshedAddresses = [
           ...addressList,
           {
             ...createdAddress,
             address: createdAddress.address || normalizedAddress,
-            fullAddress:
-              createdAddress.fullAddress || normalizedAddress,
-            detailAddress:
-              createdAddress.detailAddress || detailAddress,
+            fullAddress: createdAddress.fullAddress || normalizedAddress,
+            detailAddress: createdAddress.detailAddress || detailAddress,
             provinceCode:
               createdAddress.provinceCode ||
               String(newAddressForm.provinceCode),
-            provinceName:
-              createdAddress.provinceName || provinceName,
+            provinceName: createdAddress.provinceName || provinceName,
             districtCode:
               createdAddress.districtCode ||
               String(newAddressForm.districtCode),
-            districtName:
-              createdAddress.districtName || districtName,
+            districtName: createdAddress.districtName || districtName,
             wardCode:
-              createdAddress.wardCode ||
-              String(newAddressForm.wardCode),
+              createdAddress.wardCode || String(newAddressForm.wardCode),
             wardName: createdAddress.wardName || wardName,
           },
         ];
@@ -1278,12 +1123,12 @@ export default function ConsignmentOrder() {
         refreshedAddresses.find(
           (item) =>
             item.address.trim().toLowerCase() ===
-            normalizedAddress.toLowerCase()
+            normalizedAddress.toLowerCase(),
         ) || null;
 
       updateForm(
         "selectedDeliveryAddress",
-        selectedAddressItem?.address || normalizedAddress
+        selectedAddressItem?.address || normalizedAddress,
       );
 
       resetNewAddressForm();
@@ -1291,53 +1136,41 @@ export default function ConsignmentOrder() {
 
       AuthNotify.success(
         "Đã thêm địa chỉ",
-        "Địa chỉ nhận hàng mới đã được lưu."
+        "Địa chỉ nhận hàng mới đã được lưu.",
       );
     } catch (error) {
       const errorMessage = getApiErrorMessage(
         error,
-        "Không thể lưu địa chỉ nhận hàng."
+        "Không thể lưu địa chỉ nhận hàng.",
       );
 
       setNewAddressError(errorMessage);
-      AuthNotify.error(
-        "Lưu địa chỉ thất bại",
-        errorMessage
-      );
+      AuthNotify.error("Lưu địa chỉ thất bại", errorMessage);
     } finally {
       setIsSavingAddress(false);
     }
   };
 
-  const handleDeleteAddress = async (
-    event,
-    addressItem
-  ) => {
+  const handleDeleteAddress = async (event, addressItem) => {
     event.preventDefault();
     event.stopPropagation();
 
-    if (
-      isSubmitting ||
-      isSavingAddress ||
-      deletingAddressId
-    ) {
+    if (isSubmitting || isSavingAddress || deletingAddressId) {
       return;
     }
 
-    const addressId = String(
-      addressItem?.apiId || ""
-    ).trim();
+    const addressId = String(addressItem?.apiId || "").trim();
 
     if (!addressId) {
       AuthNotify.error(
         "Không thể xóa địa chỉ",
-        "Địa chỉ này không có ID hợp lệ."
+        "Địa chỉ này không có ID hợp lệ.",
       );
       return;
     }
 
     const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa địa chỉ "${addressItem.address}" không?`
+      `Bạn có chắc muốn xóa địa chỉ "${addressItem.address}" không?`,
     );
 
     if (!confirmed) {
@@ -1349,32 +1182,23 @@ export default function ConsignmentOrder() {
       await deleteDeliveryAddressApi(addressId);
 
       const remainingAddresses = addressList.filter(
-        (item) => item.apiId !== addressId
+        (item) => item.apiId !== addressId,
       );
 
       setAddressList(remainingAddresses);
 
-      if (
-        form.selectedDeliveryAddress ===
-        addressItem.address
-      ) {
+      if (form.selectedDeliveryAddress === addressItem.address) {
         updateForm(
           "selectedDeliveryAddress",
-          remainingAddresses[0]?.address || ""
+          remainingAddresses[0]?.address || "",
         );
       }
 
-      AuthNotify.success(
-        "Đã xóa địa chỉ",
-        "Địa chỉ nhận hàng đã được xóa."
-      );
+      AuthNotify.success("Đã xóa địa chỉ", "Địa chỉ nhận hàng đã được xóa.");
     } catch (error) {
       AuthNotify.error(
         "Xóa địa chỉ thất bại",
-        getApiErrorMessage(
-          error,
-          "Không thể xóa địa chỉ nhận hàng."
-        )
+        getApiErrorMessage(error, "Không thể xóa địa chỉ nhận hàng."),
       );
     } finally {
       setDeletingAddressId("");
@@ -1383,11 +1207,7 @@ export default function ConsignmentOrder() {
 
   /* ================= PACKAGE ================= */
 
-  const handleInputChange = (
-    packageId,
-    field,
-    value
-  ) => {
+  const handleInputChange = (packageId, field, value) => {
     setPackages((previous) =>
       previous.map((pkg) =>
         pkg.id === packageId
@@ -1395,25 +1215,34 @@ export default function ConsignmentOrder() {
               ...pkg,
               [field]: value,
             }
-          : pkg
-      )
+          : pkg,
+      ),
     );
 
     clearPackageError(packageId, field);
   };
 
-  const handleDecimalBlur = (
-    packageId,
-    field,
-    value
-  ) => {
+  const handleOptionalServicesChange = (nextServices) => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setForm((previous) => ({
+      ...previous,
+      optionalServices: {
+        requiresPacking: Boolean(nextServices?.requiresPacking),
+        requiresWoodenCrate: Boolean(nextServices?.requiresWoodenCrate),
+        requiresInsurance: Boolean(nextServices?.requiresInsurance),
+      },
+    }));
+  };
+
+  const handleDecimalBlur = (packageId, field, value) => {
     if (!value) {
       return;
     }
 
-    const normalizedValue = value.endsWith(".")
-      ? value.slice(0, -1)
-      : value;
+    const normalizedValue = value.endsWith(".") ? value.slice(0, -1) : value;
 
     const numericValue = Number(normalizedValue);
 
@@ -1434,36 +1263,27 @@ export default function ConsignmentOrder() {
                 ...pkg,
                 [field]: "",
               }
-            : pkg
-        )
+            : pkg,
+        ),
       );
 
       setPackageErrors((previous) => ({
         ...previous,
         [packageId]: {
           ...(previous[packageId] || {}),
-          [field]: `${
-            fieldLabels[field] || "Giá trị"
-          } phải lớn hơn 0.`,
+          [field]: `${fieldLabels[field] || "Giá trị"} phải lớn hơn 0.`,
         },
       }));
 
       return;
     }
 
-    handleInputChange(
-      packageId,
-      field,
-      normalizedValue
-    );
+    handleInputChange(packageId, field, normalizedValue);
   };
 
   const handleAddPackage = () => {
     if (!isSubmitting) {
-      setPackages((previous) => [
-        ...previous,
-        createEmptyPackage(),
-      ]);
+      setPackages((previous) => [...previous, createEmptyPackage()]);
     }
   };
 
@@ -1475,14 +1295,12 @@ export default function ConsignmentOrder() {
     if (packages.length <= 1) {
       AuthNotify.warning(
         "Không thể xóa",
-        "Yêu cầu phải có tối thiểu 1 kiện hàng."
+        "Yêu cầu phải có tối thiểu 1 kiện hàng.",
       );
       return;
     }
 
-    const targetPackage = packages.find(
-      (pkg) => pkg.id === packageId
-    );
+    const targetPackage = packages.find((pkg) => pkg.id === packageId);
 
     targetPackage?.images.forEach((image) => {
       if (image.previewUrl) {
@@ -1490,9 +1308,7 @@ export default function ConsignmentOrder() {
       }
     });
 
-    setPackages((previous) =>
-      previous.filter((pkg) => pkg.id !== packageId)
-    );
+    setPackages((previous) => previous.filter((pkg) => pkg.id !== packageId));
 
     setPackageErrors((previous) => {
       const nextErrors = {
@@ -1508,40 +1324,54 @@ export default function ConsignmentOrder() {
 
   /* ================= IMAGE ================= */
 
-  const handleFileChange = (
-    packageId,
-    event
-  ) => {
-    const files = Array.from(
-      event.target.files || []
-    );
+  const handleFileChange = (packageId, event) => {
+    const selectedFiles = Array.from(event.target.files || []);
 
     event.target.value = "";
 
-    if (!files.length) {
+    if (!selectedFiles.length) {
       return;
     }
 
-    const invalidFile = files.find(
-      (file) => !ACCEPTED_IMAGE_TYPES.includes(file.type)
-    );
-    
-    if (invalidFile) {
+    const targetPackage = packages.find((pkg) => pkg.id === packageId);
+    const currentImageCount = targetPackage?.images?.length || 0;
+    const availableSlots = MAX_IMAGES_PER_PACKAGE - currentImageCount;
+
+    if (availableSlots <= 0) {
       AuthNotify.warning(
-        "File không hợp lệ",
-        `Ảnh "${invalidFile.name}" không phải JPG, PNG hoặc WEBP.`
+        "Đã đủ số lượng ảnh",
+        `Mỗi kiện hàng chỉ được tải tối đa ${MAX_IMAGES_PER_PACKAGE} ảnh.`,
       );
       return;
     }
-    
-    const oversizedFile = files.find(
-      (file) => file.size > MAX_IMAGE_SIZE
+
+    const files = selectedFiles.slice(0, availableSlots);
+
+    if (selectedFiles.length > availableSlots) {
+      AuthNotify.warning(
+        "Vượt quá số lượng ảnh",
+        `Chỉ thêm ${availableSlots} ảnh còn trống. Mỗi kiện tối đa ${MAX_IMAGES_PER_PACKAGE} ảnh.`,
+      );
+    }
+
+    const invalidFile = files.find(
+      (file) => !ACCEPTED_IMAGE_TYPES.includes(file.type),
     );
-    
+
+    if (invalidFile) {
+      AuthNotify.warning(
+        "File không hợp lệ",
+        `Ảnh "${invalidFile.name}" không phải JPG, PNG hoặc WEBP.`,
+      );
+      return;
+    }
+
+    const oversizedFile = files.find((file) => file.size > MAX_IMAGE_SIZE);
+
     if (oversizedFile) {
       AuthNotify.warning(
         "Ảnh quá lớn",
-        `Ảnh "${oversizedFile.name}" vượt quá 5MB.`
+        `Ảnh "${oversizedFile.name}" vượt quá 5MB.`,
       );
       return;
     }
@@ -1557,29 +1387,24 @@ export default function ConsignmentOrder() {
         pkg.id === packageId
           ? {
               ...pkg,
-              images: [
-                ...pkg.images,
-                ...newImages,
-              ],
+              images: [...pkg.images, ...newImages].slice(
+                0,
+                MAX_IMAGES_PER_PACKAGE,
+              ),
             }
-          : pkg
-      )
+          : pkg,
+      ),
     );
 
     clearPackageError(packageId, "images");
 
     AuthNotify.success(
       "Đã chọn ảnh",
-      `Đã thêm ${files.length} ảnh cho kiện hàng.`
+      `Đã thêm ${files.length} ảnh. Kiện hàng hiện có ${currentImageCount + files.length}/${MAX_IMAGES_PER_PACKAGE} ảnh.`,
     );
   };
 
-  const handleRemoveImage = (
-    event,
-    packageId,
-    imageId,
-    previewUrl
-  ) => {
+  const handleRemoveImage = (event, packageId, imageId, previewUrl) => {
     event.stopPropagation();
 
     if (isSubmitting) {
@@ -1592,17 +1417,14 @@ export default function ConsignmentOrder() {
           return pkg;
         }
 
-        const images = pkg.images.filter(
-          (image) => image.id !== imageId
-        );
+        const images = pkg.images.filter((image) => image.id !== imageId);
 
         if (!images.length) {
           setPackageErrors((oldErrors) => ({
             ...oldErrors,
             [packageId]: {
               ...(oldErrors[packageId] || {}),
-              images:
-                "Vui lòng tải ít nhất 1 ảnh sản phẩm.",
+              images: "Vui lòng tải ít nhất 1 ảnh sản phẩm.",
             },
           }));
         }
@@ -1611,7 +1433,7 @@ export default function ConsignmentOrder() {
           ...pkg,
           images,
         };
-      })
+      }),
     );
 
     if (previewUrl) {
@@ -1637,7 +1459,7 @@ export default function ConsignmentOrder() {
     if (!result.isValid) {
       AuthNotify.warning(
         "Thông tin chưa đầy đủ",
-        "Vui lòng kiểm tra các trường được đánh dấu màu đỏ."
+        "Vui lòng kiểm tra các trường được đánh dấu màu đỏ.",
       );
 
       scrollToFirstError();
@@ -1676,19 +1498,17 @@ export default function ConsignmentOrder() {
 
       const items = [];
 
-      for (
-        let index = 0;
-        index < packages.length;
-        index += 1
-      ) {
+      for (let index = 0; index < packages.length; index += 1) {
         const pkg = packages[index];
 
         setSubmitMessage(
-          `Đang upload ảnh kiện ${index + 1}/${packages.length}...`
+          `Đang upload ảnh kiện ${index + 1}/${packages.length}...`,
         );
 
-        const referenceUrl = await uploadPackageImage(
-          pkg.images[0].fileObj
+        const referenceUrls = await Promise.all(
+          pkg.images
+            .slice(0, MAX_IMAGES_PER_PACKAGE)
+            .map((image) => uploadPackageImage(image.fileObj)),
         );
 
         items.push({
@@ -1700,26 +1520,22 @@ export default function ConsignmentOrder() {
           height: Number(pkg.height),
           length: Number(pkg.length),
           declaredValue: Number(pkg.declaredValue),
-          referenceUrl,
-          domesticTrackingCode:
-            pkg.trackingCode.trim() || null,
+          referenceUrl: referenceUrls[0],
+          referenceUrls,
+          domesticTrackingCode: pkg.trackingCode.trim() || null,
         });
       }
 
-      setSubmitMessage(
-        "Đang kiểm tra thông tin kiện hàng..."
-      );
+      setSubmitMessage("Đang kiểm tra thông tin kiện hàng...");
 
-      await validateConsignmentItemsApi(items);
+      const validationItems = items.map(({ referenceUrls, ...item }) => item);
 
-      setSubmitMessage(
-        "Đang gửi yêu cầu tạo đơn ký gửi..."
-      );
+      await validateConsignmentItemsApi(validationItems);
+
+      setSubmitMessage("Đang gửi yêu cầu tạo đơn ký gửi...");
 
       const selectedAddressItem = addressList.find(
-        (item) =>
-          item.address ===
-          form.selectedDeliveryAddress.trim()
+        (item) => item.address === form.selectedDeliveryAddress.trim(),
       );
 
       const browserTimeInfo = getBrowserTimeInfo();
@@ -1730,50 +1546,44 @@ export default function ConsignmentOrder() {
         shippingOption: form.shippingOption,
         receiverName: form.receiverName.trim(),
         receiverPhone: form.receiverPhone.trim(),
-        receiverAddress:
-          form.selectedDeliveryAddress.trim(),
+        receiverAddress: form.selectedDeliveryAddress.trim(),
 
-        deliveryAddressId:
-          selectedAddressItem?.apiId || null,
+        deliveryAddressId: selectedAddressItem?.apiId || null,
         receiverFullAddress:
           selectedAddressItem?.fullAddress ||
           form.selectedDeliveryAddress.trim(),
-        receiverDetailAddress:
-          selectedAddressItem?.detailAddress || null,
-        receiverProvinceCode:
-          selectedAddressItem?.provinceCode || null,
-        receiverProvinceName:
-          selectedAddressItem?.provinceName || null,
-        receiverDistrictCode:
-          selectedAddressItem?.districtCode || null,
-        receiverDistrictName:
-          selectedAddressItem?.districtName || null,
-        receiverWardCode:
-          selectedAddressItem?.wardCode || null,
-        receiverWardName:
-          selectedAddressItem?.wardName || null,
+        receiverDetailAddress: selectedAddressItem?.detailAddress || null,
+        receiverProvinceCode: selectedAddressItem?.provinceCode || null,
+        receiverProvinceName: selectedAddressItem?.provinceName || null,
+        receiverDistrictCode: selectedAddressItem?.districtCode || null,
+        receiverDistrictName: selectedAddressItem?.districtName || null,
+        receiverWardCode: selectedAddressItem?.wardCode || null,
+        receiverWardName: selectedAddressItem?.wardName || null,
 
         submittedAtUtc,
         clientSubmittedAtUtc: submittedAtUtc,
         clientTimeZone: browserTimeInfo.timeZone,
         clientUtcOffset: browserTimeInfo.utcOffsetText,
-        clientUtcOffsetMinutes:
-          browserTimeInfo.utcOffsetMinutes,
+        clientUtcOffsetMinutes: browserTimeInfo.utcOffsetMinutes,
 
         requiresInspection: form.inspectPackage,
+        requiresPacking: Boolean(form.optionalServices?.requiresPacking),
+        requiresWoodenCrate: Boolean(
+          form.optionalServices?.requiresWoodenCrate,
+        ),
+        requiresInsurance: Boolean(form.optionalServices?.requiresInsurance),
         note: form.note.trim(),
         items,
       });
 
       AuthNotify.success(
         "Tạo đơn thành công",
-        "Đơn hàng ký gửi đã được tiếp nhận."
+        "Đơn hàng ký gửi đã được tiếp nhận.",
       );
 
       navigate("/processing-orders");
     } catch (error) {
-      const backendErrors =
-        error?.response?.data?.errors;
+      const backendErrors = error?.response?.data?.errors;
 
       const errorMessage = backendErrors
         ? Object.entries(backendErrors)
@@ -1787,36 +1597,15 @@ export default function ConsignmentOrder() {
             .join(" | ")
         : getApiErrorMessage(
             error,
-            "Không thể tạo đơn ký gửi. Vui lòng thử lại."
+            "Không thể tạo đơn ký gửi. Vui lòng thử lại.",
           );
 
-      AuthNotify.error(
-        "Giao dịch thất bại",
-        errorMessage
-      );
+      AuthNotify.error("Giao dịch thất bại", errorMessage);
     } finally {
       setIsSubmitting(false);
-      setSubmitMessage(
-        "Đang chuẩn bị tạo đơn..."
-      );
+      setSubmitMessage("Đang chuẩn bị tạo đơn...");
     }
   };
-
-  const selectedRouteOption =
-    routeOptions.find(
-      (option) =>
-        String(option.value) ===
-        String(form.route)
-    );
-
-  const routeDisplayValue =
-    selectedRouteOption?.label ||
-    form.route ||
-    (
-      isLoadingOptions
-        ? "Đang tải tuyến hàng..."
-        : "Chưa có dữ liệu tuyến hàng"
-    );
 
   if (isConfirming) {
     return (
@@ -1838,8 +1627,7 @@ export default function ConsignmentOrder() {
     <div
       className={[
         "consignment-container",
-        isSubmitting &&
-          "consignment-is-submitting",
+        isSubmitting && "consignment-is-submitting",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -1867,23 +1655,10 @@ export default function ConsignmentOrder() {
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <rect
-                  x="1"
-                  y="3"
-                  width="15"
-                  height="13"
-                />
+                <rect x="1" y="3" width="15" height="13" />
                 <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                <circle
-                  cx="5.5"
-                  cy="18.5"
-                  r="2.5"
-                />
-                <circle
-                  cx="18.5"
-                  cy="18.5"
-                  r="2.5"
-                />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
             </div>
 
@@ -1894,60 +1669,24 @@ export default function ConsignmentOrder() {
           </div>
 
           <div className="left-unified-wrapper-box">
-            <div className="left-inner-section">
-              <div className="input-field-group">
-                <label className="field-label required-label">
-                  <EnvironmentOutlined />
-                  TUYẾN HÀNG
-                </label>
+            <div className="left-inner-section route-select-section">
+              <SelectField
+                label="TUYẾN HÀNG"
+                value={form.route}
+                error={formErrors.route}
+                options={routeOptions}
+                loading={isLoadingOptions}
+                disabled={isSubmitting}
+                placeholder="-- Chọn tuyến hàng --"
+                onChange={(value) => updateForm("route", value)}
+              />
 
-                <input
-                  type="text"
-                  value={routeDisplayValue}
-                  disabled
-                  readOnly
-                  title={routeDisplayValue}
-                  aria-label={`Tuyến hàng được hệ thống tự động áp dụng: ${routeDisplayValue}`}
-                  className={getFieldClassName(
-                    "custom-input route-readonly-input",
-                    formErrors.route
-                  )}
-                  style={{
-                    color: "#64748b",
-                    fontWeight: 700,
-                    background: "#f1f5f9",
-                    borderColor: "#cbd5e1",
-                    cursor: "not-allowed",
-                    opacity: 0.82,
-                    WebkitTextFillColor:
-                      "#64748b",
-                  }}
-                />
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginTop: 7,
-                    color: "#94a3b8",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <InfoCircleOutlined />
-
-                  <span>
-                    Tuyến hàng được hệ thống
-                    tự động áp dụng và không
-                    thể chỉnh sửa.
-                  </span>
-                </div>
-
-                <FieldError
-                  message={formErrors.route}
-                />
+              <div className="route-select-helper">
+                <InfoCircleOutlined />
+                <span>
+                  Chọn đúng tuyến vận chuyển phù hợp với nơi gửi và nơi nhận
+                  hàng.
+                </span>
               </div>
             </div>
 
@@ -1960,20 +1699,12 @@ export default function ConsignmentOrder() {
                 loading={isLoadingOptions}
                 disabled={isSubmitting}
                 placeholder="-- Chọn hình thức vận chuyển --"
-                onChange={(value) =>
-                  updateForm(
-                    "shippingOption",
-                    value
-                  )
-                }
+                onChange={(value) => updateForm("shippingOption", value)}
               />
             </div>
 
             <div className="left-inner-section border-top-dash">
-              <div
-                className="input-field-group"
-                style={{ marginBottom: 12 }}
-              >
+              <div className="input-field-group" style={{ marginBottom: 12 }}>
                 <label className="field-label required-label">
                   TÊN NGƯỜI NHẬN
                 </label>
@@ -1985,19 +1716,14 @@ export default function ConsignmentOrder() {
                   placeholder="Nhập tên người nhận..."
                   className={getFieldClassName(
                     "custom-input",
-                    formErrors.receiverName
+                    formErrors.receiverName,
                   )}
                   onChange={(event) =>
-                    updateForm(
-                      "receiverName",
-                      event.target.value
-                    )
+                    updateForm("receiverName", event.target.value)
                   }
                 />
 
-                <FieldError
-                  message={formErrors.receiverName}
-                />
+                <FieldError message={formErrors.receiverName} />
               </div>
 
               <div className="input-field-group">
@@ -2014,21 +1740,17 @@ export default function ConsignmentOrder() {
                   placeholder="Nhập số điện thoại..."
                   className={getFieldClassName(
                     "custom-input",
-                    formErrors.receiverPhone
+                    formErrors.receiverPhone,
                   )}
                   onChange={(event) =>
                     updateForm(
                       "receiverPhone",
-                      event.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 10)
+                      event.target.value.replace(/\D/g, "").slice(0, 10),
                     )
                   }
                 />
 
-                <FieldError
-                  message={formErrors.receiverPhone}
-                />
+                <FieldError message={formErrors.receiverPhone} />
               </div>
             </div>
 
@@ -2041,18 +1763,13 @@ export default function ConsignmentOrder() {
               <div
                 className={getFieldClassName(
                   "static-display-box address-received-highlight",
-                  formErrors.selectedDeliveryAddress
+                  formErrors.selectedDeliveryAddress,
                 )}
               >
-                {form.selectedDeliveryAddress ||
-                  "Chưa chọn địa chỉ"}
+                {form.selectedDeliveryAddress || "Chưa chọn địa chỉ"}
               </div>
 
-              <FieldError
-                message={
-                  formErrors.selectedDeliveryAddress
-                }
-              />
+              <FieldError message={formErrors.selectedDeliveryAddress} />
             </div>
 
             <div className="left-inner-section border-top-dash">
@@ -2083,9 +1800,7 @@ export default function ConsignmentOrder() {
                   {isLoadingAddresses ? (
                     <div className="address-empty-message">
                       <LoadingOutlined spin />
-                      <span>
-                        Đang tải danh sách địa chỉ...
-                      </span>
+                      <span>Đang tải danh sách địa chỉ...</span>
                     </div>
                   ) : addressList.length ? (
                     <div
@@ -2097,96 +1812,79 @@ export default function ConsignmentOrder() {
                         .filter(Boolean)
                         .join(" ")}
                     >
-                      {addressList.map(
-                        (addressItem, index) => {
-                          const isSelected =
-                            form.selectedDeliveryAddress ===
-                            addressItem.address;
-                          const isDeleting =
-                            deletingAddressId ===
-                            addressItem.apiId;
+                      {addressList.map((addressItem, index) => {
+                        const isSelected =
+                          form.selectedDeliveryAddress === addressItem.address;
+                        const isDeleting =
+                          deletingAddressId === addressItem.apiId;
 
-                          return (
-                            <div
-                              key={
-                                addressItem.id ||
-                                `${addressItem.address}-${index}`
-                              }
-                              role="button"
-                              tabIndex={0}
-                              className={[
-                                "address-item-clickable",
-                                isSelected &&
-                                  "is-active",
-                                isDeleting &&
-                                  "is-deleting",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                              onClick={() =>
+                        return (
+                          <div
+                            key={
+                              addressItem.id ||
+                              `${addressItem.address}-${index}`
+                            }
+                            role="button"
+                            tabIndex={0}
+                            className={[
+                              "address-item-clickable",
+                              isSelected && "is-active",
+                              isDeleting && "is-deleting",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            onClick={() =>
+                              updateForm(
+                                "selectedDeliveryAddress",
+                                addressItem.address,
+                              )
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
                                 updateForm(
                                   "selectedDeliveryAddress",
-                                  addressItem.address
-                                )
+                                  addressItem.address,
+                                );
                               }
-                              onKeyDown={(event) => {
-                                if (
-                                  event.key ===
-                                    "Enter" ||
-                                  event.key === " "
-                                ) {
-                                  event.preventDefault();
-                                  updateForm(
-                                    "selectedDeliveryAddress",
-                                    addressItem.address
-                                  );
-                                }
-                              }}
-                            >
-                              <span className="address-text-truncate">
-                                <strong>
-                                  {addressItem.address}
-                                </strong>
+                            }}
+                          >
+                            <span className="address-text-truncate">
+                              <strong>{addressItem.address}</strong>
+                            </span>
+
+                            {addressItem.isDefault && (
+                              <span className="address-default-badge">
+                                Mặc định
                               </span>
+                            )}
 
-                              {addressItem.isDefault && (
-                                <span className="address-default-badge">
-                                  Mặc định
-                                </span>
+                            {isSelected && (
+                              <CheckOutlined className="check-active-icon" />
+                            )}
+
+                            <button
+                              type="button"
+                              className="btn-delete-address"
+                              disabled={
+                                !addressItem.apiId ||
+                                isSubmitting ||
+                                isSavingAddress ||
+                                Boolean(deletingAddressId)
+                              }
+                              onClick={(event) =>
+                                handleDeleteAddress(event, addressItem)
+                              }
+                            >
+                              {isDeleting ? (
+                                <LoadingOutlined spin />
+                              ) : (
+                                <DeleteOutlined />
                               )}
-
-                              {isSelected && (
-                                <CheckOutlined className="check-active-icon" />
-                              )}
-
-                              <button
-                                type="button"
-                                className="btn-delete-address"
-                                disabled={
-                                  !addressItem.apiId ||
-                                  isSubmitting ||
-                                  isSavingAddress ||
-                                  Boolean(
-                                    deletingAddressId
-                                  )
-                                }
-                                onClick={(event) =>
-                                  handleDeleteAddress(
-                                    event,
-                                    addressItem
-                                  )
-                                }
-                              >
-                                {isDeleting ? (
-                                  <LoadingOutlined spin />
-                                ) : (
-                                  <DeleteOutlined />
-                                )}
-                              </button>
-                            </div>
-                          );
-                        }
-                      )}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div
@@ -2198,8 +1896,7 @@ export default function ConsignmentOrder() {
                         .filter(Boolean)
                         .join(" ")}
                     >
-                      Chưa có địa chỉ nhận hàng.
-                      Hãy thêm địa chỉ mới.
+                      Chưa có địa chỉ nhận hàng. Hãy thêm địa chỉ mới.
                     </div>
                   )}
                 </>
@@ -2211,16 +1908,10 @@ export default function ConsignmentOrder() {
                     error={newAddressErrors.provinceCode}
                     options={provinceOptions}
                     loading={isLoadingProvinces}
-                    disabled={
-                      isSubmitting ||
-                      isSavingAddress
-                    }
+                    disabled={isSubmitting || isSavingAddress}
                     placeholder="-- Chọn tỉnh/thành phố --"
                     onChange={(value) =>
-                      updateNewAddressForm(
-                        "provinceCode",
-                        value
-                      )
+                      updateNewAddressForm("provinceCode", value)
                     }
                   />
 
@@ -2237,10 +1928,7 @@ export default function ConsignmentOrder() {
                     }
                     placeholder="-- Chọn quận/huyện --"
                     onChange={(value) =>
-                      updateNewAddressForm(
-                        "districtCode",
-                        value
-                      )
+                      updateNewAddressForm("districtCode", value)
                     }
                   />
 
@@ -2257,10 +1945,7 @@ export default function ConsignmentOrder() {
                     }
                     placeholder="-- Chọn phường/xã --"
                     onChange={(value) =>
-                      updateNewAddressForm(
-                        "wardCode",
-                        value
-                      )
+                      updateNewAddressForm("wardCode", value)
                     }
                   />
 
@@ -2272,37 +1957,27 @@ export default function ConsignmentOrder() {
                     <input
                       type="text"
                       value={newAddressForm.detailAddress}
-                      disabled={
-                        isSubmitting ||
-                        isSavingAddress
-                      }
+                      disabled={isSubmitting || isSavingAddress}
                       placeholder="Số nhà, tên đường..."
                       className={getFieldClassName(
                         "custom-input small-input",
-                        newAddressErrors.detailAddress
+                        newAddressErrors.detailAddress,
                       )}
                       onChange={(event) =>
                         updateNewAddressForm(
                           "detailAddress",
-                          event.target.value
+                          event.target.value,
                         )
                       }
                       onKeyDown={(event) => {
-                        if (
-                          event.key === "Enter" &&
-                          !isSavingAddress
-                        ) {
+                        if (event.key === "Enter" && !isSavingAddress) {
                           event.preventDefault();
                           handleSaveAddress();
                         }
                       }}
                     />
 
-                    <FieldError
-                      message={
-                        newAddressErrors.detailAddress
-                      }
-                    />
+                    <FieldError message={newAddressErrors.detailAddress} />
                   </div>
 
                   <div className="selected-address-preview">
@@ -2312,35 +1987,29 @@ export default function ConsignmentOrder() {
                         newAddressForm.detailAddress.trim(),
                         getAddressOptionName(
                           wardOptions,
-                          newAddressForm.wardCode
+                          newAddressForm.wardCode,
                         ),
                         getAddressOptionName(
                           districtOptions,
-                          newAddressForm.districtCode
+                          newAddressForm.districtCode,
                         ),
                         getAddressOptionName(
                           provinceOptions,
-                          newAddressForm.provinceCode
+                          newAddressForm.provinceCode,
                         ),
                       ]
                         .filter(Boolean)
-                        .join(", ") ||
-                        "Địa chỉ đầy đủ sẽ hiển thị tại đây"}
+                        .join(", ") || "Địa chỉ đầy đủ sẽ hiển thị tại đây"}
                     </span>
                   </div>
 
-                  <FieldError
-                    message={newAddressError}
-                  />
+                  <FieldError message={newAddressError} />
 
                   <div className="inline-form-actions">
                     <button
                       type="button"
                       className="btn-inline-cancel"
-                      disabled={
-                        isSubmitting ||
-                        isSavingAddress
-                      }
+                      disabled={isSubmitting || isSavingAddress}
                       onClick={() => {
                         setIsAddingAddress(false);
                         resetNewAddressForm();
@@ -2352,10 +2021,7 @@ export default function ConsignmentOrder() {
                     <button
                       type="button"
                       className="btn-inline-save"
-                      disabled={
-                        isSubmitting ||
-                        isSavingAddress
-                      }
+                      disabled={isSubmitting || isSavingAddress}
                       onClick={handleSaveAddress}
                     >
                       {isSavingAddress ? (
@@ -2381,36 +2047,24 @@ export default function ConsignmentOrder() {
               </div>
 
               <div className="toggle-text-info">
-  <div className="toggle-title-row">
-    <h4>YÊU CẦU KIỂM HÀNG</h4>
+                <div className="toggle-title-row">
+                  <h4>YÊU CẦU KIỂM HÀNG</h4>
 
-    <Tooltip
-      title="Bật tùy chọn này nếu bạn muốn nhân viên kho mở kiện hàng để kiểm tra sản phẩm và đối chiếu số lượng thực tế."
-      placement="top"
-    >
-   <InfoCircleOutlined
-  style={{
-    color: "#1890ff",
-    cursor: "pointer",
-  }}
-/>
-    </Tooltip>
-  </div>
+                  <Tooltip
+                    title="Bật tùy chọn này nếu bạn muốn nhân viên kho mở kiện hàng để kiểm tra sản phẩm và đối chiếu số lượng thực tế."
+                    placement="top"
+                  >
+                    <InfoCircleOutlined className="toggle-info-icon" />
+                  </Tooltip>
+                </div>
 
-  <p>
-    Mở kiện và kiểm đếm số lượng sản phẩm thực tế tại kho.
-  </p>
-</div>
+                <p>Mở kiện và kiểm đếm số lượng sản phẩm thực tế tại kho.</p>
+              </div>
 
               <Switch
                 checked={form.inspectPackage}
                 disabled={isSubmitting}
-                onChange={(value) =>
-                  updateForm(
-                    "inspectPackage",
-                    value
-                  )
-                }
+                onChange={(value) => updateForm("inspectPackage", value)}
               />
             </div>
           </div>
@@ -2419,8 +2073,7 @@ export default function ConsignmentOrder() {
         <div className="layout-right-scrollable-form">
           <div className="scrollable-content-wrapper">
             {packages.map((pkg, index) => {
-              const errors =
-                packageErrors[pkg.id] || {};
+              const errors = packageErrors[pkg.id] || {};
 
               return (
                 <div
@@ -2431,40 +2084,32 @@ export default function ConsignmentOrder() {
                   }}
                 >
                   <div className="form-step-header">
-                  <div className="step-header-left">
-  <div className="step-number-circle">
-    {index + 1}
-  </div>
+                    <div className="step-header-left">
+                      <div className="step-number-circle">{index + 1}</div>
 
-  <h3>
-    THÔNG TIN SẢN PHẨM KIỆN THỨ {index + 1}
-  </h3>
+                      <h3>THÔNG TIN SẢN PHẨM KIỆN THỨ {index + 1}</h3>
 
-  <Tooltip
-    title={`Nhập chính xác thông tin sản phẩm thuộc kiện hàng thứ ${
-      index + 1
-    }, bao gồm tên sản phẩm, loại hàng hóa, số lượng, giá trị, cân nặng và kích thước. Để chúng tôi tính chi phí chính xác và đảm bảo kiện hàng được vận chuyển an toàn.`}
-    placement="top"
-  >
-    <InfoCircleOutlined
-      className="package-header-info-icon"
-      aria-label={`Hướng dẫn nhập thông tin kiện hàng thứ ${
-        index + 1
-      }`}
-    />
-  </Tooltip>
-</div>
+                      <Tooltip
+                        title={`Nhập chính xác thông tin sản phẩm thuộc kiện hàng thứ ${
+                          index + 1
+                        }, bao gồm tên sản phẩm, loại hàng hóa, số lượng, giá trị, cân nặng và kích thước. Để chúng tôi tính chi phí chính xác và đảm bảo kiện hàng được vận chuyển an toàn.`}
+                        placement="top"
+                      >
+                        <InfoCircleOutlined
+                          className="package-header-info-icon"
+                          aria-label={`Hướng dẫn nhập thông tin kiện hàng thứ ${
+                            index + 1
+                          }`}
+                        />
+                      </Tooltip>
+                    </div>
 
                     {packages.length > 1 && (
                       <button
                         type="button"
                         disabled={isSubmitting}
                         className="btn-delete-package"
-                        onClick={() =>
-                          handleDeletePackage(
-                            pkg.id
-                          )
-                        }
+                        onClick={() => handleDeletePackage(pkg.id)}
                       >
                         <DeleteOutlined />
                         Xóa kiện
@@ -2473,38 +2118,38 @@ export default function ConsignmentOrder() {
                   </div>
 
                   <div className="form-row-2col">
-                  <div className="input-field-group">
-  <FieldLabelTooltip
-    label="TÊN SẢN PHẨM"
-    style={{
-      color: "#1890ff",
-      cursor: "pointer",
-      marginLeft: 6,
-    }}
-    required
-    tooltip="Nhập đúng và đầy đủ tên sản phẩm có trong kiện hàng, ví dụ: Áo thun nam, điện thoại iPhone 15 hoặc mỹ phẩm chăm sóc da."
-  />
+                    <div className="input-field-group">
+                      <FieldLabelTooltip
+                        label="TÊN SẢN PHẨM"
+                        style={{
+                          color: "#1890ff",
+                          cursor: "pointer",
+                          marginLeft: 6,
+                        }}
+                        required
+                        tooltip="Nhập đúng và đầy đủ tên sản phẩm có trong kiện hàng, ví dụ: Áo thun nam, điện thoại iPhone 15 hoặc mỹ phẩm chăm sóc da."
+                      />
 
-  <input
-    type="text"
-    value={pkg.productName}
-    disabled={isSubmitting}
-    placeholder="Nhập tên sản phẩm..."
-    className={getFieldClassName(
-      "custom-input",
-      errors.productName
-    )}
-    onChange={(event) =>
-      handleInputChange(
-        pkg.id,
-        "productName",
-        event.target.value
-      )
-    }
-  />
+                      <input
+                        type="text"
+                        value={pkg.productName}
+                        disabled={isSubmitting}
+                        placeholder="Nhập tên sản phẩm..."
+                        className={getFieldClassName(
+                          "custom-input",
+                          errors.productName,
+                        )}
+                        onChange={(event) =>
+                          handleInputChange(
+                            pkg.id,
+                            "productName",
+                            event.target.value,
+                          )
+                        }
+                      />
 
-  <FieldError message={errors.productName} />
-</div>
+                      <FieldError message={errors.productName} />
+                    </div>
 
                     <div className="input-field-group">
                       <label className="field-label required-label">
@@ -2513,19 +2158,16 @@ export default function ConsignmentOrder() {
 
                       <select
                         value={pkg.productType}
-                        disabled={
-                          isSubmitting ||
-                          isLoadingOptions
-                        }
+                        disabled={isSubmitting || isLoadingOptions}
                         className={getFieldClassName(
                           "custom-select",
-                          errors.productType
+                          errors.productType,
                         )}
                         onChange={(event) =>
                           handleInputChange(
                             pkg.id,
                             "productType",
-                            event.target.value
+                            event.target.value,
                           )
                         }
                       >
@@ -2535,23 +2177,14 @@ export default function ConsignmentOrder() {
                             : "-- Chọn loại hàng hóa --"}
                         </option>
 
-                        {productTypeOptions.map(
-                          (option) => (
-                            <option
-                              key={option.value}
-                              value={option.value}
-                            >
-                              {option.label}
-                            </option>
-                          )
-                        )}
+                        {productTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
 
-                      <FieldError
-                        message={
-                          errors.productType
-                        }
-                      />
+                      <FieldError message={errors.productType} />
                     </div>
                   </div>
 
@@ -2569,25 +2202,19 @@ export default function ConsignmentOrder() {
                         placeholder="Nhập số lượng sản phẩm..."
                         className={getFieldClassName(
                           "custom-input",
-                          errors.quantity
+                          errors.quantity,
                         )}
-                        onKeyDown={
-                          preventInvalidNumberKeys
-                        }
+                        onKeyDown={preventInvalidNumberKeys}
                         onChange={(event) =>
                           handleInputChange(
                             pkg.id,
                             "quantity",
-                            sanitizeInteger(
-                              event.target.value
-                            )
+                            sanitizeInteger(event.target.value),
                           )
                         }
                       />
 
-                      <FieldError
-                        message={errors.quantity}
-                      />
+                      <FieldError message={errors.quantity} />
                     </div>
 
                     <div className="input-field-group">
@@ -2598,98 +2225,67 @@ export default function ConsignmentOrder() {
                       <input
                         type="text"
                         inputMode="numeric"
-                        value={formatVnd(
-                          pkg.declaredValue
-                        )}
+                        value={formatVnd(pkg.declaredValue)}
                         disabled={isSubmitting}
                         placeholder="Ví dụ: 1.500.000"
                         className={getFieldClassName(
                           "custom-input",
-                          errors.declaredValue
+                          errors.declaredValue,
                         )}
                         onKeyDown={preventMoneyKeys}
                         onChange={(event) =>
                           handleInputChange(
                             pkg.id,
                             "declaredValue",
-                            sanitizeInteger(
-                              event.target.value
-                            )
+                            sanitizeInteger(event.target.value),
                           )
                         }
                       />
 
-                      <FieldError
-                        message={
-                          errors.declaredValue
-                        }
-                      />
+                      <FieldError message={errors.declaredValue} />
                     </div>
                   </div>
 
                   <div className="form-row-4col">
-                    {PACKAGE_NUMBER_FIELDS.map(
-                      (fieldItem) => (
-                        <div
-                          key={fieldItem.field}
-                          className="input-field-group"
-                        >
+                    {PACKAGE_NUMBER_FIELDS.map((fieldItem) => (
+                      <div key={fieldItem.field} className="input-field-group">
                         <FieldLabelTooltip
-  label={fieldItem.label}
-  required
-  tooltip={fieldItem.tooltip}
-  className="package-dimension-label"
-/>
+                          label={fieldItem.label}
+                          required
+                          tooltip={fieldItem.tooltip}
+                          className="package-dimension-label"
+                        />
 
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                              pkg[
-                                fieldItem.field
-                              ]
-                            }
-                            disabled={isSubmitting}
-                            placeholder={
-                              fieldItem.placeholder
-                            }
-                            className={getFieldClassName(
-                              "custom-input",
-                              errors[
-                                fieldItem.field
-                              ]
-                            )}
-                            onKeyDown={
-                              preventInvalidNumberKeys
-                            }
-                            onChange={(event) =>
-                              handleInputChange(
-                                pkg.id,
-                                fieldItem.field,
-                                sanitizeDecimal(
-                                  event.target.value
-                                )
-                              )
-                            }
-                            onBlur={(event) =>
-                              handleDecimalBlur(
-                                pkg.id,
-                                fieldItem.field,
-                                event.target.value
-                              )
-                            }
-                          />
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={pkg[fieldItem.field]}
+                          disabled={isSubmitting}
+                          placeholder={fieldItem.placeholder}
+                          className={getFieldClassName(
+                            "custom-input",
+                            errors[fieldItem.field],
+                          )}
+                          onKeyDown={preventInvalidNumberKeys}
+                          onChange={(event) =>
+                            handleInputChange(
+                              pkg.id,
+                              fieldItem.field,
+                              sanitizeDecimal(event.target.value),
+                            )
+                          }
+                          onBlur={(event) =>
+                            handleDecimalBlur(
+                              pkg.id,
+                              fieldItem.field,
+                              event.target.value,
+                            )
+                          }
+                        />
 
-                          <FieldError
-                            message={
-                              errors[
-                                fieldItem.field
-                              ]
-                            }
-                          />
-                        </div>
-                      )
-                    )}
+                        <FieldError message={errors[fieldItem.field]} />
+                      </div>
+                    ))}
                   </div>
 
                   <div
@@ -2699,8 +2295,7 @@ export default function ConsignmentOrder() {
                     }}
                   >
                     <label className="field-label">
-                      MÃ VẬN ĐƠN NỘI ĐỊA
-                      (DOMESTIC TRACKING CODE)
+                      MÃ VẬN ĐƠN NỘI ĐỊA (DOMESTIC TRACKING CODE)
                     </label>
 
                     <input
@@ -2713,129 +2308,123 @@ export default function ConsignmentOrder() {
                         handleInputChange(
                           pkg.id,
                           "trackingCode",
-                          event.target.value
+                          event.target.value,
                         )
                       }
                     />
                   </div>
 
                   <div className="input-field-group package-image-section">
-                  <FieldLabelTooltip
-  label={`ẢNH SẢN PHẨM KIỆN ${
-    index + 1
-  }`}
-  required
-  placement="top"
-  tooltip="Tải ảnh rõ nét của sản phẩm trong kiện hàng. Hỗ trợ JPG, PNG và WEBP, dung lượng tối đa 5MB cho mỗi ảnh."
-/>
+                    <FieldLabelTooltip
+                      label={`ẢNH SẢN PHẨM KIỆN ${index + 1}`}
+                      required
+                      placement="top"
+                      tooltip="Tải ảnh rõ nét của sản phẩm trong kiện hàng. Hỗ trợ JPG, PNG và WEBP, dung lượng tối đa 5MB cho mỗi ảnh."
+                    />
 
                     <input
                       type="file"
                       multiple
                       accept="image/jpeg,image/png,image/webp"
-                      disabled={isSubmitting}
+                      disabled={
+                        isSubmitting ||
+                        pkg.images.length >= MAX_IMAGES_PER_PACKAGE
+                      }
                       style={{ display: "none" }}
                       ref={(element) => {
-                        fileInputRefs.current[
-                          pkg.id
-                        ] = element;
+                        fileInputRefs.current[pkg.id] = element;
                       }}
-                      onChange={(event) =>
-                        handleFileChange(
-                          pkg.id,
-                          event
-                        )
-                      }
+                      onChange={(event) => handleFileChange(pkg.id, event)}
                     />
 
                     <div
                       role="button"
-                      tabIndex={0}
+                      tabIndex={
+                        pkg.images.length >= MAX_IMAGES_PER_PACKAGE ? -1 : 0
+                      }
+                      aria-disabled={
+                        isSubmitting ||
+                        pkg.images.length >= MAX_IMAGES_PER_PACKAGE
+                      }
                       className={[
                         "upload-dropzone-box-clickable",
-                        errors.images &&
-                          "upload-has-error",
-                        isSubmitting &&
-                          "upload-is-disabled",
+                        errors.images && "upload-has-error",
+                        isSubmitting && "upload-is-disabled",
+                        pkg.images.length >= MAX_IMAGES_PER_PACKAGE &&
+                          "upload-limit-reached",
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() =>
-                        fileInputRefs.current[
-                          pkg.id
-                        ]?.click()
-                      }
+                      onClick={() => {
+                        if (
+                          !isSubmitting &&
+                          pkg.images.length < MAX_IMAGES_PER_PACKAGE
+                        ) {
+                          fileInputRefs.current[pkg.id]?.click();
+                        }
+                      }}
                       onKeyDown={(event) => {
                         if (
-                          event.key === "Enter" ||
-                          event.key === " "
+                          (event.key === "Enter" || event.key === " ") &&
+                          !isSubmitting &&
+                          pkg.images.length < MAX_IMAGES_PER_PACKAGE
                         ) {
                           event.preventDefault();
-                          fileInputRefs.current[
-                            pkg.id
-                          ]?.click();
+                          fileInputRefs.current[pkg.id]?.click();
                         }
                       }}
                     >
                       <CloudUploadOutlined className="upload-big-icon" />
 
                       <span className="upload-main-text">
-                        Bấm để chọn ảnh cho kiện
-                        hàng này
+                        {pkg.images.length >= MAX_IMAGES_PER_PACKAGE
+                          ? "Đã đủ 3 ảnh cho kiện hàng này"
+                          : "Bấm để chọn ảnh cho kiện hàng này"}
                       </span>
 
                       <span className="upload-sub-text">
-                        Hỗ trợ JPG, PNG, WEBP —
-                        tối đa 5MB/ảnh
+                        JPG, PNG, WEBP — tối đa 5MB/ảnh — tối đa 3 ảnh/kiện
+                      </span>
+
+                      <span className="upload-image-counter">
+                        {pkg.images.length}/{MAX_IMAGES_PER_PACKAGE} ảnh
                       </span>
                     </div>
 
-                    <FieldError
-                      message={errors.images}
-                    />
+                    <FieldError message={errors.images} />
 
                     {pkg.images.length > 0 && (
                       <div className="image-previews-grid animation-fade-in">
-                        {pkg.images.map(
-                          (image) => (
-                            <div
-                              key={image.id}
-                              className="preview-image-item"
-                              onClick={() =>
-                                setActiveLightboxImg(
-                                  image.previewUrl
+                        {pkg.images.map((image) => (
+                          <div
+                            key={image.id}
+                            className="preview-image-item"
+                            onClick={() =>
+                              setActiveLightboxImg(image.previewUrl)
+                            }
+                          >
+                            <img
+                              src={image.previewUrl}
+                              alt={`Kiện ${index + 1}`}
+                            />
+
+                            <button
+                              type="button"
+                              disabled={isSubmitting}
+                              className="btn-remove-preview-img"
+                              onClick={(event) =>
+                                handleRemoveImage(
+                                  event,
+                                  pkg.id,
+                                  image.id,
+                                  image.previewUrl,
                                 )
                               }
                             >
-                              <img
-                                src={
-                                  image.previewUrl
-                                }
-                                alt={`Kiện ${
-                                  index + 1
-                                }`}
-                              />
-
-                              <button
-                                type="button"
-                                disabled={
-                                  isSubmitting
-                                }
-                                className="btn-remove-preview-img"
-                                onClick={(event) =>
-                                  handleRemoveImage(
-                                    event,
-                                    pkg.id,
-                                    image.id,
-                                    image.previewUrl
-                                  )
-                                }
-                              >
-                                <CloseOutlined />
-                              </button>
-                            </div>
-                          )
-                        )}
+                              <CloseOutlined />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -2848,8 +2437,7 @@ export default function ConsignmentOrder() {
               disabled={isSubmitting}
               className={[
                 "add-package-dashed-trigger",
-                isSubmitting &&
-                  "add-package-disabled",
+                isSubmitting && "add-package-disabled",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -2869,43 +2457,45 @@ export default function ConsignmentOrder() {
                     <InfoCircleOutlined />
                   </div>
 
-                  <h3>GHI CHÚ CHUNG CHO ĐƠN KÝ GỬI</h3>
+                  <h3>GHI CHÚ CHUNG CHO ĐƠN KÝ GỬI & LỰA CHỌN DỊCH VỤ </h3>
                 </div>
               </div>
+              <FieldLabelTooltip
+                  label="CHỌN LOẠI DỊCH VỤ"
+                  
+                />
 
+              <PackageOptionalServices
+                value={form.optionalServices}
+                disabled={isSubmitting}
+                onChange={handleOptionalServicesChange}
+              />
               <div className="input-field-group">
-  <FieldLabelTooltip
-    label="GHI CHÚ ĐƠN HÀNG"
-    required
-    tooltip="Nhập các yêu cầu chung cho đơn ký gửi như cách đóng gói, lưu ý hàng dễ vỡ, yêu cầu bảo quản hoặc những thông tin cần nhân viên xử lý biết."
-  />
+                <FieldLabelTooltip
+                  label="GHI CHÚ ĐƠN HÀNG"
+                  required
+                  tooltip="Nhập các yêu cầu chung cho đơn ký gửi như cách đóng gói, lưu ý hàng dễ vỡ, yêu cầu bảo quản hoặc những thông tin cần nhân viên xử lý biết."
+                />
 
-  <textarea
-    rows={4}
-    value={form.note}
-    disabled={isSubmitting}
-    maxLength={1000}
-    placeholder="Nhập ghi chú chung, yêu cầu đóng gói hoặc thông tin cần lưu ý cho toàn bộ đơn ký gửi..."
-    className={getFieldClassName(
-      "custom-textarea",
-      formErrors.note
-    )}
-    onChange={(event) =>
-      updateForm(
-        "note",
-        event.target.value
-      )
-    }
-  />
+                <textarea
+                  rows={4}
+                  value={form.note}
+                  disabled={isSubmitting}
+                  maxLength={1000}
+                  placeholder="Nhập ghi chú chung, yêu cầu đóng gói hoặc thông tin cần lưu ý cho toàn bộ đơn ký gửi..."
+                  className={getFieldClassName(
+                    "custom-textarea",
+                    formErrors.note,
+                  )}
+                  onChange={(event) => updateForm("note", event.target.value)}
+                />
 
-  <div className="textarea-character-count">
-    {form.note.length}/1000 ký tự
-  </div>
+                <div className="textarea-character-count">
+                  {form.note.length}/1000 ký tự
+                </div>
 
-  <FieldError
-    message={formErrors.note}
-  />
-</div>
+                <FieldError message={formErrors.note} />
+              </div>
             </div>
 
             <div className="sticky-action-notice-bar">
@@ -2913,10 +2503,8 @@ export default function ConsignmentOrder() {
                 <InfoCircleOutlined className="info-notice-icon" />
 
                 <p>
-                  <strong>LƯU Ý:</strong> Đơn
-                  hàng sẽ được nhân viên Việt Nam Logictic
-                  kiểm tra và xác nhận lại
-                  thông tin trước khi xử lý.
+                  <strong>LƯU Ý:</strong> Đơn hàng sẽ được nhân viên Vietnam
+                  Logistics kiểm tra và xác nhận lại thông tin trước khi xử lý.
                 </p>
               </div>
 
@@ -2926,15 +2514,14 @@ export default function ConsignmentOrder() {
                 disabled={isSubmitting}
                 onClick={handleOpenConfirmation}
               >
-                 <CheckOutlined />
+                <CheckOutlined />
                 {isSubmitting ? (
                   <>
                     <LoadingOutlined spin />
                     ĐANG TẠO ĐƠN...
                   </>
                 ) : (
-                  
-                  "XÁC NHẬN YEU CẦU KÍ GỬI "
+                  "XÁC NHẬN YÊU CẦU KÝ GỬI"
                 )}
               </button>
             </div>
@@ -2960,10 +2547,7 @@ export default function ConsignmentOrder() {
               <span />
             </div>
 
-            <small>
-              Vui lòng không đóng hoặc tải lại
-              trang.
-            </small>
+            <small>Vui lòng không đóng hoặc tải lại trang.</small>
           </div>
         </div>
       )}
@@ -2971,15 +2555,11 @@ export default function ConsignmentOrder() {
       {activeLightboxImg && (
         <div
           className="lightbox-overlay-modal"
-          onClick={() =>
-            setActiveLightboxImg(null)
-          }
+          onClick={() => setActiveLightboxImg(null)}
         >
           <div
             className="lightbox-content-box animate-zoom-in"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => event.stopPropagation()}
           >
             <img
               src={activeLightboxImg}
