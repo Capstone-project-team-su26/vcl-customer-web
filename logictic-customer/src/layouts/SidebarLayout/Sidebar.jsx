@@ -675,7 +675,7 @@ export default function Sidebar() {
         </div>
 
         <NavLink
-          to="/financial/transaction-history"
+          to="/transaction-history"
           className={({ isActive }) =>
             `menu-item ${isActive ? "active" : ""}`
           }

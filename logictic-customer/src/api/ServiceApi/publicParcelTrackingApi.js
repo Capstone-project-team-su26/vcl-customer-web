@@ -3,10 +3,6 @@ import axiosInstance from "../axios";
 const PUBLIC_PARCEL_TRACKING_ENDPOINT =
   "/api/public/parcels/tracking";
 
-/* =========================================================
-   RESPONSE HELPERS
-   ========================================================= */
-
 const getResponseData = (response) => {
   return (
     response?.data?.data ??
@@ -84,20 +80,7 @@ const validateTrackingCode = (code) => {
   return normalizedCode;
 };
 
-/* =========================================================
-   PUBLIC PARCEL TRACKING API
-   ========================================================= */
 
-/**
- * GET /api/public/parcels/tracking?code=...
- *
- * axiosInstance sẽ tự gắn Authorization Bearer
- * thông qua request interceptor nếu token đã được lưu.
- *
- * @param {string} code Mã vận đơn cần tra cứu
- * @param {{ signal?: AbortSignal }} options
- * @returns {Promise<any>}
- */
 export const getPublicParcelTrackingApi =
   async (
     code,

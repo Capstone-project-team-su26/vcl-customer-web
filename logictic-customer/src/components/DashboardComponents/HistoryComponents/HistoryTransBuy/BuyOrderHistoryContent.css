@@ -1,0 +1,261 @@
+.buy-history-content {
+  min-height: 470px;
+  animation:
+    buy-history-fade
+    0.22s ease;
+}
+
+@keyframes buy-history-fade {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.buy-history-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.buy-history-eyebrow {
+  display: block;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.buy-history-toolbar h2 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.buy-history-toolbar p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.buy-history-search {
+  display: flex;
+  width: min(340px, 100%);
+  min-height: 44px;
+  padding: 0 14px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #dbe3ef;
+  border-radius: 13px;
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.buy-history-search:focus-within {
+  border-color: #4ade80;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(34, 197, 94, 0.1);
+}
+
+.buy-history-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #172033;
+  font-size: 13px;
+}
+
+.buy-history-panel {
+  padding: 22px 24px 26px;
+}
+
+.buy-history-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 220px));
+  gap: 13px;
+  margin-bottom: 18px;
+}
+
+.buy-history-summary__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid #dcfce7;
+  border-radius: 15px;
+  background: #f0fdf4;
+}
+
+.buy-history-summary__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.buy-history-summary__item span {
+  display: block;
+  color: #65a30d;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.buy-history-summary__item strong {
+  display: block;
+  margin-top: 3px;
+  color: #14532d;
+  font-size: 16px;
+}
+
+.buy-history-empty {
+  display: flex;
+  min-height: 310px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px dashed #86efac;
+  border-radius: 18px;
+  background: #f7fff9;
+  text-align: center;
+}
+
+.buy-history-empty__icon {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 16px;
+  place-items: center;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.buy-history-empty__icon svg {
+  font-size: 31px;
+}
+
+.buy-history-empty h3 {
+  margin: 0;
+  color: #14532d;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.buy-history-empty p {
+  max-width: 520px;
+  margin: 7px 20px 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.buy-history-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dcfce7;
+  border-radius: 16px;
+}
+
+.buy-history-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.buy-history-table th {
+  padding: 13px 15px;
+  border-bottom: 1px solid #dcfce7;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: left;
+  letter-spacing: 0.06em;
+}
+
+.buy-history-table td {
+  padding: 15px;
+  border-bottom: 1px solid #eef2f7;
+  color: #475569;
+  font-size: 13px;
+}
+
+.buy-history-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.buy-history-table tbody tr:hover {
+  background: #f7fff9;
+}
+
+.buy-history-money {
+  color: #dc2626 !important;
+  font-weight: 900;
+}
+
+.buy-history-status {
+  display: inline-flex;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.buy-history-status--success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.buy-history-status--danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.buy-history-status--pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.buy-history-status--processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+@media (max-width: 760px) {
+  .buy-history-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .buy-history-search {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .buy-history-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .buy-history-toolbar,
+  .buy-history-panel {
+    padding: 18px 15px;
+  }
+}

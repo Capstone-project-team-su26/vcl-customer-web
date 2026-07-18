@@ -521,7 +521,7 @@ const validateBuyOrderForm = ({
 
   if (!form.route) {
     formErrors.route =
-      "Vui lòng chọn tuyến hàng.";
+      "Hệ thống chưa tải được tuyến hàng. Vui lòng làm mới trang.";
   }
 
   if (!form.receiverName.trim()) {
@@ -875,19 +875,67 @@ export default function ConsignmentBuyOrder() {
               }),
             ]);
 
-          setRouteOptions(
+          const normalizedRoutes =
             normalizeOptionList(
               routesResult,
               ["routes"]
-            )
-          );
+            );
 
-          setProductTypeOptions(
+          const normalizedProductTypes =
             normalizeOptionList(
               productTypesResult,
               ["productTypes"]
-            )
+            );
+
+          setRouteOptions(
+            normalizedRoutes
           );
+
+          setProductTypeOptions(
+            normalizedProductTypes
+          );
+
+          /*
+           * Tuyến hàng được API cấp tự động.
+           * Người dùng chỉ xem, không chọn lại.
+           */
+          setForm((previous) => {
+            const currentRouteExists =
+              normalizedRoutes.some(
+                (option) =>
+                  String(option.value) ===
+                  String(previous.route)
+              );
+
+            const nextRoute =
+              currentRouteExists
+                ? previous.route
+                : normalizedRoutes[0]?.value ||
+                  "";
+
+            if (
+              nextRoute ===
+              previous.route
+            ) {
+              return previous;
+            }
+
+            return {
+              ...previous,
+              route: nextRoute,
+            };
+          });
+
+          if (
+            normalizedRoutes.length > 0
+          ) {
+            setFormErrors(
+              (previous) => ({
+                ...previous,
+                route: "",
+              })
+            );
+          }
         } catch (error) {
           if (
             !isCanceledRequest(error)
@@ -1985,6 +2033,22 @@ export default function ConsignmentBuyOrder() {
       }
     };
 
+  const selectedRouteOption =
+    routeOptions.find(
+      (option) =>
+        String(option.value) ===
+        String(form.route)
+    );
+
+  const routeDisplayValue =
+    selectedRouteOption?.label ||
+    form.route ||
+    (
+      isLoadingOptions
+        ? "Đang tải tuyến hàng..."
+        : "Chưa có dữ liệu tuyến hàng"
+    );
+
   if (isConfirming) {
     return (
       <ConsignmentBuyOrderConfirm
@@ -2047,29 +2111,62 @@ export default function ConsignmentBuyOrder() {
 
           <div className="purchase-buy-left-unified-wrapper-box">
             <div className="purchase-buy-left-inner-section">
-              <SelectField
-                label="TUYẾN HÀNG"
-                value={form.route}
-                error={
-                  formErrors.route
-                }
-                options={
-                  routeOptions
-                }
-                loading={
-                  isLoadingOptions
-                }
-                disabled={
-                  isSubmitting
-                }
-                placeholder="-- Chọn tuyến hàng --"
-                onChange={(value) =>
-                  updateForm(
-                    "route",
-                    value
-                  )
-                }
-              />
+              <div className="purchase-buy-input-field-group">
+                <label className="purchase-buy-field-label purchase-buy-required-label">
+                  <EnvironmentOutlined />
+                  TUYẾN HÀNG
+                </label>
+
+                <input
+                  type="text"
+                  value={routeDisplayValue}
+                  disabled
+                  readOnly
+                  title={routeDisplayValue}
+                  aria-label={`Tuyến hàng được hệ thống tự động áp dụng: ${routeDisplayValue}`}
+                  className={getFieldClassName(
+                    "purchase-buy-custom-input purchase-buy-route-readonly-input",
+                    formErrors.route
+                  )}
+                  style={{
+                    color: "#64748b",
+                    fontWeight: 700,
+                    backgroundColor: "#f1f5f9",
+                    borderColor: "#cbd5e1",
+                    cursor: "not-allowed",
+                    opacity: 0.82,
+                    WebkitTextFillColor: "#64748b",
+                  }}
+                />
+
+                <div
+                  className="purchase-buy-route-readonly-helper"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 7,
+                    color: "#94a3b8",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <InfoCircleOutlined />
+
+                  <span>
+                    Tuyến hàng được hệ thống
+                    tự động áp dụng và không
+                    thể chỉnh sửa.
+                  </span>
+                </div>
+
+                <FieldError
+                  message={
+                    formErrors.route
+                  }
+                />
+              </div>
             </div>
 
             <div className="purchase-buy-left-inner-section purchase-buy-border-top-dash">
@@ -3216,6 +3313,35 @@ export default function ConsignmentBuyOrder() {
                 THÊM SẢN PHẨM MUA HỘ
               </span>
             </button>
+            <div className="purchase-buy-input-field-group">
+                <label className="purchase-buy-field-label">
+                  GHI CHÚ CHUNG
+                </label>
+
+                <textarea
+                  rows={4}
+                  value={
+                    form.generalNote
+                  }
+                  disabled={
+                    isSubmitting
+                  }
+                  maxLength={1000}
+                  placeholder="Nhập yêu cầu hoặc lưu ý chung..."
+                  className="purchase-buy-custom-textarea"
+                  onChange={(event) =>
+                    updateForm(
+                      "generalNote",
+                      event.target.value
+                    )
+                  }
+                />
+
+                <div className="purchase-buy-sub-helper-text">
+                  {form.generalNote.length}/1000 ký tự
+                </div>
+              </div>
+
 
             <div className="purchase-buy-sticky-action-notice-bar">
               <div className="purchase-buy-notice-left-message">

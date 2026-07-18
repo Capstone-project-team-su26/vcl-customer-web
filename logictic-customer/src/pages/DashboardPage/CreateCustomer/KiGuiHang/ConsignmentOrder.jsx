@@ -273,6 +273,69 @@ const normalizeOptionList = (result, extraKeys = []) =>
     })
     .filter((item) => item.value && item.label);
 
+const normalizeOptionCode = (value) => {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+};
+
+const getShippingOptionLabel = (
+  value,
+  label
+) => {
+  const normalizedValues = [
+    normalizeOptionCode(value),
+    normalizeOptionCode(label),
+  ];
+
+  if (
+    normalizedValues.some(
+      (item) =>
+        item === "EXPRESS" ||
+        item === "HOA_TOC" ||
+        item.includes("EXPRESS")
+    )
+  ) {
+    return "Hỏa tốc";
+  }
+
+  if (
+    normalizedValues.some(
+      (item) =>
+        item === "STANDARD" ||
+        item === "TIEU_CHUAN" ||
+        item.includes("STANDARD")
+    )
+  ) {
+    return "Tiêu chuẩn";
+  }
+
+  return (
+    String(label ?? "").trim() ||
+    String(value ?? "").trim() ||
+    "-"
+  );
+};
+
+const normalizeShippingOptionList = (
+  result
+) => {
+  return normalizeOptionList(
+    result,
+    ["shippingOptions"]
+  ).map((option) => ({
+    ...option,
+    label: getShippingOptionLabel(
+      option.value,
+      option.label
+    ),
+  }));
+};
+
 const normalizeDeliveryAddress = (item, index = 0) => {
   if (!item) {
     return null;
@@ -460,7 +523,8 @@ const validateConsignmentForm = ({
   const formErrors = createEmptyFormErrors();
 
   if (!form.route) {
-    formErrors.route = "Vui lòng chọn tuyến hàng.";
+    formErrors.route =
+      "Hệ thống chưa tải được tuyến hàng. Vui lòng làm mới trang.";
   }
 
   if (!form.shippingOption) {
@@ -765,19 +829,79 @@ export default function ConsignmentOrder() {
           }),
         ]);
 
+        const normalizedRoutes =
+          normalizeOptionList(
+            routesResult,
+            ["routes"]
+          );
+
+        const normalizedShippingOptions =
+          normalizeShippingOptionList(
+            shippingResult
+          );
+
+        const normalizedProductTypes =
+          normalizeOptionList(
+            productTypesResult,
+            ["productTypes"]
+          );
+
         setRouteOptions(
-          normalizeOptionList(routesResult, ["routes"])
+          normalizedRoutes
         );
+
         setShippingOptions(
-          normalizeOptionList(shippingResult, [
-            "shippingOptions",
-          ])
+          normalizedShippingOptions
         );
+
         setProductTypeOptions(
-          normalizeOptionList(productTypesResult, [
-            "productTypes",
-          ])
+          normalizedProductTypes
         );
+
+        /*
+         * Tuyến hàng không cho người dùng chọn.
+         * Hệ thống tự động lấy tuyến đầu tiên API trả về.
+         *
+         * Nếu form đã có route và route đó vẫn hợp lệ
+         * thì giữ nguyên giá trị hiện tại.
+         */
+        setForm((previous) => {
+          const currentRouteExists =
+            normalizedRoutes.some(
+              (option) =>
+                String(option.value) ===
+                String(previous.route)
+            );
+
+          const nextRoute =
+            currentRouteExists
+              ? previous.route
+              : normalizedRoutes[0]?.value ||
+                "";
+
+          if (
+            nextRoute ===
+            previous.route
+          ) {
+            return previous;
+          }
+
+          return {
+            ...previous,
+            route: nextRoute,
+          };
+        });
+
+        if (
+          normalizedRoutes.length > 0
+        ) {
+          setFormErrors(
+            (previous) => ({
+              ...previous,
+              route: "",
+            })
+          );
+        }
       } catch (error) {
         if (!isCanceledRequest(error)) {
           AuthNotify.error(
@@ -1678,6 +1802,22 @@ export default function ConsignmentOrder() {
     }
   };
 
+  const selectedRouteOption =
+    routeOptions.find(
+      (option) =>
+        String(option.value) ===
+        String(form.route)
+    );
+
+  const routeDisplayValue =
+    selectedRouteOption?.label ||
+    form.route ||
+    (
+      isLoadingOptions
+        ? "Đang tải tuyến hàng..."
+        : "Chưa có dữ liệu tuyến hàng"
+    );
+
   if (isConfirming) {
     return (
       <ConsignmentOrderConfirm
@@ -1755,18 +1895,60 @@ export default function ConsignmentOrder() {
 
           <div className="left-unified-wrapper-box">
             <div className="left-inner-section">
-              <SelectField
-                label="TUYẾN HÀNG"
-                value={form.route}
-                error={formErrors.route}
-                options={routeOptions}
-                loading={isLoadingOptions}
-                disabled={isSubmitting}
-                placeholder="-- Chọn tuyến hàng --"
-                onChange={(value) =>
-                  updateForm("route", value)
-                }
-              />
+              <div className="input-field-group">
+                <label className="field-label required-label">
+                  <EnvironmentOutlined />
+                  TUYẾN HÀNG
+                </label>
+
+                <input
+                  type="text"
+                  value={routeDisplayValue}
+                  disabled
+                  readOnly
+                  title={routeDisplayValue}
+                  aria-label={`Tuyến hàng được hệ thống tự động áp dụng: ${routeDisplayValue}`}
+                  className={getFieldClassName(
+                    "custom-input route-readonly-input",
+                    formErrors.route
+                  )}
+                  style={{
+                    color: "#64748b",
+                    fontWeight: 700,
+                    background: "#f1f5f9",
+                    borderColor: "#cbd5e1",
+                    cursor: "not-allowed",
+                    opacity: 0.82,
+                    WebkitTextFillColor:
+                      "#64748b",
+                  }}
+                />
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 7,
+                    color: "#94a3b8",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <InfoCircleOutlined />
+
+                  <span>
+                    Tuyến hàng được hệ thống
+                    tự động áp dụng và không
+                    thể chỉnh sửa.
+                  </span>
+                </div>
+
+                <FieldError
+                  message={formErrors.route}
+                />
+              </div>
             </div>
 
             <div className="left-inner-section border-top-dash">

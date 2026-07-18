@@ -2421,23 +2421,7 @@ const QuotationDetail = () => {
                       </strong>
                     </div>
 
-                    {/* <div>
-                      <span>Mã định danh phí</span>
-                      <strong className="quotation-id-text">
-                        {getSafeText(
-                          fee.feeId
-                        )}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>Mã quy tắc giá</span>
-                      <strong className="quotation-id-text">
-                        {getSafeText(
-                          fee.pricingRuleId
-                        )}
-                      </strong>
-                    </div> */}
+                 
 
                     <div>
                       <span>Ngày tạo phí</span>
