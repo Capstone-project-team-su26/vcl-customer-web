@@ -1,31 +1,20 @@
 import axiosInstance from "../axios";
 
-const VOLUMETRIC_DIVISOR_CODE =
-  "VOLUMETRIC_DIVISOR";
+const VOLUMETRIC_DIVISOR_CODE = "VOLUMETRIC_DIVISOR";
+const ACTIVE_STATUS = "ACTIVE";
 
 /* =========================================================
    RESPONSE HELPERS
    ========================================================= */
 
 const getResponseData = (response) => {
-  return (
-    response?.data?.data ??
-    response?.data ??
-    null
-  );
+  return response?.data?.data ?? response?.data ?? null;
 };
 
-const getErrorMessage = (
-  error,
-  fallbackMessage
-) => {
-  const responseData =
-    error?.response?.data;
+const getErrorMessage = (error, fallbackMessage) => {
+  const responseData = error?.response?.data;
 
-  if (
-    typeof responseData === "string" &&
-    responseData.trim()
-  ) {
+  if (typeof responseData === "string" && responseData.trim()) {
     return responseData;
   }
 
@@ -47,6 +36,44 @@ const isCanceledRequest = (error) => {
 };
 
 /* =========================================================
+   COMMON HELPERS
+   ========================================================= */
+
+const normalizeCode = (value) => {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+};
+
+const toFiniteNumberOrNull = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numericValue = Number(value);
+
+  return Number.isFinite(numericValue) ? numericValue : null;
+};
+
+const normalizeBoolean = (value) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  const normalizedValue = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  return ["true", "1", "yes", "active"].includes(normalizedValue);
+};
+
+/* =========================================================
    PRICING RULE HELPERS
    ========================================================= */
 
@@ -55,14 +82,63 @@ const extractPricingRules = (data) => {
     data,
     data?.items,
     data?.pricingRules,
+    data?.rules,
     data?.data,
     data?.data?.items,
     data?.data?.pricingRules,
+    data?.data?.rules,
   ];
 
-  return (
-    candidates.find(Array.isArray) || []
-  );
+  return candidates.find(Array.isArray) || [];
+};
+
+const normalizePricingRule = (item = {}) => {
+  const normalizedValue = toFiniteNumberOrNull(item?.value);
+  const normalizedMinAmount = toFiniteNumberOrNull(item?.minAmount);
+  const normalizedMaxAmount = toFiniteNumberOrNull(item?.maxAmount);
+
+  return {
+    ...item,
+
+    id: String(item?.id || item?.pricingRuleId || "").trim(),
+
+    servicePricingId: String(item?.servicePricingId || "").trim() || null,
+
+    ruleName: String(
+      item?.ruleName || item?.name || item?.displayName || "Quy tắc tính phí",
+    ).trim(),
+
+    ruleCode: normalizeCode(item?.ruleCode || item?.code),
+
+    ruleType: normalizeCode(item?.ruleType || item?.type),
+
+    conditionType:
+      item?.conditionType === null || item?.conditionType === undefined
+        ? null
+        : String(item.conditionType).trim(),
+
+    conditionValue:
+      item?.conditionValue === null || item?.conditionValue === undefined
+        ? null
+        : String(item.conditionValue).trim(),
+
+    calculationType: normalizeCode(
+      item?.calculationType || item?.calculationMethod,
+    ),
+
+    value: normalizedValue,
+    minAmount: normalizedMinAmount,
+    maxAmount: normalizedMaxAmount,
+
+    isRequired: normalizeBoolean(item?.isRequired),
+
+    status: normalizeCode(item?.status || ACTIVE_STATUS),
+
+    description: String(item?.description || item?.note || "").trim(),
+
+    createdAt: item?.createdAt || null,
+    updatedAt: item?.updatedAt || null,
+  };
 };
 
 /* =========================================================
@@ -83,18 +159,10 @@ const extractServicePricings = (data) => {
     data?.data?.services,
   ];
 
-  return (
-    candidates.find(Array.isArray) || []
-  );
+  return candidates.find(Array.isArray) || [];
 };
 
-const normalizeCode = (value) => {
-  return String(value || "")
-    .trim()
-    .toUpperCase();
-};
-
-const normalizeServicePricing = (item) => {
+const normalizeServicePricing = (item = {}) => {
   const rawPrice =
     item?.price ??
     item?.amount ??
@@ -108,44 +176,37 @@ const normalizeServicePricing = (item) => {
   return {
     ...item,
 
-    servicePricingId:
-      item?.servicePricingId ||
-      item?.id ||
-      "",
+    id: String(item?.id || item?.servicePricingId || "").trim(),
 
-    serviceCode:
-      item?.serviceCode ||
-      item?.code ||
-      "",
+    servicePricingId: String(
+      item?.servicePricingId || item?.id || "",
+    ).trim(),
 
-    serviceName:
-      item?.serviceName ||
-      item?.name ||
-      "Dịch vụ",
+    serviceCode: String(item?.serviceCode || item?.code || "").trim(),
 
-    description:
-      item?.description ||
-      item?.note ||
-      "",
+    serviceName: String(
+      item?.serviceName || item?.name || "Dịch vụ",
+    ).trim(),
 
-    status:
-      normalizeCode(
-        item?.status || "ACTIVE"
-      ),
+    description: String(item?.description || item?.note || "").trim(),
 
-    price: Number.isFinite(numericPrice)
-      ? numericPrice
-      : 0,
+    serviceType: normalizeCode(item?.serviceType),
 
-    currency:
-      item?.currency ||
-      item?.currencyCode ||
-      "VND",
+    originCountry: normalizeCode(item?.originCountry),
 
-    unit:
-      item?.unit ||
-      item?.unitName ||
-      "",
+    destinationCountry: normalizeCode(item?.destinationCountry),
+
+    status: normalizeCode(item?.status || ACTIVE_STATUS),
+
+    price: Number.isFinite(numericPrice) ? numericPrice : 0,
+
+    currency: String(item?.currency || item?.currencyCode || "VND")
+      .trim()
+      .toUpperCase(),
+
+    unit: String(item?.unit || item?.unitName || "").trim(),
+
+    unitType: String(item?.unitType || item?.conditionType || "").trim(),
   };
 };
 
@@ -157,7 +218,84 @@ const pricingRuleService = {
   /**
    * GET /api/pricing-rules
    *
-   * Lấy hệ số quy đổi thể tích đang ACTIVE.
+   * Lấy danh sách quy tắc tính phí.
+   *
+   * @param {{
+   *   signal?: AbortSignal,
+   *   params?: object,
+   *   onlyActive?: boolean,
+   *   ruleCodes?: string[]
+   * }} options
+   *
+   * @returns {Promise<Array>}
+   */
+  getPricingRules: async (options = {}) => {
+    const {
+      signal,
+      params = {},
+      onlyActive = false,
+      ruleCodes = [],
+    } = options;
+
+    try {
+      const normalizedRuleCodes = Array.isArray(ruleCodes)
+        ? ruleCodes.map(normalizeCode).filter(Boolean)
+        : [];
+
+      console.info("[Pricing Rule API] GET /api/pricing-rules", {
+        params,
+        onlyActive,
+        ruleCodes: normalizedRuleCodes,
+      });
+
+      const response = await axiosInstance.get("/api/pricing-rules", {
+        signal,
+        params,
+        headers: {
+          Accept: "*/*",
+        },
+      });
+
+      const responseData = getResponseData(response);
+
+      const pricingRules = extractPricingRules(responseData).map(
+        normalizePricingRule,
+      );
+
+      const filteredRules = pricingRules.filter((rule) => {
+        const matchesStatus =
+          !onlyActive || !rule.status || rule.status === ACTIVE_STATUS;
+
+        const matchesRuleCode =
+          normalizedRuleCodes.length === 0 ||
+          normalizedRuleCodes.includes(rule.ruleCode);
+
+        return matchesStatus && matchesRuleCode;
+      });
+
+      console.info("[Pricing Rule API] Danh sách quy tắc:", filteredRules);
+
+      return filteredRules;
+    } catch (error) {
+      if (isCanceledRequest(error)) {
+        throw error;
+      }
+
+      console.error(
+        "[GET /api/pricing-rules]",
+        error?.response?.data || error,
+      );
+
+      throw new Error(
+        getErrorMessage(error, "Không thể tải danh sách quy tắc tính phí."),
+      );
+    }
+  },
+
+  /**
+   * GET /api/pricing-rules
+   *
+   * Lấy riêng hệ số quy đổi thể tích đang ACTIVE.
    *
    * @param {{
    *   signal?: AbortSignal,
@@ -166,79 +304,44 @@ const pricingRuleService = {
    *
    * @returns {Promise<object>}
    */
-  getVolumetricDivisorRule: async (
-    options = {}
-  ) => {
-    const {
-      signal,
-      params = {},
-    } = options;
+  getVolumetricDivisorRule: async (options = {}) => {
+    const { signal, params = {} } = options;
 
     try {
-      console.info(
-        "[Pricing Rule API] GET /api/pricing-rules",
-        {
-          targetRuleCode:
-            VOLUMETRIC_DIVISOR_CODE,
-          params,
-        }
-      );
-
-      const response =
-        await axiosInstance.get(
-          "/api/pricing-rules",
-          {
-            signal,
-            params,
-            headers: {
-              Accept: "*/*",
-            },
-          }
-        );
-
-      const responseData =
-        getResponseData(response);
-
-      const pricingRules =
-        extractPricingRules(responseData);
+      const pricingRules = await pricingRuleService.getPricingRules({
+        signal,
+        params,
+        onlyActive: true,
+        ruleCodes: [VOLUMETRIC_DIVISOR_CODE],
+      });
 
       const rule = pricingRules.find(
-        (item) =>
-          normalizeCode(item?.ruleCode) ===
-            VOLUMETRIC_DIVISOR_CODE &&
-          normalizeCode(item?.status) ===
-            "ACTIVE"
+        (item) => item.ruleCode === VOLUMETRIC_DIVISOR_CODE,
       );
 
       if (!rule) {
         throw new Error(
-          "Không tìm thấy VOLUMETRIC_DIVISOR đang ACTIVE."
+          "Không tìm thấy VOLUMETRIC_DIVISOR đang ACTIVE.",
         );
       }
 
-      const divisor = Number(
-        rule?.value
-      );
+      const divisor = Number(rule.value);
 
-      if (
-        !Number.isFinite(divisor) ||
-        divisor <= 0
-      ) {
+      if (!Number.isFinite(divisor) || divisor <= 0) {
         throw new Error(
-          "Giá trị VOLUMETRIC_DIVISOR phải lớn hơn 0."
+          "Giá trị VOLUMETRIC_DIVISOR phải lớn hơn 0.",
         );
       }
 
       const normalizedRule = {
         ...rule,
-        ruleCode:
-          VOLUMETRIC_DIVISOR_CODE,
+        ruleCode: VOLUMETRIC_DIVISOR_CODE,
         value: divisor,
       };
 
       console.info(
         "[Pricing Rule API] VOLUMETRIC_DIVISOR:",
-        normalizedRule
+        normalizedRule,
       );
 
       return normalizedRule;
@@ -249,14 +352,11 @@ const pricingRuleService = {
 
       console.error(
         "[GET /api/pricing-rules → VOLUMETRIC_DIVISOR]",
-        error?.response?.data || error
+        error?.response?.data || error,
       );
 
       throw new Error(
-        getErrorMessage(
-          error,
-          "Không thể lấy hệ số quy đổi thể tích."
-        )
+        getErrorMessage(error, "Không thể lấy hệ số quy đổi thể tích."),
       );
     }
   },
@@ -266,9 +366,6 @@ const pricingRuleService = {
    *
    * Lấy danh sách bảng giá dịch vụ.
    *
-   * Token đăng nhập sẽ được axiosInstance tự động
-   * thêm vào Authorization header.
-   *
    * @param {{
    *   signal?: AbortSignal,
    *   params?: object,
@@ -277,9 +374,7 @@ const pricingRuleService = {
    *
    * @returns {Promise<Array>}
    */
-  getServicePricings: async (
-    options = {}
-  ) => {
+  getServicePricings: async (options = {}) => {
     const {
       signal,
       params = {},
@@ -287,46 +382,34 @@ const pricingRuleService = {
     } = options;
 
     try {
-      console.info(
-        "[Service Pricing API] GET /api/service-pricings",
-        {
-          params,
-          onlyActive,
-        }
+      console.info("[Service Pricing API] GET /api/service-pricings", {
+        params,
+        onlyActive,
+      });
+
+      const response = await axiosInstance.get("/api/service-pricings", {
+        signal,
+        params,
+        headers: {
+          Accept: "*/*",
+        },
+      });
+
+      const responseData = getResponseData(response);
+
+      const servicePricings = extractServicePricings(responseData).map(
+        normalizeServicePricing,
       );
 
-      const response =
-        await axiosInstance.get(
-          "/api/service-pricings",
-          {
-            signal,
-            params,
-            headers: {
-              Accept: "*/*",
-            },
-          }
-        );
-
-      const responseData =
-        getResponseData(response);
-
-      const servicePricings =
-        extractServicePricings(
-          responseData
-        ).map(normalizeServicePricing);
-
-      const filteredPricings =
-        onlyActive
-          ? servicePricings.filter(
-              (item) =>
-                !item.status ||
-                item.status === "ACTIVE"
-            )
-          : servicePricings;
+      const filteredPricings = onlyActive
+        ? servicePricings.filter(
+            (item) => !item.status || item.status === ACTIVE_STATUS,
+          )
+        : servicePricings;
 
       console.info(
         "[Service Pricing API] Danh sách bảng giá:",
-        filteredPricings
+        filteredPricings,
       );
 
       return filteredPricings;
@@ -337,22 +420,19 @@ const pricingRuleService = {
 
       console.error(
         "[GET /api/service-pricings]",
-        error?.response?.data || error
+        error?.response?.data || error,
       );
 
       throw new Error(
-        getErrorMessage(
-          error,
-          "Không thể tải bảng giá dịch vụ."
-        )
+        getErrorMessage(error, "Không thể tải bảng giá dịch vụ."),
       );
     }
   },
 
   /**
-   * Lấy chi tiết một bảng giá theo ID.
-   *
    * GET /api/service-pricings/{id}
+   *
+   * Lấy chi tiết một bảng giá theo ID.
    *
    * @param {string} servicePricingId
    * @param {{ signal?: AbortSignal }} options
@@ -361,48 +441,40 @@ const pricingRuleService = {
    */
   getServicePricingById: async (
     servicePricingId,
-    options = {}
+    options = {},
   ) => {
-    const id = String(
-      servicePricingId || ""
-    ).trim();
+    const id = String(servicePricingId || "").trim();
 
     if (!id) {
-      throw new Error(
-        "Service Pricing ID không hợp lệ."
-      );
+      throw new Error("Service Pricing ID không hợp lệ.");
     }
 
-    const {
-      signal,
-    } = options;
+    const { signal } = options;
 
     try {
-      const response =
-        await axiosInstance.get(
-          `/api/service-pricings/${encodeURIComponent(
-            id
-          )}`,
-          {
-            signal,
-            headers: {
-              Accept: "*/*",
-            },
-          }
-        );
+      console.info(
+        `[Service Pricing API] GET /api/service-pricings/${id}`,
+      );
 
-      const responseData =
-        getResponseData(response);
+      const response = await axiosInstance.get(
+        `/api/service-pricings/${encodeURIComponent(id)}`,
+        {
+          signal,
+          headers: {
+            Accept: "*/*",
+          },
+        },
+      );
+
+      const responseData = getResponseData(response);
 
       if (!responseData) {
         throw new Error(
-          "Không tìm thấy thông tin bảng giá dịch vụ."
+          "Không tìm thấy thông tin bảng giá dịch vụ.",
         );
       }
 
-      return normalizeServicePricing(
-        responseData
-      );
+      return normalizeServicePricing(responseData);
     } catch (error) {
       if (isCanceledRequest(error)) {
         throw error;
@@ -410,20 +482,18 @@ const pricingRuleService = {
 
       console.error(
         `[GET /api/service-pricings/${id}]`,
-        error?.response?.data || error
+        error?.response?.data || error,
       );
 
       throw new Error(
-        getErrorMessage(
-          error,
-          "Không thể tải chi tiết bảng giá dịch vụ."
-        )
+        getErrorMessage(error, "Không thể tải chi tiết bảng giá dịch vụ."),
       );
     }
   },
 };
 
 export const {
+  getPricingRules,
   getVolumetricDivisorRule,
   getServicePricings,
   getServicePricingById,
