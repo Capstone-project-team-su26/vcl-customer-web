@@ -109,6 +109,246 @@ const toFiniteNumberOrNull = (value) => {
   return Number.isFinite(number) ? number : null;
 };
 
+
+/* =========================================================
+   DỊCH VỤ BỔ SUNG / PRICING RULE
+   ========================================================= */
+
+const normalizePricingRuleId = (value) =>
+  String(value || "").trim().toLowerCase();
+
+const normalizePricingRuleIds = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((id) => String(id || "").trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
+const normalizePricingRuleOptions = (apiResult) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.pricingRules,
+    apiResult?.rules,
+    apiResult?.data?.items,
+    apiResult?.data?.pricingRules,
+    apiResult?.data?.rules,
+  ];
+
+  const rawRules = candidates.find(Array.isArray) || [];
+
+  return rawRules
+    .map((rule) => {
+      if (!rule || typeof rule !== "object") {
+        return null;
+      }
+
+      const id = String(
+        rule?.id || rule?.pricingRuleId || "",
+      ).trim();
+
+      if (!id) {
+        return null;
+      }
+
+      return {
+        ...rule,
+        id,
+        ruleName: String(
+          rule?.ruleName ||
+            rule?.name ||
+            rule?.displayName ||
+            rule?.ruleCode ||
+            "Dịch vụ bổ sung",
+        ).trim(),
+        ruleCode: String(rule?.ruleCode || "").trim(),
+        ruleType: String(rule?.ruleType || "").trim(),
+        description: String(
+          rule?.description || "",
+        ).trim(),
+      };
+    })
+    .filter(Boolean);
+};
+
+const formatPricingRuleCode = (value) => {
+  const code = String(value || "").trim();
+
+  if (!code) {
+    return "Dịch vụ bổ sung";
+  }
+
+  return code
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, (character) =>
+      character.toUpperCase(),
+    );
+};
+
+const PRICING_RULE_VI_LABELS = {
+  WOOD_CRATE: "Đóng thùng gỗ",
+  WOOD_BOX: "Đóng thùng gỗ",
+  DOMESTIC_FEE: "Phí vận chuyển nội địa",
+  SUR_INSPECTION: "Phụ phí kiểm hàng",
+  INSPECTION: "Kiểm hàng",
+  SUR_INSURANCE_3PERCENT: "Phụ phí bảo hiểm 3%",
+  INSURANCE: "Bảo hiểm hàng hóa",
+  PACKING: "Đóng gói hàng hóa",
+};
+
+const getPricingRuleDisplayName = (rule) => {
+  const ruleCode = String(
+    rule?.ruleCode || "",
+  )
+    .trim()
+    .toUpperCase();
+
+  return (
+    PRICING_RULE_VI_LABELS[ruleCode] ||
+    String(
+      rule?.ruleName ||
+        rule?.name ||
+        rule?.displayName ||
+        "",
+    ).trim() ||
+    formatPricingRuleCode(ruleCode)
+  );
+};
+
+const getPricingRuleColorClass = (rule) => {
+  const searchableValue = [
+    rule?.ruleCode,
+    rule?.ruleType,
+    rule?.ruleName,
+    rule?.name,
+  ]
+    .map((value) =>
+      String(value || "")
+        .trim()
+        .toUpperCase(),
+    )
+    .join(" ");
+
+  if (
+    searchableValue.includes("WOOD") ||
+    searchableValue.includes("THÙNG GỖ")
+  ) {
+    return "service-wood-crate";
+  }
+
+  if (
+    searchableValue.includes("INSPECTION") ||
+    searchableValue.includes("KIỂM HÀNG")
+  ) {
+    return "service-inspection";
+  }
+
+  if (
+    searchableValue.includes("INSURANCE") ||
+    searchableValue.includes("BẢO HIỂM")
+  ) {
+    return "service-insurance";
+  }
+
+  if (
+    searchableValue.includes("DOMESTIC") ||
+    searchableValue.includes("NỘI ĐỊA")
+  ) {
+    return "service-domestic";
+  }
+
+  if (
+    searchableValue.includes("PACKING") ||
+    searchableValue.includes("ĐÓNG GÓI")
+  ) {
+    return "service-packing";
+  }
+
+  return "service-other";
+};
+
+const escapeRegExp = (value) =>
+  String(value || "").replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
+
+/**
+ * Dịch các mã dịch vụ được backend nối vào note.
+ *
+ * Ví dụ:
+ * "Yêu cầu đóng gói: WOOD_CRATE"
+ * -> "Yêu cầu đóng gói: Đóng thùng gỗ"
+ */
+const translateConsignmentNote = (
+  note,
+  pricingRules = [],
+) => {
+  const originalNote = String(note || "").trim();
+
+  if (!originalNote) {
+    return "Không có ghi chú";
+  }
+
+  const ruleNameMap = new Map(
+    Object.entries(PRICING_RULE_VI_LABELS),
+  );
+
+  pricingRules.forEach((rule) => {
+    const ruleCode = String(
+      rule?.ruleCode || "",
+    )
+      .trim()
+      .toUpperCase();
+
+    if (!ruleCode) {
+      return;
+    }
+
+    ruleNameMap.set(
+      ruleCode,
+      getPricingRuleDisplayName(rule),
+    );
+  });
+
+  let translatedNote = originalNote;
+
+  Array.from(ruleNameMap.entries())
+    .sort(
+      ([firstCode], [secondCode]) =>
+        secondCode.length - firstCode.length,
+    )
+    .forEach(([ruleCode, ruleName]) => {
+      translatedNote = translatedNote.replace(
+        new RegExp(
+          `\\b${escapeRegExp(ruleCode)}\\b`,
+          "gi",
+        ),
+        ruleName,
+      );
+    });
+
+  return translatedNote
+    .replace(
+      /Dịch vụ khác\s*:/gi,
+      "Dịch vụ bổ sung:",
+    )
+    .replace(/\s+,/g, ",")
+    .replace(/,\s*/g, ", ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+};
+
 /* =========================================================
    QUY TẮC HỆ SỐ QUY ĐỔI THỂ TÍCH
    ========================================================= */
@@ -150,6 +390,35 @@ const QUOTATION_STATUS_LABELS = {
 const QUOTE_TYPE_LABELS = {
   ESTIMATE: "BÁO GIÁ TẠM TÍNH",
   FINAL: "BÁO GIÁ CHÍNH THỨC",
+};
+
+
+const ORDER_STATUS_LABELS = {
+  DRAFT: "BẢN NHÁP",
+  PENDING: "ĐANG CHỜ",
+  PENDING_REVIEW: "CHỜ DUYỆT",
+  QUOTATION_SENT: "ĐÃ GỬI BÁO GIÁ",
+  WAITING_QUOTATION: "CHỜ BÁO GIÁ",
+  PENDING_QUOTATION: "CHỜ BÁO GIÁ",
+  WAITING_DEPOSIT: "CHỜ ĐẶT CỌC",
+  PENDING_PAYMENT: "CHỜ THANH TOÁN",
+  WAITING_PAYMENT: "CHỜ THANH TOÁN",
+  PAID: "ĐÃ THANH TOÁN",
+  PAYMENT_COMPLETED: "ĐÃ THANH TOÁN",
+  CONFIRMED: "ĐÃ XÁC NHẬN",
+  PROCESSING: "ĐANG XỬ LÝ",
+  RECEIVED: "ĐÃ TIẾP NHẬN",
+  WAREHOUSE_RECEIVED: "ĐÃ NHẬP KHO",
+  IN_TRANSIT: "ĐANG VẬN CHUYỂN",
+  SHIPPING: "ĐANG VẬN CHUYỂN",
+  DELIVERING: "ĐANG GIAO HÀNG",
+  DELIVERED: "ĐÃ GIAO HÀNG",
+  COMPLETED: "HOÀN THÀNH",
+  APPROVED: "ĐÃ DUYỆT",
+  REJECTED: "ĐÃ TỪ CHỐI",
+  CANCELLED: "ĐÃ HỦY",
+  CANCELED: "ĐÃ HỦY",
+  EXPIRED: "ĐÃ HẾT HẠN",
 };
 
 /* =========================================================
@@ -670,6 +939,10 @@ const ConsignmentListDetail = () => {
 
   const [productTypeOptions, setProductTypeOptions] = useState([]);
 
+  const [pricingRuleOptions, setPricingRuleOptions] = useState([]);
+
+  const [pricingRuleError, setPricingRuleError] = useState("");
+
   const [volumetricDivisorRule, setVolumetricDivisorRule] = useState(null);
 
   const [volumetricRuleError, setVolumetricRuleError] = useState("");
@@ -764,18 +1037,34 @@ const ConsignmentListDetail = () => {
         setLoading(true);
         setErrorMessage("");
 
-        const [detailResult, statusesResult, productTypesResult] =
-          await Promise.allSettled([
-            getConsignmentDetailApi(orderId, {
-              signal,
-            }),
-            getConsignmentStatusesApi({
-              signal,
-            }),
-            getProductTypesApi({
-              signal,
-            }),
-          ]);
+        const [
+          detailResult,
+          statusesResult,
+          productTypesResult,
+          pricingRulesResult,
+        ] = await Promise.allSettled([
+          getConsignmentDetailApi(orderId, {
+            signal,
+          }),
+          getConsignmentStatusesApi({
+            signal,
+          }),
+          getProductTypesApi({
+            signal,
+          }),
+
+          /*
+           * Lấy toàn bộ pricing rules thật để map:
+           * consignment.pricingRuleIds -> ruleName.
+           *
+           * Không bật onlyActive để các đơn cũ vẫn hiển thị được
+           * tên dịch vụ kể cả khi rule đã đổi trạng thái.
+           */
+          pricingRuleService.getPricingRules({
+            signal,
+            onlyActive: false,
+          }),
+        ]);
 
         if (detailResult.status === "rejected") {
           throw detailResult.reason;
@@ -814,6 +1103,38 @@ const ConsignmentListDetail = () => {
           console.error(
             "Lỗi khi lấy danh sách loại sản phẩm:",
             productTypesResult.reason,
+          );
+        }
+
+
+        if (pricingRulesResult.status === "fulfilled") {
+          const normalizedPricingRules =
+            normalizePricingRuleOptions(
+              pricingRulesResult.value,
+            );
+
+          setPricingRuleOptions(normalizedPricingRules);
+          setPricingRuleError("");
+
+          console.info(
+            "[Consignment Detail] Pricing rules dùng để hiển thị tên dịch vụ:",
+            normalizedPricingRules,
+          );
+        } else if (
+          !axios.isCancel(pricingRulesResult.reason) &&
+          pricingRulesResult.reason?.code !== "ERR_CANCELED"
+        ) {
+          console.error(
+            "Lỗi khi lấy danh sách dịch vụ bổ sung:",
+            pricingRulesResult.reason,
+          );
+
+          setPricingRuleOptions([]);
+          setPricingRuleError(
+            getApiErrorMessage(
+              pricingRulesResult.reason,
+              "Không thể tải tên dịch vụ bổ sung.",
+            ),
           );
         }
       } catch (error) {
@@ -1064,6 +1385,7 @@ const ConsignmentListDetail = () => {
 
       return (
         statusLabelMap.get(normalizedStatus) ||
+        ORDER_STATUS_LABELS[normalizedStatus] ||
         formatStatusCode(normalizedStatus) ||
         "-"
       );
@@ -1096,6 +1418,56 @@ const ConsignmentListDetail = () => {
       );
     },
     [productTypeLabelMap],
+  );
+
+  const pricingRuleMap = useMemo(
+    () =>
+      new Map(
+        pricingRuleOptions.map((rule) => [
+          normalizePricingRuleId(rule.id),
+          rule,
+        ]),
+      ),
+    [pricingRuleOptions],
+  );
+
+  const selectedPricingRules = useMemo(() => {
+    const selectedIds = normalizePricingRuleIds(
+      consignment?.pricingRuleIds,
+    );
+
+    return selectedIds.map((pricingRuleId) => {
+      const matchedRule = pricingRuleMap.get(
+        normalizePricingRuleId(pricingRuleId),
+      );
+
+      if (matchedRule) {
+        return {
+          ...matchedRule,
+          pricingRuleId,
+          isMissing: false,
+        };
+      }
+
+      return {
+        id: pricingRuleId,
+        pricingRuleId,
+        ruleName: "Dịch vụ chưa xác định",
+        ruleCode: "",
+        ruleType: "",
+        description: "",
+        isMissing: true,
+      };
+    });
+  }, [consignment?.pricingRuleIds, pricingRuleMap]);
+
+  const translatedConsignmentNote = useMemo(
+    () =>
+      translateConsignmentNote(
+        consignment?.note,
+        pricingRuleOptions,
+      ),
+    [consignment?.note, pricingRuleOptions],
   );
 
   const volumetricDivisor = useMemo(
@@ -1912,8 +2284,58 @@ const ConsignmentListDetail = () => {
               {consignment.route || "-"}
             </Descriptions.Item>
 
+            <Descriptions.Item label="Dịch vụ bổ sung">
+              {selectedPricingRules.length > 0 ? (
+                <div className="detail-pricing-rule-list">
+                  {selectedPricingRules.map((rule) => {
+                    const displayName =
+                      getPricingRuleDisplayName(rule);
+
+                    const serviceClassName =
+                      getPricingRuleColorClass(rule);
+
+                    const tooltipContent = rule.isMissing
+                      ? "Không tìm thấy thông tin dịch vụ trong bảng giá."
+                      : rule.description || displayName;
+
+                    return (
+                      <Tooltip
+                        key={rule.pricingRuleId}
+                        title={tooltipContent}
+                        placement="top"
+                      >
+                        <Tag
+                          className={[
+                            "detail-pricing-rule-tag",
+                            serviceClassName,
+                            rule.isMissing &&
+                              "service-missing",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          <span className="detail-pricing-rule-dot" />
+                          <span>{displayName}</span>
+                        </Tag>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              ) : pricingRuleError ? (
+                <span className="detail-pending-value">
+                  {pricingRuleError}
+                </span>
+              ) : (
+                <span className="detail-pending-value">
+                  Không sử dụng dịch vụ bổ sung
+                </span>
+              )}
+            </Descriptions.Item>
+
             <Descriptions.Item label="Ghi chú kiện hàng">
-              {consignment.note || "Không có ghi chú"}
+              <span className="detail-translated-note">
+                {translatedConsignmentNote}
+              </span>
             </Descriptions.Item>
           </Descriptions>
         </section>

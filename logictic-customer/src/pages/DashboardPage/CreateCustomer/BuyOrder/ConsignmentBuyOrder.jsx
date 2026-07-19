@@ -2304,7 +2304,7 @@ export default function ConsignmentBuyOrder() {
                 />
 
                 <div className="purchase-buy-textarea-meta">
-                 
+                  <span>Không bắt buộc</span>
 
                   <strong>{form.generalNote.length}/1000 ký tự</strong>
                 </div>

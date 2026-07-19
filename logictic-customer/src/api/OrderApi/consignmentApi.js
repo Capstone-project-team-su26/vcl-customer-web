@@ -13,20 +13,236 @@ const isCanceledRequest = (error) =>
   error?.name === "CanceledError" ||
   error?.name === "AbortError";
 
-/* ==================== CONSIGNMENT ==================== */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export const createConsignmentApi = async (payload) => {
-  if (!payload) {
-    throw new Error("Dữ liệu tạo đơn ký gửi không hợp lệ.");
+const INT32_MAX = 2147483647;
+
+const getRequiredText = (value, label) => {
+  const normalizedValue = String(value ?? "").trim();
+
+  if (!normalizedValue) {
+    throw new Error(`Vui lòng nhập ${label}.`);
   }
 
+  return normalizedValue;
+};
+
+const getPositiveNumber = (
+  value,
+  label,
+  itemIndex
+) => {
+  const number = Number(value);
+
+  const itemPrefix =
+    Number.isInteger(itemIndex)
+      ? `Kiện hàng ${itemIndex + 1}: `
+      : "";
+
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
+    throw new Error(
+      `${itemPrefix}${label} phải lớn hơn 0.`
+    );
+  }
+
+  return number;
+};
+
+const normalizeNullableText = (value) => {
+  const normalizedValue = String(
+    value ?? ""
+  ).trim();
+
+  return normalizedValue || null;
+};
+
+/**
+ * Chuẩn hóa danh sách Pricing Rule ID:
+ * - Chấp nhận mảng rỗng.
+ * - Kiểm tra UUID.
+ * - Xóa ID trùng.
+ */
+const normalizePricingRuleIds = (
+  value,
+  label = "pricingRuleIds"
+) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(
+      `${label} phải là một mảng UUID.`
+    );
+  }
+
+  const uniqueIds = new Set();
+
+  value.forEach((rawId, index) => {
+    const id = String(rawId ?? "").trim();
+
+    if (!id) {
+      return;
+    }
+
+    if (!UUID_PATTERN.test(id)) {
+      throw new Error(
+        `${label}[${index}] không đúng định dạng UUID.`
+      );
+    }
+
+    uniqueIds.add(id);
+  });
+
+  return Array.from(uniqueIds);
+};
+
+const normalizeConsignmentItem = (
+  item,
+  index
+) => {
+  const quantity = Number(item?.quantity);
+
+  if (
+    !Number.isInteger(quantity) ||
+    quantity <= 0 ||
+    quantity > INT32_MAX
+  ) {
+    throw new Error(
+      `Kiện hàng ${index + 1}: Số lượng phải là số nguyên từ 1 đến ${INT32_MAX}.`
+    );
+  }
+
+  return {
+    productName: getRequiredText(
+      item?.productName,
+      `tên sản phẩm của kiện ${index + 1}`
+    ),
+    productType: getRequiredText(
+      item?.productType,
+      `loại sản phẩm của kiện ${index + 1}`
+    ),
+    quantity,
+    weight: getPositiveNumber(
+      item?.weight,
+      "Cân nặng",
+      index
+    ),
+    width: getPositiveNumber(
+      item?.width,
+      "Chiều rộng",
+      index
+    ),
+    height: getPositiveNumber(
+      item?.height,
+      "Chiều cao",
+      index
+    ),
+    length: getPositiveNumber(
+      item?.length,
+      "Chiều dài",
+      index
+    ),
+    declaredValue: getPositiveNumber(
+      item?.declaredValue,
+      "Giá trị khai báo",
+      index
+    ),
+    referenceUrl: getRequiredText(
+      item?.referenceUrl,
+      `ảnh sản phẩm của kiện ${index + 1}`
+    ),
+    domesticTrackingCode:
+      normalizeNullableText(
+        item?.domesticTrackingCode
+      ),
+  };
+};
+
+/**
+ * Chuẩn hóa request đúng DTO:
+ * POST /api/orders/consignments
+ */
+export const buildCreateConsignmentRequest = (
+  payload = {}
+) => {
+  if (
+    !Array.isArray(payload?.items) ||
+    payload.items.length === 0
+  ) {
+    throw new Error(
+      "Đơn ký gửi phải có ít nhất một kiện hàng."
+    );
+  }
+
+  return {
+    route: getRequiredText(
+      payload?.route,
+      "tuyến hàng"
+    ),
+    shippingOption: getRequiredText(
+      payload?.shippingOption,
+      "hình thức vận chuyển"
+    ),
+    receiverName: getRequiredText(
+      payload?.receiverName,
+      "tên người nhận"
+    ),
+    receiverPhone: getRequiredText(
+      payload?.receiverPhone,
+      "số điện thoại người nhận"
+    ),
+    receiverAddress: getRequiredText(
+      payload?.receiverAddress,
+      "địa chỉ người nhận"
+    ),
+
+    // Dịch vụ áp dụng cho toàn bộ đơn.
+    pricingRuleIds: normalizePricingRuleIds(
+      payload?.pricingRuleIds,
+      "pricingRuleIds"
+    ),
+
+    note: String(
+      payload?.note ?? ""
+    ).trim(),
+
+    items: payload.items.map(
+      normalizeConsignmentItem
+    ),
+  };
+};
+
+/* ==================== CONSIGNMENT ==================== */
+
+export const createConsignmentApi = async (
+  payload,
+  options = {}
+) => {
+  const requestPayload =
+    buildCreateConsignmentRequest(payload);
+
   try {
+    console.info(
+      "[Consignment API] POST /api/orders/consignments",
+      requestPayload
+    );
+
     const response = await axiosInstance.post(
       "/api/orders/consignments",
-      payload,
+      requestPayload,
       {
+        signal: getSignal(options),
         headers: {
-          Accept: "text/plain, application/json",
+          Accept: "text/plain",
           "Content-Type": "application/json",
         },
       }
@@ -34,10 +250,13 @@ export const createConsignmentApi = async (payload) => {
 
     return response.data;
   } catch (error) {
-    console.error(
-      "Lỗi tạo đơn ký gửi:",
-      error?.response?.data || error?.message
-    );
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi tạo đơn ký gửi:",
+        error?.response?.data ||
+          error?.message
+      );
+    }
 
     throw error;
   }

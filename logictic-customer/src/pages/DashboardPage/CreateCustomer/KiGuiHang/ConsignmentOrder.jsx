@@ -12,7 +12,6 @@ import {
   LoadingOutlined,
   PlusCircleOutlined,
   PlusOutlined,
-  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import FieldLabelTooltip from "../../../../components/DashboardComponents/CustomerKiguiComponents/ToltipLapelComponents/FieldLabelTooltip";
 import uploadImage from "../../../../api/Upload/UploadImage";
@@ -39,10 +38,11 @@ import {
   getBrowserTimeInfo,
   getSyncedNowUtcIso,
 } from "../../../../utils/timeUtc";
-import { Switch, Tooltip } from "antd";
+import { Tooltip } from "antd";
 import PackageOptionalServices from "../../../../components/DashboardComponents/CustomerKiguiComponents/PackageOptionalServices/PackageOptionalServices";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES_PER_PACKAGE = 3;
+
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -85,6 +85,11 @@ const INITIAL_FORM = {
     requiresPacking: false,
     requiresWoodenCrate: false,
     requiresInsurance: false,
+    requiresInspection: false,
+
+    // Giữ lại dữ liệu rule đã chọn để tương thích component dịch vụ động.
+    selectedRuleCodes: [],
+    selectedPricingRuleIds: [],
   },
 };
 
@@ -260,6 +265,27 @@ const normalizeOptionCode = (value) => {
     .toUpperCase()
     .replaceAll(" ", "_")
     .replaceAll("-", "_");
+};
+
+
+const normalizeStringArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) =>
+      String(item ?? "").trim()
+    )
+    .filter(Boolean);
+};
+
+const normalizePricingRuleIds = (value) => {
+  return Array.from(
+    new Set(
+      normalizeStringArray(value)
+    )
+  );
 };
 
 const getShippingOptionLabel = (value, label) => {
@@ -1222,17 +1248,49 @@ export default function ConsignmentOrder() {
     clearPackageError(packageId, field);
   };
 
-  const handleOptionalServicesChange = (nextServices) => {
+  const handleOptionalServicesChange = (
+    nextServices
+  ) => {
     if (isSubmitting) {
       return;
     }
 
+    const selectedRuleCodes =
+      normalizeStringArray(
+        nextServices?.selectedRuleCodes ??
+          nextServices?.selectedPricingRuleCodes ??
+          nextServices?.pricingRuleCodes
+      );
+
+    const selectedPricingRuleIds =
+      normalizePricingRuleIds(
+        nextServices?.selectedPricingRuleIds ??
+          nextServices?.pricingRuleIds
+      );
+
     setForm((previous) => ({
       ...previous,
+
+      // Giữ đồng bộ để màn xác nhận cũ vẫn có thể đọc trạng thái kiểm hàng.
+      inspectPackage: Boolean(
+        nextServices?.requiresInspection
+      ),
+
       optionalServices: {
-        requiresPacking: Boolean(nextServices?.requiresPacking),
-        requiresWoodenCrate: Boolean(nextServices?.requiresWoodenCrate),
-        requiresInsurance: Boolean(nextServices?.requiresInsurance),
+        requiresPacking: Boolean(
+          nextServices?.requiresPacking
+        ),
+        requiresWoodenCrate: Boolean(
+          nextServices?.requiresWoodenCrate
+        ),
+        requiresInsurance: Boolean(
+          nextServices?.requiresInsurance
+        ),
+        requiresInspection: Boolean(
+          nextServices?.requiresInspection
+        ),
+        selectedRuleCodes,
+        selectedPricingRuleIds,
       },
     }));
   };
@@ -1493,6 +1551,12 @@ export default function ConsignmentOrder() {
       return;
     }
 
+    const orderPricingRuleIds =
+      normalizePricingRuleIds(
+        form.optionalServices
+          ?.selectedPricingRuleIds
+      );
+
     try {
       setIsSubmitting(true);
 
@@ -1522,59 +1586,52 @@ export default function ConsignmentOrder() {
           declaredValue: Number(pkg.declaredValue),
           referenceUrl: referenceUrls[0],
           referenceUrls,
-          domesticTrackingCode: pkg.trackingCode.trim() || null,
+          domesticTrackingCode:
+            pkg.trackingCode.trim() || null,
+
         });
       }
 
       setSubmitMessage("Đang kiểm tra thông tin kiện hàng...");
 
-      const validationItems = items.map(({ referenceUrls, ...item }) => item);
+      /*
+       * Request item của POST /api/orders/consignments chỉ nhận
+       * một referenceUrl. referenceUrls chỉ dùng nội bộ phía UI.
+       */
+      const requestItems = items.map(({ referenceUrls, ...item }) => item);
 
-      await validateConsignmentItemsApi(validationItems);
+      await validateConsignmentItemsApi(requestItems);
 
       setSubmitMessage("Đang gửi yêu cầu tạo đơn ký gửi...");
 
-      const selectedAddressItem = addressList.find(
-        (item) => item.address === form.selectedDeliveryAddress.trim(),
-      );
-
-      const browserTimeInfo = getBrowserTimeInfo();
-      const submittedAtUtc = getSyncedNowUtcIso();
-
-      await createConsignmentApi({
+      /*
+       * Payload bám đúng schema của POST /api/orders/consignments.
+       * Không gửi các field mở rộng mà DTO hiện tại không khai báo.
+       */
+      const requestPayload = {
         route: form.route,
         shippingOption: form.shippingOption,
-        receiverName: form.receiverName.trim(),
-        receiverPhone: form.receiverPhone.trim(),
-        receiverAddress: form.selectedDeliveryAddress.trim(),
-
-        deliveryAddressId: selectedAddressItem?.apiId || null,
-        receiverFullAddress:
-          selectedAddressItem?.fullAddress ||
+        receiverName:
+          form.receiverName.trim(),
+        receiverPhone:
+          form.receiverPhone.trim(),
+        receiverAddress:
           form.selectedDeliveryAddress.trim(),
-        receiverDetailAddress: selectedAddressItem?.detailAddress || null,
-        receiverProvinceCode: selectedAddressItem?.provinceCode || null,
-        receiverProvinceName: selectedAddressItem?.provinceName || null,
-        receiverDistrictCode: selectedAddressItem?.districtCode || null,
-        receiverDistrictName: selectedAddressItem?.districtName || null,
-        receiverWardCode: selectedAddressItem?.wardCode || null,
-        receiverWardName: selectedAddressItem?.wardName || null,
 
-        submittedAtUtc,
-        clientSubmittedAtUtc: submittedAtUtc,
-        clientTimeZone: browserTimeInfo.timeZone,
-        clientUtcOffset: browserTimeInfo.utcOffsetText,
-        clientUtcOffsetMinutes: browserTimeInfo.utcOffsetMinutes,
+        // Có thể chọn nhiều dịch vụ áp dụng cho toàn đơn.
+        pricingRuleIds:
+          orderPricingRuleIds,
 
-        requiresInspection: form.inspectPackage,
-        requiresPacking: Boolean(form.optionalServices?.requiresPacking),
-        requiresWoodenCrate: Boolean(
-          form.optionalServices?.requiresWoodenCrate,
-        ),
-        requiresInsurance: Boolean(form.optionalServices?.requiresInsurance),
         note: form.note.trim(),
-        items,
-      });
+        items: requestItems,
+      };
+
+      console.info(
+        "[ConsignmentOrder] POST /api/orders/consignments payload:",
+        requestPayload,
+      );
+
+      await createConsignmentApi(requestPayload);
 
       AuthNotify.success(
         "Tạo đơn thành công",
@@ -2040,33 +2097,6 @@ export default function ConsignmentOrder() {
                 </div>
               )}
             </div>
-
-            <div className="left-inner-section border-top-dash toggle-row">
-              <div className="toggle-icon-box">
-                <SafetyCertificateOutlined className="shield-icon" />
-              </div>
-
-              <div className="toggle-text-info">
-                <div className="toggle-title-row">
-                  <h4>YÊU CẦU KIỂM HÀNG</h4>
-
-                  <Tooltip
-                    title="Bật tùy chọn này nếu bạn muốn nhân viên kho mở kiện hàng để kiểm tra sản phẩm và đối chiếu số lượng thực tế."
-                    placement="top"
-                  >
-                    <InfoCircleOutlined className="toggle-info-icon" />
-                  </Tooltip>
-                </div>
-
-                <p>Mở kiện và kiểm đếm số lượng sản phẩm thực tế tại kho.</p>
-              </div>
-
-              <Switch
-                checked={form.inspectPackage}
-                disabled={isSubmitting}
-                onChange={(value) => updateForm("inspectPackage", value)}
-              />
-            </div>
           </div>
         </div>
 
@@ -2468,6 +2498,11 @@ export default function ConsignmentOrder() {
               <PackageOptionalServices
                 value={form.optionalServices}
                 disabled={isSubmitting}
+                triggerTitle="Dịch vụ áp dụng cho toàn bộ đơn"
+                triggerDescription="Có thể chọn nhiều dịch vụ áp dụng chung cho tất cả kiện hàng."
+                modalEyebrow="DỊCH VỤ TOÀN ĐƠN"
+                modalTitle="Lựa chọn dịch vụ cho toàn bộ đơn ký gửi"
+                modalDescription="Các dịch vụ được chọn ở đây sẽ được gửi trong pricingRuleIds cấp đơn và áp dụng chung cho toàn bộ kiện hàng."
                 onChange={handleOptionalServicesChange}
               />
               <div className="input-field-group">

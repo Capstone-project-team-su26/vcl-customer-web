@@ -7,7 +7,6 @@ import {
   InfoCircleOutlined,
   LoadingOutlined,
   SafetyCertificateOutlined,
-  SettingOutlined,
   CarOutlined,
 } from "@ant-design/icons";
 import { Checkbox, Modal, Tooltip } from "antd";
@@ -18,6 +17,50 @@ import "./PackageOptionalServices.css";
 
 const ACTIVE_STATUS = "ACTIVE";
 const VOLUMETRIC_DIVISOR_CODE = "VOLUMETRIC_DIVISOR";
+
+
+const STATUS_LABELS = {
+  ACTIVE: "Đang áp dụng",
+  INACTIVE: "Ngừng áp dụng",
+  PENDING: "Chờ áp dụng",
+  PENDING_REVIEW: "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Đã từ chối",
+  EXPIRED: "Hết hiệu lực",
+  DISABLED: "Tạm ngưng",
+  DRAFT: "Bản nháp",
+  DELETED: "Đã xóa",
+};
+
+const CALCULATION_TYPE_LABELS = {
+  FIXED: "Phí cố định",
+  PERCENTAGE: "Tính theo phần trăm",
+  PER_UNIT: "Tính theo đơn vị",
+  RANGE: "Tính theo khoảng",
+  FORMULA: "Tính theo công thức",
+};
+
+const RULE_CODE_LABELS = {
+  WOOD_CRATE: "Đóng thùng gỗ",
+  DOMESTIC_FEE: "Phí vận chuyển nội địa",
+  SUR_INSPECTION: "Phụ phí kiểm hàng",
+  SUR_INSURANCE_3PERCENT: "Phụ phí bảo hiểm",
+};
+
+const RULE_TYPE_LABELS = {
+  WOOD_BOX: "Thùng gỗ",
+  DOMESTIC_FEE: "Vận chuyển nội địa",
+  INSPECTION: "Kiểm hàng",
+  INSURANCE: "Bảo hiểm hàng hóa",
+  PACKING: "Đóng gói hàng hóa",
+};
+
+const CONDITION_TYPE_LABELS = {
+  REQUIRES_INSPECTION: "Áp dụng khi yêu cầu kiểm hàng",
+  MIN_DECLARED_VALUE: "Giá trị khai báo tối thiểu",
+  MAX_DECLARED_VALUE: "Giá trị khai báo tối đa",
+  REQUIRES_INSURANCE: "Áp dụng khi yêu cầu bảo hiểm",
+};
 
 const LEGACY_RULE_KEYS = {
   WOOD_CRATE: "requiresWoodenCrate",
@@ -97,7 +140,12 @@ const normalizeRulesFromApi = (result) => {
   return rawRules
     .filter((rule) => rule && typeof rule === "object")
     .map(normalizeRule)
-    .filter((rule) => rule.id || rule.ruleCode);
+    .filter((rule) => rule.id || rule.ruleCode)
+    .filter(
+      (rule) =>
+        rule.ruleCode !== VOLUMETRIC_DIVISOR_CODE &&
+        rule.ruleType !== VOLUMETRIC_DIVISOR_CODE,
+    );
 };
 
 const formatMoney = (value) => {
@@ -133,9 +181,100 @@ const formatConditionUnit = (conditionType) => {
     return "";
   }
 
+  /*
+   * Chỉ nối conditionType vào tiền khi đây thật sự là đơn vị tiền.
+   * Ví dụ: "VND/kiện" -> "/kiện".
+   * Các điều kiện nghiệp vụ như REQUIRES_INSPECTION không phải đơn vị
+   * nên tuyệt đối không nối vào số tiền.
+   */
+  const unitMatch = value.match(
+    /^(?:VND|VNĐ|₫|Đ)\s*\/\s*(.+)$/i,
+  );
+
+  if (!unitMatch?.[1]) {
+    return "";
+  }
+
+  return `/${unitMatch[1].trim()}`;
+};
+
+const getStatusLabel = (status) => {
+  const normalizedStatus = normalizeCode(status);
+
+  return (
+    STATUS_LABELS[normalizedStatus] ||
+    "Chưa xác định"
+  );
+};
+
+const getStatusClassName = (status) => {
+  const normalizedStatus = normalizeCode(status);
+
+  return normalizedStatus
+    ? normalizedStatus.toLowerCase().replaceAll("_", "-")
+    : "unknown";
+};
+
+const getCalculationTypeLabel = (calculationType) => {
+  const normalizedType = normalizeCode(calculationType);
+
+  return (
+    CALCULATION_TYPE_LABELS[normalizedType] ||
+    "Cách tính theo chính sách"
+  );
+};
+
+const getRuleDisplayName = (rule) => {
+  const code = normalizeCode(rule?.ruleCode);
+
+  return (
+    String(rule?.ruleName || "").trim() ||
+    RULE_CODE_LABELS[code] ||
+    "Dịch vụ bổ sung"
+  );
+};
+
+const getRuleCodeLabel = (rule) => {
+  const code = normalizeCode(rule?.ruleCode);
+
+  return (
+    RULE_CODE_LABELS[code] ||
+    getRuleDisplayName(rule)
+  );
+};
+
+const getRuleTypeLabel = (rule) => {
+  const type = normalizeCode(rule?.ruleType);
+
+  return (
+    RULE_TYPE_LABELS[type] ||
+    "Dịch vụ"
+  );
+};
+
+const getConditionTypeLabel = (conditionType) => {
+  const normalizedCondition = normalizeCode(conditionType);
+
+  return (
+    CONDITION_TYPE_LABELS[normalizedCondition] ||
+    "Điều kiện theo chính sách dịch vụ"
+  );
+};
+
+const formatRuleDescription = (description) => {
+  const value = String(description || "").trim();
+
+  if (!value) {
+    return "Hệ thống chưa cung cấp mô tả cho dịch vụ này.";
+  }
+
   return value
-    .replace(/^VND\s*\/\s*/i, "/")
-    .replace(/^₫\s*\/\s*/i, "/");
+    .replace(/declared\s*value/gi, "giá trị khai báo")
+    .replace(/\b(\d+)\s*k\b/gi, (_, amount) => {
+      const numericAmount = Number(amount) * 1000;
+      return formatMoney(numericAmount);
+    })
+    .replace(/\b(\d+)\s*tr\b/gi, "$1 triệu đồng");
 };
 
 const formatRuleFee = (rule) => {
@@ -155,49 +294,65 @@ const formatRuleFee = (rule) => {
     return `${formatMoney(value)}${unit}`;
   }
 
-  return `${formatNumber(value)}${unit}`;
+  return unit
+    ? `${formatNumber(value)}${unit}`
+    : formatNumber(value);
 };
 
 const formatRuleInformation = (rule) => {
   const parts = [];
+  const conditionCode = normalizeCode(rule?.conditionType);
+  const conditionUnit = formatConditionUnit(rule?.conditionType);
+  const conditionNumber = toFiniteNumberOrNull(rule?.conditionValue);
 
-  if (rule.description) {
-    parts.push(rule.description);
-  }
+  parts.push(formatRuleDescription(rule?.description));
 
-  if (rule.conditionType) {
-    parts.push(`Điều kiện: ${rule.conditionType}.`);
-  }
-
-  if (rule.conditionValue) {
-    const conditionNumber = toFiniteNumberOrNull(rule.conditionValue);
+  if (conditionUnit) {
     parts.push(
-      `Giá trị điều kiện: ${
-        conditionNumber === null
-          ? rule.conditionValue
-          : formatMoney(conditionNumber)
-      }.`,
+      `Đơn vị tính: ${String(rule.conditionType).trim()}.`,
     );
+  } else if (conditionCode === "REQUIRES_INSPECTION") {
+    parts.push("Áp dụng khi đơn hàng có yêu cầu kiểm hàng.");
+  } else if (conditionCode === "MIN_DECLARED_VALUE") {
+    parts.push(
+      conditionNumber === null
+        ? "Áp dụng từ mức giá trị khai báo tối thiểu theo chính sách."
+        : `Áp dụng từ giá trị khai báo ${formatMoney(conditionNumber)}.`,
+    );
+  } else if (conditionCode === "MAX_DECLARED_VALUE") {
+    parts.push(
+      conditionNumber === null
+        ? "Áp dụng đến mức giá trị khai báo tối đa theo chính sách."
+        : `Áp dụng đến giá trị khai báo ${formatMoney(conditionNumber)}.`,
+    );
+  } else if (rule?.conditionType) {
+    parts.push(
+      `Điều kiện áp dụng: ${getConditionTypeLabel(rule.conditionType)}.`,
+    );
+
+    if (rule?.conditionValue) {
+      parts.push(
+        conditionNumber === null
+          ? `Giá trị điều kiện: ${rule.conditionValue}.`
+          : `Giá trị điều kiện: ${formatMoney(conditionNumber)}.`,
+      );
+    }
   }
 
-  if (rule.minAmount !== null) {
+  if (rule?.minAmount !== null) {
     parts.push(`Phí tối thiểu: ${formatMoney(rule.minAmount)}.`);
   }
 
-  if (rule.maxAmount !== null) {
+  if (rule?.maxAmount !== null) {
     parts.push(`Phí tối đa: ${formatMoney(rule.maxAmount)}.`);
   }
 
-  return parts.join(" ") || "API chưa cung cấp mô tả cho quy tắc này.";
+  return parts.filter(Boolean).join(" ");
 };
 
 const getRuleIcon = (rule) => {
   const code = normalizeCode(rule?.ruleCode);
   const type = normalizeCode(rule?.ruleType);
-
-  if (code === VOLUMETRIC_DIVISOR_CODE) {
-    return SettingOutlined;
-  }
 
   if (code.includes("WOOD") || type.includes("WOOD")) {
     return InboxOutlined;
@@ -214,11 +369,8 @@ const getRuleIcon = (rule) => {
   return GiftOutlined;
 };
 
-const isTechnicalRule = (rule) =>
-  normalizeCode(rule?.ruleCode) === VOLUMETRIC_DIVISOR_CODE;
-
 const isRuleSelectable = (rule) =>
-  !isTechnicalRule(rule) && normalizeCode(rule?.status) === ACTIVE_STATUS;
+  normalizeCode(rule?.status) === ACTIVE_STATUS;
 
 const getInitialSelectedCodes = (value, rules) => {
   const selectedCodes = new Set();
@@ -267,6 +419,14 @@ export default function PackageOptionalServices({
   value = EMPTY_PACKAGE_SERVICES,
   disabled = false,
   onChange,
+
+  triggerTitle = "Dịch vụ bổ sung cho đơn ký gửi",
+  triggerDescription = "",
+
+  modalEyebrow = "DỊCH VỤ BỔ SUNG",
+  modalTitle = "Lựa chọn dịch vụ cho đơn ký gửi",
+  modalDescription =
+    "Danh sách được cập nhật trực tiếp từ bảng giá hệ thống. Khi có dịch vụ mới, giao diện sẽ tự động hiển thị thêm.",
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [pricingRules, setPricingRules] = useState([]);
@@ -421,13 +581,13 @@ export default function PackageOptionalServices({
         AuthNotify.success(
           "Đã lưu dịch vụ bổ sung",
           `Đã chọn: ${activeSelectedRules
-            .map((rule) => rule.ruleName || rule.ruleCode)
+            .map(getRuleDisplayName)
             .join(", ")}.`,
         );
       } else {
         AuthNotify.success(
           "Đã cập nhật dịch vụ",
-          "Đơn ký gửi không chọn quy tắc dịch vụ bổ sung.",
+          "Đơn ký gửi không chọn dịch vụ bổ sung.",
         );
       }
     } catch (error) {
@@ -457,14 +617,14 @@ export default function PackageOptionalServices({
 
         <span className="package-services-trigger__body">
           <span className="package-services-trigger__title-row">
-            <strong>Quy tắc và dịch vụ từ bảng giá</strong>
+            <strong>{triggerTitle}</strong>
 
             <Tooltip
               placement="top"
-              title="Danh sách được tải trực tiếp từ API /api/pricing-rules."
+              title="Danh sách dịch vụ được tải trực tiếp từ hệ thống và tự động cập nhật khi bảng giá thay đổi."
             >
               <InfoCircleOutlined
-                aria-label="Thông tin bảng giá"
+                aria-label="Thông tin dịch vụ bổ sung"
                 className="package-services-trigger__info"
                 onClick={(event) => {
                   event.preventDefault();
@@ -479,7 +639,7 @@ export default function PackageOptionalServices({
               {selectedRules.map((rule) => (
                 <span key={rule.id || rule.ruleCode}>
                   <CheckOutlined />
-                  {rule.ruleName || rule.ruleCode}
+                  {getRuleDisplayName(rule)}
                 </span>
               ))}
             </span>
@@ -487,7 +647,8 @@ export default function PackageOptionalServices({
             <span className="package-services-trigger__description">
               {pricingLoading
                 ? "Đang tải dữ liệu bảng giá..."
-                : `${pricingRules.length} quy tắc được trả về từ API.`}
+                : triggerDescription ||
+                  `${pricingRules.length} dịch vụ đang có trên hệ thống.`}
             </span>
           )}
         </span>
@@ -528,13 +689,10 @@ export default function PackageOptionalServices({
 
           <div className="package-services-modal__header-content">
             <span className="package-services-modal__eyebrow">
-              DỮ LIỆU TRỰC TIẾP TỪ API
+              {modalEyebrow}
             </span>
-            <h2>Danh sách quy tắc tính phí</h2>
-            <p>
-              Hiển thị toàn bộ dữ liệu trả về từ endpoint /api/pricing-rules,
-              không sử dụng dữ liệu mẫu.
-            </p>
+            <h2>{modalTitle}</h2>
+            <p>{modalDescription}</p>
           </div>
         </div>
 
@@ -542,10 +700,10 @@ export default function PackageOptionalServices({
           {pricingLoading ? <LoadingOutlined spin /> : <InfoCircleOutlined />}
           <span>
             {pricingLoading
-              ? "Đang gọi GET /api/pricing-rules..."
+              ? "Đang tải danh sách dịch vụ..."
               : pricingError
                 ? pricingError
-                : `API trả về ${pricingRules.length} quy tắc. Quy tắc hệ thống vẫn được hiển thị nhưng không cho chọn.`}
+                : `Đang hiển thị ${pricingRules.length} dịch vụ. Hệ số quy đổi thể tích không hiển thị trong danh sách lựa chọn.`}
           </span>
         </div>
 
@@ -553,20 +711,20 @@ export default function PackageOptionalServices({
           {pricingLoading ? (
             <div className="package-services-modal__api-state">
               <LoadingOutlined spin />
-              <strong>Đang tải dữ liệu thật từ API</strong>
-              <span>Không sử dụng dữ liệu dự phòng.</span>
+              <strong>Đang tải danh sách dịch vụ</strong>
+              <span>Vui lòng chờ trong giây lát.</span>
             </div>
           ) : pricingError ? (
             <div className="package-services-modal__api-state is-error">
               <InfoCircleOutlined />
-              <strong>Không tải được pricing rules</strong>
+              <strong>Không tải được danh sách dịch vụ</strong>
               <span>{pricingError}</span>
             </div>
           ) : pricingRules.length === 0 ? (
             <div className="package-services-modal__api-state">
               <InfoCircleOutlined />
-              <strong>API không trả về quy tắc nào</strong>
-              <span>Danh sách đang để trống, không chèn dữ liệu mẫu.</span>
+              <strong>Chưa có dịch vụ bổ sung</strong>
+              <span>Hệ thống hiện chưa có dịch vụ phù hợp để lựa chọn.</span>
             </div>
           ) : (
             pricingRules.map((rule, ruleIndex) => {
@@ -587,8 +745,6 @@ export default function PackageOptionalServices({
                     "package-services-modal__item",
                     checked && "package-services-modal__item--selected",
                     itemDisabled && "package-services-modal__item--disabled",
-                    isTechnicalRule(rule) &&
-                      "package-services-modal__item--technical",
                   ]
                     .filter(Boolean)
                     .join(" ")}
@@ -618,11 +774,11 @@ export default function PackageOptionalServices({
 
                   <span className="package-services-modal__content">
                     <span className="package-services-modal__title-row">
-                      <strong>{rule.ruleName || rule.ruleCode || "Quy tắc"}</strong>
+                      <strong>{getRuleDisplayName(rule)}</strong>
 
                       <Tooltip placement="top" title={formatRuleInformation(rule)}>
                         <InfoCircleOutlined
-                          aria-label={`Thông tin ${rule.ruleName || rule.ruleCode}`}
+                          aria-label={`Thông tin ${getRuleDisplayName(rule)}`}
                           className="package-services-modal__info-icon"
                           onClick={(event) => {
                             event.preventDefault();
@@ -633,24 +789,28 @@ export default function PackageOptionalServices({
                     </span>
 
                     <span className="package-services-modal__rule-meta">
-                      <b>{rule.ruleCode || "KHÔNG CÓ MÃ"}</b>
-                      <i>{rule.ruleType || "KHÔNG CÓ LOẠI"}</i>
-                      <em className={`status-${rule.status.toLowerCase()}`}>
-                        {rule.status || "CHƯA CÓ TRẠNG THÁI"}
+                      <b title={rule.ruleCode || undefined}>
+                        {getRuleCodeLabel(rule)}
+                      </b>
+
+                      <i title={rule.ruleType || undefined}>
+                        {getRuleTypeLabel(rule)}
+                      </i>
+
+                      <em
+                        className={`status-${getStatusClassName(rule.status)}`}
+                      >
+                        {getStatusLabel(rule.status)}
                       </em>
                     </span>
 
                     <span className="package-services-modal__description">
-                      {rule.description || "API chưa cung cấp mô tả."}
+                      {formatRuleDescription(rule.description)}
                     </span>
                   </span>
 
                   <span className="package-services-modal__fee">
-                    <small>
-                      {isTechnicalRule(rule)
-                        ? "Quy tắc hệ thống"
-                        : rule.calculationType || "Cách tính phí"}
-                    </small>
+                    <small>{getCalculationTypeLabel(rule.calculationType)}</small>
                     <strong>{formatRuleFee(rule)}</strong>
                   </span>
                 </div>
@@ -661,13 +821,13 @@ export default function PackageOptionalServices({
 
         <div className="package-services-modal__summary">
           <div className="package-services-modal__summary-count">
-            <span>Quy tắc đã chọn</span>
+            <span>Dịch vụ đã chọn</span>
             <strong>{selectedDraftRules.length}</strong>
           </div>
           <p>
             {selectedDraftRules.length > 0
               ? selectedDraftRules
-                  .map((rule) => rule.ruleName || rule.ruleCode)
+                  .map(getRuleDisplayName)
                   .join(", ")
               : "Chưa chọn dịch vụ bổ sung"}
           </p>

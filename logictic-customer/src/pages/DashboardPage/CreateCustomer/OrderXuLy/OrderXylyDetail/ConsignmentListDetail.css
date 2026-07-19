@@ -1,5 +1,5 @@
 /* =========================================================
-   CONSIGNMENT DETAIL Ä‚Â¢Ă¢â€Â¬Ă¢â‚¬Å“ MODERN LOGISTICS UI
+   CONSIGNMENT DETAIL Ă„â€Ă‚Â¢Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¬Ä‚Â¢Ă¢â€Â¬Ă…â€œ MODERN LOGISTICS UI
    ========================================================= */
 
    .consignment-detail-page {
@@ -76,7 +76,7 @@
       );
   }
   
-  /* Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă¢â‚¬Å“ng bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ box-sizing */
+  /* Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă…â€œng bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ box-sizing */
   
   .consignment-detail-page *,
   .consignment-detail-page *::before,
@@ -84,7 +84,7 @@
     box-sizing: border-box;
   }
   
-  /* Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă¢â‚¬Å“ng bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ font cho input, button vĂ„â€  thÄ‚â€ Ă‚Â° viÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n UI */
+  /* Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă…â€œng bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ font cho input, button vÄ‚â€Ă¢â‚¬Â  thĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â° viĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n UI */
   
   .consignment-detail-page button,
   .consignment-detail-page input,
@@ -2100,8 +2100,8 @@
 
 /* =========================================================
    UNIFIED TYPOGRAPHY
-   Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă¢â‚¬Å“ng bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ toĂ„â€ n bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ trang vÄ‚Â¡Ă‚Â»Ă‚Â mÄ‚Â¡Ă‚Â»Ă¢â€Â¢t hÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡ font Inter
-   ChÄ‚Â¡Ă‚Â»Ă¢â‚¬Â° chÄ‚Â¡Ă‚Â»Ă¢â‚¬Â°nh font, khĂ„â€Ă‚Â´ng thay Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¢i bÄ‚Â¡Ă‚Â»Ă¢â‚¬Ëœ cÄ‚Â¡Ă‚Â»Ă‚Â¥c hoÄ‚Â¡Ă‚ÂºĂ‚Â·c mĂ„â€ u sÄ‚Â¡Ă‚ÂºĂ‚Â¯c
+   Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă…â€œng bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ toÄ‚â€Ă¢â‚¬Â n bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ trang vĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â mĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢t hĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡ font Inter
+   ChĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â° chĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â°nh font, khÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â´ng thay Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¢i bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‹Å“ cĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â¥c hoĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â·c mÄ‚â€Ă¢â‚¬Â u sĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¯c
    ========================================================= */
 
 .consignment-detail-page {
@@ -2132,7 +2132,7 @@
   letter-spacing: 0;
 }
 
-/* Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă¢â‚¬Å“ng bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ font cho toĂ„â€ n bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ nÄ‚Â¡Ă‚Â»Ă¢â€Â¢i dung vĂ„â€  thÄ‚â€ Ă‚Â° viÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n UI */
+/* Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă…â€œng bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ font cho toÄ‚â€Ă¢â‚¬Â n bĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢ nĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â‚¬ÂĂ‚Â¢i dung vÄ‚â€Ă¢â‚¬Â  thĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â° viĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡n UI */
 
 .consignment-detail-page :where(
   h1,
@@ -2167,7 +2167,7 @@
   font-family: var(--detail-font-family) !important;
 }
 
-/* TiĂ„â€Ă‚Âªu Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Â chĂ„â€Ă‚Â­nh */
+/* TiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªu Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â chÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â­nh */
 
 .detail-title-row h1 {
   font-size: clamp(24px, 2vw, 30px);
@@ -2176,7 +2176,7 @@
   letter-spacing: -0.025em;
 }
 
-/* Ä‚â€Ă‚ÂiÄ‚Â¡Ă‚Â»Ă‚Âu hÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă¢â‚¬Âºng vĂ„â€  nĂ„â€Ă‚Âºt */
+/* Ă„â€Ă¢â‚¬ÂÄ‚â€Ă‚ÂiĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âu hĂ„â€Ă¢â‚¬ Ä‚â€Ă‚Â°Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºng vÄ‚â€Ă¢â‚¬Â  nÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âºt */
 
 .detail-back-button,
 .detail-error-actions .MuiButton-root {
@@ -2193,7 +2193,7 @@
   letter-spacing: 0;
 }
 
-/* CÄ‚Â¡Ă‚ÂºĂ‚Â£nh bĂ„â€Ă‚Â¡o */
+/* CĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£nh bÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡o */
 
 .detail-warning-message {
   font-size: var(--detail-font-size-base);
@@ -2202,7 +2202,7 @@
   letter-spacing: 0;
 }
 
-/* Badge trÄ‚Â¡Ă‚ÂºĂ‚Â¡ng thĂ„â€Ă‚Â¡i */
+/* Badge trĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡ng thÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡i */
 
 .detail-status-badge,
 .detail-inline-status,
@@ -2215,7 +2215,7 @@
   letter-spacing: 0 !important;
 }
 
-/* Metadata Ä‚â€Ă¢â‚¬ËœÄ‚â€ Ă‚Â¡n hĂ„â€ ng */
+/* Metadata Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă¢â‚¬ Ä‚â€Ă‚Â¡n hÄ‚â€Ă¢â‚¬Â ng */
 
 .detail-order-metadata {
   font-size: var(--detail-font-size-sm);
@@ -2230,7 +2230,7 @@
   font-weight: 700;
 }
 
-/* ThÄ‚Â¡Ă‚Â»Ă‚Âi gian tÄ‚Â¡Ă‚ÂºĂ‚Â¡o */
+/* ThĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Âi gian tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â¡o */
 
 .detail-created-time span {
   font-size: var(--detail-font-size-xs);
@@ -2246,7 +2246,7 @@
   letter-spacing: 0;
 }
 
-/* ThÄ‚Â¡Ă‚ÂºĂ‚Â» tÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¢ng quan */
+/* ThĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â» tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¢ng quan */
 
 .detail-summary-card span {
   font-size: var(--detail-font-size-xs);
@@ -2269,7 +2269,7 @@
   letter-spacing: 0;
 }
 
-/* TiĂ„â€Ă‚Âªu Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă‚Â tÄ‚Â¡Ă‚Â»Ă‚Â«ng khu vÄ‚Â¡Ă‚Â»Ă‚Â±c */
+/* TiÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Âªu Ă„â€Ă¢â‚¬ÂÄ‚Â¢Ă¢â€Â¬Ă‹Å“Ă„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â tĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â«ng khu vĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚â€Ă‚Â±c */
 
 .detail-section-header h2 {
   font-size: var(--detail-font-size-xl);
@@ -2285,7 +2285,7 @@
   letter-spacing: 0;
 }
 
-/* BÄ‚Â¡Ă‚ÂºĂ‚Â£ng mĂ„â€Ă‚Â´ tÄ‚Â¡Ă‚ÂºĂ‚Â£ */
+/* BĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£ng mÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â´ tĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£ */
 
 .detail-descriptions .ant-descriptions-item-label {
   font-size: var(--detail-font-size-sm) !important;
@@ -2307,7 +2307,7 @@
   font-weight: 700;
 }
 
-/* ID cÄ‚â€¦Ă‚Â©ng dĂ„â€Ă‚Â¹ng cĂ„â€Ă‚Â¹ng font vÄ‚Â¡Ă‚Â»Ă¢â‚¬Âºi toĂ„â€ n trang */
+/* ID cĂ„â€Ă¢â‚¬Â¦Ä‚â€Ă‚Â©ng dÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¹ng cÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¹ng font vĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Âºi toÄ‚â€Ă¢â‚¬Â n trang */
 
 .detail-id-value {
   font-family: var(--detail-font-family) !important;
@@ -2317,7 +2317,7 @@
   letter-spacing: 0;
 }
 
-/* BÄ‚Â¡Ă‚ÂºĂ‚Â£ng sÄ‚Â¡Ă‚ÂºĂ‚Â£n phÄ‚Â¡Ă‚ÂºĂ‚Â©m */
+/* BĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£ng sĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â£n phĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â©m */
 
 .detail-product-table .ant-table-thead > tr > th {
   font-size: var(--detail-font-size-xs);
@@ -2362,7 +2362,7 @@
   font-weight: 800;
 }
 
-/* BĂ„â€Ă‚Â¡o giĂ„â€Ă‚Â¡ */
+/* BÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡o giÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¡ */
 
 .quotation-heading span {
   font-size: var(--detail-font-size-xs);
@@ -2427,7 +2427,7 @@
   letter-spacing: 0;
 }
 
-/* Loading vĂ„â€  lÄ‚Â¡Ă‚Â»Ă¢â‚¬â€i */
+/* Loading vÄ‚â€Ă¢â‚¬Â  lĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă¢â‚¬Âi */
 
 .detail-loading-container strong {
   font-size: var(--detail-font-size-lg);
@@ -2464,7 +2464,7 @@
   letter-spacing: 0;
 }
 
-/* Mobile vÄ‚Â¡Ă‚ÂºĂ‚Â«n dĂ„â€Ă‚Â¹ng cĂ„â€Ă‚Â¹ng hÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡ font */
+/* Mobile vĂ„â€Ă‚Â¡Ä‚â€Ă‚ÂºÄ‚â€Ă‚Â«n dÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¹ng cÄ‚â€Ă¢â‚¬ÂÄ‚â€Ă‚Â¹ng hĂ„â€Ă‚Â¡Ä‚â€Ă‚Â»Ä‚Â¢Ă¢â€Â¬Ă‚Â¡ font */
 
 @media (max-width: 768px) {
   .detail-title-row h1 {
@@ -2831,7 +2831,7 @@ box-shadow: none;
 transform: none;
 }
 /* =========================================================
-   FIX: MÄ‚Æ’ VĂ¡ÂºÂ¬N Ă„ÂĂ† N, TRĂ¡Â»Å’NG LĂ†Â¯Ă¡Â»Â¢NG API VÄ‚â‚¬ BĂ¡Â»Â CĂ¡Â»Â¤C Ă¡Â»â€N Ă„ÂĂ¡Â»ÂNH
+   FIX: MĂ„â€Ă†â€™ VÄ‚Â¡Ă‚ÂºĂ‚Â¬N Ä‚â€Ă‚ÂÄ‚â€  N, TRÄ‚Â¡Ă‚Â»Ă…â€™NG LÄ‚â€ Ă‚Â¯Ä‚Â¡Ă‚Â»Ă‚Â¢NG API VĂ„â€Ă¢â€Â¬ BÄ‚Â¡Ă‚Â»Ă‚Â CÄ‚Â¡Ă‚Â»Ă‚Â¤C Ä‚Â¡Ă‚Â»Ă¢â‚¬ÂN Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă‚ÂNH
    ========================================================= */
 
 .detail-title-row {
@@ -3050,8 +3050,8 @@ transform: none;
   }
 }
 /* =========================================================
-   SUMMARY TOOLTIP - HIá»†N Äáº¦Y Äá»¦ KHI RĂ CHUá»˜T
-   Import file nĂ y sau ConsignmentListDetail.css
+   SUMMARY TOOLTIP - HIĂ¡Â»â€ N Ă„ÂĂ¡ÂºÂ¦Y Ă„ÂĂ¡Â»Â¦ KHI RÄ‚Â CHUĂ¡Â»ËœT
+   Import file nÄ‚ y sau ConsignmentListDetail.css
    ========================================================= */
 
    .detail-summary-card {
@@ -3188,27 +3188,27 @@ transform: none;
 
 
 /* =========================================================
-   FIX CUá»I FILE:
-   - KHĂ”NG HIá»†N CON TRá» Dáº¤U Há»I
-   - DĂ™NG CON TRá» HĂŒNH BĂ€N TAY
-   - KHĂ”NG Cáº®T CHá»® Báº°NG Dáº¤U ...
-   - Tá»° XUá»NG DĂ’NG VĂ€ HIá»†N Äáº¦Y Äá»¦ Ná»˜I DUNG
+   FIX CUĂ¡Â»ÂI FILE:
+   - KHÄ‚â€NG HIĂ¡Â»â€ N CON TRĂ¡Â»Â DĂ¡ÂºÂ¤U HĂ¡Â»ÂI
+   - DÄ‚â„¢NG CON TRĂ¡Â»Â HÄ‚Å’NH BÄ‚â‚¬N TAY
+   - KHÄ‚â€NG CĂ¡ÂºÂ®T CHĂ¡Â»Â® BĂ¡ÂºÂ°NG DĂ¡ÂºÂ¤U ...
+   - TĂ¡Â»Â° XUĂ¡Â»ÂNG DÄ‚â€™NG VÄ‚â‚¬ HIĂ¡Â»â€ N Ă„ÂĂ¡ÂºÂ¦Y Ă„ÂĂ¡Â»Â¦ NĂ¡Â»ËœI DUNG
    ========================================================= */
 
-/* Tháº» tá»•ng quan: Ä‘á»•i cursor help thĂ nh pointer */
+/* ThĂ¡ÂºÂ» tĂ¡Â»â€¢ng quan: Ă„â€˜Ă¡Â»â€¢i cursor help thÄ‚ nh pointer */
 .consignment-detail-page .detail-summary-card,
 .consignment-detail-page .detail-summary-card.is-overflowing {
   cursor: pointer !important;
 }
 
-/* Cho tháº» tá»•ng quan tÄƒng chiá»u cao khi ná»™i dung dĂ i */
+/* Cho thĂ¡ÂºÂ» tĂ¡Â»â€¢ng quan tĂ„Æ’ng chiĂ¡Â»Âu cao khi nĂ¡Â»â„¢i dung dÄ‚ i */
 .consignment-detail-page .detail-summary-card {
   min-height: 96px;
   height: auto;
   overflow: visible;
 }
 
-/* TiĂªu Ä‘á» vĂ  giĂ¡ trá»‹ trong tháº» tá»•ng quan hiá»ƒn thá»‹ Ä‘áº§y Ä‘á»§ */
+/* TiÄ‚Âªu Ă„â€˜Ă¡Â»Â vÄ‚  giÄ‚Â¡ trĂ¡Â»â€¹ trong thĂ¡ÂºÂ» tĂ¡Â»â€¢ng quan hiĂ¡Â»Æ’n thĂ¡Â»â€¹ Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§ */
 .consignment-detail-page .detail-summary-card > span,
 .consignment-detail-page .detail-summary-card > strong,
 .consignment-detail-page .detail-summary-label,
@@ -3224,14 +3224,14 @@ transform: none;
   word-break: break-word !important;
 }
 
-/* Giá»¯ háº­u tá»‘ kg, cmÂ³, sáº£n pháº©m náº±m há»£p lĂ½ */
+/* GiĂ¡Â»Â¯ hĂ¡ÂºÂ­u tĂ¡Â»â€˜ kg, cmĂ‚Â³, sĂ¡ÂºÂ£n phĂ¡ÂºÂ©m nĂ¡ÂºÂ±m hĂ¡Â»Â£p lÄ‚Â½ */
 .consignment-detail-page .detail-summary-card small,
 .consignment-detail-page .detail-summary-value small {
   display: inline;
   white-space: normal !important;
 }
 
-/* MĂ£ váº­n Ä‘Æ¡n lá»›n trĂªn Ä‘áº§u trang hiá»ƒn thá»‹ Ä‘áº§y Ä‘á»§ */
+/* MÄ‚Â£ vĂ¡ÂºÂ­n Ă„â€˜Ă†Â¡n lĂ¡Â»â€ºn trÄ‚Âªn Ă„â€˜Ă¡ÂºÂ§u trang hiĂ¡Â»Æ’n thĂ¡Â»â€¹ Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§ */
 .consignment-detail-page .detail-title-row h1,
 .consignment-detail-page .detail-code-row h1 {
   max-width: 100% !important;
@@ -3244,7 +3244,7 @@ transform: none;
   word-break: break-word !important;
 }
 
-/* Khá»‘i mĂ£ váº­n Ä‘Æ¡n khĂ´ng bá»‹ Ă©p chiá»u rá»™ng */
+/* KhĂ¡Â»â€˜i mÄ‚Â£ vĂ¡ÂºÂ­n Ă„â€˜Ă†Â¡n khÄ‚Â´ng bĂ¡Â»â€¹ Ä‚Â©p chiĂ¡Â»Âu rĂ¡Â»â„¢ng */
 .consignment-detail-page .detail-code-group,
 .consignment-detail-page .detail-code-row,
 .consignment-detail-page .detail-hero-content {
@@ -3252,7 +3252,7 @@ transform: none;
   max-width: 100%;
 }
 
-/* Metadata: mĂ£ Ä‘Æ¡n hĂ ng, loáº¡i Ä‘Æ¡n hiá»ƒn thá»‹ Ä‘áº§y Ä‘á»§ */
+/* Metadata: mÄ‚Â£ Ă„â€˜Ă†Â¡n hÄ‚ ng, loĂ¡ÂºÂ¡i Ă„â€˜Ă†Â¡n hiĂ¡Â»Æ’n thĂ¡Â»â€¹ Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§ */
 .consignment-detail-page .detail-order-metadata strong {
   max-width: 100% !important;
 
@@ -3264,15 +3264,15 @@ transform: none;
   word-break: break-word !important;
 }
 
-/* NĂºt cĂ³ thá»ƒ xem Ä‘áº§y Ä‘á»§: luĂ´n hiá»‡n con trá» bĂ n tay */
+/* NÄ‚Âºt cÄ‚Â³ thĂ¡Â»Æ’ xem Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§: luÄ‚Â´n hiĂ¡Â»â€¡n con trĂ¡Â»Â bÄ‚ n tay */
 .consignment-detail-page
   .detail-product-table
-  button[title="Báº¥m Ä‘á»ƒ xem Ä‘áº§y Ä‘á»§"],
+  button[title="BĂ¡ÂºÂ¥m Ă„â€˜Ă¡Â»Æ’ xem Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§"],
 .consignment-detail-page .detail-product-name-button {
   cursor: pointer !important;
 }
 
-/* TĂªn sáº£n pháº©m khĂ´ng cĂ²n dáº¥u ... */
+/* TÄ‚Âªn sĂ¡ÂºÂ£n phĂ¡ÂºÂ©m khÄ‚Â´ng cÄ‚Â²n dĂ¡ÂºÂ¥u ... */
 .consignment-detail-page .detail-product-name-button,
 .consignment-detail-page .detail-product-name,
 .consignment-detail-page .detail-product-name-cell strong {
@@ -3287,11 +3287,11 @@ transform: none;
   word-break: break-word !important;
 }
 
-/* Loáº¡i sáº£n pháº©m khĂ´ng cĂ²n bá»‹ cáº¯t */
+/* LoĂ¡ÂºÂ¡i sĂ¡ÂºÂ£n phĂ¡ÂºÂ©m khÄ‚Â´ng cÄ‚Â²n bĂ¡Â»â€¹ cĂ¡ÂºÂ¯t */
 .consignment-detail-page .detail-product-type-tag,
 .consignment-detail-page
   .detail-product-table
-  button[title="Báº¥m Ä‘á»ƒ xem Ä‘áº§y Ä‘á»§"]
+  button[title="BĂ¡ÂºÂ¥m Ă„â€˜Ă¡Â»Æ’ xem Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§"]
   .ant-tag {
   display: inline-flex !important;
   width: auto !important;
@@ -3307,10 +3307,10 @@ transform: none;
   text-align: center;
 }
 
-/* MĂ£ váº­n Ä‘Æ¡n ná»™i Ä‘á»‹a vĂ  má»i nĂºt ná»™i dung trong báº£ng */
+/* MÄ‚Â£ vĂ¡ÂºÂ­n Ă„â€˜Ă†Â¡n nĂ¡Â»â„¢i Ă„â€˜Ă¡Â»â€¹a vÄ‚  mĂ¡Â»Âi nÄ‚Âºt nĂ¡Â»â„¢i dung trong bĂ¡ÂºÂ£ng */
 .consignment-detail-page
   .detail-product-table
-  button[title="Báº¥m Ä‘á»ƒ xem Ä‘áº§y Ä‘á»§"] {
+  button[title="BĂ¡ÂºÂ¥m Ă„â€˜Ă¡Â»Æ’ xem Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§"] {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
@@ -3323,7 +3323,7 @@ transform: none;
   word-break: break-word !important;
 }
 
-/* Cho Ă´ báº£ng tá»± tÄƒng chiá»u cao theo ná»™i dung */
+/* Cho Ä‚Â´ bĂ¡ÂºÂ£ng tĂ¡Â»Â± tĂ„Æ’ng chiĂ¡Â»Âu cao theo nĂ¡Â»â„¢i dung */
 .consignment-detail-page
   .detail-product-table
   .ant-table-tbody
@@ -3336,7 +3336,7 @@ transform: none;
   word-break: break-word;
 }
 
-/* CĂ´ng thá»©c DIM cĂ³ thá»ƒ xuá»‘ng dĂ²ng, khĂ´ng bá»‹ trĂ n */
+/* CÄ‚Â´ng thĂ¡Â»Â©c DIM cÄ‚Â³ thĂ¡Â»Æ’ xuĂ¡Â»â€˜ng dÄ‚Â²ng, khÄ‚Â´ng bĂ¡Â»â€¹ trÄ‚ n */
 .consignment-detail-page .detail-dimension-text {
   display: inline;
   white-space: normal !important;
@@ -3344,13 +3344,13 @@ transform: none;
   word-break: break-word !important;
 }
 
-/* GiĂ¡ trá»‹ tiá»n váº«n rĂµ rĂ ng nhÆ°ng cĂ³ thá»ƒ xuá»‘ng dĂ²ng trĂªn mĂ n hĂ¬nh nhá» */
+/* GiÄ‚Â¡ trĂ¡Â»â€¹ tiĂ¡Â»Ân vĂ¡ÂºÂ«n rÄ‚Âµ rÄ‚ ng nhĂ†Â°ng cÄ‚Â³ thĂ¡Â»Æ’ xuĂ¡Â»â€˜ng dÄ‚Â²ng trÄ‚Âªn mÄ‚ n hÄ‚Â¬nh nhĂ¡Â»Â */
 .consignment-detail-page .detail-money-value {
   white-space: normal !important;
   overflow-wrap: anywhere !important;
 }
 
-/* Ná»™i dung bĂ¡o giĂ¡ dĂ i hiá»ƒn thá»‹ Ä‘áº§y Ä‘á»§ */
+/* NĂ¡Â»â„¢i dung bÄ‚Â¡o giÄ‚Â¡ dÄ‚ i hiĂ¡Â»Æ’n thĂ¡Â»â€¹ Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§ */
 .consignment-detail-page .quotation-price-list span,
 .consignment-detail-page .quotation-price-list strong,
 .consignment-detail-page .quotation-heading strong,
@@ -3361,7 +3361,7 @@ transform: none;
   word-break: break-word !important;
 }
 
-/* Ná»™i dung Descriptions luĂ´n hiá»ƒn thá»‹ Ä‘áº§y Ä‘á»§ */
+/* NĂ¡Â»â„¢i dung Descriptions luÄ‚Â´n hiĂ¡Â»Æ’n thĂ¡Â»â€¹ Ă„â€˜Ă¡ÂºÂ§y Ă„â€˜Ă¡Â»Â§ */
 .consignment-detail-page
   .detail-descriptions
   .ant-descriptions-item-content {
@@ -3391,5 +3391,297 @@ transform: none;
 
   .consignment-detail-page .detail-copy-code-button {
     width: 100%;
+  }
+}
+/* =========================================================
+   Dá»CH Vá»¤ Bá»” SUNG â€” MĂ€U THEO Tá»ªNG LOáº I
+   ========================================================= */
+
+.consignment-detail-page .detail-pricing-rule-list {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.consignment-detail-page .detail-pricing-rule-tag.ant-tag {
+  min-height: 30px;
+  margin: 0 !important;
+  padding: 5px 11px !important;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 999px;
+
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 800;
+  white-space: normal;
+
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.consignment-detail-page .detail-pricing-rule-tag:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.08);
+  box-shadow: 0 7px 17px rgba(15, 23, 42, 0.1);
+}
+
+.consignment-detail-page .detail-pricing-rule-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+
+  background-color: currentColor;
+  border-radius: 50%;
+
+  box-shadow: 0 0 0 3px currentColor;
+  opacity: 0.72;
+}
+
+/* ÄĂ³ng thĂ¹ng gá»— â€” nĂ¢u há»• phĂ¡ch */
+
+.consignment-detail-page
+  .detail-pricing-rule-tag.service-wood-crate {
+  color: #92400e !important;
+  background:
+    linear-gradient(
+      135deg,
+      #fffbeb,
+      #fef3c7
+    ) !important;
+  border-color: #fcd34d !important;
+}
+
+/* Kiá»ƒm hĂ ng â€” xanh dÆ°Æ¡ng */
+
+.consignment-detail-page
+  .detail-pricing-rule-tag.service-inspection {
+  color: #1d4ed8 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #eff6ff,
+      #dbeafe
+    ) !important;
+  border-color: #93c5fd !important;
+}
+
+/* Báº£o hiá»ƒm â€” tĂ­m */
+
+.consignment-detail-page
+  .detail-pricing-rule-tag.service-insurance {
+  color: #6d28d9 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #f5f3ff,
+      #ede9fe
+    ) !important;
+  border-color: #c4b5fd !important;
+}
+
+/* PhĂ­ váº­n chuyá»ƒn ná»™i Ä‘á»‹a â€” xanh lĂ¡ */
+
+.consignment-detail-page
+  .detail-pricing-rule-tag.service-domestic {
+  color: #047857 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #ecfdf5,
+      #d1fae5
+    ) !important;
+  border-color: #6ee7b7 !important;
+}
+
+/* ÄĂ³ng gĂ³i â€” cam */
+
+.consignment-detail-page
+  .detail-pricing-rule-tag.service-packing {
+  color: #c2410c !important;
+  background:
+    linear-gradient(
+      135deg,
+      #fff7ed,
+      #ffedd5
+    ) !important;
+  border-color: #fdba74 !important;
+}
+
+/* Dá»‹ch vá»¥ khĂ¡c â€” xanh ngá»c */
+
+.consignment-detail-page
+  .detail-pricing-rule-tag.service-other {
+  color: #0f766e !important;
+  background:
+    linear-gradient(
+      135deg,
+      #f0fdfa,
+      #ccfbf1
+    ) !important;
+  border-color: #5eead4 !important;
+}
+
+/* KhĂ´ng tĂ¬m Ä‘Æ°á»£c rule */
+
+.consignment-detail-page
+  .detail-pricing-rule-tag.service-missing {
+  color: #64748b !important;
+  background:
+    linear-gradient(
+      135deg,
+      #f8fafc,
+      #f1f5f9
+    ) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.consignment-detail-page .detail-translated-note {
+  display: block;
+  width: 100%;
+
+  color: #334155;
+
+  font-size: 13.5px;
+  line-height: 1.75;
+  font-weight: 500;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   TRáº NG THĂI â€” MĂ€U Äáº¦Y Äá»¦
+   ========================================================= */
+
+/* Chá» duyá»‡t / chá» xá»­ lĂ½ â€” vĂ ng */
+
+.consignment-detail-page .status-pending-review,
+.consignment-detail-page .status-pending,
+.consignment-detail-page .status-waiting-quotation,
+.consignment-detail-page .status-pending-quotation {
+  color: #a16207 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #fefce8,
+      #fef3c7
+    ) !important;
+  border-color: #fde047 !important;
+}
+
+/* ÄĂ£ gá»­i bĂ¡o giĂ¡ / Ä‘ang xá»­ lĂ½ â€” xanh dÆ°Æ¡ng */
+
+.consignment-detail-page .status-quotation-sent,
+.consignment-detail-page .status-processing,
+.consignment-detail-page .status-confirmed,
+.consignment-detail-page .status-received,
+.consignment-detail-page .status-warehouse-received {
+  color: #1d4ed8 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #eff6ff,
+      #dbeafe
+    ) !important;
+  border-color: #93c5fd !important;
+}
+
+/* Chá» cá»c / chá» thanh toĂ¡n â€” cam */
+
+.consignment-detail-page .status-waiting-deposit,
+.consignment-detail-page .status-pending-payment,
+.consignment-detail-page .status-waiting-payment {
+  color: #c2410c !important;
+  background:
+    linear-gradient(
+      135deg,
+      #fff7ed,
+      #ffedd5
+    ) !important;
+  border-color: #fdba74 !important;
+}
+
+/* ÄĂ£ thanh toĂ¡n / hoĂ n táº¥t â€” xanh lĂ¡ */
+
+.consignment-detail-page .status-paid,
+.consignment-detail-page .status-payment-completed,
+.consignment-detail-page .status-approved,
+.consignment-detail-page .status-completed,
+.consignment-detail-page .status-delivered {
+  color: #047857 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #ecfdf5,
+      #d1fae5
+    ) !important;
+  border-color: #6ee7b7 !important;
+}
+
+/* Äang váº­n chuyá»ƒn â€” tĂ­m cam */
+
+.consignment-detail-page .status-in-transit,
+.consignment-detail-page .status-shipping,
+.consignment-detail-page .status-delivering {
+  color: #7c2d12 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #fff7ed,
+      #fed7aa
+    ) !important;
+  border-color: #fb923c !important;
+}
+
+/* Há»§y / tá»« chá»‘i / háº¿t háº¡n â€” Ä‘á» */
+
+.consignment-detail-page .status-rejected,
+.consignment-detail-page .status-cancelled,
+.consignment-detail-page .status-canceled,
+.consignment-detail-page .status-expired {
+  color: #b91c1c !important;
+  background:
+    linear-gradient(
+      135deg,
+      #fef2f2,
+      #fee2e2
+    ) !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Báº£n nhĂ¡p â€” xĂ¡m */
+
+.consignment-detail-page .status-draft {
+  color: #475569 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #f8fafc,
+      #e2e8f0
+    ) !important;
+  border-color: #cbd5e1 !important;
+}
+
+@media (max-width: 520px) {
+  .consignment-detail-page .detail-pricing-rule-list {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .consignment-detail-page
+    .detail-pricing-rule-tag.ant-tag {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
