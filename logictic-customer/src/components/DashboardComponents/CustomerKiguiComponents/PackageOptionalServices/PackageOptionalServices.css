@@ -1090,7 +1090,7 @@
    }
    
    /* =========================================================
-      FINAL FIX - TIẾNG VIỆT + KHÔNG CHỒNG PHÍ
+      FINAL FIX - TIáº¾NG VIá»†T + KHĂ”NG CHá»’NG PHĂ
       ========================================================= */
    
    .package-services-modal__item {
@@ -1311,3 +1311,537 @@
        padding: 4px 7px;
      }
    }
+
+/* =========================================================
+   PACKAGE CONFIGURATION / WOOD CRATE
+   ========================================================= */
+
+.package-services-modal__item--wood-open {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.package-config-panel {
+  position: relative;
+  margin-top: -11px;
+  padding: 20px;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(22, 119, 255, 0.08),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+
+  border: 1px solid #7fbdff;
+  border-top: 0;
+  border-radius: 0 0 18px 18px;
+
+  box-shadow:
+    0 16px 32px rgba(22, 119, 255, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+
+  animation: packageConfigPanelAppear 0.28s ease both;
+}
+
+.package-config-panel__header {
+  margin-bottom: 16px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.package-config-panel__header > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.package-config-panel__header strong {
+  color: #172033;
+
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 850;
+}
+
+.package-config-panel__header span {
+  max-width: 650px;
+
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 550;
+}
+
+.package-config-panel__reload,
+.package-config-package__suggest {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 11px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  color: #0958d9;
+  background: #ffffff;
+  border: 1px solid #b9dcff;
+  border-radius: 10px;
+
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+
+  cursor: pointer;
+  outline: 0;
+
+  transition:
+    transform 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.package-config-panel__reload:hover:not(:disabled),
+.package-config-package__suggest:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  color: #ffffff;
+  background: #1677ff;
+  border-color: #1677ff;
+
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.2);
+}
+
+.package-config-panel__reload:focus-visible,
+.package-config-package__suggest:focus-visible {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.13);
+}
+
+.package-config-panel__reload:disabled,
+.package-config-package__suggest:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.package-config-panel__state {
+  min-height: 92px;
+  padding: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  color: #475569;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px dashed #b9c9dc;
+  border-radius: 15px;
+
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 650;
+  text-align: center;
+}
+
+.package-config-panel__state.is-error {
+  color: #b42318;
+  background: #fff7f6;
+  border-color: #f5b7b1;
+}
+
+.package-config-panel__state.is-error > div {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.package-config-panel__state.is-error strong {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.package-config-panel__state.is-error span {
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.package-config-panel__packages {
+  display: grid;
+  gap: 15px;
+}
+
+.package-config-package {
+  padding: 16px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d7e5f6;
+  border-radius: 16px;
+
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.package-config-package__heading {
+  margin-bottom: 13px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.package-config-package__heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.package-config-package__heading strong {
+  color: #1e293b;
+
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 850;
+
+  overflow-wrap: anywhere;
+}
+
+.package-config-package__heading span {
+  color: #64748b;
+
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-package__error {
+  margin-bottom: 11px;
+  padding: 9px 11px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  color: #b42318;
+  background: #fff5f4;
+  border: 1px solid #ffc9c4;
+  border-radius: 10px;
+
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-package__error .anticon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.package-config-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.package-config-option {
+  position: relative;
+  min-width: 0;
+  min-height: 146px;
+  padding: 12px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+
+  color: #334155;
+  text-align: left;
+
+  background: #ffffff;
+  border: 1px solid #dbe5f0;
+  border-radius: 14px;
+  outline: 0;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.package-config-option:hover {
+  transform: translateY(-2px);
+
+  background: #fbfdff;
+  border-color: #91caff;
+
+  box-shadow: 0 10px 22px rgba(22, 119, 255, 0.11);
+}
+
+.package-config-option:focus-visible {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.13);
+}
+
+.package-config-option--selected {
+  color: #0958d9;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(22, 119, 255, 0.1),
+      transparent 40%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #edf6ff 100%);
+
+  border-color: #4096ff;
+
+  box-shadow:
+    0 12px 25px rgba(22, 119, 255, 0.14),
+    inset 0 0 0 1px rgba(22, 119, 255, 0.08);
+}
+
+.package-config-option--custom {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(245, 158, 11, 0.09),
+      transparent 40%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
+
+  border-color: #f7d795;
+}
+
+.package-config-option--custom.package-config-option--selected {
+  color: #b45309;
+  border-color: #f59e0b;
+
+  box-shadow:
+    0 12px 25px rgba(217, 119, 6, 0.13),
+    inset 0 0 0 1px rgba(245, 158, 11, 0.08);
+}
+
+.package-config-option__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.package-config-option__top strong {
+  min-width: 0;
+
+  color: inherit;
+
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 850;
+
+  overflow-wrap: anywhere;
+}
+
+.package-config-option__top small {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+
+  color: #067647;
+  background: #ecfdf3;
+  border: 1px solid #a7e3be;
+  border-radius: 999px;
+
+  font-size: 8.5px;
+  line-height: 1.2;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.package-config-option__code {
+  align-self: flex-start;
+  padding: 3px 7px;
+
+  color: #667085;
+  background: #f2f4f7;
+  border: 1px solid #e4e7ec;
+  border-radius: 999px;
+
+  font-size: 8.5px;
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.package-config-option__dimension {
+  min-height: 33px;
+
+  color: #475467;
+
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-option__meta {
+  margin-top: auto;
+  padding-top: 8px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+
+  border-top: 1px dashed #d8e1ec;
+}
+
+.package-config-option__meta > span {
+  color: #667085;
+
+  font-size: 9px;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.package-config-option__meta > b {
+  color: #0958d9;
+
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.package-config-option--custom
+  .package-config-option__meta > b {
+  color: #b45309;
+}
+
+.package-config-option__selected {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+
+  min-height: 22px;
+  padding: 4px 7px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  color: #ffffff;
+  background: linear-gradient(135deg, #4096ff, #1677ff);
+  border-radius: 999px;
+
+  font-size: 8.5px;
+  line-height: 1;
+  font-weight: 850;
+
+  box-shadow: 0 5px 12px rgba(22, 119, 255, 0.22);
+}
+
+.package-config-option--custom
+  .package-config-option__selected {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 5px 12px rgba(217, 119, 6, 0.2);
+}
+
+.package-config-package__footer {
+  margin-top: 12px;
+  padding: 9px 11px;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-package__footer .anticon {
+  flex-shrink: 0;
+  color: #16a34a;
+}
+
+.package-config-package__footer strong {
+  color: #1d4ed8;
+  font-weight: 850;
+}
+
+@keyframes packageConfigPanelAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .package-config-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .package-config-panel {
+    margin-top: -11px;
+    padding: 14px;
+    border-radius: 0 0 15px 15px;
+  }
+
+  .package-config-panel__header,
+  .package-config-package__heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .package-config-panel__reload,
+  .package-config-package__suggest {
+    align-self: flex-start;
+  }
+
+  .package-config-options {
+    grid-template-columns: 1fr;
+  }
+
+  .package-config-option {
+    min-height: 132px;
+  }
+}
+
+@media (max-width: 420px) {
+  .package-config-panel {
+    padding: 11px;
+  }
+
+  .package-config-package {
+    padding: 12px;
+  }
+
+  .package-config-option {
+    padding: 11px;
+  }
+}

@@ -3,10 +3,14 @@ import axios from "axios";
 /* ================= CONFIG ================= */
 
 const DEFAULT_API_BASE_URL = "https://api-vcl.zushin.io.vn";
+const UPLOAD_ENDPOINT = "/api/uploads/images";
 
 const getEnvValue = (value) => {
-  if (typeof value !== "string") return "";
-  return value.trim();
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().replace(/\/+$/, "");
 };
 
 const UPLOAD_API_BASE_URL =
@@ -14,14 +18,19 @@ const UPLOAD_API_BASE_URL =
   getEnvValue(import.meta.env.VITE_API_BASE_URL) ||
   DEFAULT_API_BASE_URL;
 
-console.log("UPLOAD API BASE URL:", UPLOAD_API_BASE_URL);
+console.info("[UploadImage] API base URL:", UPLOAD_API_BASE_URL);
 
 /* ================= AXIOS INSTANCE ================= */
 
 const uploadAxios = axios.create({
   baseURL: UPLOAD_API_BASE_URL,
+  timeout: 60_000,
   headers: {
-    Accept: "application/json, text/plain, */*",
+    /*
+     * Swagger khai báo text/plain, nhưng API thực tế có thể trả JSON.
+     * Chấp nhận cả hai để Axios xử lý đúng response.
+     */
+    Accept: "text/plain, application/json, */*",
   },
 });
 
@@ -40,26 +49,34 @@ uploadAxios.interceptors.request.use(
     }
 
     /*
-     * Không set Content-Type khi gửi FormData.
-     * Browser sẽ tự tạo multipart/form-data kèm boundary.
+     * Chỉ xóa Content-Type khi body là FormData.
+     * Không tự đặt multipart/form-data vì trình duyệt phải tự thêm boundary.
      */
-    if (typeof config.headers.delete === "function") {
-      config.headers.delete("Content-Type");
-      config.headers.delete("content-type");
-    } else {
-      delete config.headers["Content-Type"];
-      delete config.headers["content-type"];
+    if (
+      typeof FormData !== "undefined" &&
+      config.data instanceof FormData
+    ) {
+      if (typeof config.headers.delete === "function") {
+        config.headers.delete("Content-Type");
+        config.headers.delete("content-type");
+      } else {
+        delete config.headers["Content-Type"];
+        delete config.headers["content-type"];
+      }
     }
 
-    console.log("====== UPLOAD IMAGE REQUEST ======");
-    console.log("BASE URL:", config.baseURL);
-    console.log("URL:", `${config.baseURL}${config.url}`);
-    console.log("METHOD:", config.method?.toUpperCase());
-    console.log("TOKEN:", token ? "Đã có token" : "Chưa có token");
+    console.info("[UploadImage] Request:", {
+      method: config.method?.toUpperCase(),
+      url: `${config.baseURL || ""}${config.url || ""}`,
+      hasToken: Boolean(token),
+      isFormData:
+        typeof FormData !== "undefined" &&
+        config.data instanceof FormData,
+    });
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 /* ================= RESPONSE INTERCEPTOR ================= */
@@ -67,7 +84,10 @@ uploadAxios.interceptors.request.use(
 uploadAxios.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("UPLOAD API ERROR:", error?.response || error);
+    console.error(
+      "[UploadImage] API error:",
+      error?.response || error,
+    );
 
     const status = error?.response?.status;
 
@@ -75,51 +95,111 @@ uploadAxios.interceptors.response.use(
       sessionStorage.removeItem("accessToken");
       localStorage.removeItem("accessToken");
 
-      window.location.href = "/login";
+      if (
+        typeof window !== "undefined" &&
+        window.location.pathname !== "/login"
+      ) {
+        window.location.assign("/login");
+      }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
-/* ================= HELPER ================= */
+/* ================= FILE HELPERS ================= */
 
-const normalizeImageFile = (inputFile) => {
+const getExtensionFromMimeType = (mimeType) => {
+  const normalizedMimeType = String(mimeType || "")
+    .trim()
+    .toLowerCase();
+
+  const extensionMap = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/heic": "heic",
+    "image/heif": "heif",
+  };
+
+  return extensionMap[normalizedMimeType] || "jpg";
+};
+
+const normalizeImageFile = (inputFile, index = 0) => {
   if (!inputFile) {
     throw new Error("Vui lòng chọn ảnh.");
   }
 
-  if (typeof File !== "undefined" && inputFile instanceof File) {
+  if (
+    typeof File !== "undefined" &&
+    inputFile instanceof File
+  ) {
     return inputFile;
   }
 
-  if (typeof Blob !== "undefined" && inputFile instanceof Blob) {
+  if (
+    typeof Blob !== "undefined" &&
+    inputFile instanceof Blob
+  ) {
     const mimeType = inputFile.type || "image/jpeg";
+    const extension = getExtensionFromMimeType(mimeType);
 
-    let extension = "jpg";
-
-    if (mimeType === "image/png") {
-      extension = "png";
-    } else if (mimeType === "image/webp") {
-      extension = "webp";
-    } else if (mimeType === "image/gif") {
-      extension = "gif";
-    }
-
-    return new File([inputFile], `image-${Date.now()}.${extension}`, {
-      type: mimeType,
-    });
+    return new File(
+      [inputFile],
+      `image-${Date.now()}-${index + 1}.${extension}`,
+      {
+        type: mimeType,
+      },
+    );
   }
 
   throw new Error("File ảnh không hợp lệ.");
 };
 
+const normalizeImageFiles = (inputFiles) => {
+  let rawFiles = [];
+
+  if (
+    typeof FileList !== "undefined" &&
+    inputFiles instanceof FileList
+  ) {
+    rawFiles = Array.from(inputFiles);
+  } else if (Array.isArray(inputFiles)) {
+    rawFiles = inputFiles;
+  } else if (inputFiles) {
+    rawFiles = [inputFiles];
+  }
+
+  if (!rawFiles.length) {
+    throw new Error("Vui lòng chọn ít nhất một ảnh.");
+  }
+
+  return rawFiles.map((file, index) => {
+    const normalizedFile = normalizeImageFile(file, index);
+
+    if (!normalizedFile.type?.startsWith("image/")) {
+      throw new Error(
+        `File "${normalizedFile.name || index + 1}" không phải là hình ảnh.`,
+      );
+    }
+
+    return normalizedFile;
+  });
+};
+
+/* ================= ERROR HELPER ================= */
+
 const getUploadErrorMessage = (error) => {
   const status = error?.response?.status;
   const responseData = error?.response?.data;
 
-  if (typeof responseData === "string" && responseData.trim()) {
-    return responseData;
+  if (
+    typeof responseData === "string" &&
+    responseData.trim()
+  ) {
+    return responseData.trim();
   }
 
   if (typeof responseData?.message === "string") {
@@ -134,8 +214,23 @@ const getUploadErrorMessage = (error) => {
     return responseData.title;
   }
 
+  if (responseData?.errors) {
+    return Object.entries(responseData.errors)
+      .map(([field, messages]) => {
+        const content = Array.isArray(messages)
+          ? messages.join(", ")
+          : String(messages);
+
+        return `${field}: ${content}`;
+      })
+      .join(" | ");
+  }
+
   if (status === 400) {
-    return "Dữ liệu ảnh gửi lên không hợp lệ.";
+    return (
+      "Dữ liệu ảnh gửi lên không hợp lệ. " +
+      'API yêu cầu multipart field có tên "files".'
+    );
   }
 
   if (status === 401) {
@@ -147,72 +242,109 @@ const getUploadErrorMessage = (error) => {
   }
 
   if (status === 404) {
-    return "Không tìm thấy API upload ảnh. Vui lòng kiểm tra lại endpoint.";
+    return "Không tìm thấy API upload ảnh. Vui lòng kiểm tra endpoint.";
   }
 
   if (status === 413) {
-    return "Dung lượng ảnh vượt quá giới hạn cho phép.";
+    return "Dung lượng ảnh vượt quá giới hạn máy chủ cho phép.";
   }
 
   if (status === 415) {
-    return "Máy chủ không hỗ trợ định dạng file hoặc request upload chưa đúng.";
+    return (
+      "Máy chủ không hỗ trợ định dạng ảnh hoặc request multipart chưa đúng."
+    );
   }
 
-  if (status === 500) {
+  if (status >= 500) {
     return "Máy chủ gặp lỗi khi xử lý ảnh.";
   }
 
   return error?.message || "Tải ảnh lên thất bại.";
 };
 
-/* ================= UPLOAD IMAGE API ================= */
+/* ================= UPLOAD MULTIPLE IMAGES ================= */
 
 /**
- * Upload một ảnh lên máy chủ.
+ * Upload một hoặc nhiều ảnh.
  *
- * @param {File|Blob} inputFile File hoặc Blob ảnh cần upload.
- * @param {(percent: number) => void} onUploadProgress Hàm nhận tiến trình upload.
- * @returns {Promise<any>} Dữ liệu API trả về.
+ * Swagger/cURL yêu cầu:
+ * - Endpoint: POST /api/uploads/images
+ * - multipart field: files
+ *
+ * @param {File|Blob|FileList|Array<File|Blob>} inputFiles
+ * @param {(percent: number) => void} onUploadProgress
+ * @returns {Promise<any>} Dữ liệu gốc API trả về.
  */
-export const uploadImage = async (inputFile, onUploadProgress) => {
-  const file = normalizeImageFile(inputFile);
-
-  if (!file.type?.startsWith("image/")) {
-    throw new Error("File được chọn không phải là hình ảnh.");
-  }
-
+export const uploadImages = async (
+  inputFiles,
+  onUploadProgress,
+) => {
+  const files = normalizeImageFiles(inputFiles);
   const formData = new FormData();
 
-  formData.append("file", file, file.name || `image-${Date.now()}.jpg`);
+  /*
+   * Quan trọng: tên field phải là "files", không phải "file".
+   * Nhiều file được append lặp lại cùng một key "files".
+   */
+  files.forEach((file) => {
+    formData.append(
+      "files",
+      file,
+      file.name || `image-${Date.now()}.jpg`,
+    );
+  });
 
   try {
-    const response = await uploadAxios.post("/api/uploads/image", formData, {
-      onUploadProgress: (progressEvent) => {
-        if (
-          typeof onUploadProgress !== "function" ||
-          !progressEvent.total
-        ) {
-          return;
-        }
+    const response = await uploadAxios.post(
+      UPLOAD_ENDPOINT,
+      formData,
+      {
+        onUploadProgress: (progressEvent) => {
+          if (
+            typeof onUploadProgress !== "function" ||
+            !progressEvent.total
+          ) {
+            return;
+          }
 
-        const percent = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
+          const percent = Math.min(
+            100,
+            Math.round(
+              (progressEvent.loaded * 100) /
+                progressEvent.total,
+            ),
+          );
 
-        onUploadProgress(percent);
+          onUploadProgress(percent);
+        },
       },
-    });
+    );
 
-    console.log("UPLOAD IMAGE RESPONSE:", response.data);
+    console.info("[UploadImage] Response:", response.data);
 
     return response.data;
   } catch (error) {
-    console.error("UPLOAD IMAGE ERROR:", error);
-    console.error("STATUS:", error?.response?.status);
-    console.error("RESPONSE DATA:", error?.response?.data);
+    console.error("[UploadImage] Upload failed:", {
+      status: error?.response?.status,
+      responseData: error?.response?.data,
+      message: error?.message,
+    });
 
     throw new Error(getUploadErrorMessage(error));
   }
+};
+
+/* ================= UPLOAD SINGLE IMAGE ================= */
+
+
+export const uploadImage = async (
+  inputFile,
+  onUploadProgress,
+) => {
+  return uploadImages(
+    [inputFile],
+    onUploadProgress,
+  );
 };
 
 export { uploadAxios };

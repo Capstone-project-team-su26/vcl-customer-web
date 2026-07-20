@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckOutlined,
   CloseOutlined,
@@ -17,6 +17,7 @@ import "./PackageOptionalServices.css";
 
 const ACTIVE_STATUS = "ACTIVE";
 const VOLUMETRIC_DIVISOR_CODE = "VOLUMETRIC_DIVISOR";
+const WOOD_CRATE_CODE = "WOOD_CRATE";
 
 /*
  * Các quy tắc chỉ dùng để hệ thống tính phí,
@@ -96,6 +97,8 @@ export const EMPTY_PACKAGE_SERVICES = {
   requiresInspection: false,
   selectedRuleCodes: [],
   selectedPricingRuleIds: [],
+  packageConfigurationByPackageId: {},
+  selectedPackageConfigurations: [],
 };
 
 const normalizeCode = (value) =>
@@ -229,6 +232,244 @@ const normalizeRulesFromApi = (result) => {
         rule.ruleCode !== VOLUMETRIC_DIVISOR_CODE &&
         rule.ruleType !== VOLUMETRIC_DIVISOR_CODE,
     );
+};
+
+
+const normalizePackageConfiguration = (configuration = {}) => ({
+  ...configuration,
+  id: String(
+    configuration?.id ||
+      configuration?.packageConfigurationId ||
+      configuration?.configurationId ||
+      "",
+  ).trim(),
+  packageConfigurationId: String(
+    configuration?.packageConfigurationId ||
+      configuration?.id ||
+      configuration?.configurationId ||
+      "",
+  ).trim(),
+  configCode: normalizeCode(
+    configuration?.configCode ||
+      configuration?.code,
+  ),
+  configName: String(
+    configuration?.configName ||
+      configuration?.name ||
+      configuration?.displayName ||
+      "Cấu hình đóng gói",
+  ).trim(),
+  length: toFiniteNumberOrNull(configuration?.length) ?? 0,
+  width: toFiniteNumberOrNull(configuration?.width) ?? 0,
+  height: toFiniteNumberOrNull(configuration?.height) ?? 0,
+  maxWeight:
+    toFiniteNumberOrNull(
+      configuration?.maxWeight ??
+        configuration?.maximumWeight,
+    ) ?? 0,
+  packageFee:
+    toFiniteNumberOrNull(
+      configuration?.packageFee ??
+        configuration?.fee ??
+        configuration?.price,
+    ) ?? 0,
+  status: normalizeCode(
+    configuration?.status ||
+      ACTIVE_STATUS,
+  ),
+});
+
+const normalizePackageConfigurationsFromApi = (result) => {
+  const candidates = [
+    result,
+    result?.items,
+    result?.packageConfigurations,
+    result?.configurations,
+    result?.data,
+    result?.data?.items,
+    result?.data?.packageConfigurations,
+    result?.data?.configurations,
+  ];
+
+  const configurations =
+    candidates.find(Array.isArray) || [];
+
+  return configurations
+    .filter(
+      (item) =>
+        item &&
+        typeof item === "object",
+    )
+    .map(normalizePackageConfiguration)
+    .filter(
+      (item) =>
+        item.id &&
+        (
+          !item.status ||
+          item.status === ACTIVE_STATUS
+        ),
+    );
+};
+
+const normalizePackageItems = (packages = []) => {
+  if (!Array.isArray(packages)) {
+    return [];
+  }
+
+  return packages.map((pkg, index) => {
+    const packageId = String(
+      pkg?.id ||
+        pkg?.packageId ||
+        pkg?.parcelId ||
+        `package-${index + 1}`,
+    ).trim();
+
+    return {
+      raw: pkg,
+      id: packageId,
+      index,
+      displayName:
+        String(pkg?.productName || "").trim() ||
+        `Kiện hàng ${index + 1}`,
+      length: toFiniteNumberOrNull(pkg?.length) ?? 0,
+      width: toFiniteNumberOrNull(pkg?.width) ?? 0,
+      height: toFiniteNumberOrNull(pkg?.height) ?? 0,
+      weight: toFiniteNumberOrNull(pkg?.weight) ?? 0,
+    };
+  });
+};
+
+const normalizePackageConfigurationMap = (value) => {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([packageId, configurationId]) => [
+        String(packageId || "").trim(),
+        String(configurationId || "").trim(),
+      ])
+      .filter(
+        ([packageId, configurationId]) =>
+          packageId &&
+          configurationId,
+      ),
+  );
+};
+
+const getPackageConfigurationMapFromValue = (value) => {
+  const directMap =
+    normalizePackageConfigurationMap(
+      value?.packageConfigurationByPackageId ??
+        value?.packageConfigurationsByPackageId ??
+        value?.selectedPackageConfigurationByPackageId,
+    );
+
+  if (Object.keys(directMap).length) {
+    return directMap;
+  }
+
+  if (
+    Array.isArray(
+      value?.selectedPackageConfigurations,
+    )
+  ) {
+    return Object.fromEntries(
+      value.selectedPackageConfigurations
+        .map((item) => [
+          String(
+            item?.packageId ||
+              item?.id ||
+              "",
+          ).trim(),
+          String(
+            item?.packageConfigurationId ||
+              item?.configurationId ||
+              "",
+          ).trim(),
+        ])
+        .filter(
+          ([packageId, configurationId]) =>
+            packageId &&
+            configurationId,
+        ),
+    );
+  }
+
+  return {};
+};
+
+const areConfigurationMapsEqual = (
+  first = {},
+  second = {},
+) => {
+  const firstEntries = Object.entries(
+    normalizePackageConfigurationMap(first),
+  ).sort(([firstKey], [secondKey]) =>
+    firstKey.localeCompare(secondKey),
+  );
+
+  const secondEntries = Object.entries(
+    normalizePackageConfigurationMap(second),
+  ).sort(([firstKey], [secondKey]) =>
+    firstKey.localeCompare(secondKey),
+  );
+
+  return (
+    firstEntries.length === secondEntries.length &&
+    firstEntries.every(
+      ([key, value], index) =>
+        key === secondEntries[index]?.[0] &&
+        value === secondEntries[index]?.[1],
+    )
+  );
+};
+
+const getPackageSuggestionPayload = (pkg) => {
+  const payload = {
+    length: Number(pkg?.length),
+    width: Number(pkg?.width),
+    height: Number(pkg?.height),
+    weight: Number(pkg?.weight),
+  };
+
+  const isValid = Object.values(payload).every(
+    (value) =>
+      Number.isFinite(value) &&
+      value > 0,
+  );
+
+  return isValid ? payload : null;
+};
+
+const formatPackageDimensions = (pkg) => {
+  return `${formatNumber(pkg?.length)} × ${formatNumber(
+    pkg?.width,
+  )} × ${formatNumber(pkg?.height)} cm • ${formatNumber(
+    pkg?.weight,
+  )} kg`;
+};
+
+const formatConfigurationDimensions = (configuration) => {
+  if (
+    normalizeCode(configuration?.configCode) ===
+    "CUSTOM"
+  ) {
+    return "Kích thước tùy chỉnh theo kiện hàng";
+  }
+
+  return `${formatNumber(
+    configuration?.length,
+  )} × ${formatNumber(
+    configuration?.width,
+  )} × ${formatNumber(
+    configuration?.height,
+  )} cm`;
 };
 
 const formatMoney = (value) => {
@@ -498,6 +739,7 @@ const areCodeArraysEqual = (first = [], second = []) => {
 
 export default function PackageOptionalServices({
   value = EMPTY_PACKAGE_SERVICES,
+  packages = [],
   disabled = false,
   onChange,
 
@@ -515,6 +757,44 @@ export default function PackageOptionalServices({
   const [pricingLoading, setPricingLoading] = useState(true);
   const [pricingError, setPricingError] = useState("");
   const [draftSelectedCodes, setDraftSelectedCodes] = useState([]);
+
+  const [
+    packageConfigurations,
+    setPackageConfigurations,
+  ] = useState([]);
+  const [
+    packageConfigurationsLoading,
+    setPackageConfigurationsLoading,
+  ] = useState(true);
+  const [
+    packageConfigurationsError,
+    setPackageConfigurationsError,
+  ] = useState("");
+
+  const [
+    draftPackageConfigurationByPackageId,
+    setDraftPackageConfigurationByPackageId,
+  ] = useState({});
+
+  const [
+    suggestedConfigurationByPackageId,
+    setSuggestedConfigurationByPackageId,
+  ] = useState({});
+
+  const [
+    suggestionLoadingByPackageId,
+    setSuggestionLoadingByPackageId,
+  ] = useState({});
+
+  const [
+    suggestionErrorByPackageId,
+    setSuggestionErrorByPackageId,
+  ] = useState({});
+
+  const [
+    autoSuggestionSignatureByPackageId,
+    setAutoSuggestionSignatureByPackageId,
+  ] = useState({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -573,6 +853,91 @@ export default function PackageOptionalServices({
 
     return () => controller.abort();
   }, []);
+
+  const loadPackageConfigurations = useCallback(
+    async (options = {}) => {
+      const { signal } = options;
+
+      try {
+        setPackageConfigurationsLoading(true);
+        setPackageConfigurationsError("");
+
+        if (
+          typeof pricingRuleService.getPackageConfigurations !==
+          "function"
+        ) {
+          throw new Error(
+            "pricingRuleService chưa có hàm getPackageConfigurations.",
+          );
+        }
+
+        const result =
+          await pricingRuleService.getPackageConfigurations({
+            signal,
+            onlyActive: true,
+          });
+
+        if (signal?.aborted) {
+          return [];
+        }
+
+        const configurations =
+          normalizePackageConfigurationsFromApi(result);
+
+        setPackageConfigurations(configurations);
+
+        return configurations;
+      } catch (error) {
+        if (
+          signal?.aborted ||
+          isCanceledRequest(error)
+        ) {
+          return [];
+        }
+
+        console.error(
+          "[PackageOptionalServices] Lỗi tải /api/package-configurations:",
+          error,
+        );
+
+        const message =
+          error?.message ||
+          "Không thể tải danh sách kích thước thùng.";
+
+        setPackageConfigurations([]);
+        setPackageConfigurationsError(message);
+
+        return [];
+      } finally {
+        if (!signal?.aborted) {
+          setPackageConfigurationsLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    loadPackageConfigurations({
+      signal: controller.signal,
+    });
+
+    return () => controller.abort();
+  }, [loadPackageConfigurations]);
+
+  const packageItems = useMemo(
+    () => normalizePackageItems(packages),
+    [packages],
+  );
+
+  const selectedPackageConfigurationByPackageId =
+    useMemo(
+      () =>
+        getPackageConfigurationMapFromValue(value),
+      [value],
+    );
 
   const selectedCodes = useMemo(
     () => getInitialSelectedCodes(value, pricingRules),
@@ -635,8 +1000,17 @@ export default function PackageOptionalServices({
   useEffect(() => {
     if (isOpen) {
       setDraftSelectedCodes(selectedCodes);
+      setDraftPackageConfigurationByPackageId(
+        selectedPackageConfigurationByPackageId,
+      );
+      setSuggestionErrorByPackageId({});
+      setAutoSuggestionSignatureByPackageId({});
     }
-  }, [isOpen, selectedCodes]);
+  }, [
+    isOpen,
+    selectedCodes,
+    selectedPackageConfigurationByPackageId,
+  ]);
 
   const selectedRules = useMemo(() => {
     const selectedSet = new Set(selectedCodes);
@@ -649,9 +1023,308 @@ export default function PackageOptionalServices({
   }, [draftSelectedCodes, pricingRules]);
 
   const hasChanges = useMemo(
-    () => !areCodeArraysEqual(selectedCodes, draftSelectedCodes),
-    [draftSelectedCodes, selectedCodes],
+    () =>
+      !areCodeArraysEqual(
+        selectedCodes,
+        draftSelectedCodes,
+      ) ||
+      !areConfigurationMapsEqual(
+        selectedPackageConfigurationByPackageId,
+        draftPackageConfigurationByPackageId,
+      ),
+    [
+      draftPackageConfigurationByPackageId,
+      draftSelectedCodes,
+      selectedCodes,
+      selectedPackageConfigurationByPackageId,
+    ],
   );
+
+  const handleSelectPackageConfiguration = (
+    packageId,
+    configurationId,
+  ) => {
+    if (disabled) {
+      return;
+    }
+
+    setDraftPackageConfigurationByPackageId(
+      (previous) => ({
+        ...previous,
+        [packageId]: configurationId,
+      }),
+    );
+
+    setSuggestionErrorByPackageId(
+      (previous) => ({
+        ...previous,
+        [packageId]: "",
+      }),
+    );
+  };
+
+  const handleSuggestPackageConfiguration =
+    useCallback(
+      async (
+        packageItem,
+        {
+          silent = false,
+        } = {},
+      ) => {
+        const packageId =
+          String(packageItem?.id || "").trim();
+
+        if (!packageId) {
+          return null;
+        }
+
+        const requestPayload =
+          getPackageSuggestionPayload(packageItem);
+
+        if (!requestPayload) {
+          const message =
+            "Cần nhập đầy đủ dài, rộng, cao và trọng lượng lớn hơn 0 trước khi gợi ý thùng.";
+
+          setSuggestionErrorByPackageId(
+            (previous) => ({
+              ...previous,
+              [packageId]: message,
+            }),
+          );
+
+          if (!silent) {
+            AuthNotify.warning(
+              "Chưa đủ thông tin kiện",
+              message,
+            );
+          }
+
+          return null;
+        }
+
+        try {
+          setSuggestionLoadingByPackageId(
+            (previous) => ({
+              ...previous,
+              [packageId]: true,
+            }),
+          );
+
+          setSuggestionErrorByPackageId(
+            (previous) => ({
+              ...previous,
+              [packageId]: "",
+            }),
+          );
+
+          if (
+            typeof pricingRuleService
+              .suggestPackageConfiguration !==
+            "function"
+          ) {
+            throw new Error(
+              "pricingRuleService chưa có hàm suggestPackageConfiguration.",
+            );
+          }
+
+          const suggestion =
+            await pricingRuleService
+              .suggestPackageConfiguration(
+                requestPayload,
+              );
+
+          const normalizedSuggestion =
+            normalizePackageConfiguration(
+              suggestion,
+            );
+
+          const suggestedId =
+            normalizedSuggestion.id;
+
+          if (!suggestedId) {
+            throw new Error(
+              "API gợi ý không trả về packageConfigurationId.",
+            );
+          }
+
+          setPackageConfigurations(
+            (previous) => {
+              const exists = previous.some(
+                (configuration) =>
+                  configuration.id ===
+                  suggestedId,
+              );
+
+              return exists
+                ? previous
+                : [
+                    ...previous,
+                    normalizedSuggestion,
+                  ];
+            },
+          );
+
+          setSuggestedConfigurationByPackageId(
+            (previous) => ({
+              ...previous,
+              [packageId]: suggestedId,
+            }),
+          );
+
+          setDraftPackageConfigurationByPackageId(
+            (previous) => ({
+              ...previous,
+              [packageId]: suggestedId,
+            }),
+          );
+
+          if (!silent) {
+            AuthNotify.success(
+              "Đã gợi ý kích thước thùng",
+              `${packageItem.displayName}: ${normalizedSuggestion.configName}.`,
+            );
+          }
+
+          return normalizedSuggestion;
+        } catch (error) {
+          if (isCanceledRequest(error)) {
+            return null;
+          }
+
+          const message =
+            error?.message ||
+            "Không thể gợi ý kích thước thùng.";
+
+          console.error(
+            "[PackageOptionalServices] Lỗi POST /api/package-configurations/suggest:",
+            error,
+          );
+
+          setSuggestionErrorByPackageId(
+            (previous) => ({
+              ...previous,
+              [packageId]: message,
+            }),
+          );
+
+          if (!silent) {
+            AuthNotify.error(
+              "Gợi ý thùng thất bại",
+              message,
+            );
+          }
+
+          return null;
+        } finally {
+          setSuggestionLoadingByPackageId(
+            (previous) => ({
+              ...previous,
+              [packageId]: false,
+            }),
+          );
+        }
+      },
+      [],
+    );
+
+  useEffect(() => {
+    const hasWoodCrateSelected =
+      draftSelectedCodes.includes(
+        WOOD_CRATE_CODE,
+      );
+
+    if (
+      !isOpen ||
+      !hasWoodCrateSelected ||
+      packageConfigurationsLoading ||
+      packageConfigurationsError ||
+      !packageItems.length
+    ) {
+      return;
+    }
+
+    const pendingPackages = packageItems.filter(
+      (packageItem) => {
+        const packageId = packageItem.id;
+        const payload =
+          getPackageSuggestionPayload(packageItem);
+
+        if (
+          !payload ||
+          draftPackageConfigurationByPackageId[
+            packageId
+          ] ||
+          suggestionLoadingByPackageId[packageId]
+        ) {
+          return false;
+        }
+
+        const signature = [
+          payload.length,
+          payload.width,
+          payload.height,
+          payload.weight,
+        ].join("|");
+
+        return (
+          autoSuggestionSignatureByPackageId[
+            packageId
+          ] !== signature
+        );
+      },
+    );
+
+    if (!pendingPackages.length) {
+      return;
+    }
+
+    setAutoSuggestionSignatureByPackageId(
+      (previous) => {
+        const next = {
+          ...previous,
+        };
+
+        pendingPackages.forEach(
+          (packageItem) => {
+            const payload =
+              getPackageSuggestionPayload(
+                packageItem,
+              );
+
+            next[packageItem.id] = [
+              payload.length,
+              payload.width,
+              payload.height,
+              payload.weight,
+            ].join("|");
+          },
+        );
+
+        return next;
+      },
+    );
+
+    pendingPackages.forEach(
+      (packageItem) => {
+        handleSuggestPackageConfiguration(
+          packageItem,
+          {
+            silent: true,
+          },
+        );
+      },
+    );
+  }, [
+    autoSuggestionSignatureByPackageId,
+    draftPackageConfigurationByPackageId,
+    draftSelectedCodes,
+    handleSuggestPackageConfiguration,
+    isOpen,
+    packageConfigurationsError,
+    packageConfigurationsLoading,
+    packageItems,
+    suggestionLoadingByPackageId,
+  ]);
 
   const handleOpen = () => {
     if (disabled) {
@@ -659,6 +1332,11 @@ export default function PackageOptionalServices({
     }
 
     setDraftSelectedCodes(selectedCodes);
+    setDraftPackageConfigurationByPackageId(
+      selectedPackageConfigurationByPackageId,
+    );
+    setSuggestionErrorByPackageId({});
+    setAutoSuggestionSignatureByPackageId({});
     setIsOpen(true);
   };
 
@@ -687,6 +1365,10 @@ export default function PackageOptionalServices({
 
   const handleClose = () => {
     setDraftSelectedCodes(selectedCodes);
+    setDraftPackageConfigurationByPackageId(
+      selectedPackageConfigurationByPackageId,
+    );
+    setSuggestionErrorByPackageId({});
     setIsOpen(false);
   };
 
@@ -696,15 +1378,18 @@ export default function PackageOptionalServices({
     }
 
     const selectedSet = new Set(
-      sanitizeSelectedRuleCodes(draftSelectedCodes),
+      sanitizeSelectedRuleCodes(
+        draftSelectedCodes,
+      ),
     );
 
-    const activeSelectedRules = pricingRules.filter(
-      (rule) =>
-        !isHiddenRule(rule) &&
-        selectedSet.has(rule.ruleCode) &&
-        isRuleSelectable(rule),
-    );
+    const activeSelectedRules =
+      pricingRules.filter(
+        (rule) =>
+          !isHiddenRule(rule) &&
+          selectedSet.has(rule.ruleCode) &&
+          isRuleSelectable(rule),
+      );
 
     const selectedRuleCodes =
       sanitizeSelectedRuleCodes(
@@ -721,32 +1406,138 @@ export default function PackageOptionalServices({
         hiddenPricingRuleIds,
       );
 
+    const requiresWoodenCrate =
+      selectedRuleCodes.includes(
+        WOOD_CRATE_CODE,
+      );
+
+    let packageConfigurationByPackageId =
+      {};
+
+    let selectedPackageConfigurations = [];
+
+    if (requiresWoodenCrate) {
+      if (!packageItems.length) {
+        AuthNotify.warning(
+          "Chưa có kiện hàng",
+          "Hãy thêm ít nhất một kiện trước khi chọn đóng thùng gỗ.",
+        );
+        return;
+      }
+
+      const missingPackages =
+        packageItems.filter(
+          (packageItem) =>
+            !String(
+              draftPackageConfigurationByPackageId[
+                packageItem.id
+              ] || "",
+            ).trim(),
+        );
+
+      if (missingPackages.length) {
+        AuthNotify.warning(
+          "Chưa chọn kích thước thùng",
+          `Vui lòng chọn cấu hình thùng cho: ${missingPackages
+            .map(
+              (packageItem) =>
+                packageItem.displayName,
+            )
+            .join(", ")}.`,
+        );
+        return;
+      }
+
+      packageConfigurationByPackageId =
+        Object.fromEntries(
+          packageItems.map(
+            (packageItem) => [
+              packageItem.id,
+              String(
+                draftPackageConfigurationByPackageId[
+                  packageItem.id
+                ],
+              ).trim(),
+            ],
+          ),
+        );
+
+      selectedPackageConfigurations =
+        packageItems.map((packageItem) => {
+          const packageConfigurationId =
+            packageConfigurationByPackageId[
+              packageItem.id
+            ];
+
+          const configuration =
+            packageConfigurations.find(
+              (item) =>
+                item.id ===
+                packageConfigurationId,
+            );
+
+          return {
+            packageId: packageItem.id,
+            packageIndex:
+              packageItem.index,
+            productName:
+              packageItem.displayName,
+            packageConfigurationId,
+            configCode:
+              configuration?.configCode ||
+              "",
+            configName:
+              configuration?.configName ||
+              "Cấu hình đóng gói",
+            packageFee:
+              configuration?.packageFee ??
+              0,
+          };
+        });
+    }
+
     const nextValue = {
       ...value,
-      requiresPacking: selectedRuleCodes.some((code) =>
-        code.includes("PACKING"),
-      ),
-      requiresWoodenCrate: selectedRuleCodes.includes("WOOD_CRATE"),
-      requiresInsurance: activeSelectedRules.some(
-        (rule) =>
-          rule.ruleCode.includes("INSURANCE") ||
-          rule.ruleType.includes("INSURANCE"),
-      ),
-      requiresInspection: activeSelectedRules.some(
-        (rule) =>
-          rule.ruleCode.includes("INSPECTION") ||
-          rule.ruleType.includes("INSPECTION"),
-      ),
+      requiresPacking:
+        selectedRuleCodes.some(
+          (code) =>
+            code.includes("PACKING"),
+        ),
+      requiresWoodenCrate,
+      requiresInsurance:
+        activeSelectedRules.some(
+          (rule) =>
+            rule.ruleCode.includes(
+              "INSURANCE",
+            ) ||
+            rule.ruleType.includes(
+              "INSURANCE",
+            ),
+        ),
+      requiresInspection:
+        activeSelectedRules.some(
+          (rule) =>
+            rule.ruleCode.includes(
+              "INSPECTION",
+            ) ||
+            rule.ruleType.includes(
+              "INSPECTION",
+            ),
+        ),
       selectedRuleCodes,
       selectedPricingRuleIds,
+      packageConfigurationByPackageId,
+      selectedPackageConfigurations,
     };
 
     try {
       console.info(
-        "[PackageOptionalServices] Giá trị dịch vụ trả về component cha:",
+        "[PackageOptionalServices] Giá trị trả về component cha:",
         {
           selectedRuleCodes,
           selectedPricingRuleIds,
+          packageConfigurationByPackageId,
+          selectedPackageConfigurations,
         },
       );
 
@@ -769,10 +1560,310 @@ export default function PackageOptionalServices({
     } catch (error) {
       AuthNotify.error(
         "Không thể lưu dịch vụ",
-        error?.message || "Đã xảy ra lỗi khi lưu lựa chọn dịch vụ.",
+        error?.message ||
+          "Đã xảy ra lỗi khi lưu lựa chọn dịch vụ.",
       );
     }
   };
+
+  const renderPackageConfigurationPanel =
+    () => {
+      if (
+        !draftSelectedCodes.includes(
+          WOOD_CRATE_CODE,
+        )
+      ) {
+        return null;
+      }
+
+      return (
+        <div className="package-config-panel">
+          <div className="package-config-panel__header">
+            <div>
+              <strong>
+                Chọn kích thước thùng cho từng kiện
+              </strong>
+              <span>
+                Hệ thống tự gọi API gợi ý dựa trên
+                dài, rộng, cao và trọng lượng của
+                từng kiện.
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className="package-config-panel__reload"
+              disabled={
+                disabled ||
+                packageConfigurationsLoading
+              }
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                loadPackageConfigurations();
+
+                setAutoSuggestionSignatureByPackageId(
+                  {},
+                );
+              }}
+            >
+              {packageConfigurationsLoading ? (
+                <LoadingOutlined spin />
+              ) : (
+                <InfoCircleOutlined />
+              )}
+              Tải lại cấu hình
+            </button>
+          </div>
+
+          {packageConfigurationsLoading ? (
+            <div className="package-config-panel__state">
+              <LoadingOutlined spin />
+              <span>
+                Đang tải danh sách kích thước
+                thùng...
+              </span>
+            </div>
+          ) : packageConfigurationsError ? (
+            <div className="package-config-panel__state is-error">
+              <InfoCircleOutlined />
+              <div>
+                <strong>
+                  Không tải được cấu hình thùng
+                </strong>
+                <span>
+                  {packageConfigurationsError}
+                </span>
+              </div>
+            </div>
+          ) : !packageItems.length ? (
+            <div className="package-config-panel__state">
+              <InfoCircleOutlined />
+              <span>
+                Chưa có kiện hàng để lựa chọn cấu
+                hình đóng gói.
+              </span>
+            </div>
+          ) : (
+            <div className="package-config-panel__packages">
+              {packageItems.map(
+                (packageItem) => {
+                  const selectedConfigurationId =
+                    draftPackageConfigurationByPackageId[
+                      packageItem.id
+                    ];
+
+                  const suggestedConfigurationId =
+                    suggestedConfigurationByPackageId[
+                      packageItem.id
+                    ];
+
+                  const isSuggesting =
+                    Boolean(
+                      suggestionLoadingByPackageId[
+                        packageItem.id
+                      ],
+                    );
+
+                  const suggestionError =
+                    suggestionErrorByPackageId[
+                      packageItem.id
+                    ];
+
+                  const selectedConfiguration =
+                    packageConfigurations.find(
+                      (configuration) =>
+                        configuration.id ===
+                        selectedConfigurationId,
+                    );
+
+                  return (
+                    <div
+                      key={packageItem.id}
+                      className="package-config-package"
+                    >
+                      <div className="package-config-package__heading">
+                        <div>
+                          <strong>
+                            Kiện{" "}
+                            {packageItem.index + 1}:{" "}
+                            {
+                              packageItem.displayName
+                            }
+                          </strong>
+                          <span>
+                            {formatPackageDimensions(
+                              packageItem,
+                            )}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="package-config-package__suggest"
+                          disabled={
+                            disabled ||
+                            isSuggesting
+                          }
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            handleSuggestPackageConfiguration(
+                              packageItem,
+                            );
+                          }}
+                        >
+                          {isSuggesting ? (
+                            <LoadingOutlined spin />
+                          ) : (
+                            <InfoCircleOutlined />
+                          )}
+                          {isSuggesting
+                            ? "Đang gợi ý"
+                            : "Gợi ý lại"}
+                        </button>
+                      </div>
+
+                      {suggestionError && (
+                        <div className="package-config-package__error">
+                          <InfoCircleOutlined />
+                          <span>
+                            {suggestionError}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="package-config-options">
+                        {packageConfigurations.map(
+                          (configuration) => {
+                            const isSelected =
+                              selectedConfigurationId ===
+                              configuration.id;
+
+                            const isSuggested =
+                              suggestedConfigurationId ===
+                              configuration.id;
+
+                            const isCustom =
+                              configuration.configCode ===
+                              "CUSTOM";
+
+                            return (
+                              <button
+                                key={
+                                  configuration.id
+                                }
+                                type="button"
+                                className={[
+                                  "package-config-option",
+                                  isSelected &&
+                                    "package-config-option--selected",
+                                  isCustom &&
+                                    "package-config-option--custom",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                onClick={(
+                                  event,
+                                ) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+
+                                  handleSelectPackageConfiguration(
+                                    packageItem.id,
+                                    configuration.id,
+                                  );
+                                }}
+                              >
+                                <span className="package-config-option__top">
+                                  <strong>
+                                    {
+                                      configuration.configName
+                                    }
+                                  </strong>
+
+                                  {isSuggested && (
+                                    <small>
+                                      API gợi ý
+                                    </small>
+                                  )}
+                                </span>
+
+                                <span className="package-config-option__code">
+                                  {
+                                    configuration.configCode
+                                  }
+                                </span>
+
+                                <span className="package-config-option__dimension">
+                                  {formatConfigurationDimensions(
+                                    configuration,
+                                  )}
+                                </span>
+
+                                <span className="package-config-option__meta">
+                                  <span>
+                                    {isCustom
+                                      ? "Theo thông số thực tế"
+                                      : `Tối đa ${formatNumber(
+                                          configuration.maxWeight,
+                                        )} kg`}
+                                  </span>
+
+                                  <b>
+                                    {formatMoney(
+                                      configuration.packageFee,
+                                    )}
+                                  </b>
+                                </span>
+
+                                {isSelected && (
+                                  <span className="package-config-option__selected">
+                                    <CheckOutlined />
+                                    Đã chọn
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          },
+                        )}
+                      </div>
+
+                      <div className="package-config-package__footer">
+                        {selectedConfiguration ? (
+                          <>
+                            <CheckOutlined />
+                            <span>
+                              Đã chọn{" "}
+                              <strong>
+                                {
+                                  selectedConfiguration.configName
+                                }
+                              </strong>{" "}
+                              cho kiện này.
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <InfoCircleOutlined />
+                            <span>
+                              Chưa chọn cấu hình
+                              thùng.
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
 
   return (
     <>
@@ -845,7 +1936,7 @@ export default function PackageOptionalServices({
       <Modal
         open={isOpen}
         centered
-        width={800}
+        width={1040}
         footer={null}
         closable={!disabled}
         maskClosable={!disabled}
@@ -879,7 +1970,7 @@ export default function PackageOptionalServices({
               ? "Đang tải danh sách dịch vụ..."
               : pricingError
                 ? pricingError
-                : `Đang hiển thị ${pricingRules.length} dịch vụ. Hệ số quy đổi thể tích không hiển thị trong danh sách lựa chọn.`}
+                : `Đang hiển thị ${pricingRules.length} dịch vụ. Phí vận chuyển nội địa và hệ số quy đổi thể tích không hiển thị trong danh sách lựa chọn.`}
           </span>
         </div>
 
@@ -908,88 +1999,165 @@ export default function PackageOptionalServices({
               const checked = draftSelectedCodes.includes(rule.ruleCode);
               const selectable = isRuleSelectable(rule);
               const itemDisabled = disabled || !selectable || rule.isRequired;
+              const isWoodCrateRule =
+                rule.ruleCode === WOOD_CRATE_CODE;
 
               return (
-                <div
-                  key={rule.id || rule.ruleCode || ruleIndex}
-                  role="checkbox"
-                  tabIndex={itemDisabled ? -1 : 0}
-                  aria-checked={checked}
-                  aria-disabled={itemDisabled}
-                  style={{ "--service-index": ruleIndex }}
-                  className={[
-                    "package-services-modal__item",
-                    checked && "package-services-modal__item--selected",
-                    itemDisabled && "package-services-modal__item--disabled",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  onClick={() => handleToggle(rule)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      handleToggle(rule);
-                    }
-                  }}
+                <React.Fragment
+                  key={
+                    rule.id ||
+                    rule.ruleCode ||
+                    ruleIndex
+                  }
                 >
-                  <span className="package-services-modal__checkbox">
-                    <Checkbox
-                      checked={checked}
-                      disabled={itemDisabled}
-                      tabIndex={-1}
-                      style={{ pointerEvents: "none" }}
-                    />
-                  </span>
-
-                  <span
-                    className="package-services-modal__service-icon"
-                    aria-hidden="true"
+                  <div
+                    role="checkbox"
+                    tabIndex={itemDisabled ? -1 : 0}
+                    aria-checked={checked}
+                    aria-disabled={itemDisabled}
+                    style={{
+                      "--service-index":
+                        ruleIndex,
+                    }}
+                    className={[
+                      "package-services-modal__item",
+                      checked &&
+                        "package-services-modal__item--selected",
+                      isWoodCrateRule &&
+                        checked &&
+                        "package-services-modal__item--wood-open",
+                      itemDisabled &&
+                        "package-services-modal__item--disabled",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() =>
+                      handleToggle(rule)
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "Enter" ||
+                        event.key === " "
+                      ) {
+                        event.preventDefault();
+                        handleToggle(rule);
+                      }
+                    }}
                   >
-                    <Icon />
-                  </span>
-
-                  <span className="package-services-modal__content">
-                    <span className="package-services-modal__title-row">
-                      <strong>{getRuleDisplayName(rule)}</strong>
-
-                      <Tooltip placement="top" title={formatRuleInformation(rule)}>
-                        <InfoCircleOutlined
-                          aria-label={`Thông tin ${getRuleDisplayName(rule)}`}
-                          className="package-services-modal__info-icon"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                          }}
-                        />
-                      </Tooltip>
+                    <span className="package-services-modal__checkbox">
+                      <Checkbox
+                        checked={checked}
+                        disabled={itemDisabled}
+                        tabIndex={-1}
+                        style={{
+                          pointerEvents:
+                            "none",
+                        }}
+                      />
                     </span>
 
-                    <span className="package-services-modal__rule-meta">
-                      <b title={rule.ruleCode || undefined}>
-                        {getRuleCodeLabel(rule)}
-                      </b>
-
-                      <i title={rule.ruleType || undefined}>
-                        {getRuleTypeLabel(rule)}
-                      </i>
-
-                      <em
-                        className={`status-${getStatusClassName(rule.status)}`}
-                      >
-                        {getStatusLabel(rule.status)}
-                      </em>
+                    <span
+                      className="package-services-modal__service-icon"
+                      aria-hidden="true"
+                    >
+                      <Icon />
                     </span>
 
-                    <span className="package-services-modal__description">
-                      {formatRuleDescription(rule.description)}
-                    </span>
-                  </span>
+                    <span className="package-services-modal__content">
+                      <span className="package-services-modal__title-row">
+                        <strong>
+                          {getRuleDisplayName(
+                            rule,
+                          )}
+                        </strong>
 
-                  <span className="package-services-modal__fee">
-                    <small>{getCalculationTypeLabel(rule.calculationType)}</small>
-                    <strong>{formatRuleFee(rule)}</strong>
-                  </span>
-                </div>
+                        <Tooltip
+                          placement="top"
+                          title={formatRuleInformation(
+                            rule,
+                          )}
+                        >
+                          <InfoCircleOutlined
+                            aria-label={`Thông tin ${getRuleDisplayName(
+                              rule,
+                            )}`}
+                            className="package-services-modal__info-icon"
+                            onClick={(
+                              event,
+                            ) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                            }}
+                          />
+                        </Tooltip>
+                      </span>
+
+                      <span className="package-services-modal__rule-meta">
+                        <b
+                          title={
+                            rule.ruleCode ||
+                            undefined
+                          }
+                        >
+                          {getRuleCodeLabel(
+                            rule,
+                          )}
+                        </b>
+
+                        <i
+                          title={
+                            rule.ruleType ||
+                            undefined
+                          }
+                        >
+                          {getRuleTypeLabel(
+                            rule,
+                          )}
+                        </i>
+
+                        <em
+                          className={`status-${getStatusClassName(
+                            rule.status,
+                          )}`}
+                        >
+                          {getStatusLabel(
+                            rule.status,
+                          )}
+                        </em>
+                      </span>
+
+                      <span className="package-services-modal__description">
+                        {formatRuleDescription(
+                          rule.description,
+                        )}
+                      </span>
+                    </span>
+
+                    <span className="package-services-modal__fee">
+                      <small>
+                        {isWoodCrateRule
+                          ? "Theo cấu hình thùng"
+                          : getCalculationTypeLabel(
+                              rule.calculationType,
+                            )}
+                      </small>
+
+                      <strong>
+                        {isWoodCrateRule
+                          ? checked
+                            ? "Chọn bên dưới"
+                            : "Chưa chọn thùng"
+                          : formatRuleFee(
+                              rule,
+                            )}
+                      </strong>
+                    </span>
+                  </div>
+
+                  {isWoodCrateRule &&
+                    checked &&
+                    renderPackageConfigurationPanel()}
+                </React.Fragment>
               );
             })
           )}

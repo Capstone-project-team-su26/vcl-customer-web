@@ -211,6 +211,174 @@ const normalizeServicePricing = (item = {}) => {
 };
 
 /* =========================================================
+   PACKAGE CONFIGURATION HELPERS
+   ========================================================= */
+
+const extractPackageConfigurations = (data) => {
+  const candidates = [
+    data,
+    data?.items,
+    data?.packageConfigurations,
+    data?.configurations,
+    data?.packages,
+    data?.data,
+    data?.data?.items,
+    data?.data?.packageConfigurations,
+    data?.data?.configurations,
+    data?.data?.packages,
+  ];
+
+  return candidates.find(Array.isArray) || [];
+};
+
+const extractSuggestedPackageConfiguration = (data) => {
+  if (!data) {
+    return null;
+  }
+
+  if (Array.isArray(data)) {
+    return (
+      data.find(
+        (item) =>
+          item &&
+          typeof item === "object" &&
+          !Array.isArray(item),
+      ) || null
+    );
+  }
+
+  const candidates = [
+    data?.suggestedConfiguration,
+    data?.suggestion,
+    data?.packageConfiguration,
+    data?.configuration,
+    data?.recommendedConfiguration,
+    data?.recommendedPackage,
+    data?.result,
+    data?.item,
+    data?.data?.suggestedConfiguration,
+    data?.data?.suggestion,
+    data?.data?.packageConfiguration,
+    data?.data?.configuration,
+    data?.data?.recommendedConfiguration,
+    data?.data?.recommendedPackage,
+    data?.data?.result,
+    data?.data?.item,
+    data,
+  ];
+
+  return (
+    candidates.find(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        !Array.isArray(item) &&
+        (
+          item.id ||
+          item.packageConfigurationId ||
+          item.configCode ||
+          item.configName
+        ),
+    ) || null
+  );
+};
+
+const normalizePackageConfiguration = (item = {}) => {
+  return {
+    ...item,
+
+    id: String(
+      item?.id ||
+        item?.packageConfigurationId ||
+        item?.configurationId ||
+        "",
+    ).trim(),
+
+    packageConfigurationId: String(
+      item?.packageConfigurationId ||
+        item?.id ||
+        item?.configurationId ||
+        "",
+    ).trim(),
+
+    configCode: normalizeCode(
+      item?.configCode ||
+        item?.code,
+    ),
+
+    configName: String(
+      item?.configName ||
+        item?.name ||
+        item?.displayName ||
+        "Cấu hình đóng gói",
+    ).trim(),
+
+    length: toFiniteNumberOrNull(item?.length) ?? 0,
+    width: toFiniteNumberOrNull(item?.width) ?? 0,
+    height: toFiniteNumberOrNull(item?.height) ?? 0,
+
+    maxWeight:
+      toFiniteNumberOrNull(
+        item?.maxWeight ??
+          item?.maximumWeight,
+      ) ?? 0,
+
+    packageFee:
+      toFiniteNumberOrNull(
+        item?.packageFee ??
+          item?.fee ??
+          item?.price,
+      ) ?? 0,
+
+    status: normalizeCode(
+      item?.status ||
+        ACTIVE_STATUS,
+    ),
+  };
+};
+
+const normalizePositiveMeasurement = (
+  value,
+  fieldLabel,
+) => {
+  const numericValue = Number(value);
+
+  if (
+    !Number.isFinite(numericValue) ||
+    numericValue <= 0
+  ) {
+    throw new Error(
+      `${fieldLabel} phải là số lớn hơn 0.`,
+    );
+  }
+
+  return numericValue;
+};
+
+const normalizePackageSuggestionPayload = (
+  payload = {},
+) => {
+  return {
+    length: normalizePositiveMeasurement(
+      payload.length,
+      "Chiều dài",
+    ),
+    width: normalizePositiveMeasurement(
+      payload.width,
+      "Chiều rộng",
+    ),
+    height: normalizePositiveMeasurement(
+      payload.height,
+      "Chiều cao",
+    ),
+    weight: normalizePositiveMeasurement(
+      payload.weight,
+      "Trọng lượng",
+    ),
+  };
+};
+
+/* =========================================================
    SERVICE
    ========================================================= */
 
@@ -490,6 +658,193 @@ const pricingRuleService = {
       );
     }
   },
+
+  /**
+   * GET /api/package-configurations
+   *
+   * Lấy danh sách cấu hình đóng gói/thùng đang có trên hệ thống.
+   *
+   * @param {{
+   *   signal?: AbortSignal,
+   *   params?: object,
+   *   onlyActive?: boolean
+   * }} options
+   *
+   * @returns {Promise<Array>}
+   */
+  getPackageConfigurations: async (options = {}) => {
+    const {
+      signal,
+      params = {},
+      onlyActive = true,
+    } = options;
+
+    try {
+      console.info(
+        "[Package Configuration API] GET /api/package-configurations",
+        {
+          params,
+          onlyActive,
+        },
+      );
+
+      const response = await axiosInstance.get(
+        "/api/package-configurations",
+        {
+          signal,
+          params,
+          headers: {
+            Accept: "*/*",
+          },
+        },
+      );
+
+      const responseData = getResponseData(response);
+
+      const configurations =
+        extractPackageConfigurations(responseData)
+          .map(normalizePackageConfiguration)
+          .filter(
+            (item) =>
+              item.id ||
+              item.configCode,
+          );
+
+      const filteredConfigurations = onlyActive
+        ? configurations.filter(
+            (item) =>
+              !item.status ||
+              item.status === ACTIVE_STATUS,
+          )
+        : configurations;
+
+      console.info(
+        "[Package Configuration API] Danh sách cấu hình:",
+        filteredConfigurations,
+      );
+
+      return filteredConfigurations;
+    } catch (error) {
+      if (isCanceledRequest(error)) {
+        throw error;
+      }
+
+      console.error(
+        "[GET /api/package-configurations]",
+        error?.response?.data || error,
+      );
+
+      throw new Error(
+        getErrorMessage(
+          error,
+          "Không thể tải danh sách cấu hình đóng gói.",
+        ),
+      );
+    }
+  },
+
+  /**
+   * POST /api/package-configurations/suggest
+   *
+   * Gợi ý cấu hình thùng phù hợp theo kích thước và trọng lượng kiện.
+   *
+   * @param {{
+   *   length: number|string,
+   *   width: number|string,
+   *   height: number|string,
+   *   weight: number|string
+   * }} payload
+   *
+   * @param {{
+   *   signal?: AbortSignal
+   * }} options
+   *
+   * @returns {Promise<object>}
+   */
+  suggestPackageConfiguration: async (
+    payload,
+    options = {},
+  ) => {
+    const requestPayload =
+      normalizePackageSuggestionPayload(payload);
+
+    const { signal } = options;
+
+    try {
+      console.info(
+        "[Package Configuration API] POST /api/package-configurations/suggest",
+        requestPayload,
+      );
+
+      const response = await axiosInstance.post(
+        "/api/package-configurations/suggest",
+        requestPayload,
+        {
+          signal,
+          headers: {
+            Accept: "*/*",
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const responseData = getResponseData(response);
+
+      const suggestedConfiguration =
+        extractSuggestedPackageConfiguration(
+          responseData,
+        );
+
+      if (!suggestedConfiguration) {
+        console.error(
+          "[POST /api/package-configurations/suggest] Response không hợp lệ:",
+          responseData,
+        );
+
+        throw new Error(
+          "API gợi ý không trả về cấu hình đóng gói hợp lệ.",
+        );
+      }
+
+      const normalizedSuggestion = {
+        ...normalizePackageConfiguration(
+          suggestedConfiguration,
+        ),
+
+        suggestionMessage: String(
+          responseData?.message ||
+            responseData?.reason ||
+            responseData?.description ||
+            "",
+        ).trim(),
+
+        rawResponse: responseData,
+      };
+
+      console.info(
+        "[Package Configuration API] Cấu hình được gợi ý:",
+        normalizedSuggestion,
+      );
+
+      return normalizedSuggestion;
+    } catch (error) {
+      if (isCanceledRequest(error)) {
+        throw error;
+      }
+
+      console.error(
+        "[POST /api/package-configurations/suggest]",
+        error?.response?.data || error,
+      );
+
+      throw new Error(
+        getErrorMessage(
+          error,
+          "Không thể gợi ý cấu hình đóng gói phù hợp.",
+        ),
+      );
+    }
+  },
 };
 
 export const {
@@ -497,6 +852,8 @@ export const {
   getVolumetricDivisorRule,
   getServicePricings,
   getServicePricingById,
+  getPackageConfigurations,
+  suggestPackageConfiguration,
 } = pricingRuleService;
 
 export default pricingRuleService;

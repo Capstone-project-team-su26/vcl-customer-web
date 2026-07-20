@@ -115,6 +115,7 @@ const createEmptyPackage = () => ({
   length: "",
   declaredValue: "",
   trackingCode: "",
+  packageConfigurationId: "",
   images: [],
 });
 
@@ -288,6 +289,23 @@ const normalizePricingRuleIds = (value) => {
   );
 };
 
+const normalizePackageConfigurationMap = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([packageId, configurationId]) => [
+        String(packageId || "").trim(),
+        String(configurationId || "").trim(),
+      ])
+      .filter(([packageId, configurationId]) =>
+        Boolean(packageId && configurationId),
+      ),
+  );
+};
+
 const getShippingOptionLabel = (value, label) => {
   const normalizedValues = [
     normalizeOptionCode(value),
@@ -389,30 +407,153 @@ const normalizeDeliveryAddressList = (result) =>
     .map(normalizeDeliveryAddress)
     .filter(Boolean);
 
-const extractUploadedImageUrl = (result) => {
-  const candidates = [
-    result,
-    result?.url,
-    result?.imageUrl,
-    result?.fileUrl,
-    result?.path,
-    result?.secureUrl,
-    result?.data,
-    result?.data?.url,
-    result?.data?.imageUrl,
-    result?.data?.fileUrl,
-    result?.data?.path,
-    result?.data?.secureUrl,
-    result?.data?.data?.url,
-    result?.data?.data?.imageUrl,
-    result?.data?.data?.fileUrl,
-  ];
+const UPLOAD_URL_KEYS = [
+  "url",
+  "imageUrl",
+  "imageURL",
+  "fileUrl",
+  "fileURL",
+  "secureUrl",
+  "secureURL",
+  "downloadUrl",
+  "downloadURL",
+  "location",
+  "path",
+];
+
+const UPLOAD_CONTAINER_KEYS = [
+  "urls",
+  "imageUrls",
+  "imageURLs",
+  "fileUrls",
+  "fileURLs",
+  "paths",
+  "files",
+  "images",
+  "items",
+  "result",
+  "results",
+  "data",
+];
+
+const isLikelyUploadedImageUrl = (value) => {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return false;
+  }
 
   return (
-    candidates
-      .find((item) => typeof item === "string" && item.trim())
-      ?.trim() || ""
+    /^(https?:\/\/|blob:|data:image\/)/i.test(text) ||
+    /^\/[^/\s]/.test(text) ||
+    /(?:^|\/)(?:uploads?|images?|files?)\//i.test(text) ||
+    /\.(?:jpe?g|png|webp|gif|heic|heif|avif)(?:[?#].*)?$/i.test(text)
   );
+};
+
+const parseUploadJsonString = (value) => {
+  const text = String(value || "").trim();
+
+  if (
+    !text ||
+    (!text.startsWith("{") && !text.startsWith("["))
+  ) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
+const extractUploadedImageUrls = (result) => {
+  const urls = [];
+  const visited = new WeakSet();
+
+  const addUrl = (value) => {
+    const text = String(value || "").trim();
+
+    if (
+      isLikelyUploadedImageUrl(text) &&
+      !urls.includes(text)
+    ) {
+      urls.push(text);
+    }
+  };
+
+  const visit = (value, depth = 0) => {
+    if (value === null || value === undefined || depth > 8) {
+      return;
+    }
+
+    if (typeof value === "string") {
+      const parsedValue = parseUploadJsonString(value);
+
+      if (parsedValue !== null) {
+        visit(parsedValue, depth + 1);
+        return;
+      }
+
+      addUrl(value);
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => visit(item, depth + 1));
+      return;
+    }
+
+    if (typeof value !== "object") {
+      return;
+    }
+
+    if (visited.has(value)) {
+      return;
+    }
+
+    visited.add(value);
+
+    UPLOAD_URL_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        visit(value[key], depth + 1);
+      }
+    });
+
+    UPLOAD_CONTAINER_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        visit(value[key], depth + 1);
+      }
+    });
+
+    Object.entries(value).forEach(([key, nestedValue]) => {
+      if (
+        UPLOAD_URL_KEYS.includes(key) ||
+        UPLOAD_CONTAINER_KEYS.includes(key) ||
+        [
+          "message",
+          "title",
+          "error",
+          "status",
+          "statusCode",
+          "success",
+        ].includes(key)
+      ) {
+        return;
+      }
+
+      visit(nestedValue, depth + 1);
+    });
+  };
+
+  visit(result);
+
+  return urls;
+};
+
+const extractUploadedImageUrl = (result) => {
+  return extractUploadedImageUrls(result)[0] || "";
 };
 
 const uploadPackageImage = async (file) => {
@@ -428,8 +569,20 @@ const uploadPackageImage = async (file) => {
   const imageUrl = extractUploadedImageUrl(uploadResult);
 
   if (!imageUrl) {
-    throw new Error("API upload ảnh không trả về đường dẫn ảnh hợp lệ.");
+    console.error(
+      "[ConsignmentOrder] Response upload không tìm thấy URL:",
+      uploadResult,
+    );
+
+    throw new Error(
+      "API đã nhận ảnh nhưng response không chứa URL ở định dạng frontend nhận biết. Vui lòng xem Console để kiểm tra response upload.",
+    );
   }
+
+  console.info(
+    "[ConsignmentOrder] URL ảnh đã lấy được:",
+    imageUrl,
+  );
 
   return imageUrl;
 };
@@ -526,8 +679,26 @@ const validateConsignmentForm = ({ form, packages }) => {
     formErrors.note = "Vui lòng nhập ghi chú cho đơn ký gửi.";
   }
 
+  const packageConfigurationByPackageId =
+    normalizePackageConfigurationMap(
+      form?.optionalServices
+        ?.packageConfigurationByPackageId,
+    );
+
   const packageErrors = Object.fromEntries(
-    packages.map((pkg) => [pkg.id, validatePackage(pkg)]),
+    packages.map((pkg) => {
+      const errors = validatePackage(pkg);
+
+      if (
+        form?.optionalServices?.requiresWoodenCrate &&
+        !packageConfigurationByPackageId[pkg.id]
+      ) {
+        errors.packageConfigurationId =
+          "Vui lòng chọn kích thước thùng gỗ cho kiện hàng.";
+      }
+
+      return [pkg.id, errors];
+    }),
   );
 
   const isValid =
@@ -1268,10 +1439,30 @@ export default function ConsignmentOrder() {
           nextServices?.pricingRuleIds
       );
 
+    const requiresWoodenCrate = Boolean(
+      nextServices?.requiresWoodenCrate
+    );
+
+    const packageConfigurationByPackageId =
+      requiresWoodenCrate
+        ? normalizePackageConfigurationMap(
+            nextServices
+              ?.packageConfigurationByPackageId
+          )
+        : {};
+
+    setPackages((previousPackages) =>
+      previousPackages.map((pkg) => ({
+        ...pkg,
+        packageConfigurationId:
+          packageConfigurationByPackageId[pkg.id] ||
+          "",
+      }))
+    );
+
     setForm((previous) => ({
       ...previous,
 
-      // Giữ đồng bộ để màn xác nhận cũ vẫn có thể đọc trạng thái kiểm hàng.
       inspectPackage: Boolean(
         nextServices?.requiresInspection
       ),
@@ -1280,9 +1471,7 @@ export default function ConsignmentOrder() {
         requiresPacking: Boolean(
           nextServices?.requiresPacking
         ),
-        requiresWoodenCrate: Boolean(
-          nextServices?.requiresWoodenCrate
-        ),
+        requiresWoodenCrate,
         requiresInsurance: Boolean(
           nextServices?.requiresInsurance
         ),
@@ -1291,6 +1480,7 @@ export default function ConsignmentOrder() {
         ),
         selectedRuleCodes,
         selectedPricingRuleIds,
+        packageConfigurationByPackageId,
       },
     }));
   };
@@ -1375,6 +1565,25 @@ export default function ConsignmentOrder() {
 
       delete nextErrors[packageId];
       return nextErrors;
+    });
+
+    setForm((previous) => {
+      const nextConfigurationMap =
+        normalizePackageConfigurationMap(
+          previous.optionalServices
+            ?.packageConfigurationByPackageId
+        );
+
+      delete nextConfigurationMap[packageId];
+
+      return {
+        ...previous,
+        optionalServices: {
+          ...previous.optionalServices,
+          packageConfigurationByPackageId:
+            nextConfigurationMap,
+        },
+      };
     });
 
     delete fileInputRefs.current[packageId];
@@ -1515,10 +1724,24 @@ export default function ConsignmentOrder() {
     setPackageErrors(result.packageErrors);
 
     if (!result.isValid) {
-      AuthNotify.warning(
-        "Thông tin chưa đầy đủ",
-        "Vui lòng kiểm tra các trường được đánh dấu màu đỏ.",
-      );
+      const missingPackageConfigurationCount =
+        Object.values(result.packageErrors)
+          .filter(
+            (errors) =>
+              Boolean(errors?.packageConfigurationId)
+          ).length;
+
+      if (missingPackageConfigurationCount > 0) {
+        AuthNotify.warning(
+          "Chưa chọn kích thước thùng gỗ",
+          `Còn ${missingPackageConfigurationCount} kiện chưa có cấu hình thùng. Vui lòng mở mục dịch vụ và chọn kích thước.`,
+        );
+      } else {
+        AuthNotify.warning(
+          "Thông tin chưa đầy đủ",
+          "Vui lòng kiểm tra các trường được đánh dấu màu đỏ.",
+        );
+      }
 
       scrollToFirstError();
     }
@@ -1588,6 +1811,11 @@ export default function ConsignmentOrder() {
           referenceUrls,
           domesticTrackingCode:
             pkg.trackingCode.trim() || null,
+          packageConfigurationId:
+            form.optionalServices
+              ?.requiresWoodenCrate
+              ? pkg.packageConfigurationId || null
+              : null,
 
         });
       }
@@ -1595,10 +1823,10 @@ export default function ConsignmentOrder() {
       setSubmitMessage("Đang kiểm tra thông tin kiện hàng...");
 
       /*
-       * Request item của POST /api/orders/consignments chỉ nhận
-       * một referenceUrl. referenceUrls chỉ dùng nội bộ phía UI.
+       * API hiện tại nhận cả referenceUrl và referenceUrls,
+       * đồng thời nhận packageConfigurationId cho từng kiện.
        */
-      const requestItems = items.map(({ referenceUrls, ...item }) => item);
+      const requestItems = items;
 
       await validateConsignmentItemsApi(requestItems);
 
@@ -1621,6 +1849,23 @@ export default function ConsignmentOrder() {
         // Có thể chọn nhiều dịch vụ áp dụng cho toàn đơn.
         pricingRuleIds:
           orderPricingRuleIds,
+
+        requiresInspection: Boolean(
+          form.optionalServices
+            ?.requiresInspection
+        ),
+        requiresPacking: Boolean(
+          form.optionalServices
+            ?.requiresPacking
+        ),
+        requiresWoodenCrate: Boolean(
+          form.optionalServices
+            ?.requiresWoodenCrate
+        ),
+        requiresInsurance: Boolean(
+          form.optionalServices
+            ?.requiresInsurance
+        ),
 
         note: form.note.trim(),
         items: requestItems,
@@ -2497,12 +2742,13 @@ export default function ConsignmentOrder() {
 
               <PackageOptionalServices
                 value={form.optionalServices}
+                packages={packages}
                 disabled={isSubmitting}
                 triggerTitle="Dịch vụ áp dụng cho toàn bộ đơn"
                 triggerDescription="Có thể chọn nhiều dịch vụ áp dụng chung cho tất cả kiện hàng."
                 modalEyebrow="DỊCH VỤ TOÀN ĐƠN"
                 modalTitle="Lựa chọn dịch vụ cho toàn bộ đơn ký gửi"
-                modalDescription="Các dịch vụ được chọn ở đây sẽ được gửi trong pricingRuleIds cấp đơn và áp dụng chung cho toàn bộ kiện hàng."
+                modalDescription="Dịch vụ được gửi trong pricingRuleIds cấp đơn. Riêng đóng thùng gỗ, mỗi kiện phải chọn kích thước để gửi packageConfigurationId."
                 onChange={handleOptionalServicesChange}
               />
               <div className="input-field-group">
