@@ -22,9 +22,9 @@ import { Switch, Tooltip } from "antd";
 import AuthNotify from "../../../../utils/AuthNotify";
 import uploadImage from "../../../../api/Upload/UploadImage";
 import FieldLabelTooltip from "../../../../components/DashboardComponents/CustomerKiguiComponents/ToltipLapelComponents/FieldLabelTooltip";
-import PackageOptionalServices, {
+import PackageOptionalServicesS1, {
   EMPTY_PACKAGE_SERVICES,
-} from "../../../../components/DashboardComponents/CustomerKiguiComponents/PackageOptionalServices/PackageOptionalServices";
+} from "../../../../components/DashboardComponents/CustomerBuyComponents/PacketOption/PackageOptionalServicesS1";
 
 import {
   createDeliveryAddressApi,
@@ -2276,7 +2276,7 @@ export default function ConsignmentBuyOrder() {
                   tooltip="Các dịch vụ này không bắt buộc. Chi phí chính thức sẽ được kiểm tra và xác nhận trong báo giá."
                 />
 
-                <PackageOptionalServices
+                <PackageOptionalServicesS1
                   value={form.optionalServices}
                   disabled={isSubmitting}
                   onChange={handleOptionalServicesChange}
