@@ -18,6 +18,27 @@ import "./PackageOptionalServices.css";
 const ACTIVE_STATUS = "ACTIVE";
 const VOLUMETRIC_DIVISOR_CODE = "VOLUMETRIC_DIVISOR";
 
+/*
+ * Các quy tắc chỉ dùng để hệ thống tính phí,
+ * không hiển thị trong danh sách dịch vụ để khách hàng lựa chọn.
+ */
+const HIDDEN_RULE_CODES = new Set([
+  "DOMESTIC_FEE",
+]);
+
+/*
+ * ID hiện tại của DOMESTIC_FEE.
+ * Vẫn giữ kiểm tra theo ruleCode/ruleType để không phụ thuộc hoàn toàn vào ID.
+ */
+const HIDDEN_RULE_IDS = new Set([
+  "0385131b-214c-49b8-9de2-116d62f27111",
+]);
+
+const normalizeRuleId = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
+
 
 const STATUS_LABELS = {
   ACTIVE: "Đang áp dụng",
@@ -83,6 +104,68 @@ const normalizeCode = (value) =>
     .toUpperCase()
     .replaceAll(" ", "_")
     .replaceAll("-", "_");
+
+const normalizeStringArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+};
+
+const isHiddenRule = (rule) => {
+  const ruleCode = normalizeCode(rule?.ruleCode);
+  const ruleType = normalizeCode(rule?.ruleType);
+  const ruleId = normalizeRuleId(rule?.id || rule?.pricingRuleId);
+
+  return (
+    HIDDEN_RULE_CODES.has(ruleCode) ||
+    HIDDEN_RULE_CODES.has(ruleType) ||
+    HIDDEN_RULE_IDS.has(ruleId)
+  );
+};
+
+const sanitizeSelectedRuleCodes = (value) => {
+  return Array.from(
+    new Set(
+      normalizeStringArray(value)
+        .map(normalizeCode)
+        .filter(Boolean)
+        .filter((ruleCode) => !HIDDEN_RULE_CODES.has(ruleCode)),
+    ),
+  );
+};
+
+const sanitizeSelectedPricingRuleIds = (
+  value,
+  hiddenRuleIds = [],
+) => {
+  const blockedIds = new Set([
+    ...Array.from(HIDDEN_RULE_IDS),
+    ...normalizeStringArray(hiddenRuleIds).map(normalizeRuleId),
+  ]);
+
+  return Array.from(
+    new Set(
+      normalizeStringArray(value)
+        .map(normalizeRuleId)
+        .filter(Boolean)
+        .filter((ruleId) => !blockedIds.has(ruleId)),
+    ),
+  );
+};
+
+const areStringArraysEqual = (first = [], second = []) => {
+  if (first.length !== second.length) {
+    return false;
+  }
+
+  return first.every(
+    (value, index) => value === second[index],
+  );
+};
 
 const isCanceledRequest = (error) =>
   error?.code === "ERR_CANCELED" ||
@@ -382,11 +465,9 @@ const getInitialSelectedCodes = (value, rules) => {
   ];
 
   codeCandidates.forEach((candidate) => {
-    if (Array.isArray(candidate)) {
-      candidate.map(normalizeCode).filter(Boolean).forEach((code) => {
-        selectedCodes.add(code);
-      });
-    }
+    sanitizeSelectedRuleCodes(candidate).forEach((code) => {
+      selectedCodes.add(code);
+    });
   });
 
   Object.entries(LEGACY_RULE_KEYS).forEach(([ruleCode, legacyKey]) => {
@@ -430,6 +511,7 @@ export default function PackageOptionalServices({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [pricingRules, setPricingRules] = useState([]);
+  const [hiddenPricingRuleIds, setHiddenPricingRuleIds] = useState([]);
   const [pricingLoading, setPricingLoading] = useState(true);
   const [pricingError, setPricingError] = useState("");
   const [draftSelectedCodes, setDraftSelectedCodes] = useState([]);
@@ -453,7 +535,19 @@ export default function PackageOptionalServices({
         }
 
         const normalizedRules = normalizeRulesFromApi(result);
-        setPricingRules(normalizedRules);
+
+        const hiddenRules = normalizedRules.filter(isHiddenRule);
+        const visibleRules = normalizedRules.filter(
+          (rule) => !isHiddenRule(rule),
+        );
+
+        setHiddenPricingRuleIds(
+          hiddenRules
+            .map((rule) => normalizeRuleId(rule.id))
+            .filter(Boolean),
+        );
+
+        setPricingRules(visibleRules);
       } catch (error) {
         if (controller.signal.aborted || isCanceledRequest(error)) {
           return;
@@ -484,6 +578,59 @@ export default function PackageOptionalServices({
     () => getInitialSelectedCodes(value, pricingRules),
     [pricingRules, value],
   );
+
+  /*
+   * Tự động loại DOMESTIC_FEE khỏi state của component cha.
+   * Điều này xử lý trường hợp ID/code cũ đã tồn tại nhưng người dùng
+   * không mở modal và không bấm "Lưu lựa chọn".
+   */
+  useEffect(() => {
+    const currentRuleCodes = normalizeStringArray(
+      value?.selectedRuleCodes ??
+        value?.selectedPricingRuleCodes ??
+        value?.pricingRuleCodes,
+    ).map(normalizeCode);
+
+    const currentPricingRuleIds = normalizeStringArray(
+      value?.selectedPricingRuleIds ??
+        value?.pricingRuleIds,
+    ).map(normalizeRuleId);
+
+    const sanitizedRuleCodes =
+      sanitizeSelectedRuleCodes(currentRuleCodes);
+
+    const sanitizedPricingRuleIds =
+      sanitizeSelectedPricingRuleIds(
+        currentPricingRuleIds,
+        hiddenPricingRuleIds,
+      );
+
+    const hasHiddenRuleCode =
+      !areStringArraysEqual(
+        currentRuleCodes,
+        sanitizedRuleCodes,
+      );
+
+    const hasHiddenRuleId =
+      !areStringArraysEqual(
+        currentPricingRuleIds,
+        sanitizedPricingRuleIds,
+      );
+
+    if (!hasHiddenRuleCode && !hasHiddenRuleId) {
+      return;
+    }
+
+    onChange?.({
+      ...value,
+      selectedRuleCodes: sanitizedRuleCodes,
+      selectedPricingRuleIds: sanitizedPricingRuleIds,
+    });
+  }, [
+    hiddenPricingRuleIds,
+    onChange,
+    value,
+  ]);
 
   useEffect(() => {
     if (isOpen) {
@@ -516,7 +663,12 @@ export default function PackageOptionalServices({
   };
 
   const handleToggle = (rule) => {
-    if (disabled || !isRuleSelectable(rule) || rule.isRequired) {
+    if (
+      disabled ||
+      isHiddenRule(rule) ||
+      !isRuleSelectable(rule) ||
+      rule.isRequired
+    ) {
       return;
     }
 
@@ -543,15 +695,31 @@ export default function PackageOptionalServices({
       return;
     }
 
-    const selectedSet = new Set(draftSelectedCodes);
-    const activeSelectedRules = pricingRules.filter(
-      (rule) => selectedSet.has(rule.ruleCode) && isRuleSelectable(rule),
+    const selectedSet = new Set(
+      sanitizeSelectedRuleCodes(draftSelectedCodes),
     );
 
-    const selectedRuleCodes = activeSelectedRules.map((rule) => rule.ruleCode);
-    const selectedPricingRuleIds = activeSelectedRules
-      .map((rule) => rule.id)
-      .filter(Boolean);
+    const activeSelectedRules = pricingRules.filter(
+      (rule) =>
+        !isHiddenRule(rule) &&
+        selectedSet.has(rule.ruleCode) &&
+        isRuleSelectable(rule),
+    );
+
+    const selectedRuleCodes =
+      sanitizeSelectedRuleCodes(
+        activeSelectedRules.map(
+          (rule) => rule.ruleCode,
+        ),
+      );
+
+    const selectedPricingRuleIds =
+      sanitizeSelectedPricingRuleIds(
+        activeSelectedRules.map(
+          (rule) => rule.id,
+        ),
+        hiddenPricingRuleIds,
+      );
 
     const nextValue = {
       ...value,
@@ -574,6 +742,14 @@ export default function PackageOptionalServices({
     };
 
     try {
+      console.info(
+        "[PackageOptionalServices] Giá trị dịch vụ trả về component cha:",
+        {
+          selectedRuleCodes,
+          selectedPricingRuleIds,
+        },
+      );
+
       onChange?.(nextValue);
       setIsOpen(false);
 
