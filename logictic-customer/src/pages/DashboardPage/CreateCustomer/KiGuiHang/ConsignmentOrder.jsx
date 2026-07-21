@@ -3349,7 +3349,7 @@ export default function ConsignmentOrder() {
                 triggerDescription="Có thể chọn nhiều dịch vụ áp dụng chung cho tất cả kiện hàng."
                 modalEyebrow="DỊCH VỤ TOÀN ĐƠN"
                 modalTitle="Lựa chọn dịch vụ cho toàn bộ đơn ký gửi"
-                modalDescription="Chọn đóng thùng gỗ để xem phí đóng gói 35.000đ/đơn hàng, sau đó chọn kích thước thùng cho từng kiện."
+                modalDescription="Bảo hiểm chỉ mở khi đã nhập giá trị cho tất cả kiện; đóng thùng gỗ chỉ mở khi đã nhập đủ số lượng, cân nặng và kích thước từng kiện."
                 onChange={handleOptionalServicesChange}
               />
 

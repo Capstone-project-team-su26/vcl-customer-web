@@ -1090,7 +1090,7 @@
    }
    
    /* =========================================================
-      FINAL FIX - TIáº¾NG VIá»†T + KHĂ”NG CHá»’NG PHĂ
+      FINAL FIX - TIĂ¡ÂºÂ¾NG VIĂ¡Â»â€ T + KHÄ‚â€NG CHĂ¡Â»â€™NG PHÄ‚Â
       ========================================================= */
    
    .package-services-modal__item {
@@ -1843,5 +1843,113 @@
 
   .package-config-option {
     padding: 11px;
+  }
+}
+
+/* =========================================================
+   KHĂ“A Dá»CH Vá»¤ KHI CHÆ¯A Äá»¦ Dá»® LIá»†U
+   ========================================================= */
+
+.package-services-modal__item--disabled {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: none;
+  filter: grayscale(0.22);
+}
+
+.package-services-modal__item--disabled::before {
+  opacity: 0 !important;
+}
+
+.package-services-modal__item--disabled .package-services-modal__service-icon {
+  color: #94a3b8;
+  background: #eef2f6;
+  border-color: #dbe3ec;
+  box-shadow: none;
+  transform: none;
+}
+
+.package-services-modal__item--disabled .package-services-modal__title-row strong,
+.package-services-modal__item--disabled .package-services-modal__description,
+.package-services-modal__item--disabled .package-services-modal__fee small,
+.package-services-modal__item--disabled .package-services-modal__fee strong {
+  color: #94a3b8;
+}
+
+.package-services-modal__requirement {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 6px 9px;
+
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+
+  color: #9a6700;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.45;
+
+  background: #fff8e6;
+  border: 1px solid #f5d48a;
+  border-radius: 8px;
+}
+
+.package-services-modal__requirement .anticon {
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: #d97706;
+}
+
+.package-services-modal__fee-limits {
+  width: 100%;
+  margin-top: 3px;
+  padding-top: 6px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+
+  border-top: 1px dashed #d8e1eb;
+}
+
+.package-services-modal__fee-limits > span {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.package-services-modal__fee-limits b {
+  color: #334155;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.package-services-modal__item--disabled .package-services-modal__fee-limits,
+.package-services-modal__item--disabled .package-services-modal__fee-limits b {
+  color: #94a3b8;
+}
+
+@media (max-width: 760px) {
+  .package-services-modal__requirement {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .package-services-modal__fee-limits {
+    align-items: flex-start;
+  }
+
+  .package-services-modal__fee-limits > span {
+    justify-content: flex-start;
   }
 }

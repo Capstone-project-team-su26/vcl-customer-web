@@ -18,6 +18,7 @@ import "./PackageOptionalServices.css";
 const ACTIVE_STATUS = "ACTIVE";
 const VOLUMETRIC_DIVISOR_CODE = "VOLUMETRIC_DIVISOR";
 const WOOD_CRATE_CODE = "WOOD_CRATE";
+const INSURANCE_CODE = "SUR_INSURANCE_3PERCENT";
 
 /*
  * Các quy tắc chỉ dùng để hệ thống tính phí,
@@ -335,8 +336,136 @@ const normalizePackageItems = (packages = []) => {
       width: toFiniteNumberOrNull(pkg?.width) ?? 0,
       height: toFiniteNumberOrNull(pkg?.height) ?? 0,
       weight: toFiniteNumberOrNull(pkg?.weight) ?? 0,
+      quantity: toFiniteNumberOrNull(pkg?.quantity) ?? 0,
+      declaredValue: toFiniteNumberOrNull(pkg?.declaredValue) ?? 0,
     };
   });
+};
+
+const isInsuranceRule = (rule) => {
+  const code = normalizeCode(rule?.ruleCode);
+  const type = normalizeCode(rule?.ruleType);
+
+  return (
+    code === INSURANCE_CODE ||
+    code.includes("INSURANCE") ||
+    type.includes("INSURANCE")
+  );
+};
+
+const isWoodCrateRule = (rule) => {
+  const code = normalizeCode(rule?.ruleCode);
+  const type = normalizeCode(rule?.ruleType);
+
+  return (
+    code === WOOD_CRATE_CODE ||
+    code.includes("WOOD") ||
+    type.includes("WOOD")
+  );
+};
+
+const hasPositiveNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0;
+};
+
+const hasCompleteInsuranceInput = (packageItem) =>
+  hasPositiveNumber(packageItem?.declaredValue);
+
+const hasCompleteWoodCrateInput = (packageItem) => {
+  const quantity = Number(packageItem?.quantity);
+
+  return (
+    Number.isInteger(quantity) &&
+    quantity > 0 &&
+    ["weight", "length", "width", "height"].every((field) =>
+      hasPositiveNumber(packageItem?.[field]),
+    )
+  );
+};
+
+const getRuleAvailability = (rule, packageItems = []) => {
+  if (isInsuranceRule(rule)) {
+    if (!packageItems.length) {
+      return {
+        available: false,
+        reason: "Hãy thêm ít nhất một kiện hàng trước khi chọn bảo hiểm.",
+      };
+    }
+
+    const incompletePackages = packageItems.filter(
+      (packageItem) => !hasCompleteInsuranceInput(packageItem),
+    );
+
+    if (incompletePackages.length) {
+      return {
+        available: false,
+        reason:
+          "Vui lòng nhập GIÁ TRỊ KIỆN HÀNG (VND) lớn hơn 0 cho tất cả kiện trước khi chọn bảo hiểm.",
+      };
+    }
+
+    const totalDeclaredValue = packageItems.reduce(
+      (total, packageItem) =>
+        total + (Number(packageItem.declaredValue) || 0),
+      0,
+    );
+
+    const conditionType = normalizeCode(rule?.conditionType);
+    const conditionValue = toFiniteNumberOrNull(rule?.conditionValue);
+
+    if (
+      conditionType === "MIN_DECLARED_VALUE" &&
+      conditionValue !== null &&
+      totalDeclaredValue < conditionValue
+    ) {
+      return {
+        available: false,
+        reason: `Tổng giá trị khai báo phải từ ${formatMoney(
+          conditionValue,
+        )} mới được chọn bảo hiểm.`,
+      };
+    }
+
+    if (
+      conditionType === "MAX_DECLARED_VALUE" &&
+      conditionValue !== null &&
+      totalDeclaredValue > conditionValue
+    ) {
+      return {
+        available: false,
+        reason: `Tổng giá trị khai báo không được vượt quá ${formatMoney(
+          conditionValue,
+        )} để áp dụng bảo hiểm này.`,
+      };
+    }
+  }
+
+  if (isWoodCrateRule(rule)) {
+    if (!packageItems.length) {
+      return {
+        available: false,
+        reason: "Hãy thêm ít nhất một kiện hàng trước khi chọn đóng thùng gỗ.",
+      };
+    }
+
+    const incompletePackages = packageItems.filter(
+      (packageItem) => !hasCompleteWoodCrateInput(packageItem),
+    );
+
+    if (incompletePackages.length) {
+      return {
+        available: false,
+        reason:
+          "Vui lòng nhập đầy đủ số lượng, cân nặng, chiều dài, chiều rộng và chiều cao lớn hơn 0 cho tất cả kiện trước khi chọn đóng thùng gỗ.",
+      };
+    }
+  }
+
+  return {
+    available: true,
+    reason: "",
+  };
 };
 
 const normalizePackageConfigurationMap = (value) => {
@@ -1017,6 +1146,87 @@ export default function PackageOptionalServices({
     return pricingRules.filter((rule) => selectedSet.has(rule.ruleCode));
   }, [pricingRules, selectedCodes]);
 
+  /*
+   * Khi người dùng xóa dữ liệu bắt buộc sau khi đã chọn dịch vụ,
+   * tự động bỏ dịch vụ không còn đủ điều kiện khỏi form cha.
+   */
+  useEffect(() => {
+    if (pricingLoading || !pricingRules.length) {
+      return;
+    }
+
+    const selectedSet = new Set(selectedCodes);
+    const unavailableSelectedRules = pricingRules.filter(
+      (rule) =>
+        !rule.isRequired &&
+        selectedSet.has(rule.ruleCode) &&
+        !getRuleAvailability(rule, packageItems).available,
+    );
+
+    if (!unavailableSelectedRules.length) {
+      return;
+    }
+
+    const unavailableCodes = new Set(
+      unavailableSelectedRules.map((rule) => rule.ruleCode),
+    );
+
+    const nextSelectedRules = pricingRules.filter(
+      (rule) =>
+        !isHiddenRule(rule) &&
+        selectedSet.has(rule.ruleCode) &&
+        !unavailableCodes.has(rule.ruleCode) &&
+        isRuleSelectable(rule),
+    );
+
+    const selectedRuleCodes = sanitizeSelectedRuleCodes(
+      nextSelectedRules.map((rule) => rule.ruleCode),
+    );
+
+    const selectedPricingRuleIds = sanitizeSelectedPricingRuleIds(
+      nextSelectedRules.map((rule) => rule.id),
+      hiddenPricingRuleIds,
+    );
+
+    const requiresWoodenCrate = nextSelectedRules.some(isWoodCrateRule);
+    const requiresInsurance = nextSelectedRules.some(isInsuranceRule);
+
+    onChange?.({
+      ...value,
+      requiresPacking: nextSelectedRules.some((rule) =>
+        rule.ruleCode.includes("PACKING"),
+      ),
+      requiresWoodenCrate,
+      requiresInsurance,
+      requiresInspection: nextSelectedRules.some(
+        (rule) =>
+          rule.ruleCode.includes("INSPECTION") ||
+          rule.ruleType.includes("INSPECTION"),
+      ),
+      selectedRuleCodes,
+      selectedPricingRuleIds,
+      ...(requiresWoodenCrate
+        ? {}
+        : {
+            packageConfigurationByPackageId: {},
+            selectedPackageConfigurations: [],
+            woodCrateBaseFeePerPackage: 0,
+            woodCrateBaseFee: 0,
+            woodCrateConfigurationFee: 0,
+            woodCrateTotalFee: 0,
+            woodCrateCompleted: false,
+          }),
+    });
+  }, [
+    hiddenPricingRuleIds,
+    onChange,
+    packageItems,
+    pricingLoading,
+    pricingRules,
+    selectedCodes,
+    value,
+  ]);
+
   const selectedDraftRules = useMemo(() => {
     const selectedSet = new Set(draftSelectedCodes);
     return pricingRules.filter((rule) => selectedSet.has(rule.ruleCode));
@@ -1345,7 +1555,8 @@ export default function PackageOptionalServices({
       disabled ||
       isHiddenRule(rule) ||
       !isRuleSelectable(rule) ||
-      rule.isRequired
+      rule.isRequired ||
+      !getRuleAvailability(rule, packageItems).available
     ) {
       return;
     }
@@ -1388,7 +1599,8 @@ export default function PackageOptionalServices({
         (rule) =>
           !isHiddenRule(rule) &&
           selectedSet.has(rule.ruleCode) &&
-          isRuleSelectable(rule),
+          isRuleSelectable(rule) &&
+          getRuleAvailability(rule, packageItems).available,
       );
 
     const selectedRuleCodes =
@@ -1786,7 +1998,7 @@ export default function PackageOptionalServices({
 
                                   {isSuggested && (
                                     <small>
-                                      API gợi ý
+                                      Hệ thống gợi ý
                                     </small>
                                   )}
                                 </span>
@@ -1998,9 +2210,17 @@ export default function PackageOptionalServices({
               const Icon = getRuleIcon(rule);
               const checked = draftSelectedCodes.includes(rule.ruleCode);
               const selectable = isRuleSelectable(rule);
-              const itemDisabled = disabled || !selectable || rule.isRequired;
-              const isWoodCrateRule =
-                rule.ruleCode === WOOD_CRATE_CODE;
+              const availability = getRuleAvailability(
+                rule,
+                packageItems,
+              );
+              const itemDisabled =
+                disabled ||
+                !selectable ||
+                rule.isRequired ||
+                !availability.available;
+              const isWoodCrateService = isWoodCrateRule(rule);
+              const isInsuranceService = isInsuranceRule(rule);
 
               return (
                 <React.Fragment
@@ -2023,7 +2243,7 @@ export default function PackageOptionalServices({
                       "package-services-modal__item",
                       checked &&
                         "package-services-modal__item--selected",
-                      isWoodCrateRule &&
+                      isWoodCrateService &&
                         checked &&
                         "package-services-modal__item--wood-open",
                       itemDisabled &&
@@ -2131,11 +2351,18 @@ export default function PackageOptionalServices({
                           rule.description,
                         )}
                       </span>
+
+                      {!availability.available && (
+                        <span className="package-services-modal__requirement">
+                          <InfoCircleOutlined />
+                          {availability.reason}
+                        </span>
+                      )}
                     </span>
 
                     <span className="package-services-modal__fee">
                       <small>
-                        {isWoodCrateRule
+                        {isWoodCrateService
                           ? "Theo cấu hình thùng"
                           : getCalculationTypeLabel(
                               rule.calculationType,
@@ -2143,7 +2370,7 @@ export default function PackageOptionalServices({
                       </small>
 
                       <strong>
-                        {isWoodCrateRule
+                        {isWoodCrateService
                           ? checked
                             ? "Chọn bên dưới"
                             : "Chưa chọn thùng"
@@ -2151,10 +2378,31 @@ export default function PackageOptionalServices({
                               rule,
                             )}
                       </strong>
+
+                      {isInsuranceService && (
+                        <span className="package-services-modal__fee-limits">
+                          <span>
+                            Tối thiểu:
+                            <b>
+                              {rule.minAmount === null
+                                ? "Không quy định"
+                                : formatMoney(rule.minAmount)}
+                            </b>
+                          </span>
+                          <span>
+                            Tối đa:
+                            <b>
+                              {rule.maxAmount === null
+                                ? "Không giới hạn"
+                                : formatMoney(rule.maxAmount)}
+                            </b>
+                          </span>
+                        </span>
+                      )}
                     </span>
                   </div>
 
-                  {isWoodCrateRule &&
+                  {isWoodCrateService &&
                     checked &&
                     renderPackageConfigurationPanel()}
                 </React.Fragment>
