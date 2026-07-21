@@ -47,7 +47,7 @@ import AuthNotify from "../../../utils/AuthNotify";
 
 import { getConsignmentsApi } from "../../../api/OrderApi/consignmentApi";
 import { getPurchaseRequestsApi } from "../../../api/OrderApi/purchaseRequestApi";
-import { uploadImage } from "../../../api/Upload/UploadImage";
+import { uploadImages } from "../../../api/Upload/UploadImage";
 
 import {
   apiToUtcIso,
@@ -148,14 +148,25 @@ const INITIAL_MESSAGE_FORM = {
   content: "",
 };
 
-const EMPTY_ATTACHMENT = {
-  file: null,
-  previewUrl: "",
-  name: "",
-};
-
+const MAX_IMAGE_COUNT = 1;
 const MAX_IMAGE_SIZE_MB = 6;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+const ACCEPTED_CHAT_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+]);
+
+const createAttachmentItem = (file) => ({
+  id:
+    String(file?.uid || "").trim() ||
+    `${file?.name || "image"}-${file?.size || 0}-${file?.lastModified || Date.now()}`,
+  file,
+  previewUrl: URL.createObjectURL(file),
+  name: file?.name || "Ảnh đính kèm",
+});
 
 const MESSAGE_POLL_INTERVAL_MS = 2500;
 
@@ -276,8 +287,110 @@ const getMessageContent = (message) => {
   return message?.content || message?.message || message?.text || "";
 };
 
+const isLikelyAttachmentUrl = (value) => {
+  const text = String(value || "").trim();
+
+  return (
+    /^(https?:\/\/|blob:|data:image\/)/i.test(text) ||
+    /^\/[^/\s]/.test(text) ||
+    /(?:^|\/)(?:uploads?|images?|files?)\//i.test(text) ||
+    /\.(?:png|jpe?g|webp|gif|bmp|svg|heic|heif|avif)(?:[?#].*)?$/i.test(text)
+  );
+};
+
+const collectAttachmentUrls = (value, output = [], depth = 0) => {
+  if (value === null || value === undefined || depth > 7) {
+    return output;
+  }
+
+  if (typeof value === "string") {
+    const text = value.trim();
+
+    if (!text) {
+      return output;
+    }
+
+    if (
+      (text.startsWith("[") && text.endsWith("]")) ||
+      (text.startsWith("{") && text.endsWith("}"))
+    ) {
+      try {
+        collectAttachmentUrls(JSON.parse(text), output, depth + 1);
+        return output;
+      } catch {
+        // Chuỗi không phải JSON, tiếp tục kiểm tra như URL thông thường.
+      }
+    }
+
+    if (isLikelyAttachmentUrl(text) && !output.includes(text)) {
+      output.push(text);
+    }
+
+    return output;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectAttachmentUrls(item, output, depth + 1));
+    return output;
+  }
+
+  if (typeof value === "object") {
+    [
+      "url",
+      "imageUrl",
+      "imageURL",
+      "fileUrl",
+      "fileURL",
+      "attachmentUrl",
+      "attachmentURL",
+      "secureUrl",
+      "secureURL",
+      "secure_url",
+      "path",
+    ].forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        collectAttachmentUrls(value[key], output, depth + 1);
+      }
+    });
+
+    [
+      "urls",
+      "imageUrls",
+      "imageURLs",
+      "fileUrls",
+      "fileURLs",
+      "attachmentUrls",
+      "attachmentURLs",
+      "attachments",
+      "files",
+      "images",
+      "items",
+      "results",
+      "data",
+    ].forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        collectAttachmentUrls(value[key], output, depth + 1);
+      }
+    });
+  }
+
+  return output;
+};
+
+const getMessageAttachments = (message) => {
+  return collectAttachmentUrls([
+    message?.attachmentUrls,
+    message?.attachmentURLs,
+    message?.attachments,
+    message?.images,
+    message?.files,
+    message?.attachmentUrl,
+    message?.attachmentURL,
+  ]);
+};
+
 const getMessageAttachment = (message) => {
-  return message?.attachmentUrl || message?.attachmentURL || "";
+  return getMessageAttachments(message)[0] || "";
 };
 
 const normalizeRoleKey = (role) => {
@@ -719,13 +832,27 @@ const notifyError = (title, description) => {
   }
 };
 
+const notifyWarning = (title, description) => {
+  if (typeof AuthNotify?.warning === "function") {
+    AuthNotify.warning(title, description);
+    return;
+  }
+
+  if (typeof AuthNotify?.info === "function") {
+    AuthNotify.info(title, description);
+    return;
+  }
+
+  notifyError(title, description);
+};
+
 const getMessageSignature = (message, index) => {
   return [
     getMessageId(message, index),
     getMessageSenderId(message),
     getMessageSenderRole(message),
     getMessageContent(message),
-    getMessageAttachment(message),
+    getMessageAttachments(message).join("|"),
     getCreatedTime(message),
   ]
     .map((value) => String(value || ""))
@@ -747,25 +874,8 @@ const isImageUrl = (url) => {
   );
 };
 
-const extractUploadUrl = (response) => {
-  const data = unwrapApiData(response);
-
-  if (typeof data === "string") {
-    return data;
-  }
-
-  return (
-    data?.url ||
-    data?.imageUrl ||
-    data?.fileUrl ||
-    data?.attachmentUrl ||
-    data?.secure_url ||
-    data?.data?.url ||
-    data?.data?.imageUrl ||
-    data?.data?.fileUrl ||
-    data?.data?.attachmentUrl ||
-    ""
-  );
+const extractUploadUrls = (response) => {
+  return collectAttachmentUrls(unwrapApiData(response));
 };
 
 const validateImageFile = (file) => {
@@ -773,8 +883,19 @@ const validateImageFile = (file) => {
     throw new Error("Không tìm thấy ảnh.");
   }
 
-  if (!file.type?.startsWith("image/")) {
-    throw new Error("Chỉ được chọn file ảnh.");
+  const mimeType = String(file.type || "")
+    .trim()
+    .toLowerCase();
+
+  const extensionIsAccepted = /\.(?:jpe?g|png|webp)$/i.test(
+    String(file.name || ""),
+  );
+
+  if (
+    !ACCEPTED_CHAT_IMAGE_TYPES.has(mimeType) &&
+    !extensionIsAccepted
+  ) {
+    throw new Error("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.");
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
@@ -802,8 +923,8 @@ export default function CustomerServiceChat() {
   const [createForm, setCreateForm] = useState(INITIAL_CREATE_FORM);
   const [messageForm, setMessageForm] = useState(INITIAL_MESSAGE_FORM);
 
-  const [createAttachment, setCreateAttachment] = useState(EMPTY_ATTACHMENT);
-  const [messageAttachment, setMessageAttachment] = useState(EMPTY_ATTACHMENT);
+  const [createAttachments, setCreateAttachments] = useState([]);
+  const [messageAttachments, setMessageAttachments] = useState([]);
   const [relatedOptions, setRelatedOptions] = useState([]);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -916,8 +1037,10 @@ export default function CustomerServiceChat() {
 
   const handleCopyMessage = async (message, index) => {
     const content = getMessageContent(message);
-    const attachmentUrl = getMessageAttachment(message);
-    const valueToCopy = content || attachmentUrl;
+    const attachmentUrls = getMessageAttachments(message);
+    const valueToCopy = [content, ...attachmentUrls]
+      .filter(Boolean)
+      .join("\n");
     const messageId = String(getMessageId(message, index));
 
     try {
@@ -945,35 +1068,80 @@ export default function CustomerServiceChat() {
     }
   };
 
-  const clearCreateAttachment = () => {
-    if (createAttachment.previewUrl) {
-      URL.revokeObjectURL(createAttachment.previewUrl);
-    }
-
-    setCreateAttachment(EMPTY_ATTACHMENT);
+  const revokeAttachmentPreviews = (attachments = []) => {
+    attachments.forEach((attachment) => {
+      if (attachment?.previewUrl) {
+        URL.revokeObjectURL(attachment.previewUrl);
+      }
+    });
   };
 
-  const clearMessageAttachment = () => {
-    if (messageAttachment.previewUrl) {
-      URL.revokeObjectURL(messageAttachment.previewUrl);
-    }
-
-    setMessageAttachment(EMPTY_ATTACHMENT);
+  const clearCreateAttachments = () => {
+    setCreateAttachments((current) => {
+      revokeAttachmentPreviews(current);
+      return [];
+    });
   };
 
-  const uploadSelectedImage = async (attachment) => {
-    if (!attachment?.file) {
-      return null;
+  const clearMessageAttachments = () => {
+    setMessageAttachments((current) => {
+      revokeAttachmentPreviews(current);
+      return [];
+    });
+  };
+
+  const removeCreateAttachment = (attachmentId) => {
+    setCreateAttachments((current) => {
+      const removed = current.find((item) => item.id === attachmentId);
+
+      if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+
+      return current.filter((item) => item.id !== attachmentId);
+    });
+  };
+
+  const removeMessageAttachment = (attachmentId) => {
+    setMessageAttachments((current) => {
+      const removed = current.find((item) => item.id === attachmentId);
+
+      if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+
+      return current.filter((item) => item.id !== attachmentId);
+    });
+  };
+
+  const uploadSelectedImages = async (attachments = []) => {
+    if (!attachments.length) {
+      return [];
     }
 
-    const uploadResponse = await uploadImage(attachment.file);
-    const uploadedUrl = extractUploadUrl(uploadResponse);
+    const files = attachments
+      .map((attachment) => attachment?.file)
+      .filter(Boolean);
 
-    if (!uploadedUrl) {
-      throw new Error("Upload ảnh thành công nhưng không nhận được URL ảnh.");
+    if (!files.length) {
+      return [];
     }
 
-    return uploadedUrl;
+    const uploadResponse = await uploadImages(
+      files,
+      undefined,
+      { showNotification: false },
+    );
+
+    const uploadedUrls = extractUploadUrls(uploadResponse);
+
+    if (uploadedUrls.length < files.length) {
+      throw new Error(
+        `API chỉ trả về ${uploadedUrls.length}/${files.length} URL ảnh. Vui lòng kiểm tra response upload.`,
+      );
+    }
+
+    return uploadedUrls.slice(0, files.length);
   };
 
   const updateConversationSummary = (
@@ -1316,7 +1484,7 @@ export default function CustomerServiceChat() {
     setErrorMessage("");
     setRelatedOptions([]);
     setCreateForm(INITIAL_CREATE_FORM);
-    clearCreateAttachment();
+    clearCreateAttachments();
     setIsCreateOpen(true);
   };
 
@@ -1328,7 +1496,7 @@ export default function CustomerServiceChat() {
     setIsCreateOpen(false);
     setRelatedOptions([]);
     setCreateForm(INITIAL_CREATE_FORM);
-    clearCreateAttachment();
+    clearCreateAttachments();
   };
 
   const handleSelectConversation = (conversation) => {
@@ -1347,7 +1515,7 @@ export default function CustomerServiceChat() {
     setSelectedConversation(normalizeConversationTime(conversation));
     setMessages([]);
     setMessageForm(INITIAL_MESSAGE_FORM);
-    clearMessageAttachment();
+    clearMessageAttachments();
     setIsLoadingDetail(true);
     setSelectedConversationId(id);
 
@@ -1374,48 +1542,88 @@ export default function CustomerServiceChat() {
     }));
   };
 
-  const handlePickCreateImage = (file) => {
+  const appendImageAttachment = ({
+    file,
+    setAttachments,
+    title,
+  }) => {
     if (!file) {
       return false;
     }
 
     try {
       validateImageFile(file);
-      clearCreateAttachment();
 
-      setCreateAttachment({
-        file,
-        previewUrl: URL.createObjectURL(file),
-        name: file.name,
+      setAttachments((current) => {
+        const attachmentId =
+          String(file?.uid || "").trim() ||
+          `${file?.name || "image"}-${file?.size || 0}-${file?.lastModified || 0}`;
+
+        const isDuplicate = current.some(
+          (item) =>
+            item.id === attachmentId ||
+            (
+              item.file?.name === file.name &&
+              item.file?.size === file.size &&
+              item.file?.lastModified === file.lastModified
+            ),
+        );
+
+        if (isDuplicate) {
+          return current;
+        }
+
+        if (current.length >= MAX_IMAGE_COUNT) {
+          window.queueMicrotask(() => {
+            notifyWarning(
+              "Đã đạt giới hạn ảnh",
+              `Chỉ được đính kèm tối đa ${MAX_IMAGE_COUNT} ảnh.`,
+            );
+          });
+
+          return current;
+        }
+
+        const nextAttachments = [
+          ...current,
+          createAttachmentItem(file),
+        ];
+
+        window.queueMicrotask(() => {
+          notifySuccess(
+            "Đã chọn ảnh",
+            `Đã chọn ${nextAttachments.length}/${MAX_IMAGE_COUNT} ảnh.`,
+          );
+        });
+
+        return nextAttachments;
       });
+
       setErrorMessage("");
     } catch (error) {
-      setErrorMessage(error?.message || "Không thể chọn ảnh.");
+      const errorText = error?.message || "Không thể chọn ảnh.";
+
+      setErrorMessage(errorText);
+      notifyError(title, errorText);
     }
 
     return false;
   };
 
+  const handlePickCreateImage = (file) => {
+    return appendImageAttachment({
+      file,
+      setAttachments: setCreateAttachments,
+      title: "Không thể chọn ảnh yêu cầu",
+    });
+  };
+
   const handlePickMessageImage = (file) => {
-    if (!file) {
-      return false;
-    }
-
-    try {
-      validateImageFile(file);
-      clearMessageAttachment();
-
-      setMessageAttachment({
-        file,
-        previewUrl: URL.createObjectURL(file),
-        name: file.name,
-      });
-      setErrorMessage("");
-    } catch (error) {
-      setErrorMessage(error?.message || "Không thể chọn ảnh.");
-    }
-
-    return false;
+    return appendImageAttachment({
+      file,
+      setAttachments: setMessageAttachments,
+      title: "Không thể chọn ảnh tin nhắn",
+    });
   };
 
   const updateCreateField = (name, value) => {
@@ -1444,7 +1652,7 @@ export default function CustomerServiceChat() {
 
     if (
       !isSending &&
-      (messageForm.content.trim() || messageAttachment.file)
+      (messageForm.content.trim() || messageAttachments.length > 0)
     ) {
       handleSendMessage(event);
     }
@@ -1479,14 +1687,14 @@ export default function CustomerServiceChat() {
     }
 
     try {
-      const attachmentUrl = await uploadSelectedImage(createAttachment);
+      const attachmentUrls = await uploadSelectedImages(createAttachments);
       const timePayload = getClientTimePayload();
 
       const requestPayload = {
         relatedType: relatedType || null,
         relatedId: relatedType ? relatedId : null,
         message,
-        attachmentUrl,
+        attachmentUrl: attachmentUrls[0] || null,
         createdAtUtc: timePayload.createdAtUtc,
         clientCreatedAtUtc: timePayload.clientCreatedAtUtc,
         clientTimeZone: timePayload.clientTimeZone,
@@ -1503,15 +1711,57 @@ export default function CustomerServiceChat() {
         data?.conversation?.id ||
         data?.conversation?.conversationId;
 
+      let remainingImageError = "";
+
+      /*
+       * API hội thoại cũ chỉ nhận một attachmentUrl.
+       * Ảnh đầu tiên đi cùng tin nhắn tạo hội thoại; các ảnh còn lại
+       * được gửi thành từng tin nhắn ảnh để đảm bảo không bị mất ảnh.
+       */
+      if (!conversationId && attachmentUrls.length > 1) {
+        remainingImageError =
+          "API tạo hội thoại không trả về conversationId nên các ảnh bổ sung chưa thể gửi.";
+      }
+
+      if (conversationId && attachmentUrls.length > 1) {
+        try {
+          for (const attachmentUrl of attachmentUrls.slice(1)) {
+            const extraTimePayload = getClientTimePayload();
+
+            await sendConversationMessageApi(String(conversationId), {
+              content: "",
+              attachmentUrl,
+              sentAtUtc: extraTimePayload.sentAtUtc,
+              clientSentAtUtc: extraTimePayload.clientSentAtUtc,
+              clientTimeZone: extraTimePayload.clientTimeZone,
+              clientUtcOffset: extraTimePayload.clientUtcOffset,
+              clientUtcOffsetMinutes:
+                extraTimePayload.clientUtcOffsetMinutes,
+            });
+          }
+        } catch (error) {
+          remainingImageError = getApiErrorText(
+            error,
+            "Một số ảnh bổ sung chưa gửi được.",
+          );
+        }
+      }
+
       setCreateForm(INITIAL_CREATE_FORM);
-      clearCreateAttachment();
+      clearCreateAttachments();
       setRelatedOptions([]);
       setIsCreateOpen(false);
 
       notifySuccess(
         "Tạo cuộc trò chuyện thành công",
-        "Bạn có thể bắt đầu trao đổi với CSKH."
+        attachmentUrls.length
+          ? `Đã gửi kèm ${attachmentUrls.length} ảnh.`
+          : "Bạn có thể bắt đầu trao đổi với CSKH.",
       );
+
+      if (remainingImageError) {
+        notifyWarning("Ảnh gửi chưa đầy đủ", remainingImageError);
+      }
 
       await loadConversations();
 
@@ -1558,8 +1808,11 @@ export default function CustomerServiceChat() {
 
     const content = messageForm.content.trim();
 
-    if (!content && !messageAttachment.file) {
-      setErrorMessage("Vui lòng nhập nội dung hoặc chọn ảnh.");
+    if (!content && messageAttachments.length === 0) {
+      const errorText = "Vui lòng nhập nội dung hoặc chọn ít nhất một ảnh.";
+
+      setErrorMessage(errorText);
+      notifyWarning("Chưa có nội dung gửi", errorText);
       return;
     }
 
@@ -1567,28 +1820,45 @@ export default function CustomerServiceChat() {
     setErrorMessage("");
 
     try {
-      const attachmentUrl = await uploadSelectedImage(messageAttachment);
-      const timePayload = getClientTimePayload();
+      const attachmentUrls = await uploadSelectedImages(messageAttachments);
+      const messageItems = attachmentUrls.length
+        ? attachmentUrls
+        : [null];
 
-      await sendConversationMessageApi(selectedConversationId, {
-        content,
-        attachmentUrl,
-        sentAtUtc: timePayload.sentAtUtc,
-        clientSentAtUtc: timePayload.clientSentAtUtc,
-        clientTimeZone: timePayload.clientTimeZone,
-        clientUtcOffset: timePayload.clientUtcOffset,
-        clientUtcOffsetMinutes: timePayload.clientUtcOffsetMinutes,
-      });
+      for (let index = 0; index < messageItems.length; index += 1) {
+        const attachmentUrl = messageItems[index];
+        const timePayload = getClientTimePayload();
+
+        await sendConversationMessageApi(selectedConversationId, {
+          content: index === 0 ? content : "",
+          attachmentUrl,
+          sentAtUtc: timePayload.sentAtUtc,
+          clientSentAtUtc: timePayload.clientSentAtUtc,
+          clientTimeZone: timePayload.clientTimeZone,
+          clientUtcOffset: timePayload.clientUtcOffset,
+          clientUtcOffsetMinutes: timePayload.clientUtcOffsetMinutes,
+        });
+      }
 
       setMessageForm(INITIAL_MESSAGE_FORM);
-      clearMessageAttachment();
+      clearMessageAttachments();
+
+      notifySuccess(
+        "Gửi tin nhắn thành công",
+        attachmentUrls.length
+          ? `Đã gửi nội dung cùng ${attachmentUrls.length} ảnh.`
+          : "Tin nhắn đã được gửi đến CSKH.",
+      );
 
       await refreshConversationSilently(selectedConversationId, {
         forceUpdate: true,
         forceScroll: true,
       });
     } catch (error) {
-      setErrorMessage(getApiErrorText(error, "Không thể gửi tin nhắn."));
+      const errorText = getApiErrorText(error, "Không thể gửi tin nhắn.");
+
+      setErrorMessage(errorText);
+      notifyError("Gửi tin nhắn thất bại", errorText);
     } finally {
       setIsSending(false);
     }
@@ -1933,7 +2203,7 @@ export default function CustomerServiceChat() {
                     messages.map((item, index) => {
                       const mine = isMessageMine(item, currentUserId);
                       const content = getMessageContent(item);
-                      const attachmentUrl = getMessageAttachment(item);
+                      const attachmentUrls = getMessageAttachments(item);
                       const messageId = String(getMessageId(item, index));
                       const isCopied = copiedMessageId === messageId;
 
@@ -1967,7 +2237,7 @@ export default function CustomerServiceChat() {
                                   <span>{formatDateTime(getCreatedTime(item))}</span>
                                 </div>
 
-                                {(content || attachmentUrl) && (
+                                {(content || attachmentUrls.length > 0) && (
                                   <Tooltip
                                     title={
                                       isCopied
@@ -2003,26 +2273,41 @@ export default function CustomerServiceChat() {
 
                               {content && <p>{content}</p>}
 
-                              {attachmentUrl && (
-                                <a
-                                  className="cskh-attachment-preview"
-                                  href={attachmentUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
+                              {attachmentUrls.length > 0 && (
+                                <div
+                                  className={[
+                                    "cskh-attachment-grid",
+                                    attachmentUrls.length === 1 &&
+                                      "has-single-image",
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ")}
                                 >
-                                  {isImageUrl(attachmentUrl) ? (
-                                    <img
-                                      src={attachmentUrl}
-                                      alt="Tệp ảnh đính kèm"
-                                      onLoad={() => scrollMessagesToBottom("auto")}
-                                    />
-                                  ) : (
-                                    <span>
-                                      <PaperClipOutlined />
-                                      Xem tệp đính kèm
-                                    </span>
-                                  )}
-                                </a>
+                                  {attachmentUrls.map((attachmentUrl, imageIndex) => (
+                                    <a
+                                      key={`${attachmentUrl}-${imageIndex}`}
+                                      className="cskh-attachment-preview"
+                                      href={attachmentUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      {isImageUrl(attachmentUrl) ? (
+                                        <img
+                                          src={attachmentUrl}
+                                          alt={`Ảnh đính kèm ${imageIndex + 1}`}
+                                          onLoad={() =>
+                                            scrollMessagesToBottom("auto")
+                                          }
+                                        />
+                                      ) : (
+                                        <span>
+                                          <PaperClipOutlined />
+                                          Xem tệp đính kèm
+                                        </span>
+                                      )}
+                                    </a>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           </div>
@@ -2034,47 +2319,81 @@ export default function CustomerServiceChat() {
                 </section>
 
                 <form className="cskh-send-form" onSubmit={handleSendMessage}>
-                  {messageAttachment.previewUrl && (
-                    <div className="cskh-selected-image">
-                      <img
-                        src={messageAttachment.previewUrl}
-                        alt="Ảnh chuẩn bị gửi"
-                      />
+                  {messageAttachments.length > 0 && (
+                    <div className="cskh-selected-images">
+                      <div className="cskh-selected-images__header">
+                        <strong>
+                          Ảnh đã chọn ({messageAttachments.length}/{MAX_IMAGE_COUNT})
+                        </strong>
 
-                      <div>
-                        <strong>{messageAttachment.name}</strong>
-                        <span>Ảnh sẽ được tải lên khi gửi tin nhắn.</span>
-                      </div>
-
-                      <Tooltip title="Xóa ảnh">
                         <Button
                           type="text"
-                          shape="circle"
+                          size="small"
                           danger
-                          icon={<DeleteOutlined />}
-                          onClick={clearMessageAttachment}
+                          onClick={clearMessageAttachments}
                           disabled={isSending}
-                        />
-                      </Tooltip>
+                        >
+                          Xóa tất cả
+                        </Button>
+                      </div>
+
+                      <div className="cskh-selected-images__grid">
+                        {messageAttachments.map((attachment, index) => (
+                          <div
+                            key={attachment.id}
+                            className="cskh-selected-image-card"
+                          >
+                            <img
+                              src={attachment.previewUrl}
+                              alt={`Ảnh chuẩn bị gửi ${index + 1}`}
+                            />
+
+                            <Tooltip title="Xóa ảnh">
+                              <Button
+                                type="text"
+                                shape="circle"
+                                danger
+                                className="cskh-selected-image-card__remove"
+                                icon={<DeleteOutlined />}
+                                onClick={() =>
+                                  removeMessageAttachment(attachment.id)
+                                }
+                                disabled={isSending}
+                              />
+                            </Tooltip>
+
+                            <span title={attachment.name}>
+                              {attachment.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   <div className="cskh-message-input-row">
                     <Tooltip title="Đính kèm ảnh">
                       <Upload
-                        accept="image/*"
-                        maxCount={1}
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        maxCount={MAX_IMAGE_COUNT}
                         showUploadList={false}
                         beforeUpload={handlePickMessageImage}
-                        disabled={isSending}
+                        disabled={
+                          isSending ||
+                          messageAttachments.length >= MAX_IMAGE_COUNT
+                        }
                       >
                         <Button
                           type="text"
                           shape="circle"
                           className="cskh-upload-button"
                           icon={<PictureOutlined />}
-                          disabled={isSending}
-                          aria-label="Chọn ảnh"
+                          disabled={
+                            isSending ||
+                            messageAttachments.length >= MAX_IMAGE_COUNT
+                          }
+                          aria-label={`Chọn ảnh, tối đa ${MAX_IMAGE_COUNT} ảnh`}
                         />
                       </Upload>
                     </Tooltip>
@@ -2099,7 +2418,10 @@ export default function CustomerServiceChat() {
                       loading={isSending}
                       disabled={
                         isSending ||
-                        (!messageForm.content.trim() && !messageAttachment.file)
+                        (
+                          !messageForm.content.trim() &&
+                          messageAttachments.length === 0
+                        )
                       }
                     >
                       <span>Gửi</span>
@@ -2262,48 +2584,87 @@ export default function CustomerServiceChat() {
               <div className="cskh-create-upload">
                 <div>
                   <strong>Ảnh đính kèm</strong>
-                  <span>PNG, JPG hoặc WEBP, tối đa {MAX_IMAGE_SIZE_MB}MB.</span>
+                  <span>
+                    PNG, JPG hoặc WEBP, tối đa {MAX_IMAGE_COUNT} ảnh,
+                    mỗi ảnh không quá {MAX_IMAGE_SIZE_MB}MB.
+                  </span>
                 </div>
 
                 <Upload
-                  accept="image/*"
-                  maxCount={1}
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  maxCount={MAX_IMAGE_COUNT}
                   showUploadList={false}
                   beforeUpload={handlePickCreateImage}
-                  disabled={isCreating}
+                  disabled={
+                    isCreating ||
+                    createAttachments.length >= MAX_IMAGE_COUNT
+                  }
                 >
                   <Button
                     type="default"
                     icon={<PictureOutlined />}
-                    disabled={isCreating}
+                    disabled={
+                      isCreating ||
+                      createAttachments.length >= MAX_IMAGE_COUNT
+                    }
                   >
-                    Chọn ảnh
+                    {createAttachments.length >= MAX_IMAGE_COUNT
+                      ? "Đã đủ 3 ảnh"
+                      : "Chọn ảnh"}
                   </Button>
                 </Upload>
               </div>
 
-              {createAttachment.previewUrl && (
-                <div className="cskh-selected-image cskh-selected-image--modal">
-                  <img
-                    src={createAttachment.previewUrl}
-                    alt="Ảnh đính kèm"
-                  />
+              {createAttachments.length > 0 && (
+                <div className="cskh-selected-images cskh-selected-images--modal">
+                  <div className="cskh-selected-images__header">
+                    <strong>
+                      Ảnh đã chọn ({createAttachments.length}/{MAX_IMAGE_COUNT})
+                    </strong>
 
-                  <div>
-                    <strong>{createAttachment.name}</strong>
-                    <span>Ảnh sẽ được gửi kèm yêu cầu hỗ trợ.</span>
-                  </div>
-
-                  <Tooltip title="Xóa ảnh">
                     <Button
                       type="text"
-                      shape="circle"
+                      size="small"
                       danger
-                      icon={<DeleteOutlined />}
-                      onClick={clearCreateAttachment}
+                      onClick={clearCreateAttachments}
                       disabled={isCreating}
-                    />
-                  </Tooltip>
+                    >
+                      Xóa tất cả
+                    </Button>
+                  </div>
+
+                  <div className="cskh-selected-images__grid">
+                    {createAttachments.map((attachment, index) => (
+                      <div
+                        key={attachment.id}
+                        className="cskh-selected-image-card"
+                      >
+                        <img
+                          src={attachment.previewUrl}
+                          alt={`Ảnh yêu cầu hỗ trợ ${index + 1}`}
+                        />
+
+                        <Tooltip title="Xóa ảnh">
+                          <Button
+                            type="text"
+                            shape="circle"
+                            danger
+                            className="cskh-selected-image-card__remove"
+                            icon={<DeleteOutlined />}
+                            onClick={() =>
+                              removeCreateAttachment(attachment.id)
+                            }
+                            disabled={isCreating}
+                          />
+                        </Tooltip>
+
+                        <span title={attachment.name}>
+                          {attachment.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
