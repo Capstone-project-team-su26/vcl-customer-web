@@ -40,6 +40,8 @@ import {
 } from "../../../../utils/timeUtc";
 import { Tooltip } from "antd";
 import PackageOptionalServices from "../../../../components/DashboardComponents/CustomerKiguiComponents/PackageOptionalServices/PackageOptionalServices";
+import pricingRuleService from "../../../../api/ServiceApi/pricingRuleService";
+
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES_PER_PACKAGE = 3;
 
@@ -90,6 +92,13 @@ const INITIAL_FORM = {
     // Giữ lại dữ liệu rule đã chọn để tương thích component dịch vụ động.
     selectedRuleCodes: [],
     selectedPricingRuleIds: [],
+    packageConfigurationByPackageId: {},
+    selectedPackageConfigurations: [],
+    woodCrateBaseFeePerPackage: 0,
+    woodCrateBaseFee: 0,
+    woodCrateConfigurationFee: 0,
+    woodCrateTotalFee: 0,
+    woodCrateCompleted: false,
   },
 };
 
@@ -195,6 +204,26 @@ const formatVnd = (value) => {
 
   return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "";
 };
+
+
+const getDeliveryAddressText = (addressItem) =>
+  String(
+    addressItem?.fullAddress ||
+      addressItem?.address ||
+      "",
+  ).trim();
+
+const isWoodCrateMeasurementField = (field) =>
+  ["weight", "length", "width", "height"].includes(
+    field,
+  );
+
+const hasCompleteWoodCrateMeasurements = (pkg = {}) =>
+  ["weight", "length", "width", "height"].every(
+    (field) =>
+      Number.isFinite(Number(pkg?.[field])) &&
+      Number(pkg[field]) > 0,
+  );
 
 const preventInvalidNumberKeys = (event) => {
   if (["-", "+", "e", "E"].includes(event.key)) {
@@ -369,15 +398,15 @@ const normalizeDeliveryAddress = (item, index = 0) => {
       : null;
   }
 
-  const address = String(
-    item.address ||
+  const fullAddress = String(
+    item.fullAddress ||
+      item.address ||
       item.receiverAddress ||
-      item.fullAddress ||
       item.deliveryAddress ||
       "",
   ).trim();
 
-  if (!address) {
+  if (!fullAddress) {
     return null;
   }
 
@@ -388,8 +417,8 @@ const normalizeDeliveryAddress = (item, index = 0) => {
   return {
     id: apiId || `address-${index}`,
     apiId,
-    address,
-    fullAddress: String(item.fullAddress || address).trim(),
+    address: fullAddress,
+    fullAddress,
     detailAddress: String(item.detailAddress || "").trim(),
     provinceCode: String(item.provinceCode || item.province_code || "").trim(),
     provinceName: String(item.provinceName || item.province_name || "").trim(),
@@ -778,6 +807,26 @@ export default function ConsignmentOrder() {
   const [productTypeOptions, setProductTypeOptions] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
 
+  const [
+    confirmationPricingRules,
+    setConfirmationPricingRules,
+  ] = useState([]);
+
+  const [
+    confirmationPackageConfigurations,
+    setConfirmationPackageConfigurations,
+  ] = useState([]);
+
+  const [
+    isLoadingConfirmationData,
+    setIsLoadingConfirmationData,
+  ] = useState(false);
+
+  const [
+    confirmationDataError,
+    setConfirmationDataError,
+  ] = useState("");
+
   const [addressList, setAddressList] = useState([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
@@ -805,6 +854,138 @@ export default function ConsignmentOrder() {
   const [submitMessage, setSubmitMessage] = useState(
     "Đang chuẩn bị tạo đơn...",
   );
+
+  useEffect(() => {
+    if (!isConfirming) {
+      return undefined;
+    }
+
+    const controller =
+      new AbortController();
+
+    const loadConfirmationData =
+      async () => {
+        try {
+          setIsLoadingConfirmationData(
+            true,
+          );
+          setConfirmationDataError("");
+
+          const [
+            pricingRulesResult,
+            packageConfigurationsResult,
+          ] = await Promise.allSettled([
+            pricingRuleService.getPricingRules({
+              signal:
+                controller.signal,
+              onlyActive: false,
+            }),
+            pricingRuleService.getPackageConfigurations({
+              signal:
+                controller.signal,
+              onlyActive: true,
+            }),
+          ]);
+
+          if (
+            controller.signal.aborted
+          ) {
+            return;
+          }
+
+          const errorMessages = [];
+
+          if (
+            pricingRulesResult.status ===
+            "fulfilled"
+          ) {
+            setConfirmationPricingRules(
+              Array.isArray(
+                pricingRulesResult.value,
+              )
+                ? pricingRulesResult.value
+                : [],
+            );
+          } else {
+            setConfirmationPricingRules(
+              [],
+            );
+
+            errorMessages.push(
+              getApiErrorMessage(
+                pricingRulesResult.reason,
+                "Không thể tải bảng giá dịch vụ.",
+              ),
+            );
+          }
+
+          if (
+            packageConfigurationsResult.status ===
+            "fulfilled"
+          ) {
+            setConfirmationPackageConfigurations(
+              Array.isArray(
+                packageConfigurationsResult.value,
+              )
+                ? packageConfigurationsResult.value
+                : [],
+            );
+          } else {
+            setConfirmationPackageConfigurations(
+              [],
+            );
+
+            errorMessages.push(
+              getApiErrorMessage(
+                packageConfigurationsResult.reason,
+                "Không thể tải cấu hình thùng.",
+              ),
+            );
+          }
+
+          setConfirmationDataError(
+            Array.from(
+              new Set(
+                errorMessages.filter(
+                  Boolean,
+                ),
+              ),
+            ).join(" "),
+          );
+        } catch (error) {
+          if (
+            controller.signal.aborted
+          ) {
+            return;
+          }
+
+          console.error(
+            "[ConsignmentOrder] Lỗi tải dữ liệu màn hình xác nhận:",
+            error,
+          );
+
+          setConfirmationDataError(
+            getApiErrorMessage(
+              error,
+              "Không thể tải đầy đủ dữ liệu màn hình xác nhận.",
+            ),
+          );
+        } finally {
+          if (
+            !controller.signal.aborted
+          ) {
+            setIsLoadingConfirmationData(
+              false,
+            );
+          }
+        }
+      };
+
+    loadConfirmationData();
+
+    return () =>
+      controller.abort();
+  }, [isConfirming]);
 
   const clearFormError = (field) => {
     setFormErrors((previous) => ({
@@ -1008,7 +1189,10 @@ export default function ConsignmentOrder() {
         const defaultAddress = list.find((item) => item.isDefault);
 
         if (defaultAddress) {
-          updateForm("selectedDeliveryAddress", defaultAddress.address);
+          updateForm(
+            "selectedDeliveryAddress",
+            getDeliveryAddressText(defaultAddress),
+          );
         }
       } catch (error) {
         if (!isCanceledRequest(error)) {
@@ -1367,7 +1551,9 @@ export default function ConsignmentOrder() {
     }
 
     const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa địa chỉ "${addressItem.address}" không?`,
+      `Bạn có chắc muốn xóa địa chỉ "${getDeliveryAddressText(
+        addressItem,
+      )}" không?`,
     );
 
     if (!confirmed) {
@@ -1384,10 +1570,17 @@ export default function ConsignmentOrder() {
 
       setAddressList(remainingAddresses);
 
-      if (form.selectedDeliveryAddress === addressItem.address) {
+      if (
+        form.selectedDeliveryAddress ===
+        getDeliveryAddressText(
+          addressItem,
+        )
+      ) {
         updateForm(
           "selectedDeliveryAddress",
-          remainingAddresses[0]?.address || "",
+          getDeliveryAddressText(
+            remainingAddresses[0],
+          ),
         );
       }
 
@@ -1405,22 +1598,110 @@ export default function ConsignmentOrder() {
   /* ================= PACKAGE ================= */
 
   const handleInputChange = (packageId, field, value) => {
+    const shouldResetWoodCrateConfiguration =
+      isWoodCrateMeasurementField(field) &&
+      Boolean(
+        form.optionalServices
+          ?.packageConfigurationByPackageId
+          ?.[packageId],
+      );
+
     setPackages((previous) =>
       previous.map((pkg) =>
         pkg.id === packageId
           ? {
               ...pkg,
               [field]: value,
+              ...(shouldResetWoodCrateConfiguration
+                ? {
+                    packageConfigurationId:
+                      "",
+                  }
+                : {}),
             }
           : pkg,
       ),
     );
 
     clearPackageError(packageId, field);
+
+    if (!shouldResetWoodCrateConfiguration) {
+      return;
+    }
+
+    setForm((previous) => {
+      const nextConfigurationMap =
+        normalizePackageConfigurationMap(
+          previous.optionalServices
+            ?.packageConfigurationByPackageId,
+        );
+
+      delete nextConfigurationMap[packageId];
+
+      const nextSelectedConfigurations =
+        Array.isArray(
+          previous.optionalServices
+            ?.selectedPackageConfigurations,
+        )
+          ? previous.optionalServices.selectedPackageConfigurations.filter(
+              (item) =>
+                String(
+                  item?.packageId || "",
+                ).trim() !== packageId,
+            )
+          : [];
+
+      const baseFeePerPackage =
+        Number(
+          previous.optionalServices
+            ?.woodCrateBaseFeePerPackage,
+        ) || 0;
+
+      const baseFee =
+        previous.optionalServices
+          ?.requiresWoodenCrate
+          ? baseFeePerPackage *
+            packages.length
+          : 0;
+
+      const configurationFee =
+        nextSelectedConfigurations.reduce(
+          (total, item) =>
+            total +
+            (Number(item?.packageFee) || 0),
+          0,
+        );
+
+      return {
+        ...previous,
+        optionalServices: {
+          ...previous.optionalServices,
+          packageConfigurationByPackageId:
+            nextConfigurationMap,
+          selectedPackageConfigurations:
+            nextSelectedConfigurations,
+          woodCrateBaseFee: baseFee,
+          woodCrateConfigurationFee:
+            configurationFee,
+          woodCrateTotalFee:
+            baseFee + configurationFee,
+          woodCrateCompleted: false,
+        },
+      };
+    });
+
+    setPackageErrors((previous) => ({
+      ...previous,
+      [packageId]: {
+        ...(previous[packageId] || {}),
+        packageConfigurationId:
+          "Cân nặng hoặc kích thước đã thay đổi. Vui lòng chọn lại thùng gỗ.",
+      },
+    }));
   };
 
   const handleOptionalServicesChange = (
-    nextServices
+    nextServices,
   ) => {
     if (isSubmitting) {
       return;
@@ -1430,57 +1711,154 @@ export default function ConsignmentOrder() {
       normalizeStringArray(
         nextServices?.selectedRuleCodes ??
           nextServices?.selectedPricingRuleCodes ??
-          nextServices?.pricingRuleCodes
+          nextServices?.pricingRuleCodes,
       );
 
     const selectedPricingRuleIds =
       normalizePricingRuleIds(
         nextServices?.selectedPricingRuleIds ??
-          nextServices?.pricingRuleIds
+          nextServices?.pricingRuleIds,
       );
 
     const requiresWoodenCrate = Boolean(
-      nextServices?.requiresWoodenCrate
+      nextServices?.requiresWoodenCrate,
     );
 
     const packageConfigurationByPackageId =
       requiresWoodenCrate
         ? normalizePackageConfigurationMap(
             nextServices
-              ?.packageConfigurationByPackageId
+              ?.packageConfigurationByPackageId,
           )
         : {};
+
+    const selectedPackageConfigurations =
+      requiresWoodenCrate &&
+      Array.isArray(
+        nextServices
+          ?.selectedPackageConfigurations,
+      )
+        ? nextServices.selectedPackageConfigurations
+            .filter(
+              (item) =>
+                item &&
+                typeof item === "object",
+            )
+            .map((item) => ({
+              ...item,
+              packageId: String(
+                item?.packageId || "",
+              ).trim(),
+              packageConfigurationId:
+                String(
+                  item
+                    ?.packageConfigurationId ||
+                    "",
+                ).trim(),
+              packageFee:
+                Number(item?.packageFee) || 0,
+              woodCrateBaseFee:
+                Number(
+                  item?.woodCrateBaseFee,
+                ) || 0,
+              totalFee:
+                Number(item?.totalFee) || 0,
+            }))
+            .filter(
+              (item) =>
+                item.packageId &&
+                item.packageConfigurationId,
+            )
+        : [];
+
+    const woodCrateBaseFeePerPackage =
+      requiresWoodenCrate
+        ? Number(
+            nextServices
+              ?.woodCrateBaseFeePerPackage,
+          ) || 0
+        : 0;
+
+    const woodCrateBaseFee =
+      requiresWoodenCrate
+        ? Number(
+            nextServices?.woodCrateBaseFee,
+          ) || 0
+        : 0;
+
+    const woodCrateConfigurationFee =
+      requiresWoodenCrate
+        ? Number(
+            nextServices
+              ?.woodCrateConfigurationFee,
+          ) || 0
+        : 0;
+
+    const woodCrateTotalFee =
+      requiresWoodenCrate
+        ? Number(
+            nextServices?.woodCrateTotalFee,
+          ) || 0
+        : 0;
+
+    const woodCrateCompleted =
+      requiresWoodenCrate &&
+      Boolean(
+        nextServices?.woodCrateCompleted,
+      );
 
     setPackages((previousPackages) =>
       previousPackages.map((pkg) => ({
         ...pkg,
         packageConfigurationId:
-          packageConfigurationByPackageId[pkg.id] ||
-          "",
-      }))
+          packageConfigurationByPackageId[
+            pkg.id
+          ] || "",
+      })),
     );
+
+    setPackageErrors((previous) => {
+      const nextErrors = {
+        ...previous,
+      };
+
+      Object.keys(
+        packageConfigurationByPackageId,
+      ).forEach((packageId) => {
+        nextErrors[packageId] = {
+          ...(nextErrors[packageId] || {}),
+          packageConfigurationId: "",
+        };
+      });
+
+      return nextErrors;
+    });
 
     setForm((previous) => ({
       ...previous,
-
       inspectPackage: Boolean(
-        nextServices?.requiresInspection
+        nextServices?.requiresInspection,
       ),
-
       optionalServices: {
         requiresPacking: Boolean(
-          nextServices?.requiresPacking
+          nextServices?.requiresPacking,
         ),
         requiresWoodenCrate,
         requiresInsurance: Boolean(
-          nextServices?.requiresInsurance
+          nextServices?.requiresInsurance,
         ),
         requiresInspection: Boolean(
-          nextServices?.requiresInspection
+          nextServices?.requiresInspection,
         ),
         selectedRuleCodes,
         selectedPricingRuleIds,
         packageConfigurationByPackageId,
+        selectedPackageConfigurations,
+        woodCrateBaseFeePerPackage,
+        woodCrateBaseFee,
+        woodCrateConfigurationFee,
+        woodCrateTotalFee,
+        woodCrateCompleted,
       },
     }));
   };
@@ -1530,9 +1908,71 @@ export default function ConsignmentOrder() {
   };
 
   const handleAddPackage = () => {
-    if (!isSubmitting) {
-      setPackages((previous) => [...previous, createEmptyPackage()]);
+    if (isSubmitting) {
+      return;
     }
+
+    const newPackage = createEmptyPackage();
+    const nextPackageNumber = packages.length + 1;
+
+    setPackages((previous) => [
+      ...previous,
+      newPackage,
+    ]);
+
+    setForm((previous) => {
+      if (
+        !previous.optionalServices
+          ?.requiresWoodenCrate
+      ) {
+        return previous;
+      }
+
+      const baseFeePerPackage =
+        Number(
+          previous.optionalServices
+            ?.woodCrateBaseFeePerPackage,
+        ) || 0;
+
+      const nextBaseFee =
+        baseFeePerPackage *
+        (packages.length + 1);
+
+      const configurationFee =
+        Number(
+          previous.optionalServices
+            ?.woodCrateConfigurationFee,
+        ) || 0;
+
+      return {
+        ...previous,
+        optionalServices: {
+          ...previous.optionalServices,
+          woodCrateBaseFee:
+            nextBaseFee,
+          woodCrateTotalFee:
+            nextBaseFee +
+            configurationFee,
+          woodCrateCompleted: false,
+        },
+      };
+    });
+
+    AuthNotify.success(
+      "Đã thêm kiện hàng",
+      `Đã thêm kiện hàng thứ ${nextPackageNumber}.`,
+    );
+
+    window.setTimeout(() => {
+      document
+        .getElementById(
+          `consignment-package-${newPackage.id}`,
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 120);
   };
 
   const handleDeletePackage = (packageId) => {
@@ -1542,21 +1982,66 @@ export default function ConsignmentOrder() {
 
     if (packages.length <= 1) {
       AuthNotify.warning(
-        "Không thể xóa",
-        "Yêu cầu phải có tối thiểu 1 kiện hàng.",
+        "Không thể xóa kiện hàng",
+        "Đơn ký gửi phải có tối thiểu 1 kiện hàng.",
       );
       return;
     }
 
-    const targetPackage = packages.find((pkg) => pkg.id === packageId);
+    const targetPackageIndex =
+      packages.findIndex(
+        (pkg) => pkg.id === packageId,
+      );
 
-    targetPackage?.images.forEach((image) => {
-      if (image.previewUrl) {
-        URL.revokeObjectURL(image.previewUrl);
-      }
+    const targetPackage =
+      targetPackageIndex >= 0
+        ? packages[targetPackageIndex]
+        : null;
+
+    if (!targetPackage) {
+      AuthNotify.error(
+        "Không thể xóa kiện hàng",
+        "Không tìm thấy kiện hàng cần xóa.",
+      );
+      return;
+    }
+
+    const packageDisplayName =
+      targetPackage.productName?.trim() ||
+      `Kiện hàng thứ ${targetPackageIndex + 1}`;
+
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa "${packageDisplayName}" không?\n\n` +
+        "Toàn bộ thông tin, ảnh đã chọn và cấu hình thùng của kiện này sẽ bị xóa khỏi biểu mẫu.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const deletedPreviewUrls =
+      targetPackage.images
+        .map((image) => image.previewUrl)
+        .filter(Boolean);
+
+    deletedPreviewUrls.forEach((previewUrl) => {
+      URL.revokeObjectURL(previewUrl);
     });
 
-    setPackages((previous) => previous.filter((pkg) => pkg.id !== packageId));
+    if (
+      activeLightboxImg &&
+      deletedPreviewUrls.includes(
+        activeLightboxImg,
+      )
+    ) {
+      setActiveLightboxImg(null);
+    }
+
+    setPackages((previous) =>
+      previous.filter(
+        (pkg) => pkg.id !== packageId,
+      ),
+    );
 
     setPackageErrors((previous) => {
       const nextErrors = {
@@ -1564,6 +2049,7 @@ export default function ConsignmentOrder() {
       };
 
       delete nextErrors[packageId];
+
       return nextErrors;
     });
 
@@ -1571,10 +2057,59 @@ export default function ConsignmentOrder() {
       const nextConfigurationMap =
         normalizePackageConfigurationMap(
           previous.optionalServices
-            ?.packageConfigurationByPackageId
+            ?.packageConfigurationByPackageId,
         );
 
       delete nextConfigurationMap[packageId];
+
+      const nextSelectedConfigurations =
+        Array.isArray(
+          previous.optionalServices
+            ?.selectedPackageConfigurations,
+        )
+          ? previous.optionalServices.selectedPackageConfigurations.filter(
+              (item) =>
+                String(
+                  item?.packageId || "",
+                ).trim() !== packageId,
+            )
+          : [];
+
+      const baseFeePerPackage =
+        Number(
+          previous.optionalServices
+            ?.woodCrateBaseFeePerPackage,
+        ) || 0;
+
+      const nextPackageCount =
+        Math.max(
+          packages.length - 1,
+          0,
+        );
+
+      const nextBaseFee =
+        previous.optionalServices
+          ?.requiresWoodenCrate
+          ? baseFeePerPackage *
+            nextPackageCount
+          : 0;
+
+      const nextConfigurationFee =
+        nextSelectedConfigurations.reduce(
+          (total, item) =>
+            total +
+            (Number(item?.packageFee) || 0),
+          0,
+        );
+
+      const woodCrateCompleted =
+        Boolean(
+          previous.optionalServices
+            ?.requiresWoodenCrate,
+        ) &&
+        nextPackageCount > 0 &&
+        nextSelectedConfigurations.length ===
+          nextPackageCount;
 
       return {
         ...previous,
@@ -1582,11 +2117,26 @@ export default function ConsignmentOrder() {
           ...previous.optionalServices,
           packageConfigurationByPackageId:
             nextConfigurationMap,
+          selectedPackageConfigurations:
+            nextSelectedConfigurations,
+          woodCrateBaseFee:
+            nextBaseFee,
+          woodCrateConfigurationFee:
+            nextConfigurationFee,
+          woodCrateTotalFee:
+            nextBaseFee +
+            nextConfigurationFee,
+          woodCrateCompleted,
         },
       };
     });
 
     delete fileInputRefs.current[packageId];
+
+    AuthNotify.success(
+      "Đã xóa kiện hàng",
+      `"${packageDisplayName}" đã được xóa khỏi đơn ký gửi.`,
+    );
   };
 
   /* ================= IMAGE ================= */
@@ -1917,6 +2467,16 @@ export default function ConsignmentOrder() {
         routeOptions={routeOptions}
         shippingOptions={shippingOptions}
         productTypeOptions={productTypeOptions}
+        pricingRules={confirmationPricingRules}
+        packageConfigurations={
+          confirmationPackageConfigurations
+        }
+        masterDataLoading={
+          isLoadingConfirmationData
+        }
+        masterDataError={
+          confirmationDataError
+        }
         isSubmitting={isSubmitting}
         submitMessage={submitMessage}
         onBack={() => setIsConfirming(false)}
@@ -2064,11 +2624,16 @@ export default function ConsignmentOrder() {
 
               <div
                 className={getFieldClassName(
-                  "static-display-box address-received-highlight",
+                  "static-display-box address-received-highlight address-full-display",
                   formErrors.selectedDeliveryAddress,
                 )}
+                title={
+                  form.selectedDeliveryAddress ||
+                  "Chưa chọn địa chỉ"
+                }
               >
-                {form.selectedDeliveryAddress || "Chưa chọn địa chỉ"}
+                {form.selectedDeliveryAddress ||
+                  "Chưa chọn địa chỉ"}
               </div>
 
               <FieldError message={formErrors.selectedDeliveryAddress} />
@@ -2115,8 +2680,14 @@ export default function ConsignmentOrder() {
                         .join(" ")}
                     >
                       {addressList.map((addressItem, index) => {
+                        const fullAddress =
+                          getDeliveryAddressText(
+                            addressItem,
+                          );
+
                         const isSelected =
-                          form.selectedDeliveryAddress === addressItem.address;
+                          form.selectedDeliveryAddress ===
+                          fullAddress;
                         const isDeleting =
                           deletingAddressId === addressItem.apiId;
 
@@ -2124,7 +2695,7 @@ export default function ConsignmentOrder() {
                           <div
                             key={
                               addressItem.id ||
-                              `${addressItem.address}-${index}`
+                              `${fullAddress}-${index}`
                             }
                             role="button"
                             tabIndex={0}
@@ -2138,7 +2709,7 @@ export default function ConsignmentOrder() {
                             onClick={() =>
                               updateForm(
                                 "selectedDeliveryAddress",
-                                addressItem.address,
+                                fullAddress,
                               )
                             }
                             onKeyDown={(event) => {
@@ -2146,13 +2717,15 @@ export default function ConsignmentOrder() {
                                 event.preventDefault();
                                 updateForm(
                                   "selectedDeliveryAddress",
-                                  addressItem.address,
+                                  fullAddress,
                                 );
                               }
                             }}
                           >
                             <span className="address-text-truncate">
-                              <strong>{addressItem.address}</strong>
+                              <strong title={fullAddress}>
+                                {fullAddress}
+                              </strong>
                             </span>
 
                             {addressItem.isDefault && (
@@ -2353,7 +2926,8 @@ export default function ConsignmentOrder() {
               return (
                 <div
                   key={pkg.id}
-                  className="form-main-card"
+                  id={`consignment-package-${pkg.id}`}
+                  className="form-main-card consignment-package-card"
                   style={{
                     marginBottom: "1.5rem",
                   }}
@@ -2384,24 +2958,25 @@ export default function ConsignmentOrder() {
                         type="button"
                         disabled={isSubmitting}
                         className="btn-delete-package"
-                        onClick={() => handleDeletePackage(pkg.id)}
+                        title={`Xóa kiện hàng thứ ${index + 1}`}
+                        aria-label={`Xóa kiện hàng thứ ${index + 1}`}
+                        onClick={() =>
+                          handleDeletePackage(pkg.id)
+                        }
                       >
                         <DeleteOutlined />
-                        Xóa kiện
+                        <span>Xóa kiện</span>
                       </button>
                     )}
                   </div>
 
-                  <div className="form-row-2col">
-                    <div className="input-field-group">
+                  <div className="form-row-2col product-main-info-row">
+                    <div className="input-field-group product-main-field">
                       <FieldLabelTooltip
                         label="TÊN SẢN PHẨM"
-                        style={{
-                          color: "#1890ff",
-                          cursor: "pointer",
-                          marginLeft: 6,
-                        }}
+                        className="product-main-label"
                         required
+                        placement="top"
                         tooltip="Nhập đúng và đầy đủ tên sản phẩm có trong kiện hàng, ví dụ: Áo thun nam, điện thoại iPhone 15 hoặc mỹ phẩm chăm sóc da."
                       />
 
@@ -2410,8 +2985,12 @@ export default function ConsignmentOrder() {
                         value={pkg.productName}
                         disabled={isSubmitting}
                         placeholder="Nhập tên sản phẩm..."
+                        autoComplete="off"
+                        aria-invalid={Boolean(
+                          errors.productName,
+                        )}
                         className={getFieldClassName(
-                          "custom-input",
+                          "custom-input product-main-control",
                           errors.productName,
                         )}
                         onChange={(event) =>
@@ -2426,16 +3005,26 @@ export default function ConsignmentOrder() {
                       <FieldError message={errors.productName} />
                     </div>
 
-                    <div className="input-field-group">
-                      <label className="field-label required-label">
-                        LOẠI HÀNG HÓA
-                      </label>
+                    <div className="input-field-group product-main-field">
+                      <FieldLabelTooltip
+                        label="LOẠI HÀNG HÓA"
+                        className="product-main-label"
+                        required
+                        placement="top"
+                        tooltip="Chọn đúng nhóm hàng hóa để hệ thống áp dụng quy định vận chuyển, kiểm tra và bảng giá phù hợp."
+                      />
 
                       <select
                         value={pkg.productType}
-                        disabled={isSubmitting || isLoadingOptions}
+                        disabled={
+                          isSubmitting ||
+                          isLoadingOptions
+                        }
+                        aria-invalid={Boolean(
+                          errors.productType,
+                        )}
                         className={getFieldClassName(
-                          "custom-select",
+                          "custom-select product-main-control",
                           errors.productType,
                         )}
                         onChange={(event) =>
@@ -2452,11 +3041,16 @@ export default function ConsignmentOrder() {
                             : "-- Chọn loại hàng hóa --"}
                         </option>
 
-                        {productTypeOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
+                        {productTypeOptions.map(
+                          (option) => (
+                            <option
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </option>
+                          ),
+                        )}
                       </select>
 
                       <FieldError message={errors.productType} />
@@ -2589,7 +3183,7 @@ export default function ConsignmentOrder() {
                     />
                   </div>
 
-                  <div className="input-field-group package-image-section">
+                  <div className="input-field-group package-image-section package-image-upload-card">
                     <FieldLabelTooltip
                       label={`ẢNH SẢN PHẨM KIỆN ${index + 1}`}
                       required
@@ -2670,7 +3264,7 @@ export default function ConsignmentOrder() {
 
                     {pkg.images.length > 0 && (
                       <div className="image-previews-grid animation-fade-in">
-                        {pkg.images.map((image) => (
+                        {pkg.images.map((image, imageIndex) => (
                           <div
                             key={image.id}
                             className="preview-image-item"
@@ -2680,13 +3274,19 @@ export default function ConsignmentOrder() {
                           >
                             <img
                               src={image.previewUrl}
-                              alt={`Kiện ${index + 1}`}
+                              alt={`Ảnh ${imageIndex + 1} của kiện ${index + 1}`}
                             />
+
+                            <span className="preview-image-order">
+                              Ảnh {imageIndex + 1}
+                            </span>
 
                             <button
                               type="button"
                               disabled={isSubmitting}
                               className="btn-remove-preview-img"
+                              title="Xóa ảnh"
+                              aria-label={`Xóa ảnh ${imageIndex + 1} của kiện ${index + 1}`}
                               onClick={(event) =>
                                 handleRemoveImage(
                                   event,
@@ -2748,9 +3348,10 @@ export default function ConsignmentOrder() {
                 triggerDescription="Có thể chọn nhiều dịch vụ áp dụng chung cho tất cả kiện hàng."
                 modalEyebrow="DỊCH VỤ TOÀN ĐƠN"
                 modalTitle="Lựa chọn dịch vụ cho toàn bộ đơn ký gửi"
-                modalDescription="Dịch vụ được gửi trong pricingRuleIds cấp đơn. Riêng đóng thùng gỗ, mỗi kiện phải chọn kích thước để gửi packageConfigurationId."
+                modalDescription="Chọn đóng thùng gỗ để xem phí đóng gói 35.000đ/kiện, sau đó chọn kích thước thùng cho từng kiện."
                 onChange={handleOptionalServicesChange}
               />
+
               <div className="input-field-group">
                 <FieldLabelTooltip
                   label="GHI CHÚ ĐƠN HÀNG"

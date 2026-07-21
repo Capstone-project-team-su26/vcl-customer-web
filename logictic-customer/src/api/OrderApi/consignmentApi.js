@@ -13,8 +13,9 @@ const isCanceledRequest = (error) =>
   error?.name === "CanceledError" ||
   error?.name === "AbortError";
 
+
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const INT32_MAX = 2147483647;
 
@@ -58,6 +59,122 @@ const normalizeNullableText = (value) => {
   ).trim();
 
   return normalizedValue || null;
+};
+
+
+const normalizeBoolean = (value) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  return [
+    "true",
+    "1",
+    "yes",
+    "on",
+  ].includes(
+    String(value ?? "")
+      .trim()
+      .toLowerCase()
+  );
+};
+
+const normalizeNullableGuid = (
+  value,
+  label,
+  itemIndex
+) => {
+  const normalizedValue =
+    normalizeNullableText(value);
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  if (!UUID_PATTERN.test(normalizedValue)) {
+    const prefix =
+      Number.isInteger(itemIndex)
+        ? `Kiện hàng ${itemIndex + 1}: `
+        : "";
+
+    throw new Error(
+      `${prefix}${label} không đúng định dạng GUID.`
+    );
+  }
+
+  return normalizedValue;
+};
+
+/**
+ * referenceUrls phải luôn là string[].
+ *
+ * Chấp nhận:
+ * - ["url1", "url2"]
+ * - JSON string: '["url1","url2"]'
+ * - Chuỗi cũ: "url1,url2" để tương thích dữ liệu cũ
+ *
+ * Output luôn là mảng URL đã loại trùng.
+ */
+const normalizeReferenceUrls = (
+  value,
+  itemIndex
+) => {
+  let rawUrls = value;
+
+  if (typeof rawUrls === "string") {
+    const text = rawUrls.trim();
+
+    if (!text) {
+      rawUrls = [];
+    } else if (
+      text.startsWith("[") &&
+      text.endsWith("]")
+    ) {
+      try {
+        rawUrls = JSON.parse(text);
+      } catch {
+        throw new Error(
+          `Kiện hàng ${itemIndex + 1}: referenceUrls không phải JSON hợp lệ.`
+        );
+      }
+    } else {
+      /*
+       * Chỉ tách dấu phẩy khi phía sau bắt đầu bằng URL/path mới,
+       * tránh tách nhầm dấu phẩy nằm trong query string.
+       */
+      rawUrls = text.split(
+        /,\s*(?=(?:https?:\/\/|\/))|[\r\n]+/
+      );
+    }
+  }
+
+  if (!Array.isArray(rawUrls)) {
+    throw new Error(
+      `Kiện hàng ${itemIndex + 1}: referenceUrls phải là một mảng đường dẫn ảnh.`
+    );
+  }
+
+  const uniqueUrls = Array.from(
+    new Set(
+      rawUrls
+        .map((url) =>
+          String(url ?? "").trim()
+        )
+        .filter(Boolean)
+    )
+  );
+
+  if (!uniqueUrls.length) {
+    throw new Error(
+      `Kiện hàng ${itemIndex + 1}: Vui lòng tải ít nhất một ảnh sản phẩm.`
+    );
+  }
+
+  return uniqueUrls;
 };
 
 /**
@@ -107,7 +224,8 @@ const normalizePricingRuleIds = (
 
 const normalizeConsignmentItem = (
   item,
-  index
+  index,
+  options = {}
 ) => {
   const quantity = Number(item?.quantity);
 
@@ -118,6 +236,31 @@ const normalizeConsignmentItem = (
   ) {
     throw new Error(
       `Kiện hàng ${index + 1}: Số lượng phải là số nguyên từ 1 đến ${INT32_MAX}.`
+    );
+  }
+
+  const referenceUrls =
+    normalizeReferenceUrls(
+      item?.referenceUrls,
+      index
+    );
+
+  const requiresWoodenCrate =
+    Boolean(options?.requiresWoodenCrate);
+
+  const packageConfigurationId =
+    normalizeNullableGuid(
+      item?.packageConfigurationId,
+      "packageConfigurationId",
+      index
+    );
+
+  if (
+    requiresWoodenCrate &&
+    !packageConfigurationId
+  ) {
+    throw new Error(
+      `Kiện hàng ${index + 1}: Vui lòng chọn cấu hình thùng gỗ.`
     );
   }
 
@@ -156,14 +299,26 @@ const normalizeConsignmentItem = (
       "Giá trị khai báo",
       index
     ),
-    referenceUrl: getRequiredText(
-      item?.referenceUrl,
-      `ảnh sản phẩm của kiện ${index + 1}`
-    ),
+
+    /*
+     * Giữ đúng kiểu string[].
+     * Không String(referenceUrls), không join(",").
+     */
+    referenceUrls,
+
     domesticTrackingCode:
       normalizeNullableText(
         item?.domesticTrackingCode
       ),
+
+    /*
+     * Không chọn đóng thùng gỗ thì loại dữ liệu cũ,
+     * tránh gửi nhầm cấu hình còn sót trong state.
+     */
+    packageConfigurationId:
+      requiresWoodenCrate
+        ? packageConfigurationId
+        : null,
   };
 };
 
@@ -182,6 +337,26 @@ export const buildCreateConsignmentRequest = (
       "Đơn ký gửi phải có ít nhất một kiện hàng."
     );
   }
+
+  const requiresInspection =
+    normalizeBoolean(
+      payload?.requiresInspection
+    );
+
+  const requiresPacking =
+    normalizeBoolean(
+      payload?.requiresPacking
+    );
+
+  const requiresWoodenCrate =
+    normalizeBoolean(
+      payload?.requiresWoodenCrate
+    );
+
+  const requiresInsurance =
+    normalizeBoolean(
+      payload?.requiresInsurance
+    );
 
   return {
     route: getRequiredText(
@@ -205,18 +380,29 @@ export const buildCreateConsignmentRequest = (
       "địa chỉ người nhận"
     ),
 
-    // Dịch vụ áp dụng cho toàn bộ đơn.
     pricingRuleIds: normalizePricingRuleIds(
       payload?.pricingRuleIds,
       "pricingRuleIds"
     ),
+
+    requiresInspection,
+    requiresPacking,
+    requiresWoodenCrate,
+    requiresInsurance,
 
     note: String(
       payload?.note ?? ""
     ).trim(),
 
     items: payload.items.map(
-      normalizeConsignmentItem
+      (item, index) =>
+        normalizeConsignmentItem(
+          item,
+          index,
+          {
+            requiresWoodenCrate,
+          }
+        )
     ),
   };
 };
@@ -608,9 +794,19 @@ export const validateConsignmentItemsApi = async (
       item?.declaredValue
     );
 
-    const referenceUrl = String(
-      item?.referenceUrl || ""
-    ).trim();
+    const referenceUrls =
+      normalizeReferenceUrls(
+        item?.referenceUrls ??
+          (
+            item?.referenceUrl
+              ? [item.referenceUrl]
+              : []
+          ),
+        index
+      );
+
+    const referenceUrl =
+      referenceUrls[0] || "";
 
     const domesticTrackingCode = String(
       item?.domesticTrackingCode || ""
@@ -696,9 +892,23 @@ export const validateConsignmentItemsApi = async (
       height,
       length,
       declaredValue,
+
+      /*
+       * referenceUrl giữ để tương thích API validate cũ.
+       * referenceUrls là schema mới của API tạo đơn.
+       */
       referenceUrl,
+      referenceUrls,
+
       domesticTrackingCode:
         domesticTrackingCode || null,
+
+      packageConfigurationId:
+        normalizeNullableGuid(
+          item?.packageConfigurationId,
+          "packageConfigurationId",
+          index
+        ),
     };
   });
 

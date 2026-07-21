@@ -98,6 +98,138 @@ const toFiniteNumberOrNull = (value) => {
 
 
 /* =========================================================
+   CẤU HÌNH THÙNG GỖ
+   ========================================================= */
+
+const normalizePackageConfigurationId = (value) =>
+  String(value || "").trim().toLowerCase();
+
+const normalizePackageConfigurationFromApi = (configuration = {}) => {
+  const id = String(
+    configuration?.id ||
+      configuration?.packageConfigurationId ||
+      configuration?.configurationId ||
+      "",
+  ).trim();
+
+  return {
+    ...configuration,
+    id,
+    packageConfigurationId: id,
+    configCode: String(
+      configuration?.configCode ||
+        configuration?.code ||
+        "",
+    )
+      .trim()
+      .toUpperCase(),
+    configName: String(
+      configuration?.configName ||
+        configuration?.name ||
+        configuration?.displayName ||
+        "Cấu hình đóng gói",
+    ).trim(),
+    length: toFiniteNumberOrNull(configuration?.length) ?? 0,
+    width: toFiniteNumberOrNull(configuration?.width) ?? 0,
+    height: toFiniteNumberOrNull(configuration?.height) ?? 0,
+    maxWeight:
+      toFiniteNumberOrNull(
+        configuration?.maxWeight ??
+          configuration?.maximumWeight,
+      ) ?? 0,
+    packageFee:
+      toFiniteNumberOrNull(
+        configuration?.packageFee ??
+          configuration?.fee ??
+          configuration?.price,
+      ) ?? 0,
+    estimatedFee: toFiniteNumberOrNull(
+      configuration?.estimatedFee,
+    ),
+    status: normalizeStatus(
+      configuration?.status || "ACTIVE",
+    ),
+  };
+};
+
+const normalizePackageConfigurationList = (apiResult) => {
+  const candidates = [
+    apiResult,
+    apiResult?.data,
+    apiResult?.items,
+    apiResult?.packageConfigurations,
+    apiResult?.configurations,
+    apiResult?.data?.items,
+    apiResult?.data?.packageConfigurations,
+    apiResult?.data?.configurations,
+  ];
+
+  const rawConfigurations =
+    candidates.find(Array.isArray) || [];
+
+  return rawConfigurations
+    .filter(
+      (item) =>
+        item &&
+        typeof item === "object",
+    )
+    .map(normalizePackageConfigurationFromApi)
+    .filter((item) => item.id);
+};
+
+const getItemPackageConfigurationId = (item = {}) =>
+  String(
+    item?.packageConfigurationId ||
+      item?.configurationId ||
+      item?.packageConfigId ||
+      item?.packageConfiguration?.id ||
+      item?.packageConfiguration
+        ?.packageConfigurationId ||
+      item?.configuration?.id ||
+      item?.packageConfig?.id ||
+      "",
+  ).trim();
+
+const normalizeItemReferenceUrls = (item = {}) => {
+  const urls = [];
+
+  const addUrl = (value) => {
+    const url = String(value || "").trim();
+
+    if (url && !urls.includes(url)) {
+      urls.push(url);
+    }
+  };
+
+  [
+    item?.referenceUrls,
+    item?.imageUrls,
+    item?.images,
+  ].forEach((candidate) => {
+    if (!Array.isArray(candidate)) {
+      return;
+    }
+
+    candidate.forEach((entry) => {
+      addUrl(
+        typeof entry === "string"
+          ? entry
+          : entry?.url ||
+              entry?.imageUrl ||
+              entry?.fileUrl ||
+              entry?.path,
+      );
+    });
+  });
+
+  addUrl(item?.referenceUrl);
+  addUrl(item?.imageUrl);
+
+  return urls;
+};
+
+
+/* =========================================================
    DỊCH VỤ BỔ SUNG / PRICING RULE
    ========================================================= */
 
@@ -784,6 +916,21 @@ const ConsignmentListDetail = () => {
 
   const [pricingRuleError, setPricingRuleError] = useState("");
 
+  const [
+    packageConfigurations,
+    setPackageConfigurations,
+  ] = useState([]);
+
+  const [
+    packageConfigurationLoading,
+    setPackageConfigurationLoading,
+  ] = useState(true);
+
+  const [
+    packageConfigurationError,
+    setPackageConfigurationError,
+  ] = useState("");
+
   const [volumetricDivisorRule, setVolumetricDivisorRule] = useState(null);
 
   const [volumetricRuleError, setVolumetricRuleError] = useState("");
@@ -878,11 +1025,15 @@ const ConsignmentListDetail = () => {
         setLoading(true);
         setErrorMessage("");
 
+        setPackageConfigurationLoading(true);
+        setPackageConfigurationError("");
+
         const [
           detailResult,
           statusesResult,
           productTypesResult,
           pricingRulesResult,
+          packageConfigurationsResult,
         ] = await Promise.allSettled([
           getConsignmentDetailApi(orderId, {
             signal,
@@ -893,9 +1044,11 @@ const ConsignmentListDetail = () => {
           getProductTypesApi({
             signal,
           }),
-
-         
           pricingRuleService.getPricingRules({
+            signal,
+            onlyActive: false,
+          }),
+          pricingRuleService.getPackageConfigurations({
             signal,
             onlyActive: false,
           }),
@@ -907,13 +1060,44 @@ const ConsignmentListDetail = () => {
 
         const detailResponse = detailResult.value;
 
-        const responseData = detailResponse?.data || detailResponse;
+        const responseData =
+          detailResponse?.data?.data ??
+          detailResponse?.data ??
+          detailResponse;
 
         if (!responseData) {
-          throw new Error("API không trả về dữ liệu chi tiết lô hàng.");
+          throw new Error(
+            "API không trả về dữ liệu chi tiết lô hàng.",
+          );
         }
 
-        setConsignment(normalizeConsignmentTime(responseData));
+        /*
+         * Dữ liệu từ trang danh sách chỉ có một số field tóm tắt.
+         * Ghép với API chi tiết để không làm mất pricingRuleIds/itemNames.
+         */
+        const mergedResponseData = {
+          ...(summaryData &&
+          typeof summaryData === "object"
+            ? summaryData
+            : {}),
+          ...responseData,
+          pricingRuleIds:
+            Array.isArray(
+              responseData?.pricingRuleIds,
+            )
+              ? responseData.pricingRuleIds
+              : summaryData?.pricingRuleIds || [],
+          itemNames:
+            Array.isArray(responseData?.itemNames)
+              ? responseData.itemNames
+              : summaryData?.itemNames || [],
+        };
+
+        setConsignment(
+          normalizeConsignmentTime(
+            mergedResponseData,
+          ),
+        );
 
         if (statusesResult.status === "fulfilled") {
           setStatusOptions(normalizeStatusOptions(statusesResult.value));
@@ -972,6 +1156,45 @@ const ConsignmentListDetail = () => {
             ),
           );
         }
+
+        if (
+          packageConfigurationsResult.status ===
+          "fulfilled"
+        ) {
+          const normalizedConfigurations =
+            normalizePackageConfigurationList(
+              packageConfigurationsResult.value,
+            );
+
+          setPackageConfigurations(
+            normalizedConfigurations,
+          );
+          setPackageConfigurationError("");
+
+          console.info(
+            "[Consignment Detail] Cấu hình thùng từ API:",
+            normalizedConfigurations,
+          );
+        } else if (
+          !axios.isCancel(
+            packageConfigurationsResult.reason,
+          ) &&
+          packageConfigurationsResult.reason?.code !==
+            "ERR_CANCELED"
+        ) {
+          console.error(
+            "Lỗi khi lấy cấu hình thùng:",
+            packageConfigurationsResult.reason,
+          );
+
+          setPackageConfigurations([]);
+          setPackageConfigurationError(
+            getApiErrorMessage(
+              packageConfigurationsResult.reason,
+              "Không thể tải cấu hình thùng.",
+            ),
+          );
+        }
       } catch (error) {
         if (axios.isCancel(error) || error?.code === "ERR_CANCELED") {
           return;
@@ -1001,6 +1224,7 @@ const ConsignmentListDetail = () => {
       } finally {
         if (!signal?.aborted) {
           setLoading(false);
+          setPackageConfigurationLoading(false);
         }
       }
     },
@@ -1296,6 +1520,51 @@ const ConsignmentListDetail = () => {
     });
   }, [consignment?.pricingRuleIds, pricingRuleMap]);
 
+  const packageConfigurationMap = useMemo(
+    () =>
+      new Map(
+        packageConfigurations.map(
+          (configuration) => [
+            normalizePackageConfigurationId(
+              configuration.id,
+            ),
+            configuration,
+          ],
+        ),
+      ),
+    [packageConfigurations],
+  );
+
+  const hasWoodCrateService = useMemo(
+    () =>
+      Boolean(
+        consignment?.requiresWoodenCrate,
+      ) ||
+      selectedPricingRules.some((rule) => {
+        const searchableValue = [
+          rule?.ruleCode,
+          rule?.ruleType,
+          rule?.ruleName,
+        ]
+          .map((value) =>
+            String(value || "")
+              .trim()
+              .toUpperCase(),
+          )
+          .join(" ");
+
+        return (
+          searchableValue.includes("WOOD_CRATE") ||
+          searchableValue.includes("WOOD_BOX") ||
+          searchableValue.includes("THÙNG GỖ")
+        );
+      }),
+    [
+      consignment?.requiresWoodenCrate,
+      selectedPricingRules,
+    ],
+  );
+
   const translatedConsignmentNote = useMemo(
     () =>
       translateConsignmentNote(
@@ -1370,9 +1639,81 @@ const ConsignmentListDetail = () => {
     consignment?.quotation?.status,
   );
 
-  const items = Array.isArray(consignment?.items)
-    ? consignment.items
-    : [];
+  const items = useMemo(() => {
+    const detailItems = Array.isArray(
+      consignment?.items,
+    )
+      ? consignment.items
+      : [];
+
+    return detailItems.map((item, index) => {
+      const packageConfigurationId =
+        getItemPackageConfigurationId(item);
+
+      /*
+       * API chi tiết đã trả object packageConfiguration đầy đủ.
+       * Ưu tiên dùng object này để hiển thị ngay, không cần đoán.
+       */
+      const embeddedPackageConfiguration =
+        item?.packageConfiguration &&
+        typeof item.packageConfiguration === "object" &&
+        !Array.isArray(item.packageConfiguration)
+          ? normalizePackageConfigurationFromApi(
+              item.packageConfiguration,
+            )
+          : null;
+
+      /*
+       * Chỉ fallback sang GET /api/package-configurations
+       * khi API chi tiết chưa trả object cấu hình.
+       */
+      const matchedPackageConfiguration =
+        !embeddedPackageConfiguration &&
+        packageConfigurationId
+          ? packageConfigurationMap.get(
+              normalizePackageConfigurationId(
+                packageConfigurationId,
+              ),
+            ) || null
+          : null;
+
+      const packageConfiguration =
+        embeddedPackageConfiguration ||
+        matchedPackageConfiguration ||
+        null;
+
+      const referenceUrls =
+        normalizeItemReferenceUrls(item);
+
+      return {
+        ...item,
+        id:
+          item?.id ||
+          item?.itemId ||
+          item?.orderItemId ||
+          `consignment-item-${index + 1}`,
+        referenceUrl:
+          referenceUrls[0] ||
+          item?.referenceUrl ||
+          "",
+        referenceUrls,
+        packageConfigurationId,
+        packageConfiguration,
+        packageConfigurationStatus:
+          packageConfiguration
+            ? "RESOLVED"
+            : packageConfigurationId
+              ? "NOT_FOUND"
+              : hasWoodCrateService
+                ? "MISSING_CONFIGURATION"
+                : "NOT_USED",
+      };
+    });
+  }, [
+    consignment?.items,
+    packageConfigurationMap,
+    hasWoodCrateService,
+  ]);
 
   const customer = consignment?.customer || {};
   const quotation = consignment?.quotation || null;
@@ -1458,6 +1799,15 @@ const ConsignmentListDetail = () => {
       summaryCards={summaryCards}
       selectedPricingRules={selectedPricingRules}
       pricingRuleError={pricingRuleError}
+      packageConfigurationLoading={
+        packageConfigurationLoading
+      }
+      packageConfigurationError={
+        packageConfigurationError
+      }
+      hasWoodCrateService={
+        hasWoodCrateService
+      }
       translatedConsignmentNote={translatedConsignmentNote}
       volumetricDivisor={volumetricDivisor}
       fullTextPreview={fullTextPreview}

@@ -1090,7 +1090,7 @@
    }
    
    /* =========================================================
-      FINAL FIX - TIẾNG VIỆT + KHÔNG CHỒNG PHÍ
+      FINAL FIX - TIáº¾NG VIá»†T + KHĂ”NG CHá»’NG PHĂ
       ========================================================= */
    
    .package-services-modal__item {
@@ -1311,3 +1311,1391 @@
        padding: 4px 7px;
      }
    }
+
+/* =========================================================
+   PACKAGE CONFIGURATION / WOOD CRATE
+   ========================================================= */
+
+.package-services-modal__item--wood-open {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.package-config-panel {
+  position: relative;
+  margin-top: -11px;
+  padding: 20px;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(22, 119, 255, 0.08),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+
+  border: 1px solid #7fbdff;
+  border-top: 0;
+  border-radius: 0 0 18px 18px;
+
+  box-shadow:
+    0 16px 32px rgba(22, 119, 255, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+
+  animation: packageConfigPanelAppear 0.28s ease both;
+}
+
+.package-config-panel__header {
+  margin-bottom: 16px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.package-config-panel__header > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.package-config-panel__header strong {
+  color: #172033;
+
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 850;
+}
+
+.package-config-panel__header span {
+  max-width: 650px;
+
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 550;
+}
+
+.package-config-panel__reload,
+.package-config-package__suggest {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 11px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  color: #0958d9;
+  background: #ffffff;
+  border: 1px solid #b9dcff;
+  border-radius: 10px;
+
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+
+  cursor: pointer;
+  outline: 0;
+
+  transition:
+    transform 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.package-config-panel__reload:hover:not(:disabled),
+.package-config-package__suggest:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  color: #ffffff;
+  background: #1677ff;
+  border-color: #1677ff;
+
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.2);
+}
+
+.package-config-panel__reload:focus-visible,
+.package-config-package__suggest:focus-visible {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.13);
+}
+
+.package-config-panel__reload:disabled,
+.package-config-package__suggest:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.package-config-panel__state {
+  min-height: 92px;
+  padding: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  color: #475569;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px dashed #b9c9dc;
+  border-radius: 15px;
+
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 650;
+  text-align: center;
+}
+
+.package-config-panel__state.is-error {
+  color: #b42318;
+  background: #fff7f6;
+  border-color: #f5b7b1;
+}
+
+.package-config-panel__state.is-error > div {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.package-config-panel__state.is-error strong {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.package-config-panel__state.is-error span {
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.package-config-panel__packages {
+  display: grid;
+  gap: 15px;
+}
+
+.package-config-package {
+  padding: 16px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d7e5f6;
+  border-radius: 16px;
+
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.package-config-package__heading {
+  margin-bottom: 13px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.package-config-package__heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.package-config-package__heading strong {
+  color: #1e293b;
+
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 850;
+
+  overflow-wrap: anywhere;
+}
+
+.package-config-package__heading span {
+  color: #64748b;
+
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-package__error {
+  margin-bottom: 11px;
+  padding: 9px 11px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  color: #b42318;
+  background: #fff5f4;
+  border: 1px solid #ffc9c4;
+  border-radius: 10px;
+
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-package__error .anticon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.package-config-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.package-config-option {
+  position: relative;
+  min-width: 0;
+  min-height: 146px;
+  padding: 12px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+
+  color: #334155;
+  text-align: left;
+
+  background: #ffffff;
+  border: 1px solid #dbe5f0;
+  border-radius: 14px;
+  outline: 0;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.package-config-option:hover {
+  transform: translateY(-2px);
+
+  background: #fbfdff;
+  border-color: #91caff;
+
+  box-shadow: 0 10px 22px rgba(22, 119, 255, 0.11);
+}
+
+.package-config-option:focus-visible {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.13);
+}
+
+.package-config-option--selected {
+  color: #0958d9;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(22, 119, 255, 0.1),
+      transparent 40%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #edf6ff 100%);
+
+  border-color: #4096ff;
+
+  box-shadow:
+    0 12px 25px rgba(22, 119, 255, 0.14),
+    inset 0 0 0 1px rgba(22, 119, 255, 0.08);
+}
+
+.package-config-option--custom {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(245, 158, 11, 0.09),
+      transparent 40%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
+
+  border-color: #f7d795;
+}
+
+.package-config-option--custom.package-config-option--selected {
+  color: #b45309;
+  border-color: #f59e0b;
+
+  box-shadow:
+    0 12px 25px rgba(217, 119, 6, 0.13),
+    inset 0 0 0 1px rgba(245, 158, 11, 0.08);
+}
+
+.package-config-option__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.package-config-option__top strong {
+  min-width: 0;
+
+  color: inherit;
+
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 850;
+
+  overflow-wrap: anywhere;
+}
+
+.package-config-option__top small {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+
+  color: #067647;
+  background: #ecfdf3;
+  border: 1px solid #a7e3be;
+  border-radius: 999px;
+
+  font-size: 8.5px;
+  line-height: 1.2;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.package-config-option__code {
+  align-self: flex-start;
+  padding: 3px 7px;
+
+  color: #667085;
+  background: #f2f4f7;
+  border: 1px solid #e4e7ec;
+  border-radius: 999px;
+
+  font-size: 8.5px;
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.package-config-option__dimension {
+  min-height: 33px;
+
+  color: #475467;
+
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-option__meta {
+  margin-top: auto;
+  padding-top: 8px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+
+  border-top: 1px dashed #d8e1ec;
+}
+
+.package-config-option__meta > span {
+  color: #667085;
+
+  font-size: 9px;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.package-config-option__meta > b {
+  color: #0958d9;
+
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.package-config-option--custom
+  .package-config-option__meta > b {
+  color: #b45309;
+}
+
+.package-config-option__selected {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+
+  min-height: 22px;
+  padding: 4px 7px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  color: #ffffff;
+  background: linear-gradient(135deg, #4096ff, #1677ff);
+  border-radius: 999px;
+
+  font-size: 8.5px;
+  line-height: 1;
+  font-weight: 850;
+
+  box-shadow: 0 5px 12px rgba(22, 119, 255, 0.22);
+}
+
+.package-config-option--custom
+  .package-config-option__selected {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 5px 12px rgba(217, 119, 6, 0.2);
+}
+
+.package-config-package__footer {
+  margin-top: 12px;
+  padding: 9px 11px;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.package-config-package__footer .anticon {
+  flex-shrink: 0;
+  color: #16a34a;
+}
+
+.package-config-package__footer strong {
+  color: #1d4ed8;
+  font-weight: 850;
+}
+
+@keyframes packageConfigPanelAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .package-config-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .package-config-panel {
+    margin-top: -11px;
+    padding: 14px;
+    border-radius: 0 0 15px 15px;
+  }
+
+  .package-config-panel__header,
+  .package-config-package__heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .package-config-panel__reload,
+  .package-config-package__suggest {
+    align-self: flex-start;
+  }
+
+  .package-config-options {
+    grid-template-columns: 1fr;
+  }
+
+  .package-config-option {
+    min-height: 132px;
+  }
+}
+
+@media (max-width: 420px) {
+  .package-config-panel {
+    padding: 11px;
+  }
+
+  .package-config-package {
+    padding: 12px;
+  }
+
+  .package-config-option {
+    padding: 11px;
+  }
+}
+
+/* =========================================================
+   ÄĂ“NG THĂ™NG Gá»– â€” CHá»ŒN KĂCH THÆ¯á»C VĂ€ TĂNH GIĂ
+   ========================================================= */
+
+.package-services-trigger__wood-price {
+  margin-left: 5px;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.package-services-modal__wood-total {
+  margin-top: 4px;
+  color: #166534;
+  font-size: 10px;
+  line-height: 1.35;
+  font-style: normal;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.wood-crate-configuration-panel {
+  margin: -3px 0 18px;
+  padding: 17px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f8fbff,
+      #ffffff
+    );
+
+  border: 1px solid #bfdbfe;
+  border-top: 0;
+  border-radius: 0 0 20px 20px;
+
+  box-shadow:
+    0 12px 28px rgba(37, 99, 235, 0.08);
+}
+
+.wood-crate-configuration-panel__header {
+  margin-bottom: 15px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.wood-crate-configuration-panel__header > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.wood-crate-configuration-panel__header > div:first-child > span {
+  color: #2563eb;
+  font-size: 9.5px;
+  line-height: 1.3;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.wood-crate-configuration-panel__header strong {
+  color: #172033;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 850;
+}
+
+.wood-crate-configuration-panel__header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11.5px;
+  line-height: 1.55;
+  font-weight: 550;
+}
+
+.wood-crate-configuration-panel__base-fee {
+  flex: 0 0 auto;
+  min-width: 135px;
+  padding: 10px 12px;
+
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 13px;
+}
+
+.wood-crate-configuration-panel__base-fee small {
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 750;
+}
+
+.wood-crate-configuration-panel__base-fee strong {
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.wood-crate-configuration-panel__base-fee span {
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.wood-crate-configuration-panel__state {
+  min-height: 84px;
+  padding: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  color: #475569;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 13px;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wood-crate-configuration-panel__state.is-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.wood-crate-configuration-panel__state.is-warning {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.wood-crate-package-list {
+  display: grid;
+  gap: 13px;
+}
+
+.wood-crate-package-card {
+  padding: 14px;
+
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 15px;
+
+  box-shadow:
+    0 7px 18px rgba(15, 23, 42, 0.045);
+}
+
+.wood-crate-package-card.is-dimension-missing {
+  background:
+    linear-gradient(
+      145deg,
+      #fffbeb,
+      #ffffff
+    );
+
+  border-color: #fde68a;
+}
+
+.wood-crate-package-card__heading {
+  margin-bottom: 12px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wood-crate-package-card__heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.wood-crate-package-card__heading span {
+  color: #94a3b8;
+  font-size: 9.5px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wood-crate-package-card__heading strong {
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.wood-crate-package-card__heading small {
+  color: #64748b;
+  font-size: 10.5px;
+  line-height: 1.45;
+  font-weight: 650;
+}
+
+.wood-crate-package-card__required {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+
+  color: #b45309 !important;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 999px;
+
+  font-size: 9px !important;
+  font-weight: 850 !important;
+  white-space: nowrap;
+}
+
+.wood-crate-dimension-warning {
+  padding: 12px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px dashed #f59e0b;
+  border-radius: 12px;
+}
+
+.wood-crate-dimension-warning > span,
+.wood-crate-dimension-warning > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.wood-crate-dimension-warning > div {
+  display: grid;
+  gap: 3px;
+}
+
+.wood-crate-dimension-warning strong {
+  font-size: 11.5px;
+  font-weight: 850;
+}
+
+.wood-crate-dimension-warning span {
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-weight: 550;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.wood-crate-configuration-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.wood-crate-configuration-option {
+  position: relative;
+  min-width: 0;
+  min-height: 170px;
+  padding: 11px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  border-radius: 13px;
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.wood-crate-configuration-option:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  background: #f8fbff;
+  border-color: #60a5fa;
+
+  box-shadow:
+    0 10px 21px rgba(37, 99, 235, 0.11);
+}
+
+.wood-crate-configuration-option.is-selected {
+  color: #1d4ed8;
+  background:
+    linear-gradient(
+      145deg,
+      #eff6ff,
+      #ffffff
+    );
+
+  border-color: #2563eb;
+
+  box-shadow:
+    0 10px 23px rgba(37, 99, 235, 0.14),
+    inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.wood-crate-configuration-option.is-custom {
+  border-color: #fed7aa;
+}
+
+.wood-crate-configuration-option.is-custom.is-selected {
+  color: #c2410c;
+  border-color: #f97316;
+}
+
+.wood-crate-configuration-option:disabled,
+.wood-crate-configuration-option.is-not-fit {
+  color: #94a3b8;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+  box-shadow: none;
+}
+
+.wood-crate-configuration-option__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.wood-crate-configuration-option__top strong {
+  min-width: 0;
+  color: inherit;
+  font-size: 11.5px;
+  line-height: 1.4;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.wood-crate-configuration-option__top b {
+  flex: 0 0 auto;
+  padding: 3px 5px;
+
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+
+  font-size: 7.5px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.wood-crate-configuration-option__dimension {
+  min-height: 30px;
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.wood-crate-configuration-option__weight {
+  color: #64748b;
+  font-size: 9.5px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.wood-crate-configuration-option__not-fit {
+  color: #b91c1c;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.wood-crate-configuration-option__price {
+  margin-top: auto;
+  padding-top: 8px;
+
+  display: grid;
+  gap: 3px;
+
+  border-top: 1px dashed #dbe3ef;
+}
+
+.wood-crate-configuration-option__price small {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.wood-crate-configuration-option__price strong {
+  color: #166534;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.wood-crate-configuration-option__selected {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+
+  padding: 5px 7px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  color: #ffffff;
+  background: #16a34a;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+
+  font-size: 8px;
+  font-weight: 900;
+
+  box-shadow:
+    0 5px 12px rgba(22, 163, 74, 0.25);
+}
+
+.wood-crate-price-summary {
+  margin-top: 14px;
+  padding: 12px;
+
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 9px;
+
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 13px;
+}
+
+.wood-crate-price-summary > div {
+  min-width: 0;
+  padding: 8px 10px;
+
+  display: grid;
+  gap: 4px;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.wood-crate-price-summary span {
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 750;
+}
+
+.wood-crate-price-summary strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.wood-crate-price-summary__total {
+  background:
+    linear-gradient(
+      145deg,
+      #ecfdf5,
+      #ffffff
+    ) !important;
+
+  border-color: #86efac !important;
+}
+
+.wood-crate-price-summary__total strong {
+  color: #047857;
+  font-size: 14px;
+}
+
+.package-services-modal__wood-summary {
+  margin-left: auto;
+  padding-left: 14px;
+
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+
+  border-left: 1px solid #dbe3ef;
+}
+
+.package-services-modal__wood-summary span {
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 750;
+}
+
+.package-services-modal__wood-summary strong {
+  color: #047857;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+@media (max-width: 980px) {
+  .wood-crate-configuration-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .wood-crate-configuration-panel__header,
+  .wood-crate-package-card__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .wood-crate-configuration-panel__base-fee {
+    width: 100%;
+    justify-items: start;
+  }
+
+  .wood-crate-configuration-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wood-crate-configuration-option {
+    min-height: 0;
+  }
+
+  .wood-crate-price-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .package-services-modal__wood-summary {
+    width: 100%;
+    margin: 10px 0 0;
+    padding: 10px 0 0;
+    justify-items: start;
+    border-top: 1px solid #dbe3ef;
+    border-left: 0;
+  }
+}
+
+/* =========================================================
+   AUTO WOOD CRATE â€” CHá»ŒN KĂCH THÆ¯á»C Tá»° Báº¬T Dá»CH Vá»¤
+   ========================================================= */
+
+.wood-crate-auto-service-badge {
+  width: fit-content;
+  margin-top: 6px;
+  padding: 6px 9px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  border: 1px solid;
+  border-radius: 999px;
+
+  font-size: 9.5px;
+  line-height: 1.25;
+  font-weight: 850;
+}
+
+.wood-crate-auto-service-badge.is-waiting {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.wood-crate-auto-service-badge.is-enabled {
+  color: #047857;
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+.wood-crate-configuration-option__price {
+  gap: 5px;
+}
+
+.wood-crate-configuration-option__price small,
+.wood-crate-configuration-option__price strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.wood-crate-configuration-option__price small > span {
+  min-width: 0;
+  color: #64748b;
+}
+
+.wood-crate-configuration-option__price small > b {
+  flex: 0 0 auto;
+  color: #334155;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.wood-crate-configuration-option__price strong {
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px solid #dbe3ef;
+}
+
+.wood-crate-configuration-option__price strong > span {
+  color: #166534;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.wood-crate-configuration-option__price strong > b {
+  flex: 0 0 auto;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.wood-crate-price-summary {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+}
+
+.wood-crate-price-summary__selected-count {
+  background:
+    linear-gradient(
+      145deg,
+      #eff6ff,
+      #ffffff
+    ) !important;
+
+  border-color: #bfdbfe !important;
+}
+
+.wood-crate-price-summary__selected-count strong {
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+@media (max-width: 780px) {
+  .wood-crate-price-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .wood-crate-price-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   FINAL â€” KHĂ“A WOOD_CRATE KHI THIáº¾U CĂ‚N Náº¶NG/KĂCH THÆ¯á»C
+   + HIá»‚N THá» GIĂ NGAY KHI CHá»ŒN
+   ========================================================= */
+
+.package-services-modal .ant-modal {
+  width:
+    min(
+      1040px,
+      calc(100vw - 24px)
+    ) !important;
+  max-width:
+    calc(100vw - 24px) !important;
+  margin: 12px auto !important;
+}
+
+.package-services-modal .ant-modal-content {
+  max-height:
+    calc(100vh - 24px);
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.package-services-modal .ant-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.package-services-modal__item--measurement-required {
+  border-color: #fde68a !important;
+  background:
+    linear-gradient(
+      145deg,
+      #fffbeb,
+      #ffffff
+    ) !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+.package-services-modal__item--measurement-required
+  .package-services-modal__checkbox,
+.package-services-modal__item--measurement-required
+  .package-services-modal__service-icon,
+.package-services-modal__item--measurement-required
+  .package-services-modal__content,
+.package-services-modal__item--measurement-required
+  .package-services-modal__fee {
+  opacity: 0.72;
+}
+
+.package-services-modal__measurement-warning {
+  width: fit-content;
+  margin-top: 7px;
+  padding: 6px 8px;
+
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 9px;
+
+  font-size: 9.5px;
+  line-height: 1.45;
+  font-weight: 750;
+}
+
+.package-services-modal__measurement-warning
+  .anticon {
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.package-services-modal__wood-total {
+  max-width: 220px;
+  white-space: normal;
+  text-align: right;
+  line-height: 1.45;
+}
+
+.wood-crate-configuration-panel__header p {
+  max-width: 610px;
+}
+
+.wood-crate-price-summary.is-incomplete {
+  border-color: #fde68a;
+  background:
+    linear-gradient(
+      145deg,
+      #fffbeb,
+      #f8fafc
+    );
+}
+
+.wood-crate-price-summary.is-complete {
+  border-color: #86efac;
+  background:
+    linear-gradient(
+      145deg,
+      #ecfdf5,
+      #f8fafc
+    );
+}
+
+.wood-crate-price-summary {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .package-services-modal__item {
+    grid-template-columns:
+      auto
+      auto
+      minmax(0, 1fr);
+  }
+
+  .package-services-modal__fee {
+    grid-column: 2 / -1;
+    justify-self: stretch;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .package-services-modal__wood-total {
+    max-width: none;
+    text-align: left;
+  }
+
+  .wood-crate-configuration-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .wood-crate-price-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .package-services-modal .ant-modal {
+    width:
+      calc(100vw - 12px) !important;
+    max-width:
+      calc(100vw - 12px) !important;
+    margin: 6px auto !important;
+  }
+
+  .package-services-modal .ant-modal-content {
+    max-height:
+      calc(100vh - 12px);
+    border-radius: 15px;
+  }
+
+  .package-services-modal__header {
+    align-items: flex-start;
+  }
+
+  .package-services-modal__item {
+    grid-template-columns:
+      auto
+      minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .package-services-modal__service-icon {
+    display: none;
+  }
+
+  .package-services-modal__fee {
+    grid-column: 1 / -1;
+  }
+
+  .wood-crate-configuration-panel {
+    margin-inline: -6px;
+    padding: 12px;
+  }
+
+  .wood-crate-configuration-grid,
+  .wood-crate-price-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .wood-crate-configuration-option {
+    min-height: 0;
+  }
+}
