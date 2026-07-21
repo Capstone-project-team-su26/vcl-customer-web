@@ -43,7 +43,7 @@ import PackageOptionalServices from "../../../../components/DashboardComponents/
 import pricingRuleService from "../../../../api/ServiceApi/pricingRuleService";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_IMAGES_PER_PACKAGE = 3;
+const MAX_IMAGES_PER_PACKAGE = 5;
 
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -3253,7 +3253,7 @@ export default function ConsignmentOrder() {
                       </span>
 
                       <span className="upload-sub-text">
-                        JPG, PNG, WEBP — tối đa 5MB/ảnh — tối đa 3 ảnh/kiện
+                        JPG, PNG, WEBP — tối đa 5MB/ảnh — tối đa 5 ảnh/kiện
                       </span>
 
                       <span className="upload-image-counter">
