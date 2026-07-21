@@ -1581,12 +1581,12 @@ export default function PackageOptionalServices({
           <div className="package-config-panel__header">
             <div>
               <strong>
-                Chọn kích thước thùng cho từng kiện
+                Chọn kích thước thùng cho từng kiện hàng
               </strong>
               <span>
-                Hệ thống tự gọi API gợi ý dựa trên
+                Hệ thống tự động gợi ý dựa trên
                 dài, rộng, cao và trọng lượng của
-                từng kiện.
+                 kiện hàng .
               </span>
             </div>
 
@@ -1613,7 +1613,7 @@ export default function PackageOptionalServices({
               ) : (
                 <InfoCircleOutlined />
               )}
-              Tải lại cấu hình
+              Tải lại cấu hình hệ thống
             </button>
           </div>
 
@@ -1970,7 +1970,7 @@ export default function PackageOptionalServices({
               ? "Đang tải danh sách dịch vụ..."
               : pricingError
                 ? pricingError
-                : `Đang hiển thị ${pricingRules.length} dịch vụ. Phí vận chuyển nội địa và hệ số quy đổi thể tích không hiển thị trong danh sách lựa chọn.`}
+                : `Đang hiển thị ${pricingRules.length} dịch vụ.`}
           </span>
         </div>
 
