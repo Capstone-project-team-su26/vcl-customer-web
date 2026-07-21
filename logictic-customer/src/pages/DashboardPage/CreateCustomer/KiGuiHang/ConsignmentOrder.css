@@ -2972,7 +2972,7 @@
   > .field-label,
 .consignment-package-card
   .product-main-field
-  [class*="field-label"] {
+  [class*="field-label,"] {
   min-height: 22px;
   margin: 0;
   display: inline-flex;

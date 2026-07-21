@@ -2974,6 +2974,7 @@ export default function ConsignmentOrder() {
                     <div className="input-field-group product-main-field">
                       <FieldLabelTooltip
                         label="TÊN SẢN PHẨM"
+                      
                         className="product-main-label"
                         required
                         placement="top"
