@@ -15,12 +15,7 @@ import {
 
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 
-/**
- * Popup hủy/từ chối báo giá, tách riêng khỏi luồng thanh toán.
- *
- * Component tự quản lý nội dung lý do và validation.
- * Component cha chỉ cần xử lý gọi API thông qua onConfirm(reason).
- */
+
 const QuotationCancelDialog = ({
   open,
   loading = false,

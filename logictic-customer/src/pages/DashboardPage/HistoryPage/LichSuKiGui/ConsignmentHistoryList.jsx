@@ -44,7 +44,7 @@ import "./ConsignmentHistoryList.css";
 const { RangePicker } = DatePicker;
 
 const DEFAULT_PAGE_SIZE = 5;
-const API_PAGE_SIZE = 50;
+const SEARCH_DEBOUNCE_MS = 450;
 
 /* =========================================================
    HELPER FUNCTIONS
@@ -191,7 +191,7 @@ const extractConsignmentPage = (apiResult) => {
         1,
       pageSize:
         Number(pageData.pageSize) ||
-        API_PAGE_SIZE,
+        DEFAULT_PAGE_SIZE,
       totalPages: Math.max(
         1,
         Number(pageData.totalPages) ||
@@ -223,7 +223,7 @@ const extractConsignmentPage = (apiResult) => {
     pageNumber: 1,
     pageSize:
       items.length ||
-      API_PAGE_SIZE,
+      DEFAULT_PAGE_SIZE,
     totalPages: 1,
   };
 };
@@ -257,10 +257,119 @@ const copyTextToClipboard = async (text) => {
   }
 };
 
-const formatStatusCode = (status) =>
-  String(status || "")
+const normalizeStatusKey = (value) => {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
-    .replaceAll("_", " ");
+    .toUpperCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+};
+
+/**
+ * Toàn bộ trạng thái hiển thị cho khách hàng phải dùng tiếng Việt.
+ * Không sử dụng trực tiếp label tiếng Anh do API trả về.
+ */
+const STATUS_FALLBACK_LABELS = Object.freeze({
+  NEW: "Đơn mới",
+  CREATED: "Đã tạo đơn",
+  SUBMITTED: "Đã gửi yêu cầu",
+
+  PENDING: "Chờ xử lý",
+  PENDING_REVIEW: "Chờ duyệt",
+  WAITING_REVIEW: "Chờ duyệt",
+  UNDER_REVIEW: "Đang duyệt",
+  WAITING_CONFIRMATION: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận",
+  APPROVED: "Đã duyệt",
+  ON_HOLD: "Tạm giữ xử lý",
+
+  WAITING_QUOTATION: "Chờ báo giá",
+  PENDING_QUOTATION: "Chờ báo giá",
+  QUOTATION_SENT: "Đã gửi báo giá",
+  QUOTED: "Đã có báo giá",
+  QUOTATION_ACCEPTED: "Đã chấp nhận báo giá",
+  QUOTATION_REJECTED: "Đã từ chối báo giá",
+  QUOTATION_EXPIRED: "Báo giá đã hết hạn",
+
+  WAITING_DEPOSIT: "Chờ đặt cọc",
+  DEPOSIT_PENDING: "Chờ đặt cọc",
+  PENDING_DEPOSIT: "Chờ đặt cọc",
+  DEPOSIT_PAID: "Đã thanh toán tiền cọc",
+  DEPOSIT_CONFIRMED: "Đã xác nhận tiền cọc",
+
+  WAITING_PAYMENT: "Chờ thanh toán",
+  PENDING_PAYMENT: "Chờ thanh toán",
+  PAYMENT_PENDING: "Chờ thanh toán",
+  PAYMENT_CONFIRMED: "Đã xác nhận thanh toán",
+  PARTIALLY_PAID: "Đã thanh toán một phần",
+  PAID: "Đã thanh toán",
+  FULLY_PAID: "Đã thanh toán đầy đủ",
+  PAYMENT_FAILED: "Thanh toán thất bại",
+  PAYMENT_EXPIRED: "Giao dịch đã hết hạn",
+  REFUNDED: "Đã hoàn tiền",
+  PARTIALLY_REFUNDED: "Đã hoàn tiền một phần",
+
+  PROCESSING: "Đang xử lý",
+  IN_PROGRESS: "Đang xử lý",
+
+  WAITING_INSPECTION: "Chờ kiểm hàng",
+  INSPECTING: "Đang kiểm hàng",
+  INSPECTION_COMPLETED: "Đã kiểm hàng",
+
+  WAITING_PACKING: "Chờ đóng gói",
+  PACKING: "Đang đóng gói",
+  PACKED: "Đã đóng gói",
+
+  WAITING_WAREHOUSE: "Chờ nhập kho",
+  WAREHOUSE_RECEIVED: "Kho đã nhận hàng",
+  RECEIVED: "Đã nhận hàng",
+  STORED: "Đã lưu kho",
+  READY_FOR_SHIPMENT: "Sẵn sàng vận chuyển",
+
+  CUSTOMS_CLEARANCE: "Đang làm thủ tục hải quan",
+  CUSTOMS_PROCESSING: "Đang thông quan",
+  CUSTOMS_HOLD: "Đang chờ xử lý hải quan",
+  CUSTOMS_CLEARED: "Đã thông quan",
+
+  SHIPPING: "Đang vận chuyển",
+  IN_TRANSIT: "Đang vận chuyển",
+  OUT_FOR_DELIVERY: "Đang giao hàng",
+  DELIVERY_FAILED: "Giao hàng thất bại",
+  DELIVERED: "Đã giao hàng",
+
+  RETURNING: "Đang hoàn hàng",
+  RETURNED: "Đã hoàn hàng",
+
+  COMPLETED: "Hoàn thành",
+  COMPLETE: "Hoàn thành",
+  DONE: "Hoàn thành",
+  FINISHED: "Hoàn thành",
+
+  CANCELED: "Đã hủy",
+  CANCELLED: "Đã hủy",
+  CANCEL: "Đã hủy",
+  REJECTED: "Đã từ chối",
+  FAILED: "Xử lý thất bại",
+  DELETED: "Đã xóa",
+});
+
+const getVietnameseStatusLabel = (status) => {
+  const normalizedStatus = normalizeStatusKey(status);
+
+  if (!normalizedStatus) {
+    return "-";
+  }
+
+  return (
+    STATUS_FALLBACK_LABELS[normalizedStatus] ||
+    "Đang cập nhật"
+  );
+};
+
+const formatStatusCode = (status) =>
+  getVietnameseStatusLabel(status);
 
 const normalizeStatusOptions = (apiResult) => {
   const candidates = [
@@ -277,98 +386,37 @@ const normalizeStatusOptions = (apiResult) => {
   const rawStatuses =
     candidates.find(Array.isArray) || [];
 
-  return rawStatuses
-    .map((item) => {
-      if (
-        typeof item === "string" ||
-        typeof item === "number"
-      ) {
-        const value = String(item).trim();
+  const optionMap = new Map();
 
-        return {
-          value,
-          label: formatStatusCode(value),
-        };
-      }
+  rawStatuses.forEach((item) => {
+    const value =
+      typeof item === "string" ||
+      typeof item === "number"
+        ? String(item).trim()
+        : String(
+            item?.value ||
+              item?.code ||
+              item?.status ||
+              item?.statusCode ||
+              item?.id ||
+              ""
+          ).trim();
 
-      const value = String(
-        item?.value ||
-          item?.code ||
-          item?.status ||
-          item?.statusCode ||
-          item?.id ||
-          ""
-      ).trim();
+    const normalizedKey =
+      normalizeStatusKey(value);
 
-      const label = String(
-        item?.label ||
-          item?.name ||
-          item?.displayName ||
-          item?.statusName ||
-          item?.description ||
-          formatStatusCode(value)
-      ).trim();
+    if (!value || !normalizedKey) {
+      return;
+    }
 
-      return {
-        value,
-        label,
-      };
-    })
-    .filter(
-      (option) =>
-        option.value && option.label
-    );
-};
+    optionMap.set(normalizedKey, {
+      value,
+      label:
+        getVietnameseStatusLabel(value),
+    });
+  });
 
-const STATUS_FALLBACK_LABELS = {
-  WAITING_DEPOSIT: "Chờ đặt cọc",
-  DEPOSIT_PENDING: "Chờ đặt cọc",
-  PENDING_DEPOSIT: "Chờ đặt cọc",
-
-  PENDING_REVIEW: "Chờ duyệt",
-  WAITING_REVIEW: "Chờ duyệt",
-
-  QUOTATION_SENT: "Đã gửi báo giá",
-  WAITING_QUOTATION: "Chờ báo giá",
-  PENDING_QUOTATION: "Chờ báo giá",
-  QUOTATION_REJECTED: "Đã từ chối báo giá",
-
-  WAITING_PAYMENT: "Chờ thanh toán",
-  PENDING_PAYMENT: "Chờ thanh toán",
-  PAYMENT_PENDING: "Chờ thanh toán",
-  PAYMENT_CONFIRMED: "Đã xác nhận thanh toán",
-  PAID: "Đã thanh toán",
-
-  PROCESSING: "Đang xử lý",
-  IN_PROGRESS: "Đang xử lý",
-  PACKING: "Đang đóng gói",
-  INSPECTING: "Đang kiểm hàng",
-
-  SHIPPING: "Đang vận chuyển",
-  IN_TRANSIT: "Đang vận chuyển",
-  OUT_FOR_DELIVERY: "Đang giao hàng",
-
-  COMPLETED: "Hoàn thành",
-  COMPLETE: "Hoàn thành",
-  DONE: "Hoàn thành",
-  FINISHED: "Hoàn thành",
-  DELIVERED: "Đã giao hàng",
-
-  CANCELED: "Đã hủy",
-  CANCELLED: "Đã hủy",
-  CANCEL: "Đã hủy",
-  REJECTED: "Đã từ chối",
-  FAILED: "Thất bại",
-};
-
-const normalizeStatusKey = (value) => {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toUpperCase()
-    .replaceAll(" ", "_")
-    .replaceAll("-", "_");
+  return Array.from(optionMap.values());
 };
 
 const getItemStatus = (item) => {
@@ -477,8 +525,11 @@ const ConsignmentHistoryList = () => {
 
   const [consignments, setConsignments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [statusInput, setStatusInput] =
     useState("");
@@ -496,88 +547,93 @@ const ConsignmentHistoryList = () => {
   const [copiedTrackingCode, setCopiedTrackingCode] =
     useState("");
   const copyResetTimerRef = useRef(null);
+  const requestSequenceRef = useRef(0);
 
   /* =========================================================
-     FETCH ALL CONSIGNMENTS
+     SERVER PAGINATION + DEBOUNCED FILTERS
      ========================================================= */
 
-  const fetchAllConsignments = useCallback(
-    async (signal) => {
-      const firstResponse =
-        await getConsignmentsApi(
-          1,
-          API_PAGE_SIZE,
-          {
-            signal,
-          }
-        );
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+      setPageNumber(1);
+    }, SEARCH_DEBOUNCE_MS);
 
-      const firstPage =
-        extractConsignmentPage(
-          firstResponse
-        );
+    return () => window.clearTimeout(timerId);
+  }, [searchInput]);
 
-      if (
-        firstPage.totalPages <= 1
-      ) {
-        return firstPage.items;
-      }
+  const requestFilters = useMemo(() => {
+    const fromDate =
+      dateRangeInput?.[0]?.format("YYYY-MM-DD") ||
+      undefined;
 
-      const remainingRequests =
-        Array.from(
-          {
-            length:
-              firstPage.totalPages -
-              1,
-          },
-          (_, index) =>
-            getConsignmentsApi(
-              index + 2,
-              firstPage.pageSize,
-              {
-                signal,
-              }
-            )
-        );
+    const toDate =
+      dateRangeInput?.[1]?.format("YYYY-MM-DD") ||
+      undefined;
 
-      const remainingResponses =
-        await Promise.all(
-          remainingRequests
-        );
-
-      const remainingItems =
-        remainingResponses.flatMap(
-          (response) =>
-            extractConsignmentPage(
-              response
-            ).items
-        );
-
-      return [
-        ...firstPage.items,
-        ...remainingItems,
-      ];
-    },
-    []
-  );
+    return {
+      search: debouncedSearch || undefined,
+      status: statusInput || undefined,
+      fromDate,
+      toDate,
+    };
+  }, [
+    dateRangeInput,
+    debouncedSearch,
+    statusInput,
+  ]);
 
   const fetchConsignments = useCallback(
     async (signal) => {
+      const requestSequence =
+        requestSequenceRef.current + 1;
+
+      requestSequenceRef.current =
+        requestSequence;
+
       try {
         setLoading(true);
 
-        const items =
-          await fetchAllConsignments(signal);
+        /*
+         * Chỉ tải đúng một trang API.
+         * Không còn vòng Promise.all tải toàn bộ các trang.
+         */
+        const response =
+          await getConsignmentsApi(
+            pageNumber,
+            DEFAULT_PAGE_SIZE,
+            {
+              signal,
+              params: requestFilters,
+            }
+          );
 
-        const normalizedItems = items.map(
-          normalizeConsignmentTime
+        if (
+          signal?.aborted ||
+          requestSequence !==
+            requestSequenceRef.current
+        ) {
+          return;
+        }
+
+        const pageData =
+          extractConsignmentPage(response);
+
+        setConsignments(
+          pageData.items.map(
+            normalizeConsignmentTime
+          )
         );
-
-        setConsignments(normalizedItems);
+        setTotalCount(pageData.totalCount);
+        setTotalPages(
+          Math.max(1, pageData.totalPages)
+        );
       } catch (error) {
         if (
           axios.isCancel(error) ||
-          error?.code === "ERR_CANCELED"
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "CanceledError" ||
+          error?.name === "AbortError"
         ) {
           return;
         }
@@ -595,13 +651,19 @@ const ConsignmentHistoryList = () => {
         );
 
         setConsignments([]);
+        setTotalCount(0);
+        setTotalPages(1);
       } finally {
-        if (!signal?.aborted) {
+        if (
+          !signal?.aborted &&
+          requestSequence ===
+            requestSequenceRef.current
+        ) {
           setLoading(false);
         }
       }
     },
-    [fetchAllConsignments]
+    [pageNumber, requestFilters]
   );
 
   useEffect(() => {
@@ -609,9 +671,7 @@ const ConsignmentHistoryList = () => {
 
     fetchConsignments(controller.signal);
 
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [fetchConsignments, refreshKey]);
 
   useEffect(() => {
@@ -664,7 +724,7 @@ const ConsignmentHistoryList = () => {
     return () => {
       controller.abort();
     };
-  }, [refreshKey]);
+  }, []);
 
   useEffect(
     () => () => {
@@ -822,124 +882,10 @@ const ConsignmentHistoryList = () => {
   };
 
   /* =========================================================
-     FILTER
+     SERVER RESULT
      ========================================================= */
 
-  const filteredConsignments = useMemo(() => {
-    const normalizedSearch = normalizeText(searchInput);
-
-    /*
-     * RangePicker chọn ngày UI.
-     * Mình convert sang YYYY-MM-DD để so với createdAtUtc.
-     * Không dùng Date object để tránh trình duyệt tự đổi timezone.
-     */
-    const startDate =
-      dateRangeInput?.[0]?.format(
-        "YYYY-MM-DD"
-      ) || null;
-
-    const endDate =
-      dateRangeInput?.[1]?.format(
-        "YYYY-MM-DD"
-      ) || null;
-
-    const normalizedSelectedStatus =
-      normalizeStatusKey(
-        statusInput
-      );
-
-    return consignments.filter((item) => {
-      const itemStatus =
-        getItemStatus(item);
-
-      const matchesStatus =
-        !normalizedSelectedStatus ||
-        normalizeStatusKey(
-          itemStatus
-        ) ===
-          normalizedSelectedStatus;
-
-      const searchableContent = [
-        item.orderId,
-        item.orderCode,
-        item.consignmentCode,
-        item.trackingCode,
-        item.domesticTrackingCode,
-        item.waybillCode,
-        item.shipmentCode,
-        getProductNames(item).join(" "),
-        item.consignmentType,
-        item.status,
-        item.orderStatus,
-        item.route,
-        item.receiverName,
-        item.receiverPhone,
-        item.receiverAddress,
-        item.createdAtUtc,
-        item.updatedAtUtc,
-      ]
-        .filter(Boolean)
-        .map(normalizeText)
-        .join(" ");
-
-      const matchesSearch =
-        !normalizedSearch ||
-        searchableContent.includes(
-          normalizedSearch
-        );
-
-      const createdDate = getUtcDateOnly(
-        item.createdAtUtc || item.createdAt
-      );
-
-      const matchesStartDate =
-        !startDate ||
-        (createdDate !== null &&
-          createdDate >= startDate);
-
-      const matchesEndDate =
-        !endDate ||
-        (createdDate !== null &&
-          createdDate <= endDate);
-
-      return (
-        matchesStatus &&
-        matchesSearch &&
-        matchesStartDate &&
-        matchesEndDate
-      );
-    });
-  }, [
-    consignments,
-    dateRangeInput,
-    searchInput,
-    statusInput,
-  ]);
-
-  /* =========================================================
-     CLIENT PAGINATION
-     ========================================================= */
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      filteredConsignments.length /
-        DEFAULT_PAGE_SIZE
-    )
-  );
-
-  const visibleConsignments = useMemo(() => {
-    const startIndex =
-      (pageNumber - 1) * DEFAULT_PAGE_SIZE;
-
-    return filteredConsignments.slice(
-      startIndex,
-      startIndex + DEFAULT_PAGE_SIZE
-    );
-  }, [
-    filteredConsignments,
-    pageNumber,
-  ]);
+  const visibleConsignments = consignments;
 
   useEffect(() => {
     if (pageNumber > totalPages) {
@@ -953,7 +899,6 @@ const ConsignmentHistoryList = () => {
 
   const handleSearchChange = (event) => {
     setSearchInput(event.target.value);
-    setPageNumber(1);
   };
 
   const handleStatusChange = (value) => {
@@ -966,6 +911,7 @@ const ConsignmentHistoryList = () => {
 
   const handleResetClick = () => {
     setSearchInput("");
+    setDebouncedSearch("");
     setStatusInput("");
     setDateRangeInput(null);
     setPageNumber(1);
@@ -1078,31 +1024,41 @@ const ConsignmentHistoryList = () => {
      ========================================================= */
 
   const getStatusLabel = (status) => {
-    const rawStatus = String(
-      status || ""
-    ).trim();
-
     const normalizedStatus =
-      normalizeStatusKey(rawStatus);
+      normalizeStatusKey(status);
 
+    /*
+     * Luôn ưu tiên bảng tiếng Việt nội bộ.
+     * Không để label tiếng Anh từ API ghi đè lên giao diện.
+     */
     return (
-      statusLabelMap.get(
-        normalizedStatus
-      ) ||
       STATUS_FALLBACK_LABELS[
         normalizedStatus
       ] ||
-      formatStatusCode(
-        rawStatus
+      statusLabelMap.get(
+        normalizedStatus
       ) ||
-      "-"
+      getVietnameseStatusLabel(
+        status
+      )
     );
   };
 
   const getStatusClassName = (status) => {
     const normalizedStatus =
       normalizeStatusKey(status);
-  
+
+    if (
+      [
+        "DEPOSIT_PAID",
+        "DEPOSIT_CONFIRMED",
+        "PARTIALLY_PAID",
+        "PARTIALLY_REFUNDED",
+      ].includes(normalizedStatus)
+    ) {
+      return "deposit-paid";
+    }
+
     if (
       [
         "COMPLETED",
@@ -1111,14 +1067,23 @@ const ConsignmentHistoryList = () => {
         "FINISHED",
         "DELIVERED",
         "PAID",
+        "FULLY_PAID",
         "PAYMENT_CONFIRMED",
         "APPROVED",
+        "CONFIRMED",
         "CUSTOMS_CLEARED",
+        "INSPECTION_COMPLETED",
+        "PACKED",
+        "WAREHOUSE_RECEIVED",
+        "RECEIVED",
+        "STORED",
+        "READY_FOR_SHIPMENT",
+        "REFUNDED",
       ].includes(normalizedStatus)
     ) {
       return "completed";
     }
-  
+
     if (
       [
         "CANCELED",
@@ -1126,7 +1091,9 @@ const ConsignmentHistoryList = () => {
         "CANCEL",
         "REJECTED",
         "QUOTATION_REJECTED",
+        "QUOTATION_EXPIRED",
         "PAYMENT_FAILED",
+        "PAYMENT_EXPIRED",
         "DELIVERY_FAILED",
         "FAILED",
         "DELETED",
@@ -1134,7 +1101,31 @@ const ConsignmentHistoryList = () => {
     ) {
       return "canceled";
     }
-  
+
+    if (
+      [
+        "WAITING_QUOTATION",
+        "PENDING_QUOTATION",
+        "QUOTATION_SENT",
+        "QUOTED",
+        "QUOTATION_ACCEPTED",
+      ].includes(normalizedStatus)
+    ) {
+      return "quotation";
+    }
+
+    if (
+      [
+        "SHIPPING",
+        "IN_TRANSIT",
+        "OUT_FOR_DELIVERY",
+        "RETURNING",
+        "RETURNED",
+      ].includes(normalizedStatus)
+    ) {
+      return "shipping";
+    }
+
     if (
       [
         "WAITING_DEPOSIT",
@@ -1146,37 +1137,35 @@ const ConsignmentHistoryList = () => {
         "PENDING",
         "PENDING_REVIEW",
         "WAITING_REVIEW",
-        "WAITING_QUOTATION",
-        "PENDING_QUOTATION",
-        "QUOTATION_SENT",
         "WAITING_INSPECTION",
+        "WAITING_PACKING",
+        "WAITING_WAREHOUSE",
         "WAITING_CONFIRMATION",
+        "UNDER_REVIEW",
+        "ON_HOLD",
+        "CUSTOMS_HOLD",
+        "NEW",
+        "CREATED",
+        "SUBMITTED",
       ].includes(normalizedStatus)
     ) {
       return "pending";
     }
-  
+
     if (
       [
         "PROCESSING",
         "IN_PROGRESS",
-        "SHIPPING",
-        "IN_TRANSIT",
         "PACKING",
         "INSPECTING",
         "CUSTOMS_CLEARANCE",
         "CUSTOMS_PROCESSING",
-        "OUT_FOR_DELIVERY",
-        "RETURNING",
       ].includes(normalizedStatus)
     ) {
       return "processing";
     }
-  
-    return String(status || "unknown")
-      .trim()
-      .toLowerCase()
-      .replaceAll("_", "-");
+
+    return "neutral";
   };
 
   const getConsignmentTypeLabel = (
@@ -1210,15 +1199,6 @@ const ConsignmentHistoryList = () => {
     return String(trackingCode || "").trim() || "-";
   };
 
-  const getOrderCode = (item) => {
-    const orderCode =
-      item?.orderCode ||
-      item?.orderId;
-
-    return String(orderCode || "").trim() || "-";
-  };
-
-
   const hasActiveFilter = Boolean(
     searchInput.trim() ||
       statusInput ||
@@ -1247,7 +1227,7 @@ const ConsignmentHistoryList = () => {
 
         <div className="page-summary">
           <strong>
-            {filteredConsignments.length}
+            {totalCount}
           </strong>
 
           <span>Tổng đơn ký gửi</span>
@@ -1393,7 +1373,7 @@ const ConsignmentHistoryList = () => {
 
                   return (
                     <div
-                      key={item.orderId}
+                      key={item.orderId || item.consignmentCode}
                       className="consignment-card"
                       role="button"
                       tabIndex={0}
@@ -1607,10 +1587,6 @@ const ConsignmentHistoryList = () => {
                               )}
                             </div>
 
-                            <div className="sku-tag">
-                              Mã đơn: {getOrderCode(item)}
-                            </div>
-
                             <div className="receiver-phone">
                               <span>Số điện thoại:</span>{" "}
                               <strong>
@@ -1678,8 +1654,7 @@ const ConsignmentHistoryList = () => {
             )}
           </div>
 
-          {filteredConsignments.length >
-            0 && (
+          {totalCount > 0 && (
             <div className="pagination-section">
               <span className="pagination-summary">
                 Hiển thị{" "}
@@ -1691,7 +1666,7 @@ const ConsignmentHistoryList = () => {
                 mục trên trang này, tổng cộng{" "}
                 <strong>
                   {
-                    filteredConsignments.length
+                    totalCount
                   }
                 </strong>{" "}
                 mục

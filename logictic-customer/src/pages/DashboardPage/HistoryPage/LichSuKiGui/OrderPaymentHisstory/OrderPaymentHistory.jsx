@@ -48,57 +48,104 @@ import "./OrderPaymentHistory.css";
    ========================================================= */
 
 const ORDER_STATUS_LABELS = {
-  WAITING_DEPOSIT: "CHỜ ĐẶT CỌC",
-  DEPOSIT_PENDING: "CHỜ ĐẶT CỌC",
-  PENDING_DEPOSIT: "CHỜ ĐẶT CỌC",
-  WAITING_PAYMENT: "CHỜ THANH TOÁN",
-  PENDING_PAYMENT: "CHỜ THANH TOÁN",
-  PAYMENT_PENDING: "CHỜ THANH TOÁN",
-  PROCESSING: "ĐANG XỬ LÝ",
-  COMPLETED: "HOÀN THÀNH",
-  PAID: "ĐÃ THANH TOÁN",
-  CANCELLED: "ĐÃ HỦY",
-  CANCELED: "ĐÃ HỦY",
+  WAITING_DEPOSIT: "Chờ đặt cọc",
+  DEPOSIT_PENDING: "Chờ đặt cọc",
+  PENDING_DEPOSIT: "Chờ đặt cọc",
+  DEPOSIT_PAID: "Đã thanh toán tiền cọc",
+  PARTIALLY_PAID: "Đã thanh toán một phần",
+  WAITING_PAYMENT: "Chờ thanh toán",
+  PENDING_PAYMENT: "Chờ thanh toán",
+  PAYMENT_PENDING: "Chờ thanh toán",
+  PAYMENT_CONFIRMED: "Đã xác nhận thanh toán",
+  PAID: "Đã thanh toán đầy đủ",
+  FULLY_PAID: "Đã thanh toán đầy đủ",
+  PROCESSING: "Đang xử lý",
+  IN_PROGRESS: "Đang xử lý",
+  PENDING_REVIEW: "Chờ duyệt",
+  QUOTATION_SENT: "Đã gửi báo giá",
+  APPROVED: "Đã duyệt",
+  SHIPPING: "Đang vận chuyển",
+  IN_TRANSIT: "Đang vận chuyển",
+  DELIVERED: "Đã giao hàng",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  CANCELED: "Đã hủy",
+  REJECTED: "Đã từ chối",
+  FAILED: "Thất bại",
 };
 
 const QUOTATION_STATUS_LABELS = {
-  DRAFT: "BẢN NHÁP",
-  PENDING: "CHỜ XÁC NHẬN",
-  ACCEPTED: "ĐÃ CHẤP NHẬN",
-  APPROVED: "ĐÃ DUYỆT",
-  REJECTED: "ĐÃ TỪ CHỐI",
-  EXPIRED: "HẾT HẠN",
+  DRAFT: "Bản nháp",
+  PENDING: "Chờ xác nhận",
+  ACCEPTED: "Đã chấp nhận",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Đã từ chối",
+  EXPIRED: "Đã hết hạn",
+  CANCELLED: "Đã hủy",
+  CANCELED: "Đã hủy",
 };
 
 const QUOTE_TYPE_LABELS = {
-  ESTIMATE: "BÁO GIÁ TẠM TÍNH",
-  OFFICIAL: "BÁO GIÁ CHÍNH THỨC",
-  FINAL: "BÁO GIÁ CHÍNH THỨC",
+  ESTIMATE: "Báo giá tạm tính",
+  PROVISIONAL: "Báo giá tạm tính",
+  OFFICIAL: "Báo giá chính thức",
+  FINAL: "Báo giá chính thức",
 };
 
 const PAYMENT_STATUS_LABELS = {
-  PENDING: "CHỜ THANH TOÁN",
-  PROCESSING: "ĐANG XỬ LÝ",
-  PAID: "ĐÃ THANH TOÁN",
-  SUCCESS: "THÀNH CÔNG",
-  COMPLETED: "HOÀN THÀNH",
-  FAILED: "THẤT BẠI",
-  CANCELLED: "ĐÃ HỦY",
-  CANCELED: "ĐÃ HỦY",
-  EXPIRED: "HẾT HẠN",
+  PENDING: "Chờ thanh toán",
+  WAITING_PAYMENT: "Chờ thanh toán",
+  PAYMENT_PENDING: "Chờ thanh toán",
+  PROCESSING: "Đang xác nhận giao dịch",
+  DEPOSIT_PAID: "Đã thanh toán tiền cọc",
+  PARTIALLY_PAID: "Đã thanh toán một phần",
+  PAID: "Đã thanh toán",
+  FULLY_PAID: "Đã thanh toán đầy đủ",
+  SUCCESS: "Thanh toán thành công",
+  COMPLETED: "Hoàn thành",
+  FAILED: "Thanh toán thất bại",
+  CANCELLED: "Đã hủy",
+  CANCELED: "Đã hủy",
+  EXPIRED: "Đã hết hạn",
+  REFUNDED: "Đã hoàn tiền",
 };
 
 const INSTALLMENT_TYPE_LABELS = {
-  DEPOSIT: "ĐẶT CỌC",
-  REMAINING: "THANH TOÁN PHẦN CÒN LẠI",
-  FULL_PAYMENT: "THANH TOÁN TOÀN BỘ",
-  FINAL_PAYMENT: "THANH TOÁN CUỐI",
+  DEPOSIT: "Thanh toán tiền cọc",
+  FIRST_DEPOSIT: "Thanh toán tiền cọc",
+  REMAINING: "Thanh toán số tiền còn lại",
+  REMAINING_PAYMENT: "Thanh toán số tiền còn lại",
+  FULL_PAYMENT: "Thanh toán toàn bộ",
+  FINAL_PAYMENT: "Thanh toán lần cuối",
 };
 
 const PAYMENT_METHOD_LABELS = {
-  PAYOS: "PayOS",
+  SEPAY: "Chuyển khoản qua SePay",
+  PAYOS: "Chuyển khoản qua PayOS",
   BANK_TRANSFER: "Chuyển khoản ngân hàng",
-  CASH: "Tiền mặt",
+  CASH: "Thanh toán tiền mặt",
+  ONLINE: "Thanh toán trực tuyến",
+  OFFLINE: "Thanh toán thủ công",
+};
+
+const PAYMENT_FAILURE_LABELS = {
+  PAYMENT_FAILED: "Giao dịch thanh toán không thành công.",
+  TRANSACTION_FAILED: "Giao dịch không thành công.",
+  TRANSACTION_NOT_FOUND: "Không tìm thấy giao dịch ngân hàng phù hợp.",
+  AMOUNT_MISMATCH: "Số tiền chuyển khoản chưa khớp với yêu cầu.",
+  INSUFFICIENT_AMOUNT: "Số tiền thanh toán chưa đủ.",
+  EXPIRED: "Giao dịch đã hết thời gian thanh toán.",
+  CANCELLED: "Giao dịch đã bị hủy.",
+  CANCELED: "Giao dịch đã bị hủy.",
+};
+
+const getPaymentFailureMessage = (value) => {
+  const normalized = normalizeStatus(value);
+
+  return (
+    PAYMENT_FAILURE_LABELS[normalized] ||
+    "Giao dịch chưa được hoàn tất. Vui lòng thử lại hoặc liên hệ bộ phận hỗ trợ."
+  );
 };
 
 /* =========================================================
@@ -108,33 +155,42 @@ const PAYMENT_METHOD_LABELS = {
 const normalizeStatus = (value) => {
   return String(value ?? "")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
 };
 
-const formatStatusCode = (value) => {
-  const normalized =
-    normalizeStatus(value);
-
-  if (!normalized) {
-    return "-";
-  }
-
-  return normalized
-    .replaceAll("_", " ")
-    .replaceAll("-", " ");
+const getVietnameseLabel = (
+  labels,
+  value,
+  fallback = "Đang cập nhật"
+) => {
+  const key = normalizeStatus(value);
+  return labels[key] || fallback;
 };
 
 const getStatusClassName = (value) => {
-  const normalized =
-    normalizeStatus(value);
+  const normalized = normalizeStatus(value);
+
+  if (
+    [
+      "DEPOSIT_PAID",
+      "PARTIALLY_PAID",
+    ].includes(normalized)
+  ) {
+    return "partial";
+  }
 
   if (
     [
       "PAID",
+      "FULLY_PAID",
       "SUCCESS",
       "COMPLETED",
       "ACCEPTED",
       "APPROVED",
+      "PAYMENT_CONFIRMED",
+      "DELIVERED",
     ].includes(normalized)
   ) {
     return "success";
@@ -161,6 +217,8 @@ const getStatusClassName = (value) => {
       "WAITING_PAYMENT",
       "PENDING_PAYMENT",
       "PAYMENT_PENDING",
+      "PENDING_REVIEW",
+      "QUOTATION_SENT",
     ].includes(normalized)
   ) {
     return "pending";
@@ -686,7 +744,7 @@ const OrderPaymentHistory = () => {
         </Button>
 
         <span>
-          Thanh toán / Lịch sử giao dịch
+          Lịch sử thanh toán
         </span>
 
         <Button
@@ -710,7 +768,7 @@ const OrderPaymentHistory = () => {
 
           <div className="payment-history-hero__content">
             <span className="payment-history-eyebrow">
-              MÃ VẬN ĐƠN
+              LỊCH SỬ THANH TOÁN
             </span>
 
             <div className="payment-history-code-row">
@@ -752,12 +810,8 @@ const OrderPaymentHistory = () => {
             </div>
 
             <div className="payment-history-hero__meta">
-              <span>
-                Mã đơn:
-                <strong>
-                  {paymentData.orderId ||
-                    "-"}
-                </strong>
+              <span className="payment-history-hero__status-label">
+                Trạng thái đơn hàng
               </span>
 
               <Tag
@@ -765,12 +819,11 @@ const OrderPaymentHistory = () => {
                   orderStatus
                 )}`}
               >
-                {ORDER_STATUS_LABELS[
-                  orderStatus
-                ] ||
-                  formatStatusCode(
-                    orderStatus
-                  )}
+                {getVietnameseLabel(
+                  ORDER_STATUS_LABELS,
+                  orderStatus,
+                  "Đang xử lý"
+                )}
               </Tag>
             </div>
           </div>
@@ -908,11 +961,6 @@ const OrderPaymentHistory = () => {
                 "-"}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Mã khách hàng">
-              {customer.customerCode ||
-                "-"}
-            </Descriptions.Item>
-
             <Descriptions.Item label="Email">
               {customer.email ? (
                 <a
@@ -962,49 +1010,36 @@ const OrderPaymentHistory = () => {
             size="middle"
             className="payment-descriptions"
           >
-            <Descriptions.Item label="Mã báo giá">
-              {quotation.quotationId ||
-                "-"}
-            </Descriptions.Item>
-
             <Descriptions.Item label="Loại báo giá">
-              <Tag color="blue">
-                {QUOTE_TYPE_LABELS[
-                  normalizeStatus(
-                    quotation.quoteType
-                  )
-                ] ||
-                  formatStatusCode(
-                    quotation.quoteType
-                  )}
+              <Tag className="payment-type-tag">
+                {getVietnameseLabel(
+                  QUOTE_TYPE_LABELS,
+                  quotation.quoteType,
+                  "Báo giá"
+                )}
               </Tag>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Trạng thái">
+            <Descriptions.Item label="Trạng thái báo giá">
               <Tag
-                color={
-                  normalizeStatus(
-                    quotation.status
-                  ) === "ACCEPTED"
-                    ? "green"
-                    : "gold"
-                }
+                className={`payment-status-tag payment-status-tag--${getStatusClassName(
+                  quotation.status
+                )}`}
               >
-                {QUOTATION_STATUS_LABELS[
-                  normalizeStatus(
-                    quotation.status
-                  )
-                ] ||
-                  formatStatusCode(
-                    quotation.status
-                  )}
+                {getVietnameseLabel(
+                  QUOTATION_STATUS_LABELS,
+                  quotation.status,
+                  "Đang xử lý"
+                )}
               </Tag>
             </Descriptions.Item>
 
             <Descriptions.Item label="Tổng báo giá">
               <strong className="payment-money-value">
                 {formatMoney(
-                  quotation.totalAmount
+                  quotation.totalAmount ??
+                    quotation.totalEstimatedCost ??
+                    totalBillAmount
                 )}
               </strong>
             </Descriptions.Item>
@@ -1057,6 +1092,8 @@ const OrderPaymentHistory = () => {
                   [
                     "PENDING",
                     "PROCESSING",
+                    "WAITING_PAYMENT",
+                    "PAYMENT_PENDING",
                   ].includes(
                     paymentStatus
                   );
@@ -1067,23 +1104,22 @@ const OrderPaymentHistory = () => {
                       payment.paymentId ||
                       `${payment.orderCode}-${index}`
                     }
-                    className="payment-transaction-card"
+                    className={`payment-transaction-card payment-transaction-card--${getStatusClassName(
+                      paymentStatus
+                    )}`}
                   >
                     <div className="payment-transaction-card__top">
                       <div>
                         <span className="payment-transaction-number">
-                          GIAO DỊCH #{index + 1}
+                          Giao dịch {index + 1}
                         </span>
 
                         <h3>
-                          {INSTALLMENT_TYPE_LABELS[
-                            normalizeStatus(
-                              payment.installmentType
-                            )
-                          ] ||
-                            formatStatusCode(
-                              payment.installmentType
-                            )}
+                          {getVietnameseLabel(
+                            INSTALLMENT_TYPE_LABELS,
+                            payment.installmentType,
+                            "Thanh toán đơn hàng"
+                          )}
                         </h3>
                       </div>
 
@@ -1100,51 +1136,26 @@ const OrderPaymentHistory = () => {
                           paymentStatus
                         )}`}
                       >
-                        {PAYMENT_STATUS_LABELS[
-                          paymentStatus
-                        ] ||
-                          formatStatusCode(
-                            paymentStatus
-                          )}
+                        {getVietnameseLabel(
+                          PAYMENT_STATUS_LABELS,
+                          paymentStatus,
+                          "Đang xác nhận"
+                        )}
                       </Tag>
 
-                      <Tag color="blue">
-                        {PAYMENT_METHOD_LABELS[
-                          normalizeStatus(
-                            payment.paymentMethod
-                          )
-                        ] ||
-                          payment.paymentMethod ||
-                          "-"}
+                      <Tag className="payment-method-tag">
+                        {getVietnameseLabel(
+                          PAYMENT_METHOD_LABELS,
+                          payment.paymentMethod,
+                          "Thanh toán trực tuyến"
+                        )}
                       </Tag>
                     </div>
 
                     <div className="payment-transaction-details">
                       <div>
                         <span>
-                          Mã đơn PayOS
-                        </span>
-
-                        <strong>
-                          {payment.orderCode ||
-                            "-"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>
-                          Mã giao dịch
-                        </span>
-
-                        <strong>
-                          {payment.transactionCode ||
-                            "Chưa có"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>
-                          Thời gian tạo
+                          Thời gian tạo giao dịch
                         </span>
 
                         <strong>
@@ -1156,7 +1167,7 @@ const OrderPaymentHistory = () => {
 
                       <div>
                         <span>
-                          Thời gian thanh toán
+                          Thời gian hoàn tất
                         </span>
 
                         <strong>
@@ -1164,7 +1175,7 @@ const OrderPaymentHistory = () => {
                             ? formatDateTime(
                                 payment.paidAt
                               )
-                            : "Chưa thanh toán"}
+                            : "Chưa hoàn tất"}
                         </strong>
                       </div>
                     </div>
@@ -1174,36 +1185,15 @@ const OrderPaymentHistory = () => {
                         <ErrorOutlineRoundedIcon />
 
                         <span>
-                          {payment.failureReason}
+                          {getPaymentFailureMessage(
+                            payment.failureReason
+                          )}
                         </span>
                       </div>
                     )}
 
-                    <div className="payment-transaction-actions">
-                      <Button
-                        variant="outlined"
-                        color="inherit"
-                        startIcon={
-                          copiedValue ===
-                          String(
-                            payment.orderCode
-                          ) ? (
-                            <CheckRoundedIcon />
-                          ) : (
-                            <ContentCopyRoundedIcon />
-                          )
-                        }
-                        onClick={() =>
-                          handleCopy(
-                            payment.orderCode,
-                            "Đã sao chép mã đơn PayOS."
-                          )
-                        }
-                      >
-                        Sao chép mã
-                      </Button>
-
-                      {canContinuePayment && (
+                    {canContinuePayment && (
+                      <div className="payment-transaction-actions">
                         <Button
                           variant="contained"
                           endIcon={
@@ -1217,8 +1207,8 @@ const OrderPaymentHistory = () => {
                         >
                           Tiếp tục thanh toán
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </article>
                 );
               }
@@ -1232,11 +1222,11 @@ const OrderPaymentHistory = () => {
 
         <div>
           <strong>
-            Trạng thái thanh toán được cập nhật từ hệ thống PayOS
+            Trạng thái thanh toán được đồng bộ tự động
           </strong>
 
           <span>
-            Nhấn “Làm mới” sau khi hoàn tất thanh toán để cập nhật dữ liệu mới nhất.
+            Sau khi chuyển khoản, hệ thống sẽ ghi nhận giao dịch. Bạn có thể nhấn “Làm mới” để kiểm tra ngay.
           </span>
         </div>
       </section>

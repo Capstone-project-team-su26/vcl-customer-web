@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +39,12 @@ import "./Dashboard.css";
 
 const API_PAGE_SIZE = 100;
 const MAX_RECENT_ORDERS = 6;
+
+const DASHBOARD_CACHE_KEY = "customer-dashboard-snapshot-v2";
+const DASHBOARD_CACHE_TTL_MS = 60 * 1000;
+
+let dashboardMemoryCache = null;
+let dashboardInFlightRequest = null;
 
 const QUICK_ACTIONS = [
   {
@@ -210,7 +217,12 @@ const isProcessingStatus = (status) => {
 };
 
 const unwrapApiData = (response) => {
-  return response?.data ?? response;
+  return (
+    response?.data?.data ??
+    response?.data ??
+    response ??
+    null
+  );
 };
 
 const findArrayFromResult = (result, extraKeys = []) => {
@@ -220,9 +232,11 @@ const findArrayFromResult = (result, extraKeys = []) => {
     data,
     data?.items,
     data?.results,
+    data?.orders,
     data?.data,
     data?.data?.items,
     data?.data?.results,
+    data?.data?.orders,
     ...extraKeys.flatMap((key) => [
       data?.[key],
       data?.data?.[key],
@@ -232,75 +246,215 @@ const findArrayFromResult = (result, extraKeys = []) => {
   return candidates.find(Array.isArray) || [];
 };
 
-const getTotalPagesFromResult = (result) => {
-  const data = unwrapApiData(result);
+const getStableItemId = (item, type, index = 0) => {
+  const id =
+    item?.orderId ||
+    item?.purchaseRequestId ||
+    item?.consignmentId ||
+    item?.id ||
+    item?.orderCode ||
+    item?.purchaseCode ||
+    item?.purchaseRequestCode ||
+    item?.consignmentCode ||
+    item?.trackingCode;
 
-  return Math.max(
-    1,
-    Number(
-      data?.totalPages ||
-        data?.data?.totalPages ||
-        data?.pageCount ||
-        1
-    ) || 1
-  );
+  if (id) {
+    return `${type}-${String(id).trim()}`;
+  }
+
+  return [
+    type,
+    item?.createdAt,
+    item?.updatedAt,
+    item?.receiverPhone,
+    item?.route,
+    index,
+  ]
+    .map((value) => String(value ?? "").trim())
+    .join("-");
 };
 
-const getPageSizeFromResult = (result) => {
-  const data = unwrapApiData(result);
+const deduplicateItems = (items, type) => {
+  const itemMap = new Map();
 
-  return (
-    Number(data?.pageSize || data?.data?.pageSize) ||
-    API_PAGE_SIZE
-  );
+  items.forEach((item, index) => {
+    const key = getStableItemId(item, type, index);
+
+    if (!itemMap.has(key)) {
+      itemMap.set(key, item);
+    }
+  });
+
+  return Array.from(itemMap.values());
 };
 
-const fetchAllConsignments = async (signal) => {
-  const firstResponse = await getConsignmentsApi(
+const extractSnapshot = (apiResult, type, extraKeys = []) => {
+  const data = unwrapApiData(apiResult);
+  const items = deduplicateItems(
+    findArrayFromResult(apiResult, extraKeys),
+    type
+  );
+
+  const totalCountCandidate =
+    data?.totalCount ??
+    data?.total ??
+    data?.count ??
+    data?.recordsTotal ??
+    data?.pagination?.totalCount ??
+    data?.data?.totalCount;
+
+  const totalCount = Number(totalCountCandidate);
+
+  return {
+    items,
+    totalCount:
+      Number.isFinite(totalCount) && totalCount >= 0
+        ? totalCount
+        : items.length,
+  };
+};
+
+/*
+ * Dashboard chỉ lấy đúng một trang ký gửi.
+ * Không tải toàn bộ totalPages bằng Promise.all.
+ */
+const fetchConsignmentSnapshot = async (signal) => {
+  const response = await getConsignmentsApi(
     1,
     API_PAGE_SIZE,
     { signal }
   );
 
-  const firstItems = findArrayFromResult(firstResponse, [
-    "consignments",
-    "orders",
-  ]);
-
-  const totalPages = getTotalPagesFromResult(firstResponse);
-  const pageSize = getPageSizeFromResult(firstResponse);
-
-  if (totalPages <= 1) {
-    return firstItems;
-  }
-
-  const remainingResponses = await Promise.all(
-    Array.from(
-      {
-        length: totalPages - 1,
-      },
-      (_, index) =>
-        getConsignmentsApi(index + 2, pageSize, {
-          signal,
-        })
-    )
+  return extractSnapshot(
+    response,
+    "consignment",
+    ["consignments", "orders"]
   );
-
-  return [
-    ...firstItems,
-    ...remainingResponses.flatMap((response) =>
-      findArrayFromResult(response, ["consignments", "orders"])
-    ),
-  ];
 };
 
-const fetchAllPurchaseRequests = async (signal) => {
+/*
+ * API mua hộ hiện chỉ cần một request.
+ */
+const fetchPurchaseSnapshot = async (signal) => {
   const response = await getPurchaseRequestsApi({ signal });
 
-  return findArrayFromResult(response, [
-    "purchaseRequests",
-    "orders",
-  ]);
+  return extractSnapshot(
+    response,
+    "purchase",
+    ["purchaseRequests", "orders"]
+  );
+};
+
+const readDashboardCache = () => {
+  const now = Date.now();
+
+  if (
+    dashboardMemoryCache &&
+    now - dashboardMemoryCache.savedAt < DASHBOARD_CACHE_TTL_MS
+  ) {
+    return dashboardMemoryCache;
+  }
+
+  try {
+    const rawCache = sessionStorage.getItem(
+      DASHBOARD_CACHE_KEY
+    );
+
+    if (!rawCache) {
+      return null;
+    }
+
+    const parsedCache = JSON.parse(rawCache);
+
+    if (
+      !parsedCache?.savedAt ||
+      now - Number(parsedCache.savedAt) >=
+        DASHBOARD_CACHE_TTL_MS
+    ) {
+      sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
+      return null;
+    }
+
+    dashboardMemoryCache = parsedCache;
+    return parsedCache;
+  } catch {
+    return null;
+  }
+};
+
+const writeDashboardCache = (snapshot) => {
+  const cacheValue = {
+    ...snapshot,
+    savedAt: Date.now(),
+  };
+
+  dashboardMemoryCache = cacheValue;
+
+  try {
+    sessionStorage.setItem(
+      DASHBOARD_CACHE_KEY,
+      JSON.stringify(cacheValue)
+    );
+  } catch {
+    // Trình duyệt có thể chặn storage; dashboard vẫn hoạt động bình thường.
+  }
+};
+
+const requestDashboardSnapshot = ({
+  force = false,
+} = {}) => {
+  if (!force && dashboardInFlightRequest?.promise) {
+    return dashboardInFlightRequest.promise;
+  }
+
+  if (force && dashboardInFlightRequest?.controller) {
+    dashboardInFlightRequest.controller.abort();
+  }
+
+  const controller = new AbortController();
+
+  const promise = Promise.allSettled([
+    fetchPurchaseSnapshot(controller.signal),
+    fetchConsignmentSnapshot(controller.signal),
+  ])
+    .then(([purchaseResult, consignmentResult]) => ({
+      purchase:
+        purchaseResult.status === "fulfilled"
+          ? {
+              ok: true,
+              ...purchaseResult.value,
+            }
+          : {
+              ok: false,
+              error: purchaseResult.reason,
+            },
+
+      consignment:
+        consignmentResult.status === "fulfilled"
+          ? {
+              ok: true,
+              ...consignmentResult.value,
+            }
+          : {
+              ok: false,
+              error: consignmentResult.reason,
+            },
+    }))
+    .finally(() => {
+      if (
+        dashboardInFlightRequest?.controller ===
+        controller
+      ) {
+        dashboardInFlightRequest = null;
+      }
+    });
+
+  dashboardInFlightRequest = {
+    controller,
+    promise,
+  };
+
+  return promise;
 };
 
 const formatMoney = (value) => {
@@ -478,30 +632,54 @@ const getOrderValue = (item) => {
 };
 
 const buildRecentOrders = (purchaseRequests, consignments) => {
-  const purchaseOrders = purchaseRequests.map((item) => ({
-    id: String(getPurchaseCode(item)),
-    service: "Mua hộ",
-    route: getRouteLabel(item.route),
-    value: formatMoney(getOrderValue(item)),
-    status: formatStatusCode(item.status),
-    statusType: getStatusType(item.status),
-    createdAt: getItemTimeUtc(item),
-    raw: item,
-  }));
+  const purchaseOrders = purchaseRequests.map(
+    (item, index) => ({
+      key: getStableItemId(item, "purchase", index),
+      id: String(getPurchaseCode(item)),
+      service: "Mua hộ",
+      route: getRouteLabel(item.route),
+      value: formatMoney(getOrderValue(item)),
+      status: formatStatusCode(item.status),
+      statusType: getStatusType(item.status),
+      createdAt: getItemTimeUtc(item),
+      raw: item,
+    })
+  );
 
-  const consignmentOrders = consignments.map((item) => ({
-    id: String(getConsignmentCode(item)),
-    service: "Ký gửi",
-    route: getRouteLabel(item.route),
-    value: formatMoney(getOrderValue(item)),
-    status: formatStatusCode(item.status),
-    statusType: getStatusType(item.status),
-    createdAt: getItemTimeUtc(item),
-    raw: item,
-  }));
+  const consignmentOrders = consignments.map(
+    (item, index) => ({
+      key: getStableItemId(
+        item,
+        "consignment",
+        index
+      ),
+      id: String(getConsignmentCode(item)),
+      service: "Ký gửi",
+      route: getRouteLabel(item.route),
+      value: formatMoney(getOrderValue(item)),
+      status: formatStatusCode(item.status),
+      statusType: getStatusType(item.status),
+      createdAt: getItemTimeUtc(item),
+      raw: item,
+    })
+  );
 
-  return [...purchaseOrders, ...consignmentOrders]
-    .sort((left, right) => getTimestamp(right.raw) - getTimestamp(left.raw))
+  const uniqueOrders = new Map();
+
+  [...purchaseOrders, ...consignmentOrders].forEach(
+    (order) => {
+      if (!uniqueOrders.has(order.key)) {
+        uniqueOrders.set(order.key, order);
+      }
+    }
+  );
+
+  return Array.from(uniqueOrders.values())
+    .sort(
+      (left, right) =>
+        getTimestamp(right.raw) -
+        getTimestamp(left.raw)
+    )
     .slice(0, MAX_RECENT_ORDERS);
 };
 
@@ -534,9 +712,26 @@ export default function Dashboard() {
 
   const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [consignments, setConsignments] = useState([]);
-  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
-  const [dashboardError, setDashboardError] = useState("");
-  const userName = useMemo(() => getSessionUserName(), []);
+
+  const [purchaseTotalCount, setPurchaseTotalCount] =
+    useState(0);
+  const [
+    consignmentTotalCount,
+    setConsignmentTotalCount,
+  ] = useState(0);
+
+  const [isLoadingDashboard, setIsLoadingDashboard] =
+    useState(true);
+  const [dashboardError, setDashboardError] =
+    useState("");
+
+  const mountedRef = useRef(false);
+  const requestSequenceRef = useRef(0);
+
+  const userName = useMemo(
+    () => getSessionUserName(),
+    []
+  );
 
   const currentDate = useMemo(() => {
     return new Intl.DateTimeFormat("vi-VN", {
@@ -548,41 +743,137 @@ export default function Dashboard() {
     }).format(new Date());
   }, []);
 
+  const applyDashboardSnapshot = useCallback(
+    (snapshot) => {
+      const purchase = snapshot?.purchase;
+      const consignment = snapshot?.consignment;
+
+      if (purchase?.ok !== false) {
+        setPurchaseRequests(
+          Array.isArray(purchase?.items)
+            ? purchase.items
+            : []
+        );
+
+        setPurchaseTotalCount(
+          Number(purchase?.totalCount) || 0
+        );
+      }
+
+      if (consignment?.ok !== false) {
+        setConsignments(
+          Array.isArray(consignment?.items)
+            ? consignment.items
+            : []
+        );
+
+        setConsignmentTotalCount(
+          Number(consignment?.totalCount) || 0
+        );
+      }
+    },
+    []
+  );
+
   const loadDashboardData = useCallback(
-    async (signal, { showSuccess = false } = {}) => {
+    async ({
+      showSuccess = false,
+      force = false,
+    } = {}) => {
+      const requestSequence =
+        requestSequenceRef.current + 1;
+
+      requestSequenceRef.current =
+        requestSequence;
+
+      if (!force) {
+        const cachedSnapshot =
+          readDashboardCache();
+
+        if (cachedSnapshot) {
+          applyDashboardSnapshot(
+            cachedSnapshot
+          );
+
+          setDashboardError("");
+          setIsLoadingDashboard(false);
+          return;
+        }
+      }
+
       try {
         setIsLoadingDashboard(true);
         setDashboardError("");
 
-        const [purchaseResult, consignmentResult] = await Promise.allSettled([
-          fetchAllPurchaseRequests(signal),
-          fetchAllConsignments(signal),
-        ]);
+        const snapshot =
+          await requestDashboardSnapshot({
+            force,
+          });
 
-        if (signal?.aborted) {
+        if (
+          !mountedRef.current ||
+          requestSequence !==
+            requestSequenceRef.current
+        ) {
           return;
         }
 
-        if (purchaseResult.status === "fulfilled") {
-          setPurchaseRequests(purchaseResult.value || []);
-        } else if (!isCanceledRequest(purchaseResult.reason)) {
-          throw purchaseResult.reason;
+        applyDashboardSnapshot(snapshot);
+
+        const failedSources = [
+          snapshot?.purchase?.ok === false
+            ? "mua hộ"
+            : "",
+          snapshot?.consignment?.ok === false
+            ? "ký gửi"
+            : "",
+        ].filter(Boolean);
+
+        if (
+          snapshot?.purchase?.ok &&
+          snapshot?.consignment?.ok
+        ) {
+          writeDashboardCache(snapshot);
         }
 
-        if (consignmentResult.status === "fulfilled") {
-          setConsignments(consignmentResult.value || []);
-        } else if (!isCanceledRequest(consignmentResult.reason)) {
-          throw consignmentResult.reason;
-        }
+        if (failedSources.length > 0) {
+          const sourceErrors = [
+            snapshot?.purchase?.ok === false
+              ? snapshot.purchase.error
+              : null,
+            snapshot?.consignment?.ok === false
+              ? snapshot.consignment.error
+              : null,
+          ].filter(
+            (error) =>
+              error &&
+              !isCanceledRequest(error)
+          );
 
-        if (showSuccess) {
+          if (sourceErrors.length > 0) {
+            const message = `Không thể tải dữ liệu ${failedSources.join(
+              " và "
+            )}.`;
+
+            setDashboardError(message);
+            AuthNotify.error(
+              "Dashboard tải chưa đầy đủ",
+              message
+            );
+          }
+        } else if (showSuccess) {
           AuthNotify.success(
             "Đã cập nhật dashboard",
             "Dữ liệu đơn hàng mới nhất đã được tải lại."
           );
         }
       } catch (error) {
-        if (isCanceledRequest(error)) {
+        if (
+          isCanceledRequest(error) ||
+          !mountedRef.current ||
+          requestSequence !==
+            requestSequenceRef.current
+        ) {
           return;
         }
 
@@ -592,31 +883,44 @@ export default function Dashboard() {
         );
 
         setDashboardError(message);
-        AuthNotify.error("Không tải được dashboard", message);
+        AuthNotify.error(
+          "Không tải được dashboard",
+          message
+        );
       } finally {
-        if (!signal?.aborted) {
+        if (
+          mountedRef.current &&
+          requestSequence ===
+            requestSequenceRef.current
+        ) {
           setIsLoadingDashboard(false);
         }
       }
     },
-    []
+    [applyDashboardSnapshot]
   );
 
   useEffect(() => {
-    const controller = new AbortController();
+    mountedRef.current = true;
 
-    loadDashboardData(controller.signal);
+    loadDashboardData();
 
     return () => {
-      controller.abort();
+      mountedRef.current = false;
+      requestSequenceRef.current += 1;
     };
   }, [loadDashboardData]);
 
   const handleRefreshDashboard = () => {
-    const controller = new AbortController();
+    sessionStorage.removeItem(
+      DASHBOARD_CACHE_KEY
+    );
 
-    loadDashboardData(controller.signal, {
+    dashboardMemoryCache = null;
+
+    loadDashboardData({
       showSuccess: true,
+      force: true,
     });
   };
 
@@ -641,7 +945,7 @@ export default function Dashboard() {
       {
         id: "purchase",
         label: "Tổng đơn mua hộ",
-        value: `${purchaseRequests.length} đơn`,
+        value: `${purchaseTotalCount} đơn`,
         note: `Tháng này: ${purchaseThisMonth} đơn`,
         icon: ShoppingCartOutlined,
         theme: "blue",
@@ -649,7 +953,7 @@ export default function Dashboard() {
       {
         id: "consignment",
         label: "Tổng đơn ký gửi",
-        value: `${consignments.length} đơn`,
+        value: `${consignmentTotalCount} đơn`,
         note: `Tháng này: ${consignmentThisMonth} đơn`,
         icon: InboxOutlined,
         theme: "orange",
@@ -663,7 +967,12 @@ export default function Dashboard() {
         theme: "purple",
       },
     ];
-  }, [purchaseRequests, consignments]);
+  }, [
+    purchaseRequests,
+    consignments,
+    purchaseTotalCount,
+    consignmentTotalCount,
+  ]);
 
   const monthlyChart = useMemo(
     () => buildMonthlyChart(purchaseRequests, consignments),
@@ -697,7 +1006,7 @@ export default function Dashboard() {
       {
         id: "purchase",
         category: "Mua hộ",
-        title: `Bạn đang có ${purchaseRequests.length} yêu cầu mua hộ trong hệ thống.`,
+        title: `Bạn đang có ${purchaseTotalCount} yêu cầu mua hộ trong hệ thống.`,
         time: "Đã đồng bộ",
         unread: false,
         type: "purchase",
@@ -715,7 +1024,7 @@ export default function Dashboard() {
         type: recentOrder?.service === "Mua hộ" ? "purchase" : "consignment",
       },
     ];
-  }, [purchaseRequests.length, recentOrders]);
+  }, [purchaseTotalCount, recentOrders]);
 
   const handleNavigate = (route) => {
     navigate(route);
@@ -901,7 +1210,9 @@ export default function Dashboard() {
             </div>
 
             <span className="customer-dashboard__chart-change">
-              {isLoadingDashboard ? "Đang đồng bộ" : "Dữ liệu API"}
+              {isLoadingDashboard
+                ? "Đang đồng bộ"
+                : `Dữ liệu ${API_PAGE_SIZE} đơn gần nhất`}
             </span>
           </div>
 
@@ -1043,7 +1354,7 @@ export default function Dashboard() {
                 </tr>
               ) : (
                 recentOrders.map((order) => (
-                  <tr key={`${order.service}-${order.id}-${order.createdAt}`}>
+                  <tr key={order.key}>
                     <td>
                       <strong>{order.id}</strong>
                     </td>

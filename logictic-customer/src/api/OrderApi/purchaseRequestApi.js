@@ -231,11 +231,7 @@ const buildPurchaseRequestPayload = (
    PURCHASE REQUEST APIs
    ========================================================= */
 
-/**
- * Tạo yêu cầu mua hộ.
- *
- * POST /api/purchase-requests
- */
+
 export const createPurchaseRequestApi = async (
   payload,
   options = {}
@@ -273,11 +269,7 @@ export const createPurchaseRequestApi = async (
   }
 };
 
-/**
- * Lấy danh sách yêu cầu mua hộ.
- *
- * GET /api/purchase-requests
- */
+
 export const getPurchaseRequestsApi = async (
   options = {}
 ) => {
@@ -307,11 +299,6 @@ export const getPurchaseRequestsApi = async (
   }
 };
 
-/**
- * Lấy chi tiết yêu cầu mua hộ.
- *
- * GET /api/purchase-requests/{purchaseRequestId}
- */
 export const getPurchaseRequestDetailApi =
   async (
     purchaseRequestId,
@@ -414,17 +401,7 @@ export const rejectQuotationApi = async (
     throw error;
   }
 };
-/**
- * Khách hàng chấp nhận báo giá tạm tính.
- *
- * PUT /api/quotations/{quotationId}/accept
- *
- * Lưu ý:
- * - API nhận quotationId.
- * - Không truyền orderId.
- * - API này chỉ xác nhận báo giá,
- *   chưa tạo giao dịch thanh toán.
- */
+
 export const acceptQuotationApi = async (
   quotationId,
   options = {}
