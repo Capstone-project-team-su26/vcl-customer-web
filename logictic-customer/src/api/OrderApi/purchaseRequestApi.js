@@ -544,9 +544,166 @@ export const confirmAndPayQuotationApi = async (
 };
 
 /**
+ * Kiểm tra trạng thái thanh toán theo orderCode.
+ *
+ * GET /api/payments/status/{orderCode}
+ *
+ * Response thường gặp:
+ * {
+ *   orderCode: number,
+ *   amount: number,
+ *   status: string,
+ *   paymentMethod: string
+ * }
+ */
+export const getPaymentStatusApi = async (
+  orderCode,
+  options = {}
+) => {
+  const code = validateId(
+    orderCode,
+    "Không tìm thấy mã giao dịch thanh toán."
+  );
+
+  try {
+    const response = await axiosInstance.get(
+      `/api/payments/status/${encodeURIComponent(
+        code
+      )}`,
+      {
+        signal: getSignal(options),
+
+        headers: {
+          Accept:
+            "application/json, text/plain",
+        },
+      }
+    );
+
+    return (
+      response?.data?.data ??
+      response?.data ??
+      null
+    );
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi kiểm tra trạng thái thanh toán:",
+        {
+          status:
+            error?.response?.status,
+          response:
+            error?.response?.data,
+          orderCode: code,
+        }
+      );
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Lấy nội dung trang checkout SePay.
+ *
+ * GET /api/payments/sepay/checkout/{orderCode}
+ *
+ * Lưu ý:
+ * - Endpoint trả về trang HTML hiển thị VietQR.
+ * - Khi chỉ cần chuyển trang, dùng
+ *   getSepayCheckoutPageUrl(orderCode).
+ */
+export const getSepayCheckoutApi = async (
+  orderCode,
+  options = {}
+) => {
+  const code = validateId(
+    orderCode,
+    "Không tìm thấy mã giao dịch SePay."
+  );
+
+  try {
+    const response = await axiosInstance.get(
+      `/api/payments/sepay/checkout/${encodeURIComponent(
+        code
+      )}`,
+      {
+        signal: getSignal(options),
+
+        responseType: "text",
+
+        headers: {
+          Accept:
+            "text/html, application/xhtml+xml",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi lấy trang checkout SePay:",
+        {
+          status:
+            error?.response?.status,
+          response:
+            error?.response?.data,
+          orderCode: code,
+        }
+      );
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Tạo URL tuyệt đối đến trang checkout SePay.
+ */
+export const getSepayCheckoutPageUrl = (
+  orderCode
+) => {
+  const code = validateId(
+    orderCode,
+    "Không tìm thấy mã giao dịch SePay."
+  );
+
+  const configuredApiBase =
+    normalizeText(
+      import.meta.env.VITE_API_BASE_URL
+    );
+
+  const fallbackApiBase =
+    "https://api-vcl.zushin.io.vn";
+
+  let apiOrigin =
+    fallbackApiBase;
+
+  try {
+    apiOrigin = new URL(
+      configuredApiBase ||
+        fallbackApiBase,
+      window.location.origin
+    ).origin;
+  } catch {
+    apiOrigin =
+      fallbackApiBase;
+  }
+
+  return new URL(
+    `/api/payments/sepay/checkout/${encodeURIComponent(
+      code
+    )}`,
+    `${apiOrigin}/`
+  ).toString();
+};
+
+/**
  * Lấy URL thanh toán từ các kiểu response thường gặp.
  *
  * Hỗ trợ:
+ * - response là chuỗi URL
  * - response.checkoutUrl
  * - response.paymentUrl
  * - response.data.checkoutUrl
@@ -555,13 +712,37 @@ export const confirmAndPayQuotationApi = async (
 export const getPaymentCheckoutUrl = (
   apiResult
 ) => {
+  if (
+    typeof apiResult ===
+    "string"
+  ) {
+    return normalizeText(
+      apiResult
+    );
+  }
+
+  if (
+    typeof apiResult?.data ===
+    "string"
+  ) {
+    return normalizeText(
+      apiResult.data
+    );
+  }
+
   const url =
     apiResult?.checkoutUrl ||
     apiResult?.paymentUrl ||
     apiResult?.payUrl ||
+    apiResult?.url ||
     apiResult?.data?.checkoutUrl ||
     apiResult?.data?.paymentUrl ||
     apiResult?.data?.payUrl ||
+    apiResult?.data?.url ||
+    apiResult?.data?.data?.checkoutUrl ||
+    apiResult?.data?.data?.paymentUrl ||
+    apiResult?.data?.data?.payUrl ||
+    apiResult?.data?.data?.url ||
     "";
 
   return normalizeText(url);
