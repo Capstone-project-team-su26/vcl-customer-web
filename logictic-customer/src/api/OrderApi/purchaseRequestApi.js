@@ -468,84 +468,80 @@ export const acceptQuotationApi = async (
 
 /**
  * Khách hàng xác nhận báo giá ký gửi
- * và tạo giao dịch thanh toán PayOS.
+ * và tạo giao dịch thanh toán.
  *
  * PUT /api/quotations/{quotationId}/confirm-and-pay
  *
  * Request body:
  * {
  *   returnUrl: string,
- *   cancelUrl: string
+ *   cancelUrl: string,
+ *   paymentMethod: string
  * }
  *
  * API trả về thông tin/link thanh toán cho frontend.
  */
-export const confirmAndPayQuotationApi =
-  async (
+export const confirmAndPayQuotationApi = async (
+  quotationId,
+  payload = {},
+  options = {}
+) => {
+  const id = validateId(
     quotationId,
-    payload,
-    options = {}
-  ) => {
-    const id = validateId(
-      quotationId,
-      "Không tìm thấy mã báo giá để thanh toán."
+    "Không tìm thấy mã báo giá để thanh toán."
+  );
+
+  const requestPayload = {
+    returnUrl: validateAbsoluteUrl(
+      payload.returnUrl,
+      "đường dẫn quay lại sau thanh toán"
+    ),
+
+    cancelUrl: validateAbsoluteUrl(
+      payload.cancelUrl,
+      "đường dẫn khi hủy thanh toán"
+    ),
+
+    // Backend chỉ nhận đúng giá trị này
+    paymentMethod: "SEPAY",
+  };
+
+  try {
+    const response = await axiosInstance.put(
+      `/api/quotations/${encodeURIComponent(
+        id
+      )}/confirm-and-pay`,
+      requestPayload,
+      {
+        signal: getSignal(options),
+        headers: {
+          Accept:
+            "text/plain, application/json",
+          "Content-Type":
+            "application/json",
+        },
+      }
     );
 
-    if (
-      !payload ||
-      typeof payload !== "object"
-    ) {
-      throw new Error(
-        "Dữ liệu tạo thanh toán không hợp lệ."
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi xác nhận thanh toán SePay:",
+        {
+          status:
+            error?.response?.status,
+          response:
+            error?.response?.data,
+          quotationId: id,
+          payload: requestPayload,
+        }
       );
     }
 
-    const requestPayload = {
-      returnUrl: validateAbsoluteUrl(
-        payload.returnUrl,
-        "đường dẫn quay lại sau thanh toán"
-      ),
-
-      cancelUrl: validateAbsoluteUrl(
-        payload.cancelUrl,
-        "đường dẫn khi hủy thanh toán"
-      ),
-    };
-
-    try {
-      const response =
-        await axiosInstance.put(
-          `/api/quotations/${encodeURIComponent(
-            id
-          )}/confirm-and-pay`,
-          requestPayload,
-          {
-            signal: getSignal(options),
-
-            headers: {
-              Accept:
-                "text/plain, application/json",
-              "Content-Type":
-                "application/json",
-            },
-          }
-        );
-
-      return response.data;
-    } catch (error) {
-      if (!isCanceledRequest(error)) {
-        console.error(
-          "Lỗi xác nhận và tạo thanh toán:",
-          getApiErrorMessage(
-            error,
-            "Không thể tạo giao dịch thanh toán."
-          )
-        );
-      }
-
-      throw error;
-    }
-  };
+    throw error;
+  }
+};
 
 /**
  * Lấy URL thanh toán từ các kiểu response thường gặp.

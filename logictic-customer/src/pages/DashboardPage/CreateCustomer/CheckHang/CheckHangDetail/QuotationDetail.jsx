@@ -14,11 +14,6 @@ import { Descriptions, Image, Tag } from "antd";
 import {
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
 } from "@mui/material";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -58,6 +53,11 @@ import {
   confirmAndPayQuotationApi,
   getPaymentCheckoutUrl,
 } from "../../../../../api/OrderApi/purchaseRequestApi";
+
+import QuotationCancelDialog from "../../../../../components/DashboardComponents/CustomerKiguiComponents/QuotationPayments/CancelPayments/QuotationCancelDialog";
+import QuotationPaymentConfirmDialog, {
+  PAYMENT_METHODS,
+} from "../../../../../components/DashboardComponents/CustomerKiguiComponents/QuotationPayments/ConfirmPayments/QuotationPaymentConfirmDialog";
 
 import "./QuotationDetail.css";
 
@@ -1986,10 +1986,49 @@ const buildPaymentRedirectUrl = (paymentStatus, quotationId) => {
   redirectUrl.hash = "";
 
   redirectUrl.searchParams.set("payment", paymentStatus);
-
   redirectUrl.searchParams.set("quotationId", quotationId);
 
   return redirectUrl.toString();
+};
+
+/**
+ * Backend SePay có thể trả về:
+ * - URL tuyệt đối: https://api-vcl.../api/payments/sepay/checkout/{orderCode}
+ * - URL tương đối: /api/payments/sepay/checkout/{orderCode}
+ *
+ * Hàm này luôn chuyển kết quả thành URL tuyệt đối của API backend,
+ * tránh điều hướng nhầm sang domain của frontend.
+ */
+const resolveSePayCheckoutUrl = (apiResult) => {
+  const rawCheckoutUrl = String(
+    getPaymentCheckoutUrl(apiResult) || "",
+  ).trim();
+
+  if (!rawCheckoutUrl) {
+    return "";
+  }
+
+  try {
+    return new URL(rawCheckoutUrl).toString();
+  } catch {
+    const configuredApiBase = String(
+      import.meta.env.VITE_API_BASE_URL ||
+        "https://api-vcl.zushin.io.vn",
+    ).trim();
+
+    let apiOrigin = "https://api-vcl.zushin.io.vn";
+
+    try {
+      apiOrigin = new URL(
+        configuredApiBase,
+        window.location.origin,
+      ).origin;
+    } catch {
+      // Dùng domain API mặc định khi biến môi trường không hợp lệ.
+    }
+
+    return new URL(rawCheckoutUrl, `${apiOrigin}/`).toString();
+  }
 };
 
 /* =========================================================
@@ -2032,10 +2071,6 @@ const QuotationDetail = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
 
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-
-  const [rejectionReason, setRejectionReason] = useState("");
-
-  const [rejectionReasonError, setRejectionReasonError] = useState("");
 
   const copyResetTimerRef = useRef(null);
 
@@ -2350,8 +2385,6 @@ const QuotationDetail = () => {
       return;
     }
 
-    setRejectionReason("");
-    setRejectionReasonError("");
     setRejectDialogOpen(true);
   };
 
@@ -2361,22 +2394,11 @@ const QuotationDetail = () => {
     }
 
     setRejectDialogOpen(false);
-    setRejectionReason("");
-    setRejectionReasonError("");
   };
 
-  const handleRejectionReasonChange = (event) => {
-    const value = event.target.value.slice(0, 500);
-
-    setRejectionReason(value);
-
-    if (value.trim()) {
-      setRejectionReasonError("");
-    }
-  };
-
-  const handleConfirmRejectQuotation = async () => {
+  const handleConfirmRejectQuotation = async (reasonValue) => {
     const quotationId = quotation?.quotationId;
+    const reason = String(reasonValue || "").trim();
 
     if (!quotationId) {
       AuthNotify.error(
@@ -2386,15 +2408,11 @@ const QuotationDetail = () => {
       return;
     }
 
-    const reason = rejectionReason.trim();
-
-    if (!reason) {
-      setRejectionReasonError("Vui lòng nhập lý do từ chối báo giá.");
-      return;
-    }
-
     if (reason.length < 3) {
-      setRejectionReasonError("Lý do từ chối phải có ít nhất 3 ký tự.");
+      AuthNotify.warning(
+        "Lý do chưa hợp lệ",
+        "Lý do từ chối phải có ít nhất 3 ký tự.",
+      );
       return;
     }
 
@@ -2404,8 +2422,6 @@ const QuotationDetail = () => {
       const result = await rejectQuotationApi(quotationId, reason);
 
       setRejectDialogOpen(false);
-      setRejectionReason("");
-      setRejectionReasonError("");
 
       AuthNotify.success(
         "Từ chối báo giá thành công",
@@ -2415,7 +2431,13 @@ const QuotationDetail = () => {
         ),
       );
 
-      await reloadQuotationAfterAction();
+      navigate("/history/consignment", {
+        replace: true,
+        state: {
+          quotationRejected: true,
+          quotationId,
+        },
+      });
     } catch (error) {
       handleQuotationActionError(
         error,
@@ -2471,7 +2493,7 @@ const QuotationDetail = () => {
   const handleOpenPaymentDialog = () => {
     if (!quotation?.quotationId) {
       AuthNotify.error(
-        "Không thể tạo thanh toán",
+        "Không thể xác nhận thanh toán",
         "Không tìm thấy mã định danh báo giá.",
       );
       return;
@@ -2488,13 +2510,24 @@ const QuotationDetail = () => {
     setPaymentDialogOpen(false);
   };
 
-  const handleConfirmAndPay = async () => {
+  const handleConfirmAndPay = async (paymentMethodValue) => {
     const quotationId = quotation?.quotationId;
+    const paymentMethod = String(paymentMethodValue || "")
+      .trim()
+      .toUpperCase();
 
     if (!quotationId) {
       AuthNotify.error(
-        "Không thể tạo thanh toán",
+        "Không thể xác nhận báo giá",
         "Không tìm thấy mã định danh báo giá.",
+      );
+      return;
+    }
+
+    if (!Object.values(PAYMENT_METHODS).includes(paymentMethod)) {
+      AuthNotify.warning(
+        "Chưa chọn phương thức",
+        "Vui lòng chọn xác nhận offline hoặc thanh toán online qua SePay.",
       );
       return;
     }
@@ -2502,33 +2535,66 @@ const QuotationDetail = () => {
     try {
       setQuotationAction("pay");
 
+      /*
+       * OFFLINE:
+       * Chỉ xác nhận/chấp nhận báo giá thủ công.
+       * Không tạo giao dịch, không tạo checkout URL và không gọi SePay.
+       */
+      if (paymentMethod === PAYMENT_METHODS.OFFLINE) {
+        const result = await acceptQuotationApi(quotationId);
+
+        setPaymentDialogOpen(false);
+
+        AuthNotify.success(
+          "Xác nhận báo giá offline thành công",
+          getActionResponseMessage(
+            result,
+            "Báo giá đã được xác nhận. Bộ phận phụ trách sẽ liên hệ để xử lý thanh toán thủ công.",
+          ),
+        );
+
+        await reloadQuotationAfterAction();
+        return;
+      }
+
+      /*
+       * ONLINE:
+       * Backend chỉ nhận đúng paymentMethod = "SEPAY".
+       * Frontend nhận checkout URL rồi chuyển sang trang VietQR của backend.
+       */
       const result = await confirmAndPayQuotationApi(quotationId, {
         returnUrl: buildPaymentRedirectUrl("success", quotationId),
-
         cancelUrl: buildPaymentRedirectUrl("cancel", quotationId),
+        paymentMethod: "SEPAY",
       });
 
-      const checkoutUrl = getPaymentCheckoutUrl(result);
+      const checkoutUrl = resolveSePayCheckoutUrl(result);
 
       if (!checkoutUrl) {
-        throw new Error("API không trả về đường dẫn thanh toán PayOS.");
+        throw new Error(
+          "API không trả về đường dẫn checkout thanh toán SePay.",
+        );
       }
 
       setPaymentDialogOpen(false);
 
       AuthNotify.success(
-        "Tạo thanh toán thành công",
-        "Đang chuyển đến trang thanh toán PayOS.",
+        "Khởi tạo thanh toán SePay thành công",
+        "Đang chuyển đến trang quét VietQR để thanh toán tiền cọc 50%.",
       );
 
       window.location.assign(checkoutUrl);
     } catch (error) {
       handleQuotationActionError(
         error,
-        "Tạo thanh toán thất bại",
-        "Không thể tạo giao dịch thanh toán. Vui lòng thử lại.",
+        paymentMethod === PAYMENT_METHODS.OFFLINE
+          ? "Xác nhận báo giá offline thất bại"
+          : "Khởi tạo thanh toán SePay thất bại",
+        paymentMethod === PAYMENT_METHODS.OFFLINE
+          ? "Không thể xác nhận báo giá. Vui lòng thử lại."
+          : "Không thể mở trang thanh toán SePay. Vui lòng thử lại.",
       );
-
+    } finally {
       setQuotationAction("");
     }
   };
@@ -3732,12 +3798,22 @@ const QuotationDetail = () => {
 
             <strong>
               {canConfirmAndPay
-                ? "Xác nhận và thanh toán"
+                ? "Chọn xác nhận offline hoặc thanh toán SePay"
                 : "Xác nhận lựa chọn của bạn"}
             </strong>
 
             <small>
-              Tổng báo giá: <b>{formatMoney(displayTotalCost)}</b>
+              {canConfirmAndPay ? (
+                <>
+                  Tổng báo giá: <b>{formatMoney(displayTotalCost)}</b>
+                  {" · "}
+                  Tiền cọc: <b>{formatMoney(depositAmount)}</b>
+                </>
+              ) : (
+                <>
+                  Tổng báo giá: <b>{formatMoney(displayTotalCost)}</b>
+                </>
+              )}
             </small>
           </div>
 
@@ -3796,262 +3872,33 @@ const QuotationDetail = () => {
                 className="quotation-payment-button"
               >
                 {quotationAction === "pay"
-                  ? "Đang tạo thanh toán..."
-                  : "Xác nhận và thanh toán"}
+                  ? "Đang xác nhận..."
+                  : "Chọn cách xác nhận"}
               </Button>
             )}
           </div>
         </aside>
       )}
-      <Dialog
+      <QuotationCancelDialog
         open={rejectDialogOpen}
+        loading={quotationAction === "reject"}
+        consignmentCode={displayConsignmentCode}
+        totalAmount={displayTotalCost}
+        formatMoney={formatMoney}
         onClose={handleCloseRejectDialog}
-        disableEscapeKeyDown={quotationAction === "reject"}
-        fullWidth
-        maxWidth="sm"
-        className="quotation-quotation-dialog quotation-reject-dialog"
-        PaperProps={{
-          className:
-            "quotation-dialog-paper quotation-reject-dialog-paper",
-        }}
-      >
-        <DialogTitle className="quotation-dialog-title quotation-reject-dialog-title">
-          <div className="quotation-dialog-title-icon is-danger">
-            <CloseRoundedIcon />
-          </div>
+        onConfirm={handleConfirmRejectQuotation}
+      />
 
-          <div className="quotation-dialog-title-content">
-            <strong>
-              Từ chối báo giá
-            </strong>
-
-            <span>
-              Vui lòng nhập lý do để bộ phận phụ trách hỗ trợ bạn tốt hơn.
-            </span>
-          </div>
-        </DialogTitle>
-
-        <DialogContent className="quotation-dialog-content quotation-reject-dialog-content">
-          <div className="quotation-dialog-summary quotation-reject-summary">
-            <div>
-              <span>Mã vận đơn</span>
-
-              <strong>{displayConsignmentCode}</strong>
-            </div>
-
-            <div>
-              <span>Tổng báo giá</span>
-
-              <strong>{formatMoney(displayTotalCost)}</strong>
-            </div>
-          </div>
-
-          <TextField
-            autoFocus
-            fullWidth
-            multiline
-            minRows={4}
-            maxRows={7}
-            value={rejectionReason}
-            onChange={handleRejectionReasonChange}
-            error={Boolean(rejectionReasonError)}
-            helperText={
-              rejectionReasonError || `${rejectionReason.length}/500 ký tự`
-            }
-            disabled={quotationAction === "reject"}
-            label="Lý do từ chối"
-            placeholder="Ví dụ: Chi phí hiện tại chưa phù hợp với ngân sách của tôi..."
-            className="quotation-rejection-reason-field"
-            inputProps={{
-              maxLength: 500,
-            }}
-          />
-
-          <div className="quotation-reject-dialog-note">
-            <span>Lưu ý</span>
-
-            <p>
-              Sau khi xác nhận, báo giá sẽ chuyển sang trạng thái đã từ chối.
-            </p>
-          </div>
-        </DialogContent>
-
-        <DialogActions className="quotation-dialog-actions quotation-reject-dialog-actions">
-          <Button
-            type="button"
-            variant="outlined"
-            color="inherit"
-            onClick={handleCloseRejectDialog}
-            disabled={quotationAction === "reject"}
-            className="quotation-reject-cancel-button"
-          >
-            Quay lại
-          </Button>
-
-          <Button
-            type="button"
-            variant="contained"
-            startIcon={
-              quotationAction === "reject" ? (
-                <CircularProgress size={17} thickness={5} />
-              ) : (
-                <CloseRoundedIcon />
-              )
-            }
-            onClick={handleConfirmRejectQuotation}
-            disabled={quotationAction === "reject" || !rejectionReason.trim()}
-            className="quotation-reject-confirm-button"
-          >
-            {quotationAction === "reject"
-              ? "Đang từ chối..."
-              : "Xác nhận từ chối"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
+      <QuotationPaymentConfirmDialog
         open={paymentDialogOpen}
+        loading={quotationAction === "pay"}
+        consignmentCode={displayConsignmentCode}
+        totalAmount={displayTotalCost}
+        depositRate={depositRate}
+        formatMoney={formatMoney}
         onClose={handleClosePaymentDialog}
-        disableEscapeKeyDown={quotationAction === "pay"}
-        fullWidth
-        maxWidth="sm"
-        className="quotation-quotation-dialog quotation-payment-dialog"
-        PaperProps={{
-          className:
-            "quotation-dialog-paper quotation-payment-dialog-paper",
-        }}
-      >
-        <DialogTitle className="quotation-dialog-title quotation-payment-dialog-title">
-          <div className="quotation-dialog-title-icon is-payment">
-            <PaymentRoundedIcon />
-          </div>
-
-          <div className="quotation-dialog-title-content">
-            <strong>
-              Xác nhận đặt cọc
-            </strong>
-
-            <span>
-              Bạn sẽ thanh toán trước 50% tổng giá trị đơn hàng qua PayOS.
-            </span>
-          </div>
-        </DialogTitle>
-
-        <DialogContent className="quotation-dialog-content quotation-payment-dialog-content">
-          <div className="quotation-dialog-summary quotation-payment-summary">
-            <div className="is-consignment">
-              <span>
-                Mã vận đơn
-              </span>
-
-              <strong>
-                {displayConsignmentCode}
-              </strong>
-            </div>
-
-            <div>
-              <span>
-                Tổng giá trị đơn hàng
-              </span>
-
-              <strong>
-                {formatMoney(
-                  displayTotalCost
-                )}
-              </strong>
-            </div>
-
-            <div className="is-deposit">
-              <span>
-                Tiền cọc cần thanh toán
-              </span>
-
-              <strong>
-                {formatMoney(
-                  depositAmount
-                )}
-              </strong>
-
-              <small>
-                Tương đương 50% tổng giá trị đơn hàng
-              </small>
-            </div>
-          </div>
-
-          <div className="quotation-payment-method">
-            <div className="quotation-payment-method-icon">
-              <PaymentRoundedIcon />
-            </div>
-
-            <div>
-              <span>
-                Phương thức thanh toán
-              </span>
-
-              <strong>
-                Thanh toán tiền cọc qua PayOS
-              </strong>
-
-              <small>
-                Khoản thanh toán này tương ứng 50% tổng giá trị đơn hàng.
-              </small>
-            </div>
-          </div>
-
-          <div className="quotation-payment-dialog-note">
-            <InfoOutlinedIcon />
-
-            <div>
-              <strong>
-                Xác nhận khoản tiền cọc 50%
-              </strong>
-
-              <p>
-                Bạn thanh toán trước {formatMoney(
-                  depositAmount
-                )}. Số tiền còn lại là {formatMoney(
-                  remainingAmount
-                )} và sẽ được thanh toán theo quy trình của đơn hàng.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-
-        <DialogActions className="quotation-dialog-actions quotation-payment-dialog-actions">
-          <Button
-            type="button"
-            variant="outlined"
-            color="inherit"
-            onClick={handleClosePaymentDialog}
-            disabled={quotationAction === "pay"}
-            className="quotation-dialog-cancel-button"
-          >
-            Quay lại
-          </Button>
-
-          <Button
-            type="button"
-            variant="contained"
-            startIcon={
-              quotationAction === "pay" ? (
-                <CircularProgress
-                  size={17}
-                  thickness={5}
-                />
-              ) : (
-                <PaymentRoundedIcon />
-              )
-            }
-            onClick={handleConfirmAndPay}
-            disabled={quotationAction === "pay"}
-            className="quotation-payment-confirm-button"
-          >
-            {quotationAction === "pay"
-              ? "Đang tạo giao dịch..."
-              : "Thanh toán tiền cọc"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirmAndPay}
+      />
     </div>
   );
 };
