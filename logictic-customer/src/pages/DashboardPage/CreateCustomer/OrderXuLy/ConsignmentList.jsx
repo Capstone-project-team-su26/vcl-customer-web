@@ -29,7 +29,6 @@ import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import SearchIcon from "@mui/icons-material/Search";
 
 import { getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
-import { getConsignmentStatusesApi } from "../../../../api/OrderApi/consignmentStatusApi";
 import AuthNotify from "../../../../utils/AuthNotify";
 
 import {
@@ -194,105 +193,15 @@ const formatStatusCode = (status) =>
     .trim()
     .replaceAll("_", " ");
 
-const normalizeStatusOptions = (apiResult) => {
-  const candidates = [
-    apiResult,
-    apiResult?.data,
-    apiResult?.items,
-    apiResult?.results,
-    apiResult?.statuses,
-    apiResult?.data?.items,
-    apiResult?.data?.results,
-    apiResult?.data?.statuses,
-  ];
+const PENDING_REVIEW_STATUS = "PENDING_REVIEW";
 
-  const rawStatuses =
-    candidates.find(Array.isArray) || [];
+const normalizeStatusCode = (status) =>
+  String(status || "")
+    .trim()
+    .toUpperCase();
 
-  return rawStatuses
-    .map((item) => {
-      if (
-        typeof item === "string" ||
-        typeof item === "number"
-      ) {
-        const value = String(item).trim();
-
-        return {
-          value,
-          label: formatStatusCode(value),
-        };
-      }
-
-      const value = String(
-        item?.value ||
-          item?.code ||
-          item?.status ||
-          item?.statusCode ||
-          item?.id ||
-          ""
-      ).trim();
-
-      const label = String(
-        item?.label ||
-          item?.name ||
-          item?.displayName ||
-          item?.statusName ||
-          item?.description ||
-          formatStatusCode(value)
-      ).trim();
-
-      return {
-        value,
-        label,
-      };
-    })
-    .filter(
-      (option) =>
-        option.value && option.label
-    );
-};
-
-const PENDING_APPROVAL_STATUS_KEYWORDS = [
-  "cho duyet",
-  "cho_duyet",
-  "cho-duyet",
-  "chờ duyệt",
-  "pending approval",
-  "pending_approval",
-  "pending-approval",
-  "approval pending",
-  "awaiting approval",
-  "awaiting_approval",
-  "waiting approval",
-  "waiting_for_approval",
-  "wait for approval",
-  "wait_for_approval",
-];
-
-const isPendingApprovalStatus = (
-  status,
-  statusLabelMap = new Map()
-) => {
-  const rawStatus = String(status || "").trim();
-
-  if (!rawStatus) {
-    return false;
-  }
-
-  const normalizedStatusKey = rawStatus.toUpperCase();
-  const statusLabel =
-    statusLabelMap.get(normalizedStatusKey) || "";
-
-  const searchableStatus = normalizeText(
-    `${rawStatus} ${formatStatusCode(rawStatus)} ${statusLabel}`
-  ).replace(/\s+/g, " ");
-
-  return PENDING_APPROVAL_STATUS_KEYWORDS.some((keyword) =>
-    searchableStatus.includes(
-      normalizeText(keyword).replace(/\s+/g, " ")
-    )
-  );
-};
+const isPendingReviewStatus = (status) =>
+  normalizeStatusCode(status) === PENDING_REVIEW_STATUS;
 
 
 const normalizeApiTimeToUtc = (value) => {
@@ -365,16 +274,17 @@ const ConsignmentList = () => {
   const [searchInput, setSearchInput] = useState("");
   const [dateRangeInput, setDateRangeInput] =
     useState(null);
-  const [statusOptions, setStatusOptions] =
-    useState([]);
-  const [loadingStatuses, setLoadingStatuses] =
-    useState(false);
-
   const [pageNumber, setPageNumber] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [copiedTrackingCode, setCopiedTrackingCode] =
     useState("");
   const copyResetTimerRef = useRef(null);
+
+  /*
+   * Chỉ bật khi người dùng chủ động bấm LÀM MỚI.
+   * Lần tải đầu trang không hiện toast thành công để tránh gây nhiễu.
+   */
+  const manualRefreshRef = useRef(false);
 
 
   const fetchAllConsignments = useCallback(
@@ -396,11 +306,24 @@ const ConsignmentList = () => {
         const items =
           await fetchAllConsignments(signal);
 
-        const normalizedItems = items.map(
-          normalizeConsignmentTime
-        );
+        const pendingReviewItems = items
+          .map(normalizeConsignmentTime)
+          .filter((item) =>
+            isPendingReviewStatus(item?.status)
+          );
 
-        setConsignments(normalizedItems);
+        setConsignments(pendingReviewItems);
+
+        if (manualRefreshRef.current) {
+          AuthNotify.success(
+            "Tải lại dữ liệu thành công",
+            `Đã cập nhật ${pendingReviewItems.length.toLocaleString(
+              "vi-VN"
+            )} yêu cầu ký gửi chờ duyệt.`
+          );
+
+          manualRefreshRef.current = false;
+        }
       } catch (error) {
         if (
           axios.isCancel(error) ||
@@ -414,8 +337,15 @@ const ConsignmentList = () => {
           error
         );
 
+        const isManualRefresh =
+          manualRefreshRef.current;
+
+        manualRefreshRef.current = false;
+
         AuthNotify.error(
-          "Không tải được danh sách ký gửi",
+          isManualRefresh
+            ? "Tải lại dữ liệu thất bại"
+            : "Không tải được danh sách ký gửi",
           error?.response?.data?.message ||
             error?.message ||
             "Không thể tải danh sách ký gửi."
@@ -441,57 +371,6 @@ const ConsignmentList = () => {
     };
   }, [fetchConsignments, refreshKey]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchStatuses = async () => {
-      try {
-        setLoadingStatuses(true);
-
-        const result =
-          await getConsignmentStatusesApi({
-            signal: controller.signal,
-          });
-
-        setStatusOptions(
-          normalizeStatusOptions(result)
-        );
-      } catch (error) {
-        if (
-          axios.isCancel(error) ||
-          error?.code === "ERR_CANCELED" ||
-          error?.name === "CanceledError" ||
-          error?.name === "AbortError"
-        ) {
-          return;
-        }
-
-        console.error(
-          "Lỗi khi lấy danh sách trạng thái:",
-          error
-        );
-
-        AuthNotify.error(
-          "Không tải được trạng thái",
-          error?.response?.data?.message ||
-            error?.message ||
-            "Không thể tải danh sách trạng thái."
-        );
-
-        setStatusOptions([]);
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoadingStatuses(false);
-        }
-      }
-    };
-
-    fetchStatuses();
-
-    return () => {
-      controller.abort();
-    };
-  }, [refreshKey]);
 
   useEffect(
     () => () => {
@@ -502,16 +381,6 @@ const ConsignmentList = () => {
     []
   );
 
-  const statusLabelMap = useMemo(() => {
-    return new Map(
-      statusOptions.map((option) => [
-        String(option.value)
-          .trim()
-          .toUpperCase(),
-        option.label,
-      ])
-    );
-  }, [statusOptions]);
 
 
 
@@ -589,13 +458,7 @@ const ConsignmentList = () => {
       ) || null;
 
     return consignments.filter((item) => {
-      const matchesPendingApprovalStatus =
-        isPendingApprovalStatus(
-          item.status,
-          statusLabelMap
-        );
-
-      if (!matchesPendingApprovalStatus) {
+      if (!isPendingReviewStatus(item?.status)) {
         return false;
       }
 
@@ -651,7 +514,6 @@ const ConsignmentList = () => {
     consignments,
     dateRangeInput,
     searchInput,
-    statusLabelMap,
   ]);
 
 
@@ -690,13 +552,43 @@ const ConsignmentList = () => {
   };
 
   const handleResetClick = () => {
+    if (loading) {
+      return;
+    }
+
+    /*
+     * Đánh dấu đây là lần tải thủ công để sau khi API hoàn tất
+     * mới hiển thị thông báo thành công.
+     */
+    manualRefreshRef.current = true;
+
+    /*
+     * Cập nhật state trước để chắc chắn useEffect gọi lại API.
+     * Không gọi trực tiếp AuthNotify.info vì một số phiên bản
+     * AuthNotify của dự án không export phương thức info.
+     */
     setSearchInput("");
     setDateRangeInput(null);
     setPageNumber(1);
+    setRefreshKey((previous) => previous + 1);
 
-    setRefreshKey(
-      (previous) => previous + 1
-    );
+    /*
+     * Chỉ gọi thông báo bắt đầu nếu utility thực sự hỗ trợ info.
+     * Lỗi thông báo không được phép chặn quá trình tải API.
+     */
+    try {
+      if (typeof AuthNotify?.info === "function") {
+        AuthNotify.info(
+          "Đang tải lại dữ liệu",
+          "Hệ thống đang cập nhật danh sách yêu cầu ký gửi chờ duyệt."
+        );
+      }
+    } catch (notifyError) {
+      console.warn(
+        "Không thể hiển thị thông báo đang tải:",
+        notifyError
+      );
+    }
   };
 
   const handleCopyTrackingCode = async (
@@ -796,17 +688,13 @@ const ConsignmentList = () => {
 
 
   const getStatusLabel = (status) => {
-    const normalizedStatus = String(
-      status || ""
-    )
-      .trim()
-      .toUpperCase();
+    const normalizedStatus = normalizeStatusCode(status);
 
-    return (
-      statusLabelMap.get(normalizedStatus) ||
-      formatStatusCode(normalizedStatus) ||
-      "-"
-    );
+    if (normalizedStatus === PENDING_REVIEW_STATUS) {
+      return "Chờ duyệt";
+    }
+
+    return formatStatusCode(normalizedStatus) || "-";
   };
 
   const getStatusClassName = (status) => {
@@ -933,11 +821,19 @@ const ConsignmentList = () => {
             startIcon={<AutorenewIcon />}
             onClick={handleResetClick}
             disabled={
-              loading || loadingStatuses
+              loading
             }
-            className="filter-reset-button"
+            className={[
+              "filter-reset-button",
+              (loading) &&
+                "is-loading",
+            ]
+              .filter(Boolean)
+              .join(" ")}
           >
-            LÀM MỚI
+            {loading
+              ? "ĐANG TẢI..."
+              : "LÀM MỚI"}
           </Button>
         </div>
       </div>
@@ -947,8 +843,7 @@ const ConsignmentList = () => {
           <CircularProgress size={38} />
 
           <div>
-            Đang cập nhật trạng thái dữ
-            liệu...
+            Đang tải lại danh sách yêu cầu ký gửi chờ duyệt...
           </div>
         </div>
       ) : (

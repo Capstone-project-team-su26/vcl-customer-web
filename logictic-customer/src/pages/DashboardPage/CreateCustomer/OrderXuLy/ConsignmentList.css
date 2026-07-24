@@ -52,7 +52,7 @@
       #f6f8fc;
   }
   
-  /* Äá»“ng bá»™ font cho táº¥t cáº£ thĂ nh pháº§n bĂªn trong */
+  /* Ă„ÂĂ¡Â»â€œng bĂ¡Â»â„¢ font cho tĂ¡ÂºÂ¥t cĂ¡ÂºÂ£ thÄ‚ nh phĂ¡ÂºÂ§n bÄ‚Âªn trong */
   
   .vcl-container *,
   .vcl-container *::before,
@@ -1146,8 +1146,8 @@
     }
   
     /*
-     * DĂ¹ng 16px trĂªn Ä‘iá»‡n thoáº¡i Ä‘á»ƒ trĂ¬nh duyá»‡t iOS
-     * khĂ´ng tá»± phĂ³ng to khi ngÆ°á»i dĂ¹ng nháº­p liá»‡u.
+     * DÄ‚Â¹ng 16px trÄ‚Âªn Ă„â€˜iĂ¡Â»â€¡n thoĂ¡ÂºÂ¡i Ă„â€˜Ă¡Â»Æ’ trÄ‚Â¬nh duyĂ¡Â»â€¡t iOS
+     * khÄ‚Â´ng tĂ¡Â»Â± phÄ‚Â³ng to khi ngĂ†Â°Ă¡Â»Âi dÄ‚Â¹ng nhĂ¡ÂºÂ­p liĂ¡Â»â€¡u.
      */
   
     .filter-search-input .ant-input,
@@ -1335,7 +1335,7 @@
   }
 
 /* =========================================================
-   CONSIGNMENT CARD â€” STABLE HEADER, COPY CODE, PRODUCT INFO
+   CONSIGNMENT CARD Ă¢â‚¬â€ STABLE HEADER, COPY CODE, PRODUCT INFO
    ========================================================= */
 
 .vcl-container .consignment-card {
@@ -1668,7 +1668,7 @@
   }
 }
 /* =========================================================
-   PRODUCT NAME LIST â€” TĂCH NHIá»€U Sáº¢N PHáº¨M THĂ€NH Tá»ªNG DĂ’NG
+   PRODUCT NAME LIST Ă¢â‚¬â€ TÄ‚ÂCH NHIĂ¡Â»â‚¬U SĂ¡ÂºÂ¢N PHĂ¡ÂºÂ¨M THÄ‚â‚¬NH TĂ¡Â»ÂªNG DÄ‚â€™NG
    ========================================================= */
 
 .vcl-container .product-name-group {
@@ -1834,5 +1834,337 @@
 @media (prefers-reduced-motion: reduce) {
   .vcl-container .product-name-item {
     transition: none;
+  }
+}
+/* =========================================================
+   PREMIUM REFRESH FEEDBACK + STATUS COLORS
+   Chá»‰ ghi Ä‘Ă¨ nĂºt lĂ m má»›i vĂ  badge tráº¡ng thĂ¡i.
+   ========================================================= */
+
+.vcl-container .filter-reset-button.is-loading {
+  color: #1d4ed8 !important;
+  background:
+    linear-gradient(
+      135deg,
+      #eff6ff,
+      #dbeafe
+    ) !important;
+  border-color: #93c5fd !important;
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.08) !important;
+}
+
+.vcl-container
+  .filter-reset-button.is-loading
+  .MuiButton-startIcon
+  svg {
+  animation: vclRefreshSpin 0.85s linear infinite;
+}
+
+@keyframes vclRefreshSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Khung chung cá»§a tráº¡ng thĂ¡i */
+.vcl-container .tag-status-header,
+.vcl-container .status-badge-center {
+  position: relative;
+  overflow: hidden;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 30px;
+  padding: 6px 12px;
+
+  color: #475569;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #f1f5f9
+    );
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+
+  font-size: 11.5px;
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  box-shadow:
+    0 5px 14px rgba(15, 23, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.vcl-container .tag-status-header::before,
+.vcl-container .status-badge-center::before {
+  content: "";
+
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+
+  background: currentColor;
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 4px rgba(148, 163, 184, 0.16);
+}
+
+.vcl-container .tag-status-header:hover,
+.vcl-container .status-badge-center:hover {
+  transform: translateY(-1px);
+}
+
+/* Chá» duyá»‡t / chá» xem xĂ©t */
+.vcl-container .status-pending,
+.vcl-container .status-pending-review,
+.vcl-container .status-pending-approval,
+.vcl-container .status-awaiting-approval,
+.vcl-container .status-waiting-for-approval {
+  color: #b45309 !important;
+  background:
+    linear-gradient(
+      145deg,
+      #fffbeb,
+      #fef3c7
+    ) !important;
+  border-color: #fcd34d !important;
+
+  box-shadow:
+    0 7px 18px rgba(217, 119, 6, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-pending::before,
+.vcl-container .status-pending-review::before,
+.vcl-container .status-pending-approval::before,
+.vcl-container .status-awaiting-approval::before,
+.vcl-container .status-waiting-for-approval::before {
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.18);
+
+  animation: vclStatusPulse 1.8s ease-in-out infinite;
+}
+
+/* ÄĂ£ gá»­i bĂ¡o giĂ¡ / Ä‘Ă£ bĂ¡o giĂ¡ */
+.vcl-container .status-quotation-sent,
+.vcl-container .status-quoted,
+.vcl-container .status-waiting-customer-confirmation {
+  color: #7c3aed !important;
+  background:
+    linear-gradient(
+      145deg,
+      #faf5ff,
+      #ede9fe
+    ) !important;
+  border-color: #c4b5fd !important;
+
+  box-shadow:
+    0 7px 18px rgba(124, 58, 237, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-quotation-sent::before,
+.vcl-container .status-quoted::before,
+.vcl-container
+  .status-waiting-customer-confirmation::before {
+  box-shadow:
+    0 0 0 4px rgba(124, 58, 237, 0.15);
+}
+
+/* Chá» cá»c / chá» thanh toĂ¡n */
+.vcl-container .status-waiting-deposit,
+.vcl-container .status-payment-pending,
+.vcl-container .status-waiting-payment {
+  color: #c2410c !important;
+  background:
+    linear-gradient(
+      145deg,
+      #fff7ed,
+      #ffedd5
+    ) !important;
+  border-color: #fdba74 !important;
+
+  box-shadow:
+    0 7px 18px rgba(234, 88, 12, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-waiting-deposit::before,
+.vcl-container .status-payment-pending::before,
+.vcl-container .status-waiting-payment::before {
+  box-shadow:
+    0 0 0 4px rgba(249, 115, 22, 0.16);
+}
+
+/* Äang xá»­ lĂ½ */
+.vcl-container .status-processing,
+.vcl-container .status-in-progress,
+.vcl-container .status-approved,
+.vcl-container .status-confirmed,
+.vcl-container .status-accepted {
+  color: #1d4ed8 !important;
+  background:
+    linear-gradient(
+      145deg,
+      #eff6ff,
+      #dbeafe
+    ) !important;
+  border-color: #93c5fd !important;
+
+  box-shadow:
+    0 7px 18px rgba(37, 99, 235, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-processing::before,
+.vcl-container .status-in-progress::before,
+.vcl-container .status-approved::before,
+.vcl-container .status-confirmed::before,
+.vcl-container .status-accepted::before {
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.16);
+}
+
+/* ÄĂ£ nháº­n kho */
+.vcl-container .status-received,
+.vcl-container .status-at-warehouse,
+.vcl-container .status-warehouse-received {
+  color: #0f766e !important;
+  background:
+    linear-gradient(
+      145deg,
+      #f0fdfa,
+      #ccfbf1
+    ) !important;
+  border-color: #5eead4 !important;
+
+  box-shadow:
+    0 7px 18px rgba(13, 148, 136, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-received::before,
+.vcl-container .status-at-warehouse::before,
+.vcl-container .status-warehouse-received::before {
+  box-shadow:
+    0 0 0 4px rgba(20, 184, 166, 0.16);
+}
+
+/* Äang váº­n chuyá»ƒn */
+.vcl-container .status-in-transit,
+.vcl-container .status-shipping,
+.vcl-container .status-out-for-delivery {
+  color: #0369a1 !important;
+  background:
+    linear-gradient(
+      145deg,
+      #f0f9ff,
+      #e0f2fe
+    ) !important;
+  border-color: #7dd3fc !important;
+
+  box-shadow:
+    0 7px 18px rgba(2, 132, 199, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-in-transit::before,
+.vcl-container .status-shipping::before,
+.vcl-container .status-out-for-delivery::before {
+  box-shadow:
+    0 0 0 4px rgba(14, 165, 233, 0.16);
+}
+
+/* HoĂ n thĂ nh / giao thĂ nh cĂ´ng */
+.vcl-container .status-delivered,
+.vcl-container .status-completed,
+.vcl-container .status-success {
+  color: #047857 !important;
+  background:
+    linear-gradient(
+      145deg,
+      #ecfdf5,
+      #d1fae5
+    ) !important;
+  border-color: #6ee7b7 !important;
+
+  box-shadow:
+    0 7px 18px rgba(5, 150, 105, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-delivered::before,
+.vcl-container .status-completed::before,
+.vcl-container .status-success::before {
+  box-shadow:
+    0 0 0 4px rgba(16, 185, 129, 0.16);
+}
+
+/* Tá»« chá»‘i / há»§y */
+.vcl-container .status-rejected,
+.vcl-container .status-cancelled,
+.vcl-container .status-canceled,
+.vcl-container .status-failed {
+  color: #be123c !important;
+  background:
+    linear-gradient(
+      145deg,
+      #fff1f2,
+      #ffe4e6
+    ) !important;
+  border-color: #fda4af !important;
+
+  box-shadow:
+    0 7px 18px rgba(225, 29, 72, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.vcl-container .status-rejected::before,
+.vcl-container .status-cancelled::before,
+.vcl-container .status-canceled::before,
+.vcl-container .status-failed::before {
+  box-shadow:
+    0 0 0 4px rgba(244, 63, 94, 0.15);
+}
+
+@keyframes vclStatusPulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vcl-container
+    .filter-reset-button.is-loading
+    .MuiButton-startIcon
+    svg,
+  .vcl-container .status-pending::before,
+  .vcl-container .status-pending-review::before,
+  .vcl-container .status-pending-approval::before,
+  .vcl-container .status-awaiting-approval::before,
+  .vcl-container
+    .status-waiting-for-approval::before {
+    animation: none;
   }
 }
