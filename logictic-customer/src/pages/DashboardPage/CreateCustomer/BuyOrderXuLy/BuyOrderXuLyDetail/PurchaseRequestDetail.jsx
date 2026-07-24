@@ -24,8 +24,15 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import PersonIcon from "@mui/icons-material/Person";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import FactCheckIcon from "@mui/icons-material/FactCheck";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import SecurityIcon from "@mui/icons-material/Security";
+import AllInboxIcon from "@mui/icons-material/AllInbox";
+import AltRouteIcon from "@mui/icons-material/AltRoute";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import CloseIcon from "@mui/icons-material/Close";
 
 import AuthNotify from "../../../../../utils/AuthNotify";
 
@@ -35,27 +42,21 @@ import {
   formatVietnamDateTime,
 } from "../../../../../utils/timeUtc";
 
-import {
-  
-  getPurchaseRequestDetailApi,
-} from "../../../../../api/OrderApi/purchaseRequestApi";
-import {getProductTypesApi} from "../../../../../api/OrderApi/consignmentApi"
+import { getPurchaseRequestDetailApi } from "../../../../../api/OrderApi/purchaseRequestApi";
+import { getProductTypesApi } from "../../../../../api/OrderApi/consignmentApi";
 
 import "./PurchaseRequestDetail.css";
 
 /* ================= HELPERS ================= */
 
-const isCanceledRequest = (error) => {
-  return (
-    error?.code === "ERR_CANCELED" ||
-    error?.name === "CanceledError" ||
-    error?.name === "AbortError"
-  );
-};
+const isCanceledRequest = (error) =>
+  error?.code === "ERR_CANCELED" ||
+  error?.name === "CanceledError" ||
+  error?.name === "AbortError";
 
 const getApiErrorMessage = (
   error,
-  fallbackMessage
+  fallbackMessage = "Đã xảy ra lỗi.",
 ) => {
   const responseData = error?.response?.data;
 
@@ -63,7 +64,7 @@ const getApiErrorMessage = (
     typeof responseData === "string" &&
     responseData.trim()
   ) {
-    return responseData;
+    return responseData.trim();
   }
 
   return (
@@ -75,55 +76,78 @@ const getApiErrorMessage = (
   );
 };
 
-const normalizeStatus = (status) => {
-  return String(status || "")
+const safeText = (value, fallback = "-") => {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+};
+
+const normalizeStatus = (status) =>
+  String(status || "")
     .trim()
     .toUpperCase();
+
+const STATUS_LABELS = {
+  PENDING_REVIEW: "Chờ duyệt",
+  QUOTED: "Đã báo giá",
+  QUOTATION_SENT: "Đã gửi báo giá",
+  APPROVED: "Đã duyệt",
+  ACCEPTED: "Đã chấp nhận",
+  REJECTED: "Từ chối",
+  CANCELLED: "Đã hủy",
+  CANCELED: "Đã hủy",
+  PROCESSING: "Đang xử lý",
+  COMPLETED: "Hoàn tất",
 };
 
 const getStatusLabel = (status) => {
-  const normalizedStatus =
-    normalizeStatus(status);
-
-  if (normalizedStatus === "PENDING_REVIEW") {
-    return "Chờ duyệt";
-  }
-
-  if (normalizedStatus === "QUOTED") {
-    return "Đã báo giá";
-  }
-
-  if (normalizedStatus === "APPROVED") {
-    return "Đã duyệt";
-  }
-
-  if (normalizedStatus === "REJECTED") {
-    return "Từ chối";
-  }
-
-  if (normalizedStatus === "CANCELLED") {
-    return "Đã hủy";
-  }
+  const normalizedStatus = normalizeStatus(status);
 
   return (
+    STATUS_LABELS[normalizedStatus] ||
     normalizedStatus
       .replaceAll("_", " ")
-      .replaceAll("-", " ") || "-"
+      .replaceAll("-", " ") ||
+    "-"
   );
 };
 
-const getStatusClassName = (status) => {
-  return String(status || "unknown")
+const getStatusClassName = (status) =>
+  String(status || "unknown")
     .trim()
     .toLowerCase()
     .replaceAll("_", "-");
+
+const getShippingOptionLabel = (value) => {
+  const normalized = normalizeStatus(value);
+
+  if (
+    normalized === "STANDARD" ||
+    normalized.includes("TIEU_CHUAN")
+  ) {
+    return "Tiêu chuẩn";
+  }
+
+  if (
+    normalized === "EXPRESS" ||
+    normalized.includes("HOA_TOC")
+  ) {
+    return "Hỏa tốc";
+  }
+
+  if (
+    normalized === "ECONOMY" ||
+    normalized.includes("TIET_KIEM")
+  ) {
+    return "Tiết kiệm";
+  }
+
+  return safeText(value, "Chưa cập nhật");
 };
 
-const normalizeApiTimeToUtc = (value) => {
-  return apiToUtcIso(value, {
+const normalizeApiTimeToUtc = (value) =>
+  apiToUtcIso(value, {
     apiTimeMode: "utc",
   });
-};
 
 const normalizePurchaseRequestTime = (item) => {
   if (!item) {
@@ -141,10 +165,14 @@ const normalizePurchaseRequestTime = (item) => {
     items: Array.isArray(item.items)
       ? item.items.map((product) => ({
           ...product,
-          createdAtUtc: normalizeApiTimeToUtc(product.createdAt),
-          updatedAtUtc: normalizeApiTimeToUtc(product.updatedAt),
+          createdAtUtc: normalizeApiTimeToUtc(
+            product.createdAt,
+          ),
+          updatedAtUtc: normalizeApiTimeToUtc(
+            product.updatedAt,
+          ),
         }))
-      : item.items,
+      : [],
   };
 };
 
@@ -174,15 +202,33 @@ const formatDateTimeUtcTitle = (dateString) => {
   })}`;
 };
 
-const safeText = (value, fallback = "-") => {
-  const text = String(value ?? "").trim();
+const formatNumber = (value) => {
+  const number = Number(value);
 
-  return text || fallback;
+  return Number.isFinite(number)
+    ? new Intl.NumberFormat("vi-VN").format(number)
+    : "0";
 };
 
-const getDetailData = (result) => {
-  return result?.data ?? result ?? null;
+const formatCurrency = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(number);
 };
+
+const getDetailData = (result) =>
+  result?.data?.data ??
+  result?.data ??
+  result ??
+  null;
 
 const getProductTypeItems = (result) => {
   const responseData = result?.data ?? result;
@@ -201,45 +247,172 @@ const getProductTypeItems = (result) => {
   return Array.isArray(items) ? items : [];
 };
 
-const getProductTypeId = (productType) => {
-  return String(
+const getProductTypeId = (productType) =>
+  String(
     productType?.productTypeId ??
       productType?.id ??
       productType?.code ??
       productType?.value ??
-      ""
+      "",
   ).trim();
-};
 
-const getProductTypeName = (productType) => {
-  return safeText(
+const getProductTypeName = (productType) =>
+  safeText(
     productType?.productTypeName ??
       productType?.name ??
       productType?.label ??
       productType?.description,
-    getProductTypeId(productType) || "Chưa cập nhật"
+    getProductTypeId(productType) || "Chưa cập nhật",
   );
-};
 
-const getItemProductTypeKey = (item) => {
-  return String(
+const getItemProductTypeKey = (item) =>
+  String(
     item?.productTypeId ??
       item?.productType?.productTypeId ??
       item?.productType?.id ??
       item?.productType?.value ??
-      item?.productType ??
       item?.productTypeCode ??
-      ""
+      "",
+  ).trim();
+
+const getItemProductTypeLabel = (
+  item,
+  productTypeNameMap,
+) => {
+  if (
+    typeof item?.productType === "string" &&
+    item.productType.trim()
+  ) {
+    return item.productType.trim();
+  }
+
+  if (
+    item?.productType &&
+    typeof item.productType === "object"
+  ) {
+    const directName = safeText(
+      item.productType?.productTypeName ??
+        item.productType?.name ??
+        item.productType?.label,
+      "",
+    );
+
+    if (directName) {
+      return directName;
+    }
+  }
+
+  const key = getItemProductTypeKey(item);
+
+  return (
+    productTypeNameMap?.get(key) ||
+    safeText(
+      item?.productTypeName || key,
+      "Chưa cập nhật",
+    )
+  );
+};
+
+const normalizeImageUrl = (value) => {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  return String(
+    value?.url ??
+      value?.imageUrl ??
+      value?.fileUrl ??
+      value?.previewUrl ??
+      "",
   ).trim();
 };
 
-const getBooleanLabel = (value) => {
-  return value ? "Có" : "Không";
+const getItemImageUrls = (item) => {
+  const candidates = [
+    ...(Array.isArray(item?.imageUrls)
+      ? item.imageUrls
+      : []),
+    ...(Array.isArray(item?.images)
+      ? item.images
+      : []),
+    item?.imageUrl,
+    item?.image,
+  ];
+
+  return Array.from(
+    new Set(
+      candidates
+        .map(normalizeImageUrl)
+        .filter(Boolean),
+    ),
+  );
 };
 
-const getBooleanClassName = (value) => {
-  return value ? "is-yes" : "is-no";
+const truncateMiddle = (
+  value,
+  maxLength = 76,
+) => {
+  const text = String(value || "").trim();
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const sideLength = Math.floor(
+    (maxLength - 3) / 2,
+  );
+
+  return `${text.slice(0, sideLength)}...${text.slice(
+    -sideLength,
+  )}`;
 };
+
+const getCompactLinkData = (value) => {
+  const fullUrl = String(value || "").trim();
+
+  if (!fullUrl) {
+    return {
+      fullUrl: "",
+      domain: "Không có website",
+      path: "Không có link sản phẩm",
+    };
+  }
+
+  try {
+    const url = new URL(fullUrl);
+    const domain = url.hostname.replace(/^www\./, "");
+
+    let decodedPath = url.pathname || "/";
+
+    try {
+      decodedPath = decodeURIComponent(decodedPath);
+    } catch {
+      // Giữ nguyên pathname nếu URL có chuỗi mã hóa không hợp lệ.
+    }
+
+    const compactPath = decodedPath === "/"
+      ? "Trang sản phẩm"
+      : truncateMiddle(decodedPath, 82);
+
+    return {
+      fullUrl,
+      domain,
+      path: compactPath,
+    };
+  } catch {
+    return {
+      fullUrl,
+      domain: "Liên kết sản phẩm",
+      path: truncateMiddle(fullUrl, 82),
+    };
+  }
+};
+
+const getBooleanLabel = (value) =>
+  value ? "Có" : "Không";
+
+const getBooleanClassName = (value) =>
+  value ? "is-yes" : "is-no";
 
 const openExternalLink = (url) => {
   const link = String(url || "").trim();
@@ -251,7 +424,7 @@ const openExternalLink = (url) => {
   window.open(
     link,
     "_blank",
-    "noopener,noreferrer"
+    "noopener,noreferrer",
   );
 };
 
@@ -273,57 +446,122 @@ const PurchaseRequestDetail = () => {
     stateSummary?.purchaseRequestId ||
     "";
 
-  const [
-    purchaseRequest,
-    setPurchaseRequest,
-  ] = useState(() =>
-    normalizePurchaseRequestTime(stateSummary)
-  );
+  const [purchaseRequest, setPurchaseRequest] =
+    useState(() =>
+      normalizePurchaseRequestTime(stateSummary),
+    );
 
-  const [loading, setLoading] =
-    useState(false);
-
+  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] =
     useState("");
-
-  const [activeImage, setActiveImage] =
+  const [activeGallery, setActiveGallery] =
     useState(null);
-
   const [productTypes, setProductTypes] =
     useState([]);
-
   const [productTypesLoading, setProductTypesLoading] =
     useState(false);
 
-  const productTypeNameMap = useMemo(() => {
-    return new Map(
-      productTypes
-        .map((productType) => [
-          getProductTypeId(productType),
-          getProductTypeName(productType),
-        ])
-        .filter(([id]) => Boolean(id))
-    );
-  }, [productTypes]);
+  const productTypeNameMap = useMemo(
+    () =>
+      new Map(
+        productTypes
+          .map((productType) => [
+            getProductTypeId(productType),
+            getProductTypeName(productType),
+          ])
+          .filter(([id]) => Boolean(id)),
+      ),
+    [productTypes],
+  );
 
-  const statusClass = useMemo(() => {
-    return getStatusClassName(
-      purchaseRequest?.status
-    );
-  }, [purchaseRequest?.status]);
+  const statusClass = useMemo(
+    () =>
+      getStatusClassName(
+        purchaseRequest?.status,
+      ),
+    [purchaseRequest?.status],
+  );
 
-  const items = useMemo(() => {
-    return Array.isArray(purchaseRequest?.items)
-      ? purchaseRequest.items
-      : [];
-  }, [purchaseRequest]);
+  const items = useMemo(
+    () =>
+      Array.isArray(purchaseRequest?.items)
+        ? purchaseRequest.items
+        : [],
+    [purchaseRequest?.items],
+  );
+
+  const totalQuantity = useMemo(() => {
+    const apiTotal = Number(
+      purchaseRequest?.totalQuantity,
+    );
+
+    if (Number.isFinite(apiTotal)) {
+      return apiTotal;
+    }
+
+    return items.reduce(
+      (total, item) =>
+        total + (Number(item?.quantity) || 0),
+      0,
+    );
+  }, [items, purchaseRequest?.totalQuantity]);
+
+  const totalImages = useMemo(
+    () =>
+      items.reduce(
+        (total, item) =>
+          total + getItemImageUrls(item).length,
+        0,
+      ),
+    [items],
+  );
+
+  const serviceOptions = useMemo(
+    () => [
+      {
+        key: "packing",
+        label: "Đóng gói lại",
+        description:
+          "Gia cố và đóng gói lại sản phẩm trước khi vận chuyển.",
+        enabled: Boolean(
+          purchaseRequest?.requiresPacking,
+        ),
+        icon: <Inventory2Icon />,
+      },
+      {
+        key: "wooden-crate",
+        label: "Đóng thùng gỗ",
+        description:
+          "Bảo vệ kiện hàng bằng thùng gỗ theo yêu cầu.",
+        enabled: Boolean(
+          purchaseRequest?.requiresWoodenCrate,
+        ),
+        icon: <AllInboxIcon />,
+      },
+      {
+        key: "insurance",
+        label: "Bảo hiểm hàng hóa",
+        description:
+          "Áp dụng chính sách bảo hiểm cho đơn mua hộ.",
+        enabled: Boolean(
+          purchaseRequest?.requiresInsurance,
+        ),
+        icon: <SecurityIcon />,
+      },
+    ],
+    [
+      purchaseRequest?.requiresInsurance,
+      purchaseRequest?.requiresPacking,
+      purchaseRequest?.requiresWoodenCrate,
+    ],
+  );
 
   const loadPurchaseRequestDetail =
     useCallback(
       async (signal) => {
         if (!requestId) {
           setErrorMessage(
-            "Không tìm thấy mã yêu cầu mua hộ."
+            "Không tìm thấy mã yêu cầu mua hộ.",
           );
           return;
         }
@@ -335,21 +573,19 @@ const PurchaseRequestDetail = () => {
           const result =
             await getPurchaseRequestDetailApi(
               requestId,
-              {
-                signal,
-              }
+              { signal },
             );
 
           const detail = getDetailData(result);
 
           if (!detail) {
             throw new Error(
-              "API không trả về dữ liệu chi tiết yêu cầu mua hộ."
+              "API không trả về dữ liệu chi tiết yêu cầu mua hộ.",
             );
           }
 
           setPurchaseRequest(
-            normalizePurchaseRequestTime(detail)
+            normalizePurchaseRequestTime(detail),
           );
         } catch (error) {
           if (isCanceledRequest(error)) {
@@ -358,20 +594,18 @@ const PurchaseRequestDetail = () => {
 
           console.error(
             "Lỗi lấy chi tiết yêu cầu mua hộ:",
-            error
+            error,
           );
 
-          const message =
-            getApiErrorMessage(
-              error,
-              "Không thể tải chi tiết yêu cầu mua hộ."
-            );
+          const message = getApiErrorMessage(
+            error,
+            "Không thể tải chi tiết yêu cầu mua hộ.",
+          );
 
           setErrorMessage(message);
-
           AuthNotify.error(
             "Không tải được chi tiết",
-            message
+            message,
           );
         } finally {
           if (!signal?.aborted) {
@@ -379,7 +613,7 @@ const PurchaseRequestDetail = () => {
           }
         }
       },
-      [requestId]
+      [requestId],
     );
 
   const loadProductTypes = useCallback(
@@ -391,10 +625,9 @@ const PurchaseRequestDetail = () => {
           signal,
         });
 
-        const productTypeItems =
-          getProductTypeItems(result);
-
-        setProductTypes(productTypeItems);
+        setProductTypes(
+          getProductTypeItems(result),
+        );
       } catch (error) {
         if (isCanceledRequest(error)) {
           return;
@@ -402,50 +635,37 @@ const PurchaseRequestDetail = () => {
 
         console.error(
           "Lỗi lấy danh mục loại sản phẩm:",
-          error
+          error,
         );
 
         setProductTypes([]);
-
-        AuthNotify.warning(
-          "Không tải được loại sản phẩm",
-          getApiErrorMessage(
-            error,
-            "Hệ thống sẽ tạm hiển thị mã loại sản phẩm."
-          )
-        );
       } finally {
         if (!signal?.aborted) {
           setProductTypesLoading(false);
         }
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
     Promise.allSettled([
       loadPurchaseRequestDetail(
-        controller.signal
+        controller.signal,
       ),
-      loadProductTypes(
-        controller.signal
-      ),
+      loadProductTypes(controller.signal),
     ]);
 
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [
     loadProductTypes,
     loadPurchaseRequestDetail,
   ]);
 
   useEffect(() => {
-    if (!activeImage) {
+    if (!activeGallery) {
       document.body.style.overflow = "";
       return undefined;
     }
@@ -454,48 +674,76 @@ const PurchaseRequestDetail = () => {
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        setActiveImage(null);
+        setActiveGallery(null);
+      }
+
+      if (event.key === "ArrowLeft") {
+        setActiveGallery((current) => {
+          if (!current?.images?.length) {
+            return current;
+          }
+
+          return {
+            ...current,
+            index:
+              (current.index - 1 +
+                current.images.length) %
+              current.images.length,
+          };
+        });
+      }
+
+      if (event.key === "ArrowRight") {
+        setActiveGallery((current) => {
+          if (!current?.images?.length) {
+            return current;
+          }
+
+          return {
+            ...current,
+            index:
+              (current.index + 1) %
+              current.images.length,
+          };
+        });
       }
     };
 
     window.addEventListener(
       "keydown",
-      handleKeyDown
+      handleKeyDown,
     );
 
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener(
         "keydown",
-        handleKeyDown
+        handleKeyDown,
       );
     };
-  }, [activeImage]);
+  }, [activeGallery]);
 
   const handleRetryLoad = () => {
-    const controller =
-      new AbortController();
+    const controller = new AbortController();
 
     Promise.allSettled([
       loadPurchaseRequestDetail(
-        controller.signal
+        controller.signal,
       ),
-      loadProductTypes(
-        controller.signal
-      ),
+      loadProductTypes(controller.signal),
     ]);
   };
 
   const handleCopy = async (
     value,
-    label = "Nội dung"
+    label = "Nội dung",
   ) => {
     const text = String(value || "").trim();
 
     if (!text) {
       AuthNotify.warning(
         "Không thể sao chép",
-        `${label} đang trống.`
+        `${label} đang trống.`,
       );
       return;
     }
@@ -505,26 +753,30 @@ const PurchaseRequestDetail = () => {
 
       AuthNotify.success(
         "Đã sao chép",
-        `${label} đã được sao chép.`
+        `${label} đã được sao chép.`,
       );
     } catch {
       AuthNotify.error(
         "Sao chép thất bại",
-        "Trình duyệt không cho phép sao chép tự động."
+        "Trình duyệt không cho phép sao chép tự động.",
       );
     }
   };
 
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  const handleOpenImage = (imageData) => {
-    if (!imageData?.src) {
+  const handleOpenGallery = (
+    images,
+    index,
+    alt,
+  ) => {
+    if (!Array.isArray(images) || !images.length) {
       return;
     }
 
-    setActiveImage(imageData);
+    setActiveGallery({
+      images,
+      index,
+      alt,
+    });
   };
 
   if (loading && !purchaseRequest) {
@@ -532,7 +784,6 @@ const PurchaseRequestDetail = () => {
       <div className="purchase-detail-page">
         <div className="purchase-detail-loading">
           <CircularProgress size={42} />
-
           <span>
             Đang tải chi tiết yêu cầu mua hộ...
           </span>
@@ -550,14 +801,13 @@ const PurchaseRequestDetail = () => {
           </div>
 
           <h2>Không tải được dữ liệu</h2>
-
           <p>{errorMessage}</p>
 
           <div className="purchase-detail-error-actions">
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
-              onClick={handleBack}
+              onClick={() => navigate(-1)}
               className="purchase-detail-back-button"
             >
               Quay lại
@@ -581,17 +831,26 @@ const PurchaseRequestDetail = () => {
     return null;
   }
 
+  const quotation = purchaseRequest.quotation;
+
   return (
     <div className="purchase-detail-page">
       <div className="purchase-detail-top-actions">
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
-          onClick={handleBack}
+          onClick={() => navigate(-1)}
           className="purchase-detail-back-button"
         >
           Quay lại
         </Button>
+
+        {loading && (
+          <span className="purchase-detail-refreshing">
+            <CircularProgress size={15} />
+            Đang cập nhật dữ liệu...
+          </span>
+        )}
       </div>
 
       <section className="purchase-detail-hero">
@@ -600,7 +859,7 @@ const PurchaseRequestDetail = () => {
             <ShoppingCartIcon />
           </div>
 
-          <div>
+          <div className="purchase-detail-hero-copy">
             <div className="purchase-detail-kicker">
               Chi tiết yêu cầu mua hộ
             </div>
@@ -608,18 +867,9 @@ const PurchaseRequestDetail = () => {
             <h1>
               {safeText(
                 purchaseRequest.purchaseCode,
-                "Yêu cầu mua hộ"
+                "Yêu cầu mua hộ",
               )}
             </h1>
-
-            {/* <p>
-              Mã yêu cầu:{" "}
-              <strong>
-                {safeText(
-                  purchaseRequest.purchaseRequestId
-                )}
-              </strong>
-            </p> */}
           </div>
         </div>
 
@@ -628,7 +878,7 @@ const PurchaseRequestDetail = () => {
             className={`purchase-detail-status purchase-detail-status-${statusClass}`}
           >
             {getStatusLabel(
-              purchaseRequest.status
+              purchaseRequest.status,
             )}
           </span>
 
@@ -639,7 +889,7 @@ const PurchaseRequestDetail = () => {
               onClick={() =>
                 handleCopy(
                   purchaseRequest.purchaseCode,
-                  "Mã yêu cầu"
+                  "Mã yêu cầu",
                 )
               }
             >
@@ -650,54 +900,51 @@ const PurchaseRequestDetail = () => {
       </section>
 
       <section className="purchase-detail-summary-grid">
-        <div className="purchase-detail-summary-card">
-          <span>Tổng sản phẩm</span>
+        <SummaryCard
+          label="Dòng sản phẩm"
+          value={formatNumber(items.length)}
+          description="Số mặt hàng trong yêu cầu"
+          icon={<ShoppingCartIcon />}
+        />
 
-          <strong>
-            {items.length}
-          </strong>
+        <SummaryCard
+          label="Tổng số lượng"
+          value={formatNumber(totalQuantity)}
+          description="Tổng sản phẩm khách cần mua"
+          icon={<Inventory2Icon />}
+        />
 
-          <p>Số dòng sản phẩm trong yêu cầu</p>
-        </div>
+        <SummaryCard
+          label="Ảnh sản phẩm"
+          value={formatNumber(totalImages)}
+          description="Tổng ảnh tham khảo đã gửi"
+          icon={<PhotoLibraryIcon />}
+        />
 
-        <div className="purchase-detail-summary-card">
-          <span>Tổng số lượng</span>
+        <SummaryCard
+          label="Phương thức"
+          value={getShippingOptionLabel(
+            purchaseRequest.shippingOption,
+          )}
+          description="Phương thức vận chuyển đã chọn"
+          icon={<LocalShippingIcon />}
+          compact
+        />
 
-          <strong>
-            {purchaseRequest.totalQuantity ?? 0}
-          </strong>
-
-          <p>Tổng số lượng khách cần mua</p>
-        </div>
-
-        <div className="purchase-detail-summary-card">
-          <span>Ngày tạo</span>
-
-          <strong
-            className="date-text"
-            title={formatDateTimeUtcTitle(
-              purchaseRequest.createdAtUtc ||
-                purchaseRequest.createdAt
-            )}
-          >
-            {formatDateTime(
-              purchaseRequest.createdAtUtc ||
-                purchaseRequest.createdAt
-            )}
-          </strong>
-
-          <p>Thời điểm gửi yêu cầu</p>
-        </div>
-
-        <div className="purchase-detail-summary-card">
-          <span>Tuyến hàng</span>
-
-          <strong className="route-text">
-            {safeText(purchaseRequest.route)}
-          </strong>
-
-          <p>Tuyến vận chuyển đã chọn</p>
-        </div>
+        <SummaryCard
+          label="Ngày tạo"
+          value={formatDateTime(
+            purchaseRequest.createdAtUtc ||
+              purchaseRequest.createdAt,
+          )}
+          description="Thời điểm gửi yêu cầu"
+          icon={<ReceiptLongIcon />}
+          compact
+          title={formatDateTimeUtcTitle(
+            purchaseRequest.createdAtUtc ||
+              purchaseRequest.createdAt,
+          )}
+        />
       </section>
 
       <section className="purchase-detail-info-grid">
@@ -714,16 +961,9 @@ const PurchaseRequestDetail = () => {
             />
 
             <InfoRow
-              label="Người tạo mua hộ"
+              label="Người tạo yêu cầu"
               value={purchaseRequest.createdByName}
             />
-
-            {/* <InfoRow
-              label="Customer ID"
-              value={purchaseRequest.customerId}
-              copyable
-              onCopy={handleCopy}
-            /> */}
           </div>
         </div>
 
@@ -750,64 +990,88 @@ const PurchaseRequestDetail = () => {
               label="Địa chỉ"
               value={purchaseRequest.receiverAddress}
             />
+
+            <InfoRow
+              label="Tuyến hàng"
+              value={purchaseRequest.route}
+              accent
+            />
+
+            <InfoRow
+              label="Vận chuyển"
+              value={getShippingOptionLabel(
+                purchaseRequest.shippingOption,
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="purchase-detail-panel purchase-detail-services-panel">
+          <div className="purchase-detail-panel-title">
+            <SecurityIcon />
+            <h2>Dịch vụ bổ sung</h2>
+          </div>
+
+          <div className="purchase-detail-services-grid">
+            {serviceOptions.map((service) => (
+              <ServiceCard
+                key={service.key}
+                {...service}
+              />
+            ))}
           </div>
         </div>
 
         <div className="purchase-detail-panel">
           <div className="purchase-detail-panel-title">
-            <FactCheckIcon />
-            <h2>Dịch vụ kiểm tra</h2>
+            <ReceiptLongIcon />
+            <h2>Trạng thái xử lý</h2>
           </div>
 
-          <div className="purchase-detail-check-grid">
-            <div
-              className={`purchase-detail-check-item ${getBooleanClassName(
-                purchaseRequest.requiresInspection
-              )}`}
-            >
-              <span>Kiểm hàng</span>
+          <div className="purchase-detail-info-list">
+            <InfoRow
+              label="Trạng thái yêu cầu"
+              value={getStatusLabel(
+                purchaseRequest.status,
+              )}
+              accent
+            />
 
-              <strong>
-                {getBooleanLabel(
-                  purchaseRequest.requiresInspection
+            <InfoRow
+              label="Báo giá"
+              value={
+                quotation
+                  ? "Đã có báo giá"
+                  : "Chưa có báo giá"
+              }
+            />
+
+            {quotation?.totalEstimatedCost !==
+              undefined && (
+              <InfoRow
+                label="Tổng báo giá"
+                value={formatCurrency(
+                  quotation.totalEstimatedCost,
                 )}
-              </strong>
+              />
+            )}
 
-              <small>
-                Kiểm tra tình trạng sản phẩm khi về kho
-              </small>
-            </div>
-
-            <div
-              className={`purchase-detail-check-item ${getBooleanClassName(
-                purchaseRequest.requiresQuantityCheck
-              )}`}
-            >
-              <span>Kiểm số lượng</span>
-
-              <strong>
-                {getBooleanLabel(
-                  purchaseRequest.requiresQuantityCheck
-                )}
-              </strong>
-
-              <small>
-                Đối chiếu số lượng sản phẩm thực nhận
-              </small>
-            </div>
-          </div>
-        </div>
-
-        <div className="purchase-detail-panel">
-          <div className="purchase-detail-panel-title">
-            <Inventory2Icon />
-            <h2>Ghi chú chung</h2>
+            <InfoRow
+              label="Lý do xử lý"
+              value={safeText(
+                purchaseRequest.reason,
+                "Không có lý do bổ sung",
+              )}
+            />
           </div>
 
-          <div className="purchase-detail-note-box">
-            {purchaseRequest.generalNote?.trim()
-              ? purchaseRequest.generalNote
-              : "Không có ghi chú chung."}
+          <div className="purchase-detail-note-box purchase-detail-note-box--spaced">
+            <span>Ghi chú chung</span>
+            <p>
+              {purchaseRequest.generalNote?.trim()
+                ? purchaseRequest.generalNote
+                : "Không có ghi chú chung."}
+            </p>
           </div>
         </div>
       </section>
@@ -818,13 +1082,14 @@ const PurchaseRequestDetail = () => {
             <h2>Danh sách sản phẩm mua hộ</h2>
 
             <p>
-              Hiển thị đầy đủ link sản phẩm, website nguồn,
-              phân loại, số lượng, ghi chú và ảnh tham khảo.
+              Hiển thị đầy đủ link, website nguồn,
+              loại sản phẩm, số lượng, thuộc tính,
+              ghi chú và toàn bộ ảnh tham khảo.
             </p>
           </div>
 
           <span>
-            {items.length} sản phẩm
+            {formatNumber(items.length)} sản phẩm
           </span>
         </div>
 
@@ -840,19 +1105,42 @@ const PurchaseRequestDetail = () => {
                 item={item}
                 index={index}
                 onCopy={handleCopy}
-                onOpenImage={handleOpenImage}
-                productTypeNameMap={productTypeNameMap}
-                productTypesLoading={productTypesLoading}
+                onOpenGallery={handleOpenGallery}
+                productTypeNameMap={
+                  productTypeNameMap
+                }
+                productTypesLoading={
+                  productTypesLoading
+                }
               />
             ))}
           </div>
         )}
       </section>
 
-      {activeImage && (
+      {activeGallery && (
         <ImageLightbox
-          image={activeImage}
-          onClose={() => setActiveImage(null)}
+          gallery={activeGallery}
+          onClose={() =>
+            setActiveGallery(null)
+          }
+          onPrevious={() =>
+            setActiveGallery((current) => ({
+              ...current,
+              index:
+                (current.index - 1 +
+                  current.images.length) %
+                current.images.length,
+            }))
+          }
+          onNext={() =>
+            setActiveGallery((current) => ({
+              ...current,
+              index:
+                (current.index + 1) %
+                current.images.length,
+            }))
+          }
         />
       )}
     </div>
@@ -860,6 +1148,33 @@ const PurchaseRequestDetail = () => {
 };
 
 /* ================= CHILD COMPONENTS ================= */
+
+const SummaryCard = ({
+  label,
+  value,
+  description,
+  icon,
+  compact = false,
+  title = "",
+}) => (
+  <article
+    className={`purchase-detail-summary-card ${
+      compact ? "is-compact" : ""
+    }`}
+  >
+    <span className="purchase-detail-summary-icon">
+      {icon}
+    </span>
+
+    <div>
+      <small>{label}</small>
+      <strong title={title || undefined}>
+        {value}
+      </strong>
+      <p>{description}</p>
+    </div>
+  </article>
+);
 
 const InfoRow = ({
   label,
@@ -894,86 +1209,166 @@ const InfoRow = ({
         {copyable &&
           !loading &&
           displayValue !== "-" && (
-          <button
-            type="button"
-            onClick={() =>
-              onCopy?.(displayValue, label)
-            }
-            className="purchase-detail-mini-copy"
-            aria-label={`Sao chép ${label}`}
-          >
-            <ContentCopyIcon />
-          </button>
-        )}
+            <button
+              type="button"
+              onClick={() =>
+                onCopy?.(displayValue, label)
+              }
+              className="purchase-detail-mini-copy"
+              aria-label={`Sao chép ${label}`}
+            >
+              <ContentCopyIcon />
+            </button>
+          )}
       </div>
     </div>
   );
 };
 
+const ServiceCard = ({
+  label,
+  description,
+  enabled,
+  icon,
+}) => (
+  <article
+    className={`purchase-detail-service-card ${
+      enabled ? "is-enabled" : "is-disabled"
+    }`}
+  >
+    <span className="purchase-detail-service-icon">
+      {icon}
+    </span>
+
+    <div>
+      <small>{label}</small>
+      <strong>
+        {getBooleanLabel(enabled)}
+      </strong>
+      <p>{description}</p>
+    </div>
+
+    <span className="purchase-detail-service-state">
+      {enabled ? "Đã chọn" : "Không chọn"}
+    </span>
+  </article>
+);
+
 const ProductItemCard = ({
   item,
   index,
   onCopy,
-  onOpenImage,
+  onOpenGallery,
   productTypeNameMap,
   productTypesLoading,
 }) => {
-  const productLink =
-    String(item.productLink || "").trim();
+  const [selectedImageIndex, setSelectedImageIndex] =
+    useState(0);
+
+  const productLink = String(
+    item?.productLink || "",
+  ).trim();
+
+  const imageUrls = useMemo(
+    () => getItemImageUrls(item),
+    [item],
+  );
 
   const imageAlt =
-    item.productName ||
+    item?.productName ||
     `Sản phẩm ${index + 1}`;
 
-  const productTypeKey =
-    getItemProductTypeKey(item);
-
-  const directProductTypeName =
-    typeof item?.productType === "object"
-      ? safeText(
-          item.productType?.productTypeName ??
-            item.productType?.name ??
-            item.productType?.label,
-          ""
-        )
-      : safeText(
-          item?.productTypeName,
-          ""
-        );
-
   const productTypeLabel =
-    directProductTypeName ||
-    productTypeNameMap?.get(productTypeKey) ||
-    safeText(productTypeKey, "Chưa cập nhật");
+    getItemProductTypeLabel(
+      item,
+      productTypeNameMap,
+    );
+
+  const compactLink = getCompactLinkData(
+    productLink,
+  );
+
+  const activeImageUrl =
+    imageUrls[selectedImageIndex] ||
+    imageUrls[0] ||
+    "";
+
+  useEffect(() => {
+    if (selectedImageIndex >= imageUrls.length) {
+      setSelectedImageIndex(0);
+    }
+  }, [imageUrls.length, selectedImageIndex]);
 
   return (
     <article className="purchase-detail-product-card">
-      <div className="purchase-detail-product-image-wrap">
-        {item.imageUrl ? (
-          <button
-            type="button"
-            className="purchase-detail-product-image-button"
-            onClick={() =>
-              onOpenImage?.({
-                src: item.imageUrl,
-                alt: imageAlt,
-              })
-            }
-            aria-label={`Xem ảnh ${imageAlt}`}
-          >
-            <img
-              src={item.imageUrl}
-              alt={imageAlt}
-              className="purchase-detail-product-image"
-            />
+      <div className="purchase-detail-product-gallery">
+        <div className="purchase-detail-product-image-wrap">
+          {activeImageUrl ? (
+            <button
+              type="button"
+              className="purchase-detail-product-image-button"
+              onClick={() =>
+                onOpenGallery?.(
+                  imageUrls,
+                  selectedImageIndex,
+                  imageAlt,
+                )
+              }
+              aria-label={`Xem ảnh ${imageAlt}`}
+            >
+              <img
+                src={activeImageUrl}
+                alt={imageAlt}
+                className="purchase-detail-product-image"
+                loading="lazy"
+              />
 
-            <span className="purchase-detail-image-view-hint">
-              Bấm để xem ảnh
-            </span>
-          </button>
-        ) : (
-          <div className="purchase-detail-image-placeholder">
-            Không có ảnh
+              <span className="purchase-detail-image-view-hint">
+                <PhotoLibraryIcon />
+                Xem ảnh lớn
+              </span>
+
+              <span className="purchase-detail-product-image-count">
+                {selectedImageIndex + 1}/
+                {imageUrls.length}
+              </span>
+            </button>
+          ) : (
+            <div className="purchase-detail-image-placeholder">
+              <PhotoLibraryIcon />
+              <span>Không có ảnh sản phẩm</span>
+            </div>
+          )}
+        </div>
+
+        {imageUrls.length > 1 && (
+          <div className="purchase-detail-image-thumbnails">
+            {imageUrls.map((imageUrl, imageIndex) => (
+              <button
+                type="button"
+                key={`${imageUrl}-${imageIndex}`}
+                className={
+                  imageIndex === selectedImageIndex
+                    ? "is-active"
+                    : ""
+                }
+                onClick={() =>
+                  setSelectedImageIndex(imageIndex)
+                }
+                aria-label={`Chọn ảnh ${
+                  imageIndex + 1
+                } của ${imageAlt}`}
+              >
+                <img
+                  src={imageUrl}
+                  alt={`${imageAlt} ${
+                    imageIndex + 1
+                  }`}
+                  loading="lazy"
+                />
+                <span>{imageIndex + 1}</span>
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -987,45 +1382,47 @@ const ProductItemCard = ({
 
             <h3>
               {safeText(
-                item.productName,
-                `Sản phẩm ${index + 1}`
+                item?.productName,
+                `Sản phẩm ${index + 1}`,
               )}
             </h3>
           </div>
 
           <span className="purchase-detail-product-quantity">
-            SL: {item.quantity ?? 0}
+            SL: {formatNumber(item?.quantity)}
           </span>
         </div>
 
         <div className="purchase-detail-product-meta-grid">
           <InfoRow
             label="Website nguồn"
-            value={item.sourceWebsite}
+            value={item?.sourceWebsite}
           />
 
           <InfoRow
             label="Loại sản phẩm"
             value={
-              productTypesLoading
+              productTypesLoading &&
+              !item?.productType
                 ? "Đang tải tên loại sản phẩm..."
                 : productTypeLabel
             }
-            loading={productTypesLoading}
+            loading={
+              productTypesLoading &&
+              !item?.productType
+            }
             accent
-            copyable
-            onCopy={onCopy}
           />
 
           <InfoRow
-            label="Phân loại"
-            value={item.attributes}
+            label="Thuộc tính"
+            value={item?.attributes}
           />
 
           <InfoRow
             label="Ghi chú"
             value={
-              item.note?.trim()
+              item?.note?.trim()
                 ? item.note
                 : "Không có ghi chú"
             }
@@ -1033,49 +1430,65 @@ const ProductItemCard = ({
         </div>
 
         <div className="purchase-detail-product-link-box">
-          <span>Link sản phẩm</span>
+          <div className="purchase-detail-product-link-label">
+            <span>Link sản phẩm</span>
+            {productLink && (
+              <small title={productLink}>
+                Đã rút gọn để dễ xem
+              </small>
+            )}
+          </div>
 
-          <div>
+          <div className="purchase-detail-product-link-row">
             <a
               href={productLink || "#"}
               target="_blank"
               rel="noopener noreferrer"
+              title={productLink || undefined}
               onClick={(event) => {
                 if (!productLink) {
                   event.preventDefault();
                 }
               }}
             >
-              {productLink || "Không có link sản phẩm"}
+              <span className="purchase-detail-link-domain">
+                {compactLink.domain}
+              </span>
+
+              <span className="purchase-detail-link-path">
+                {compactLink.path}
+              </span>
             </a>
 
             {productLink && (
-              <>
-                <button
-                  type="button"
-                  title="Sao chép link"
-                  aria-label="Sao chép link sản phẩm"
-                  onClick={() =>
-                    onCopy?.(
-                      productLink,
-                      "Link sản phẩm"
-                    )
-                  }
-                >
-                  <ContentCopyIcon />
-                </button>
+              <div className="purchase-detail-link-actions">
+                <Tooltip title="Sao chép link đầy đủ">
+                  <button
+                    type="button"
+                    aria-label="Sao chép link sản phẩm"
+                    onClick={() =>
+                      onCopy?.(
+                        productLink,
+                        "Link sản phẩm",
+                      )
+                    }
+                  >
+                    <ContentCopyIcon />
+                  </button>
+                </Tooltip>
 
-                <button
-                  type="button"
-                  title="Mở link"
-                  aria-label="Mở link sản phẩm"
-                  onClick={() =>
-                    openExternalLink(productLink)
-                  }
-                >
-                  <OpenInNewIcon />
-                </button>
-              </>
+                <Tooltip title="Mở sản phẩm ở tab mới">
+                  <button
+                    type="button"
+                    aria-label="Mở link sản phẩm"
+                    onClick={() =>
+                      openExternalLink(productLink)
+                    }
+                  >
+                    <OpenInNewIcon />
+                  </button>
+                </Tooltip>
+              </div>
             )}
           </div>
         </div>
@@ -1085,15 +1498,29 @@ const ProductItemCard = ({
 };
 
 const ImageLightbox = ({
-  image,
+  gallery,
   onClose,
+  onPrevious,
+  onNext,
 }) => {
+  const images = Array.isArray(gallery?.images)
+    ? gallery.images
+    : [];
+  const index = Number(gallery?.index) || 0;
+  const currentImage = images[index];
+  const hasMultipleImages = images.length > 1;
+
+  if (!currentImage) {
+    return null;
+  }
+
   return (
     <div
       className="purchase-detail-image-lightbox"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      aria-label="Xem ảnh sản phẩm"
     >
       <div
         className="purchase-detail-image-lightbox-card"
@@ -1107,16 +1534,45 @@ const ImageLightbox = ({
           onClick={onClose}
           aria-label="Đóng ảnh"
         >
-          ×
+          <CloseIcon />
         </button>
 
+        {hasMultipleImages && (
+          <button
+            type="button"
+            className="purchase-detail-image-lightbox-nav is-previous"
+            onClick={onPrevious}
+            aria-label="Ảnh trước"
+          >
+            <ChevronLeftIcon />
+          </button>
+        )}
+
         <img
-          src={image.src}
-          alt={image.alt || "Ảnh sản phẩm"}
+          src={currentImage}
+          alt={`${gallery?.alt || "Ảnh sản phẩm"} ${
+            index + 1
+          }`}
         />
 
+        {hasMultipleImages && (
+          <button
+            type="button"
+            className="purchase-detail-image-lightbox-nav is-next"
+            onClick={onNext}
+            aria-label="Ảnh tiếp theo"
+          >
+            <ChevronRightIcon />
+          </button>
+        )}
+
         <div className="purchase-detail-image-lightbox-caption">
-          {image.alt || "Ảnh sản phẩm"}
+          <strong>
+            {gallery?.alt || "Ảnh sản phẩm"}
+          </strong>
+          <span>
+            Ảnh {index + 1}/{images.length}
+          </span>
         </div>
       </div>
     </div>

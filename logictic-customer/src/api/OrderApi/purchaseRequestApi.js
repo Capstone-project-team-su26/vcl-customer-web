@@ -83,6 +83,130 @@ const getApiErrorMessage = (
 };
 
 /* =========================================================
+   PURCHASE REQUEST HELPERS
+   ========================================================= */
+
+const MAX_INT_32 = 2147483647;
+
+const normalizeStringArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => normalizeText(item))
+        .filter(Boolean)
+    )
+  );
+};
+
+const normalizePricingRuleIds = (payload = {}) => {
+  const optionalServices =
+    payload?.optionalServices &&
+    typeof payload.optionalServices === "object"
+      ? payload.optionalServices
+      : {};
+
+  return normalizeStringArray(
+    payload?.pricingRuleIds ??
+      payload?.selectedPricingRuleIds ??
+      optionalServices?.selectedPricingRuleIds ??
+      optionalServices?.pricingRuleIds ??
+      []
+  );
+};
+
+const getOptionalServiceFlag = (
+  payload,
+  fieldName
+) => {
+  const optionalServices =
+    payload?.optionalServices &&
+    typeof payload.optionalServices === "object"
+      ? payload.optionalServices
+      : {};
+
+  return Boolean(
+    payload?.[fieldName] ??
+      optionalServices?.[fieldName] ??
+      false
+  );
+};
+
+const getImageUrlFromEntry = (entry) => {
+  if (typeof entry === "string") {
+    return normalizeText(entry);
+  }
+
+  if (!entry || typeof entry !== "object") {
+    return "";
+  }
+
+  return normalizeText(
+    entry?.url ??
+      entry?.imageUrl ??
+      entry?.fileUrl ??
+      entry?.secureUrl ??
+      entry?.previewUrl ??
+      entry?.referenceUrl ??
+      ""
+  );
+};
+
+const normalizeItemImageUrls = (item = {}) => {
+  const candidates = [
+    item?.imageUrls,
+    item?.referenceUrls,
+    item?.images,
+    item?.uploadedImageUrls,
+  ];
+
+  const urls = candidates
+    .filter(Array.isArray)
+    .flatMap((candidate) =>
+      candidate.map(getImageUrlFromEntry)
+    );
+
+  [
+    item?.imageUrl,
+    item?.referenceUrl,
+    item?.uploadedImageUrl,
+  ].forEach((candidate) => {
+    const url = getImageUrlFromEntry(candidate);
+
+    if (url) {
+      urls.push(url);
+    }
+  });
+
+  return Array.from(
+    new Set(urls.filter(Boolean))
+  );
+};
+
+const getSourceWebsite = (item = {}) => {
+  const sourceWebsite = normalizeText(
+    item?.sourceWebsite
+  );
+
+  if (sourceWebsite) {
+    return sourceWebsite;
+  }
+
+  const productLink = normalizeText(
+    item?.productLink
+  );
+
+  try {
+    return new URL(productLink).hostname;
+  } catch {
+    return "";
+  }
+};
+
+/* =========================================================
    PURCHASE REQUEST VALIDATION
    ========================================================= */
 
@@ -96,6 +220,12 @@ const validatePurchaseRequest = (payload) => {
   if (!normalizeText(payload.route)) {
     throw new Error(
       "Vui lòng chọn tuyến vận chuyển."
+    );
+  }
+
+  if (!normalizeText(payload.shippingOption)) {
+    throw new Error(
+      "Vui lòng chọn phương thức vận chuyển."
     );
   }
 
@@ -129,10 +259,24 @@ const validatePurchaseRequest = (payload) => {
   payload.items.forEach((item, index) => {
     const productNumber = index + 1;
     const quantity = Number(item?.quantity);
+    const productLink = normalizeText(
+      item?.productLink
+    );
 
-    if (!normalizeText(item?.productLink)) {
+    if (!productLink) {
       throw new Error(
         `Sản phẩm ${productNumber}: Vui lòng nhập liên kết sản phẩm.`
+      );
+    }
+
+    validateAbsoluteUrl(
+      productLink,
+      `liên kết sản phẩm ${productNumber}`
+    );
+
+    if (!getSourceWebsite(item)) {
+      throw new Error(
+        `Sản phẩm ${productNumber}: Không xác định được website nguồn.`
       );
     }
 
@@ -157,9 +301,17 @@ const validatePurchaseRequest = (payload) => {
       );
     }
 
-    if (quantity > 2147483647) {
+    if (quantity > MAX_INT_32) {
       throw new Error(
         `Sản phẩm ${productNumber}: Số lượng vượt quá giới hạn cho phép.`
+      );
+    }
+
+    if (
+      normalizeItemImageUrls(item).length === 0
+    ) {
+      throw new Error(
+        `Sản phẩm ${productNumber}: Vui lòng tải ít nhất một ảnh sản phẩm.`
       );
     }
   });
@@ -170,6 +322,10 @@ const buildPurchaseRequestPayload = (
 ) => {
   return {
     route: normalizeText(payload.route),
+
+    shippingOption: normalizeText(
+      payload.shippingOption
+    ),
 
     receiverName: normalizeText(
       payload.receiverName
@@ -183,16 +339,30 @@ const buildPurchaseRequestPayload = (
       payload.receiverAddress
     ),
 
-    requiresInspection: Boolean(
-      payload.requiresInspection
-    ),
+    pricingRuleIds:
+      normalizePricingRuleIds(payload),
 
-    requiresQuantityCheck: Boolean(
-      payload.requiresQuantityCheck
-    ),
+    requiresPacking:
+      getOptionalServiceFlag(
+        payload,
+        "requiresPacking"
+      ),
+
+    requiresWoodenCrate:
+      getOptionalServiceFlag(
+        payload,
+        "requiresWoodenCrate"
+      ),
+
+    requiresInsurance:
+      getOptionalServiceFlag(
+        payload,
+        "requiresInsurance"
+      ),
 
     generalNote: normalizeText(
-      payload.generalNote
+      payload.generalNote ??
+        payload.note
     ),
 
     items: payload.items.map((item) => ({
@@ -200,9 +370,8 @@ const buildPurchaseRequestPayload = (
         item.productLink
       ),
 
-      sourceWebsite: normalizeText(
-        item.sourceWebsite
-      ),
+      sourceWebsite:
+        getSourceWebsite(item),
 
       productType: normalizeText(
         item.productType
@@ -220,9 +389,8 @@ const buildPurchaseRequestPayload = (
 
       note: normalizeText(item.note),
 
-      imageUrl: normalizeText(
-        item.imageUrl
-      ),
+      imageUrls:
+        normalizeItemImageUrls(item),
     })),
   };
 };

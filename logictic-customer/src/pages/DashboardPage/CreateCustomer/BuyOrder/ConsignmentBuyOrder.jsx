@@ -14,13 +14,14 @@ import {
   LoadingOutlined,
   PlusCircleOutlined,
   PlusOutlined,
-  SafetyCertificateOutlined,
   ShoppingCartOutlined,
 } from "@ant-design/icons";
-import { Switch, Tooltip } from "antd";
+import { Tooltip } from "antd";
 
 import AuthNotify from "../../../../utils/AuthNotify";
-import uploadImage from "../../../../api/Upload/UploadImage";
+import {
+  uploadImages,
+} from "../../../../api/Upload/UploadImage";
 import FieldLabelTooltip from "../../../../components/DashboardComponents/CustomerKiguiComponents/ToltipLapelComponents/FieldLabelTooltip";
 import PackageOptionalServicesS1, {
   EMPTY_PACKAGE_SERVICES,
@@ -30,6 +31,7 @@ import {
   createDeliveryAddressApi,
   deleteDeliveryAddressApi,
   getConsignmentRoutesApi,
+  getConsignmentShippingOptionsApi,
   getDeliveryAddressesApi,
   getProductTypesApi,
 } from "../../../../api/OrderApi/consignmentApi";
@@ -53,14 +55,14 @@ import ConsignmentBuyOrderConfirm from "../../../../components/DashboardComponen
 import "./ConsignmentBuyOrder.css";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGES_PER_ITEM = 5;
 
 const INITIAL_FORM = {
   route: "",
+  shippingOption: "",
   receiverName: "",
   receiverPhone: "",
   selectedDeliveryAddress: "",
-  requiresInspection: true,
-  requiresQuantityCheck: true,
   optionalServices: {
     ...EMPTY_PACKAGE_SERVICES,
   },
@@ -93,11 +95,15 @@ const createEmptyItem = () => ({
   quantity: "",
   attributes: "",
   note: "",
+  images: [],
+
+  // Giữ field image để tương thích component xác nhận/dịch vụ cũ.
   image: null,
 });
 
 const createEmptyFormErrors = () => ({
   route: "",
+  shippingOption: "",
   receiverName: "",
   receiverPhone: "",
   selectedDeliveryAddress: "",
@@ -188,8 +194,10 @@ const normalizeOptionList = (result, extraKeys = []) =>
         item?.value ??
           item?.code ??
           item?.route ??
+          item?.shippingOption ??
           item?.productType ??
           item?.routeId ??
+          item?.shippingOptionId ??
           item?.productTypeId ??
           item?.id ??
           "",
@@ -200,6 +208,7 @@ const normalizeOptionList = (result, extraKeys = []) =>
           item?.name ??
           item?.displayName ??
           item?.routeName ??
+          item?.shippingOptionName ??
           item?.productTypeName ??
           item?.description ??
           value,
@@ -211,6 +220,77 @@ const normalizeOptionList = (result, extraKeys = []) =>
       };
     })
     .filter((item) => item.value && item.label);
+
+const normalizeCode = (value) =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+
+const getShippingOptionLabel = (value, label) => {
+  const normalizedValues = [
+    normalizeCode(value),
+    normalizeCode(label),
+  ];
+
+  if (
+    normalizedValues.some(
+      (item) =>
+        item === "EXPRESS" ||
+        item === "HOA_TOC" ||
+        item.includes("EXPRESS"),
+    )
+  ) {
+    return "Hỏa tốc";
+  }
+
+  if (
+    normalizedValues.some(
+      (item) =>
+        item === "STANDARD" ||
+        item === "TIEU_CHUAN" ||
+        item.includes("STANDARD"),
+    )
+  ) {
+    return "Tiêu chuẩn";
+  }
+
+  if (
+    normalizedValues.some(
+      (item) =>
+        item === "ECONOMY" ||
+        item === "TIET_KIEM" ||
+        item.includes("ECONOMY"),
+    )
+  ) {
+    return "Tiết kiệm";
+  }
+
+  return String(label ?? "").trim() || String(value ?? "").trim() || "-";
+};
+
+const normalizeShippingOptionList = (result) =>
+  normalizeOptionList(result, ["shippingOptions"]).map((option) => ({
+    ...option,
+    label: getShippingOptionLabel(option.value, option.label),
+  }));
+
+const normalizeStringArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => String(item ?? "").trim())
+        .filter(Boolean),
+    ),
+  );
+};
 
 const normalizeDeliveryAddress = (item, index = 0) => {
   if (!item) {
@@ -275,53 +355,164 @@ const normalizeDeliveryAddressList = (result) =>
     .map(normalizeDeliveryAddress)
     .filter(Boolean);
 
-const extractUploadedImageUrl = (result) => {
-  const candidates = [
-    result,
-    result?.url,
-    result?.imageUrl,
-    result?.fileUrl,
-    result?.path,
-    result?.secureUrl,
-    result?.data,
-    result?.data?.url,
-    result?.data?.imageUrl,
-    result?.data?.fileUrl,
-    result?.data?.path,
-    result?.data?.secureUrl,
-    result?.data?.data?.url,
-    result?.data?.data?.imageUrl,
-    result?.data?.data?.fileUrl,
-  ];
+const getItemImages = (item) => {
+  if (Array.isArray(item?.images)) {
+    return item.images.filter(Boolean);
+  }
+
+  return item?.image ? [item.image] : [];
+};
+
+const isUploadedImageUrl = (value) => {
+  const text = String(value ?? "").trim();
 
   return (
-    candidates
-      .find((item) => typeof item === "string" && item.trim())
-      ?.trim() || ""
+    /^https?:\/\//i.test(text) ||
+    /^\//.test(text) ||
+    /^data:image\//i.test(text)
   );
 };
 
-const uploadPackageImage = async (file) => {
+/*
+ * UploadImage.js chỉ cần export uploadImages().
+ * Helper này đặt tại trang mua hộ để đọc được nhiều kiểu response API:
+ * - ["url-1", "url-2"]
+ * - { urls: [] }
+ * - { imageUrls: [] }
+ * - { files: [{ url: "..." }] }
+ * - { data: ... }
+ * - text/plain chứa JSON
+ */
+const extractUploadedImageUrls = (result) => {
+  const collectedUrls = [];
+  const visitedObjects = new Set();
+
+  const appendUrl = (value) => {
+    const url = String(value ?? "").trim();
+
+    if (
+      isUploadedImageUrl(url) &&
+      !collectedUrls.includes(url)
+    ) {
+      collectedUrls.push(url);
+    }
+  };
+
+  const walk = (value, depth = 0) => {
+    if (
+      value === null ||
+      value === undefined ||
+      depth > 8
+    ) {
+      return;
+    }
+
+    if (typeof value === "string") {
+      const text = value.trim();
+
+      if (
+        (text.startsWith("[") && text.endsWith("]")) ||
+        (text.startsWith("{") && text.endsWith("}"))
+      ) {
+        try {
+          walk(JSON.parse(text), depth + 1);
+          return;
+        } catch {
+          // Response không phải JSON, tiếp tục kiểm tra URL trực tiếp.
+        }
+      }
+
+      appendUrl(text);
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        walk(item, depth + 1);
+      });
+
+      return;
+    }
+
+    if (
+      typeof value !== "object" ||
+      visitedObjects.has(value)
+    ) {
+      return;
+    }
+
+    visitedObjects.add(value);
+
+    [
+      "url",
+      "imageUrl",
+      "fileUrl",
+      "secureUrl",
+      "path",
+      "location",
+    ].forEach((key) => {
+      appendUrl(value?.[key]);
+    });
+
+    [
+      "urls",
+      "imageUrls",
+      "fileUrls",
+      "files",
+      "images",
+      "items",
+      "results",
+      "data",
+    ].forEach((key) => {
+      walk(value?.[key], depth + 1);
+    });
+  };
+
+  walk(result);
+
+  return collectedUrls;
+};
+
+const getFileIdentity = (file) =>
+  [file?.name, file?.size, file?.lastModified]
+    .map((value) => String(value ?? ""))
+    .join("::");
+
+const validateProductImageFile = (file) => {
   if (!(file instanceof File)) {
     throw new Error("File ảnh không hợp lệ.");
   }
 
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    throw new Error("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.");
+    throw new Error(`Ảnh "${file.name}" không phải JPG, PNG hoặc WEBP.`);
   }
 
   if (file.size > MAX_IMAGE_SIZE) {
-    throw new Error("Dung lượng ảnh không được vượt quá 5MB.");
+    throw new Error(`Ảnh "${file.name}" vượt quá 5MB.`);
   }
 
-  const uploadResult = await uploadImage(file);
-  const imageUrl = extractUploadedImageUrl(uploadResult);
+  return file;
+};
 
-  if (!imageUrl) {
-    throw new Error("API upload ảnh không trả về đường dẫn ảnh hợp lệ.");
+const uploadProductImages = async (
+  imageFiles,
+  onUploadProgress,
+) => {
+  const files = imageFiles.map(validateProductImageFile);
+  const uploadResult = await uploadImages(files, onUploadProgress);
+  const imageUrls = extractUploadedImageUrls(uploadResult);
+
+  if (!imageUrls.length) {
+    throw new Error("API upload ảnh không trả về danh sách đường dẫn ảnh hợp lệ.");
   }
 
-  return imageUrl;
+  if (imageUrls.length < files.length) {
+    throw new Error(
+      `API chỉ trả về ${imageUrls.length}/${files.length} đường dẫn ảnh. Vui lòng thử lại.`,
+    );
+  }
+
+  return imageUrls.slice(0, files.length);
 };
 
 const isValidHttpUrl = (value) => {
@@ -400,8 +591,8 @@ const validateItem = (item) => {
     errors.attributes = "Vui lòng nhập thuộc tính sản phẩm.";
   }
 
-  if (!item.image) {
-    errors.image = "Vui lòng tải ảnh sản phẩm.";
+  if (!getItemImages(item).length) {
+    errors.image = "Vui lòng tải ít nhất một ảnh sản phẩm.";
   }
 
   return errors;
@@ -412,6 +603,11 @@ const validateBuyOrderForm = ({ form, items }) => {
 
   if (!form.route) {
     formErrors.route = "Vui lòng chọn tuyến hàng.";
+  }
+
+  if (!form.shippingOption) {
+    formErrors.shippingOption =
+      "Vui lòng chọn phương thức vận chuyển.";
   }
 
   if (!form.receiverName.trim()) {
@@ -515,6 +711,8 @@ export default function ConsignmentBuyOrder() {
 
   const [routeOptions, setRouteOptions] = useState([]);
 
+  const [shippingOptions, setShippingOptions] = useState([]);
+
   const [productTypeOptions, setProductTypeOptions] = useState([]);
 
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
@@ -590,12 +788,29 @@ export default function ConsignmentBuyOrder() {
       return;
     }
 
+    const selectedPricingRuleIds = normalizeStringArray(
+      nextServices?.selectedPricingRuleIds ??
+        nextServices?.pricingRuleIds,
+    );
+
+    const selectedRuleCodes = normalizeStringArray(
+      nextServices?.selectedRuleCodes ??
+        nextServices?.selectedPricingRuleCodes ??
+        nextServices?.pricingRuleCodes,
+    );
+
     setForm((previous) => ({
       ...previous,
       optionalServices: {
+        ...EMPTY_PACKAGE_SERVICES,
+        ...previous.optionalServices,
+        ...nextServices,
         requiresPacking: Boolean(nextServices?.requiresPacking),
         requiresWoodenCrate: Boolean(nextServices?.requiresWoodenCrate),
         requiresInsurance: Boolean(nextServices?.requiresInsurance),
+        selectedRuleCodes,
+        selectedPricingRuleIds,
+        pricingRuleIds: selectedPricingRuleIds,
       },
     }));
   };
@@ -617,8 +832,15 @@ export default function ConsignmentBuyOrder() {
       try {
         setIsLoadingOptions(true);
 
-        const [routesResult, productTypesResult] = await Promise.all([
+        const [
+          routesResult,
+          shippingOptionsResult,
+          productTypesResult,
+        ] = await Promise.all([
           getConsignmentRoutesApi({
+            signal: controller.signal,
+          }),
+          getConsignmentShippingOptionsApi({
             signal: controller.signal,
           }),
           getProductTypesApi({
@@ -626,20 +848,42 @@ export default function ConsignmentBuyOrder() {
           }),
         ]);
 
-        const normalizedRoutes = normalizeOptionList(routesResult, ["routes"]);
+        const normalizedRoutes = normalizeOptionList(
+          routesResult,
+          ["routes"],
+        );
 
-        const normalizedProductTypes = normalizeOptionList(productTypesResult, [
-          "productTypes",
-        ]);
+        const normalizedShippingOptions =
+          normalizeShippingOptionList(
+            shippingOptionsResult,
+          );
+
+        const normalizedProductTypes = normalizeOptionList(
+          productTypesResult,
+          ["productTypes"],
+        );
 
         setRouteOptions(normalizedRoutes);
 
+        setShippingOptions(normalizedShippingOptions);
+
         setProductTypeOptions(normalizedProductTypes);
 
-        if (!normalizedRoutes.length) {
+        if (!normalizedRoutes.length || !normalizedShippingOptions.length) {
           setFormErrors((previous) => ({
             ...previous,
-            route: "Chưa có dữ liệu tuyến hàng. Vui lòng tải lại trang.",
+            ...(!normalizedRoutes.length
+              ? {
+                  route:
+                    "Chưa có dữ liệu tuyến hàng. Vui lòng tải lại trang.",
+                }
+              : {}),
+            ...(!normalizedShippingOptions.length
+              ? {
+                  shippingOption:
+                    "Chưa có dữ liệu phương thức vận chuyển. Vui lòng tải lại trang.",
+                }
+              : {}),
           }));
         }
       } catch (error) {
@@ -648,7 +892,7 @@ export default function ConsignmentBuyOrder() {
             "Không tải được dữ liệu",
             getApiErrorMessage(
               error,
-              "Không thể tải tuyến hàng hoặc loại sản phẩm.",
+              "Không thể tải tuyến hàng, phương thức vận chuyển hoặc loại sản phẩm.",
             ),
           );
         }
@@ -822,9 +1066,11 @@ export default function ConsignmentBuyOrder() {
   useEffect(
     () => () => {
       itemsRef.current.forEach((item) => {
-        if (item.image?.previewUrl) {
-          URL.revokeObjectURL(item.image.previewUrl);
-        }
+        getItemImages(item).forEach((image) => {
+          if (image?.previewUrl) {
+            URL.revokeObjectURL(image.previewUrl);
+          }
+        });
       });
     },
     [],
@@ -1127,9 +1373,11 @@ export default function ConsignmentBuyOrder() {
 
     const targetItem = items.find((item) => item.id === itemId);
 
-    if (targetItem?.image?.previewUrl) {
-      URL.revokeObjectURL(targetItem.image.previewUrl);
-    }
+    getItemImages(targetItem).forEach((image) => {
+      if (image?.previewUrl) {
+        URL.revokeObjectURL(image.previewUrl);
+      }
+    });
 
     setItems((previous) => previous.filter((item) => item.id !== itemId));
 
@@ -1149,32 +1397,72 @@ export default function ConsignmentBuyOrder() {
   /* ================= IMAGE ================= */
 
   const handleFileChange = (itemId, event) => {
-    const file = event.target.files?.[0];
+    const selectedFiles = Array.from(event.target.files || []);
 
     event.target.value = "";
 
-    if (!file) {
+    if (!selectedFiles.length || isSubmitting) {
       return;
     }
 
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    const currentItem = items.find((item) => item.id === itemId);
+    const currentImages = getItemImages(currentItem);
+    const remainingSlots = MAX_IMAGES_PER_ITEM - currentImages.length;
+
+    if (remainingSlots <= 0) {
       AuthNotify.warning(
-        "File không hợp lệ",
-        `Ảnh "${file.name}" không phải JPG, PNG hoặc WEBP.`,
+        "Đã đủ số ảnh",
+        `Mỗi sản phẩm được tải tối đa ${MAX_IMAGES_PER_ITEM} ảnh.`,
       );
       return;
     }
 
-    if (file.size > MAX_IMAGE_SIZE) {
-      AuthNotify.warning("Ảnh quá lớn", `Ảnh "${file.name}" vượt quá 5MB.`);
+    const existingIdentities = new Set(
+      currentImages.map((image) => getFileIdentity(image?.fileObj)),
+    );
+
+    const acceptedFiles = [];
+    const rejectedMessages = [];
+
+    selectedFiles.forEach((file) => {
+      try {
+        validateProductImageFile(file);
+
+        const identity = getFileIdentity(file);
+
+        if (existingIdentities.has(identity)) {
+          rejectedMessages.push(`Ảnh "${file.name}" đã được chọn.`);
+          return;
+        }
+
+        existingIdentities.add(identity);
+        acceptedFiles.push(file);
+      } catch (error) {
+        rejectedMessages.push(error?.message || `Ảnh "${file.name}" không hợp lệ.`);
+      }
+    });
+
+    const filesToAdd = acceptedFiles.slice(0, remainingSlots);
+
+    if (acceptedFiles.length > remainingSlots) {
+      rejectedMessages.push(
+        `Chỉ thêm ${remainingSlots} ảnh để không vượt quá ${MAX_IMAGES_PER_ITEM} ảnh/sản phẩm.`,
+      );
+    }
+
+    if (!filesToAdd.length) {
+      AuthNotify.warning(
+        "Không thể thêm ảnh",
+        rejectedMessages[0] || "Không có ảnh hợp lệ để thêm.",
+      );
       return;
     }
 
-    const newImage = {
+    const newImages = filesToAdd.map((file) => ({
       id: createUniqueId(),
       fileObj: file,
       previewUrl: URL.createObjectURL(file),
-    };
+    }));
 
     setItems((previous) =>
       previous.map((item) => {
@@ -1182,45 +1470,75 @@ export default function ConsignmentBuyOrder() {
           return item;
         }
 
-        if (item.image?.previewUrl) {
-          URL.revokeObjectURL(item.image.previewUrl);
-        }
+        const nextImages = [...getItemImages(item), ...newImages];
 
         return {
           ...item,
-          image: newImage,
+          images: nextImages,
+
+          // Ảnh đầu tiên dùng làm ảnh đại diện cho component cũ.
+          image: nextImages[0] || null,
         };
       }),
     );
 
     clearItemError(itemId, "image");
 
-    AuthNotify.success("Đã chọn ảnh", "Ảnh sản phẩm đã được thêm.");
+    AuthNotify.success(
+      "Đã thêm ảnh",
+      `Đã thêm ${newImages.length} ảnh sản phẩm.`,
+    );
+
+    if (rejectedMessages.length) {
+      AuthNotify.warning(
+        "Một số ảnh không được thêm",
+        rejectedMessages.join(" "),
+      );
+    }
   };
 
-  const handleRemoveImage = (event, itemId, previewUrl) => {
+  const handleRemoveImage = (
+    event,
+    itemId,
+    imageId,
+    previewUrl,
+  ) => {
     event.stopPropagation();
 
     if (isSubmitting) {
       return;
     }
 
+    let remainingCount = 0;
+
     setItems((previous) =>
-      previous.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              image: null,
-            }
-          : item,
-      ),
+      previous.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+
+        const nextImages = getItemImages(item).filter(
+          (image) => image.id !== imageId,
+        );
+
+        remainingCount = nextImages.length;
+
+        return {
+          ...item,
+          images: nextImages,
+          image: nextImages[0] || null,
+        };
+      }),
     );
 
     setItemErrors((previous) => ({
       ...previous,
       [itemId]: {
         ...(previous[itemId] || {}),
-        image: "Vui lòng tải ảnh sản phẩm.",
+        image:
+          remainingCount === 0
+            ? "Vui lòng tải ít nhất một ảnh sản phẩm."
+            : "",
       },
     }));
 
@@ -1304,7 +1622,15 @@ export default function ConsignmentBuyOrder() {
           `Đang upload ảnh sản phẩm ${index + 1}/${items.length}...`,
         );
 
-        const imageUrl = await uploadPackageImage(item.image.fileObj);
+        const productImages = getItemImages(item);
+        const imageUrls = await uploadProductImages(
+          productImages.map((image) => image.fileObj),
+          (percent) => {
+            setSubmitMessage(
+              `Đang upload ${productImages.length} ảnh sản phẩm ${index + 1}/${items.length}: ${percent}%`,
+            );
+          },
+        );
 
         requestItems.push({
           productLink: item.productLink.trim(),
@@ -1314,7 +1640,7 @@ export default function ConsignmentBuyOrder() {
           quantity: Number(item.quantity),
           attributes: item.attributes.trim(),
           note: item.note.trim(),
-          imageUrl,
+          imageUrls,
         });
       }
 
@@ -1326,8 +1652,14 @@ export default function ConsignmentBuyOrder() {
 
       const timePayload = getClientTimePayload();
 
+      const selectedPricingRuleIds = normalizeStringArray(
+        form.optionalServices?.selectedPricingRuleIds ??
+          form.optionalServices?.pricingRuleIds,
+      );
+
       const result = await createPurchaseRequestApi({
         route: form.route,
+        shippingOption: form.shippingOption,
         receiverName: form.receiverName.trim(),
         receiverPhone: form.receiverPhone.trim(),
         receiverAddress: form.selectedDeliveryAddress.trim(),
@@ -1345,13 +1677,19 @@ export default function ConsignmentBuyOrder() {
               wardName: selectedAddress.wardName || "",
             }
           : null,
-        requiresInspection: form.requiresInspection,
-        requiresQuantityCheck: form.requiresQuantityCheck,
+        pricingRuleIds: selectedPricingRuleIds,
         requiresPacking: Boolean(form.optionalServices?.requiresPacking),
         requiresWoodenCrate: Boolean(
           form.optionalServices?.requiresWoodenCrate,
         ),
-        requiresInsurance: Boolean(form.optionalServices?.requiresInsurance),
+        requiresInsurance: Boolean(
+          form.optionalServices?.requiresInsurance,
+        ),
+        optionalServices: {
+          ...form.optionalServices,
+          selectedPricingRuleIds,
+          pricingRuleIds: selectedPricingRuleIds,
+        },
         generalNote: form.generalNote.trim(),
         items: requestItems,
         ...timePayload,
@@ -1384,6 +1722,7 @@ export default function ConsignmentBuyOrder() {
         form={form}
         items={items}
         routeOptions={routeOptions}
+        shippingOptions={shippingOptions}
         productTypeOptions={productTypeOptions}
         isSubmitting={isSubmitting}
         submitMessage={submitMessage}
@@ -1445,6 +1784,21 @@ export default function ConsignmentBuyOrder() {
                   Chọn tuyến vận chuyển phù hợp với quốc gia mua hàng và địa chỉ
                   nhận hàng.
                 </span>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <SelectField
+                  label="PHƯƠNG THỨC VẬN CHUYỂN"
+                  value={form.shippingOption}
+                  error={formErrors.shippingOption}
+                  options={shippingOptions}
+                  loading={isLoadingOptions}
+                  disabled={isSubmitting}
+                  placeholder="-- Chọn phương thức vận chuyển --"
+                  onChange={(value) =>
+                    updateForm("shippingOption", value)
+                  }
+                />
               </div>
             </div>
 
@@ -1847,40 +2201,6 @@ export default function ConsignmentBuyOrder() {
                 </div>
               )}
             </div>
-
-            <div className="purchase-buy-left-inner-section purchase-buy-border-top-dash purchase-buy-toggle-row">
-              <div className="purchase-buy-toggle-icon-box">
-                <SafetyCertificateOutlined />
-              </div>
-
-              <div className="purchase-buy-toggle-text-info">
-                <h4>YÊU CẦU KIỂM HÀNG</h4>
-                <p>Kiểm tra tình trạng sản phẩm khi về kho.</p>
-              </div>
-
-              <Switch
-                checked={form.requiresInspection}
-                disabled={isSubmitting}
-                onChange={(value) => updateForm("requiresInspection", value)}
-              />
-            </div>
-
-            <div className="purchase-buy-left-inner-section purchase-buy-border-top-dash purchase-buy-toggle-row">
-              <div className="purchase-buy-toggle-icon-box">
-                <CheckOutlined />
-              </div>
-
-              <div className="purchase-buy-toggle-text-info">
-                <h4>KIỂM SỐ LƯỢNG</h4>
-                <p>Đối chiếu số lượng sản phẩm thực nhận.</p>
-              </div>
-
-              <Switch
-                checked={form.requiresQuantityCheck}
-                disabled={isSubmitting}
-                onChange={(value) => updateForm("requiresQuantityCheck", value)}
-              />
-            </div>
           </div>
         </div>
 
@@ -1888,6 +2208,7 @@ export default function ConsignmentBuyOrder() {
           <div className="purchase-buy-scrollable-content-wrapper">
             {items.map((item, index) => {
               const errors = itemErrors[item.id] || {};
+              const itemImages = getItemImages(item);
 
               return (
                 <section key={item.id} className="purchase-buy-form-main-card">
@@ -2152,8 +2473,12 @@ export default function ConsignmentBuyOrder() {
 
                     <input
                       type="file"
+                      multiple
                       accept="image/jpeg,image/png,image/webp"
-                      disabled={isSubmitting}
+                      disabled={
+                        isSubmitting ||
+                        itemImages.length >= MAX_IMAGES_PER_ITEM
+                      }
                       style={{
                         display: "none",
                       }}
@@ -2163,7 +2488,7 @@ export default function ConsignmentBuyOrder() {
                       onChange={(event) => handleFileChange(item.id, event)}
                     />
 
-                    {!item.image ? (
+                    {itemImages.length === 0 ? (
                       <div
                         role="button"
                         tabIndex={0}
@@ -2178,7 +2503,6 @@ export default function ConsignmentBuyOrder() {
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
-
                             fileInputRefs.current[item.id]?.click();
                           }
                         }}
@@ -2186,51 +2510,108 @@ export default function ConsignmentBuyOrder() {
                         <CloudUploadOutlined className="purchase-buy-upload-big-icon" />
 
                         <span className="purchase-buy-upload-main-text">
-                          Bấm để chọn ảnh sản phẩm
+                          Bấm để chọn nhiều ảnh sản phẩm
                         </span>
 
                         <span className="purchase-buy-upload-sub-text">
-                          JPG, PNG, WEBP — tối đa 5MB
+                          JPG, PNG, WEBP — tối đa 5MB/ảnh — tối đa {MAX_IMAGES_PER_ITEM} ảnh
                         </span>
                       </div>
                     ) : (
-                      <div className="purchase-buy-image-previews-grid purchase-buy-animation-fade-in">
-                        <div
-                          className="purchase-buy-preview-image-item"
-                          role="button"
-                          tabIndex={0}
-                          onClick={() =>
-                            setActiveLightboxImg(item.image.previewUrl)
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setActiveLightboxImg(item.image.previewUrl);
-                            }
-                          }}
-                        >
-                          <img
-                            src={item.image.previewUrl}
-                            alt={item.productName || `Sản phẩm ${index + 1}`}
-                          />
+                      <>
+                        <div className="purchase-buy-image-previews-grid purchase-buy-animation-fade-in">
+                          {itemImages.map((image, imageIndex) => (
+                            <div
+                              key={image.id}
+                              className="purchase-buy-preview-image-item"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() =>
+                                setActiveLightboxImg(image.previewUrl)
+                              }
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  event.preventDefault();
+                                  setActiveLightboxImg(image.previewUrl);
+                                }
+                              }}
+                            >
+                              <img
+                                src={image.previewUrl}
+                                alt={`${item.productName || `Sản phẩm ${index + 1}`} - ảnh ${imageIndex + 1}`}
+                              />
 
-                          <button
-                            type="button"
-                            className="purchase-buy-btn-remove-preview-img"
-                            disabled={isSubmitting}
-                            aria-label="Xóa ảnh sản phẩm"
-                            onClick={(event) =>
-                              handleRemoveImage(
-                                event,
-                                item.id,
-                                item.image.previewUrl,
-                              )
-                            }
-                          >
-                            <CloseOutlined />
-                          </button>
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  left: 8,
+                                  bottom: 8,
+                                  padding: "3px 8px",
+                                  borderRadius: 999,
+                                  background: "rgba(15, 23, 42, 0.72)",
+                                  color: "#fff",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {imageIndex + 1}
+                              </span>
+
+                              <button
+                                type="button"
+                                className="purchase-buy-btn-remove-preview-img"
+                                disabled={isSubmitting}
+                                aria-label={`Xóa ảnh ${imageIndex + 1}`}
+                                onClick={(event) =>
+                                  handleRemoveImage(
+                                    event,
+                                    item.id,
+                                    image.id,
+                                    image.previewUrl,
+                                  )
+                                }
+                              >
+                                <CloseOutlined />
+                              </button>
+                            </div>
+                          ))}
+
+                          {itemImages.length < MAX_IMAGES_PER_ITEM && (
+                            <button
+                              type="button"
+                              disabled={isSubmitting}
+                              onClick={() =>
+                                fileInputRefs.current[item.id]?.click()
+                              }
+                              style={{
+                                minHeight: 132,
+                                border: "1.5px dashed #94a3b8",
+                                borderRadius: 14,
+                                background: "#f8fafc",
+                                color: "#475569",
+                                cursor: isSubmitting ? "not-allowed" : "pointer",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                                fontWeight: 700,
+                              }}
+                            >
+                              <PlusOutlined />
+                              Thêm ảnh
+                            </button>
+                          )}
                         </div>
-                      </div>
+
+                        <div className="purchase-buy-sub-helper-text">
+                          Đã chọn {itemImages.length}/{MAX_IMAGES_PER_ITEM} ảnh.
+                          Có thể chọn nhiều ảnh cùng lúc.
+                        </div>
+                      </>
                     )}
 
                     <FieldError message={errors.image} />
@@ -2278,8 +2659,12 @@ export default function ConsignmentBuyOrder() {
 
                 <PackageOptionalServicesS1
                   value={form.optionalServices}
+                  packages={items}
                   disabled={isSubmitting}
                   onChange={handleOptionalServicesChange}
+                  triggerTitle="Dịch vụ bổ sung cho đơn mua hộ"
+                  modalTitle="Lựa chọn dịch vụ cho đơn mua hộ"
+                  modalDescription="Giữ nguyên toàn bộ phí từ bảng giá hệ thống. Riêng đóng thùng gỗ được tính theo số dòng sản phẩm: mỗi sản phẩm là một kiện, không nhân theo số lượng."
                 />
               </div>
 

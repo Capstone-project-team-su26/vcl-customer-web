@@ -22,12 +22,24 @@ import {
 
 import "./ConsignmentBuyOrderConfirm.css";
 
-const getOptionLabel = (
-  options,
-  value
-) => {
-  const normalizedValue =
-    String(value ?? "").trim();
+const SERVICE_CODE_LABELS = {
+  WOOD_CRATE: "Đóng thùng gỗ",
+  WOOD_BOX: "Đóng thùng gỗ",
+  PACKING: "Đóng gói hàng hóa",
+  SUR_PACKING: "Phụ phí đóng gói",
+  SUR_INSURANCE_3PERCENT: "Bảo hiểm hàng hóa",
+  INSURANCE: "Bảo hiểm hàng hóa",
+  VAT: "Thuế VAT",
+  IMPORT_TAX: "Thuế nhập khẩu",
+  TAX: "Thuế",
+  DOMESTIC_FEE: "Phí vận chuyển nội địa",
+  LOCAL_FREIGHT_TEMP: "Phí vận chuyển nội địa",
+  SUR_INSPECTION: "Phụ phí kiểm hàng",
+  INSPECTION: "Kiểm hàng",
+};
+
+const getOptionLabel = (options = [], value) => {
+  const normalizedValue = String(value ?? "").trim();
 
   if (!normalizedValue) {
     return "Chưa cập nhật";
@@ -36,39 +48,60 @@ const getOptionLabel = (
   return (
     options.find(
       (option) =>
-        String(option.value) ===
-        normalizedValue
-    )?.label ||
-    normalizedValue
-  );
-};
-
-const getImagePreviewUrl = (
-  item
-) => {
-  return (
-    item?.image?.previewUrl ||
-    item?.image?.url ||
-    item?.imageUrl ||
-    ""
+        String(option?.value ?? "") === normalizedValue,
+    )?.label || normalizedValue
   );
 };
 
 const getDisplayText = (
   value,
-  fallback = "Không có"
+  fallback = "Không có",
 ) => {
-  const text =
-    String(value ?? "").trim();
-
+  const text = String(value ?? "").trim();
   return text || fallback;
 };
 
 const formatNumber = (value) => {
   const number = Number(value);
+
   return Number.isFinite(number)
     ? number.toLocaleString("vi-VN")
     : "0";
+};
+
+const formatMoney = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "0 ₫";
+  }
+
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(number);
+};
+
+const normalizeCode = (value) =>
+  String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+
+const normalizeStringArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => String(item ?? "").trim())
+        .filter(Boolean),
+    ),
+  );
 };
 
 const getReceiverAddress = (form) =>
@@ -77,7 +110,7 @@ const getReceiverAddress = (form) =>
       form?.receiverAddress ||
       form?.deliveryAddress ||
       form?.address,
-    "Chưa cập nhật"
+    "Chưa cập nhật",
   );
 
 const getProductTypeValue = (item) =>
@@ -85,78 +118,279 @@ const getProductTypeValue = (item) =>
   item?.productTypeId ??
   item?.productTypeCode;
 
+const getOptionalServices = (form) =>
+  form?.optionalServices &&
+  typeof form.optionalServices === "object"
+    ? form.optionalServices
+    : form || {};
+
+const getImageUrlFromEntry = (entry) => {
+  if (typeof entry === "string") {
+    return entry.trim();
+  }
+
+  return String(
+    entry?.previewUrl ||
+      entry?.url ||
+      entry?.imageUrl ||
+      entry?.fileUrl ||
+      entry?.secureUrl ||
+      entry?.path ||
+      "",
+  ).trim();
+};
+
+const getImagePreviewUrls = (item) => {
+  const candidates = [
+    ...(Array.isArray(item?.images) ? item.images : []),
+    ...(Array.isArray(item?.imageUrls)
+      ? item.imageUrls
+      : []),
+    item?.image,
+    item?.imageUrl,
+  ];
+
+  return Array.from(
+    new Set(
+      candidates
+        .map(getImageUrlFromEntry)
+        .filter(Boolean),
+    ),
+  );
+};
+
+const getShortProductLink = (value) => {
+  const fullLink = String(value || "").trim();
+
+  if (!fullLink) {
+    return "";
+  }
+
+  try {
+    const url = new URL(fullLink);
+    const host = url.hostname.replace(/^www\./, "");
+    const path = `${url.pathname}${url.search}`;
+
+    if (!path || path === "/") {
+      return host;
+    }
+
+    const compactPath =
+      path.length > 54
+        ? `${path.slice(0, 51)}...`
+        : path;
+
+    return `${host}${compactPath}`;
+  } catch {
+    return fullLink.length > 68
+      ? `${fullLink.slice(0, 65)}...`
+      : fullLink;
+  }
+};
+
+const getServiceLabel = (code) => {
+  const normalizedCode = normalizeCode(code);
+
+  if (SERVICE_CODE_LABELS[normalizedCode]) {
+    return SERVICE_CODE_LABELS[normalizedCode];
+  }
+
+  return normalizedCode
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, (character) =>
+      character.toUpperCase(),
+    );
+};
+
 const ConfirmStatus = ({
   enabled,
   enabledText,
   disabledText,
+  description,
 }) => (
-  <span
+  <div
     className={[
-      "purchase-buy-confirm-status",
-      enabled
-        ? "is-enabled"
-        : "is-disabled",
+      "purchase-buy-confirm-service-status",
+      enabled ? "is-enabled" : "is-disabled",
     ].join(" ")}
   >
-    {enabled ? (
-      <CheckCircleOutlined />
-    ) : (
-      <CloseOutlined />
-    )}
+    <span className="purchase-buy-confirm-service-status__icon">
+      {enabled ? (
+        <CheckCircleOutlined />
+      ) : (
+        <CloseOutlined />
+      )}
+    </span>
 
-    {enabled
-      ? enabledText
-      : disabledText}
-  </span>
+    <span className="purchase-buy-confirm-service-status__content">
+      <strong>
+        {enabled ? enabledText : disabledText}
+      </strong>
+
+      {description && <small>{description}</small>}
+    </span>
+  </div>
 );
 
 export default function ConsignmentBuyOrderConfirm({
   form,
   items = [],
   routeOptions = [],
+  shippingOptions = [],
   productTypeOptions = [],
   isSubmitting = false,
   submitMessage = "",
   onBack,
   onConfirm,
 }) {
-  const [
-    previewImage,
-    setPreviewImage,
-  ] = useState("");
+  const [lightbox, setLightbox] = useState({
+    images: [],
+    index: 0,
+    title: "",
+  });
 
-  const routeLabel =
-    useMemo(
-      () =>
-        getOptionLabel(
-          routeOptions,
-          form?.route
-        ),
-      [
+  const routeLabel = useMemo(
+    () =>
+      getOptionLabel(
         routeOptions,
         form?.route,
-      ]
-    );
+      ),
+    [routeOptions, form?.route],
+  );
 
-  const totalQuantity =
-    useMemo(
-      () =>
-        items.reduce(
-          (total, item) =>
-            total +
-            (Number(
-              item?.quantity
-            ) || 0),
-          0
-        ),
-      [items]
-    );
+  const shippingOptionLabel = useMemo(
+    () =>
+      getOptionLabel(
+        shippingOptions,
+        form?.shippingOption,
+      ),
+    [
+      shippingOptions,
+      form?.shippingOption,
+    ],
+  );
+
+  const totalQuantity = useMemo(
+    () =>
+      items.reduce(
+        (total, item) =>
+          total +
+          (Number(item?.quantity) || 0),
+        0,
+      ),
+    [items],
+  );
+
+  const totalImages = useMemo(
+    () =>
+      items.reduce(
+        (total, item) =>
+          total +
+          getImagePreviewUrls(item).length,
+        0,
+      ),
+    [items],
+  );
+
+  const optionalServices =
+    getOptionalServices(form);
+
+  const selectedRuleCodes = useMemo(
+    () =>
+      normalizeStringArray(
+        optionalServices?.selectedRuleCodes ??
+          optionalServices?.selectedPricingRuleCodes ??
+          optionalServices?.pricingRuleCodes,
+      ),
+    [optionalServices],
+  );
+
+  const requiresPacking = Boolean(
+    optionalServices?.requiresPacking ??
+      form?.requiresPacking,
+  );
+
+  const requiresWoodenCrate = Boolean(
+    optionalServices?.requiresWoodenCrate ??
+      form?.requiresWoodenCrate,
+  );
+
+  const requiresInsurance = Boolean(
+    optionalServices?.requiresInsurance ??
+      form?.requiresInsurance,
+  );
+
+  const woodCratePackageCount =
+    Number(
+      optionalServices?.woodCratePackageCount ??
+        optionalServices?.woodCrateQuantity,
+    ) ||
+    (requiresWoodenCrate ? items.length : 0);
+
+  const woodCrateTotalFee = Number(
+    optionalServices?.woodCrateTotalFee,
+  );
+
+  const lightboxVisible =
+    lightbox.images.length > 0;
+
+  const currentLightboxImage =
+    lightbox.images[lightbox.index] || "";
+
+  const openLightbox = (
+    images,
+    index,
+    title,
+  ) => {
+    if (!images.length) {
+      return;
+    }
+
+    setLightbox({
+      images,
+      index,
+      title,
+    });
+  };
+
+  const closeLightbox = () => {
+    setLightbox({
+      images: [],
+      index: 0,
+      title: "",
+    });
+  };
+
+  const showPreviousImage = (event) => {
+    event.stopPropagation();
+
+    setLightbox((current) => ({
+      ...current,
+      index:
+        current.index <= 0
+          ? current.images.length - 1
+          : current.index - 1,
+    }));
+  };
+
+  const showNextImage = (event) => {
+    event.stopPropagation();
+
+    setLightbox((current) => ({
+      ...current,
+      index:
+        current.index >=
+        current.images.length - 1
+          ? 0
+          : current.index + 1,
+    }));
+  };
 
   const handleConfirm = () => {
     if (
       isSubmitting ||
-      typeof onConfirm !==
-        "function"
+      typeof onConfirm !== "function"
     ) {
       return;
     }
@@ -167,34 +401,20 @@ export default function ConsignmentBuyOrderConfirm({
   return (
     <div className="purchase-buy-confirm-page">
       <div className="purchase-buy-confirm-shell">
-        {/* <button
-          type="button"
-          className="purchase-buy-confirm-back"
-          disabled={isSubmitting}
-          onClick={onBack}
-        >
-          <LeftOutlined />
-          QUAY LẠI CHỈNH SỬA
-        </button> */}
-
         <section className="purchase-buy-confirm-hero">
           <div className="purchase-buy-confirm-hero-icon">
             <ShoppingCartOutlined />
           </div>
 
           <div className="purchase-buy-confirm-hero-content">
-            <span>
-              BƯỚC XÁC NHẬN CUỐI CÙNG
-            </span>
+            <span>BƯỚC XÁC NHẬN CUỐI CÙNG</span>
 
-            <h1>
-              Xem lại yêu cầu mua hộ
-            </h1>
+            <h1>Xem lại yêu cầu mua hộ</h1>
 
             <p>
-              Kiểm tra kỹ thông tin người nhận,
-              tùy chọn dịch vụ và sản phẩm trước
-              khi gửi yêu cầu đến VCL.
+              Kiểm tra đầy đủ tuyến hàng, người nhận,
+              dịch vụ, hình ảnh và thông tin từng sản
+              phẩm trước khi gửi yêu cầu đến VCL.
             </p>
           </div>
 
@@ -210,13 +430,17 @@ export default function ConsignmentBuyOrderConfirm({
               <EnvironmentOutlined />
             </span>
 
-            <small>
-              Tuyến vận chuyển
-            </small>
+            <small>Tuyến vận chuyển</small>
+            <strong>{routeLabel}</strong>
+          </article>
 
-            <strong>
-              {routeLabel}
-            </strong>
+          <article>
+            <span>
+              <GlobalOutlined />
+            </span>
+
+            <small>Phương thức</small>
+            <strong>{shippingOptionLabel}</strong>
           </article>
 
           <article>
@@ -224,10 +448,7 @@ export default function ConsignmentBuyOrderConfirm({
               <ShoppingCartOutlined />
             </span>
 
-            <small>
-              Dòng sản phẩm
-            </small>
-
+            <small>Dòng sản phẩm</small>
             <strong>
               {formatNumber(items.length)} mặt hàng
             </strong>
@@ -238,10 +459,7 @@ export default function ConsignmentBuyOrderConfirm({
               <CheckOutlined />
             </span>
 
-            <small>
-              Tổng số lượng
-            </small>
-
+            <small>Tổng số lượng</small>
             <strong>
               {formatNumber(totalQuantity)} sản phẩm
             </strong>
@@ -257,13 +475,9 @@ export default function ConsignmentBuyOrderConfirm({
                 </span>
 
                 <div>
-                  <h2>
-                    Thông tin nhận hàng
-                  </h2>
-
+                  <h2>Thông tin nhận hàng</h2>
                   <p>
-                    Người nhận và địa chỉ giao hàng
-                    tại Việt Nam.
+                    Thông tin người nhận tại Việt Nam.
                   </p>
                 </div>
               </div>
@@ -278,7 +492,7 @@ export default function ConsignmentBuyOrderConfirm({
                   <strong>
                     {getDisplayText(
                       form?.receiverName,
-                      "Chưa cập nhật"
+                      "Chưa cập nhật",
                     )}
                   </strong>
                 </div>
@@ -292,8 +506,19 @@ export default function ConsignmentBuyOrderConfirm({
                   <strong>
                     {getDisplayText(
                       form?.receiverPhone,
-                      "Chưa cập nhật"
+                      "Chưa cập nhật",
                     )}
+                  </strong>
+                </div>
+
+                <div className="purchase-buy-confirm-info-item">
+                  <span className="purchase-buy-confirm-info-label">
+                    <GlobalOutlined />
+                    Phương thức vận chuyển
+                  </span>
+
+                  <strong>
+                    {shippingOptionLabel}
                   </strong>
                 </div>
 
@@ -317,100 +542,135 @@ export default function ConsignmentBuyOrderConfirm({
                 </span>
 
                 <div>
-                  <h2>
-                    Danh sách sản phẩm
-                  </h2>
-
+                  <h2>Danh sách sản phẩm</h2>
                   <p>
-                    Có {formatNumber(items.length)} mặt hàng
-                    trong yêu cầu mua hộ.
+                    {formatNumber(items.length)} mặt hàng,
+                    tổng {formatNumber(totalQuantity)} sản
+                    phẩm và {formatNumber(totalImages)} hình
+                    ảnh.
                   </p>
                 </div>
               </div>
 
               <div className="purchase-buy-confirm-product-list">
-                {items.map(
-                  (item, index) => {
-                    const imageUrl =
-                      getImagePreviewUrl(
-                        item
-                      );
+                {items.map((item, index) => {
+                  const imageUrls =
+                    getImagePreviewUrls(item);
 
-                    const productTypeLabel =
-                      getOptionLabel(
-                        productTypeOptions,
-                        getProductTypeValue(item)
-                      );
+                  const productTypeLabel =
+                    getOptionLabel(
+                      productTypeOptions,
+                      getProductTypeValue(item),
+                    );
 
-                    return (
-                      <article
-                        key={
-                          item?.id ||
-                          `${item?.productName}-${index}`
-                        }
-                        className="purchase-buy-confirm-product-card"
-                      >
-                        <div className="purchase-buy-confirm-product-number">
+                  const fullProductLink =
+                    String(
+                      item?.productLink || "",
+                    ).trim();
+
+                  const shortProductLink =
+                    getShortProductLink(
+                      fullProductLink,
+                    );
+
+                  const productTitle =
+                    getDisplayText(
+                      item?.productName,
+                      `Sản phẩm ${index + 1}`,
+                    );
+
+                  return (
+                    <article
+                      key={
+                        item?.id ||
+                        `${item?.productName}-${index}`
+                      }
+                      className="purchase-buy-confirm-product-card"
+                    >
+                      <div className="purchase-buy-confirm-product-topline">
+                        <span className="purchase-buy-confirm-product-number">
                           {index + 1}
-                        </div>
+                        </span>
 
-                        <button
-                          type="button"
-                          className="purchase-buy-confirm-product-image"
-                          disabled={
-                            !imageUrl
-                          }
-                          onClick={() =>
-                            imageUrl &&
-                            setPreviewImage(
-                              imageUrl
-                            )
-                          }
-                          aria-label={
-                            imageUrl
-                              ? `Xem ảnh ${getDisplayText(
-                                  item?.productName,
-                                  `sản phẩm ${index + 1}`
-                                )}`
-                              : "Sản phẩm chưa có ảnh"
-                          }
-                        >
-                          {imageUrl ? (
-                            <img
-                              src={
-                                imageUrl
-                              }
-                              alt={
-                                item?.productName ||
-                                `Sản phẩm ${index + 1}`
-                              }
-                            />
-                          ) : (
-                            <ShoppingCartOutlined />
-                          )}
-                        </button>
+                        <div className="purchase-buy-confirm-product-heading">
+                          <div>
+                            <span>
+                              Sản phẩm {index + 1}
+                            </span>
 
-                        <div className="purchase-buy-confirm-product-content">
-                          <div className="purchase-buy-confirm-product-heading">
-                            <div>
-                              <span>
-                                Sản phẩm {index + 1}
-                              </span>
-
-                              <h3>
-                                {getDisplayText(
-                                  item?.productName,
-                                  "Chưa cập nhật tên"
-                                )}
-                              </h3>
-                            </div>
-
-                            <strong className="purchase-buy-confirm-quantity">
-                              SL:{" "}
-                              {formatNumber(item?.quantity)}
-                            </strong>
+                            <h3>{productTitle}</h3>
                           </div>
 
+                          <strong className="purchase-buy-confirm-quantity">
+                            SL:{" "}
+                            {formatNumber(
+                              item?.quantity,
+                            )}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div
+                        className={[
+                          "purchase-buy-confirm-product-body",
+                          imageUrls.length === 0 &&
+                            "has-no-image",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                      >
+                        <div
+                          className={[
+                            "purchase-buy-confirm-product-gallery",
+                            imageUrls.length === 1 &&
+                              "is-single",
+                            imageUrls.length === 2 &&
+                              "is-double",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {imageUrls.length ? (
+                            imageUrls.map(
+                              (imageUrl, imageIndex) => (
+                                <button
+                                  key={`${imageUrl}-${imageIndex}`}
+                                  type="button"
+                                  className="purchase-buy-confirm-product-image"
+                                  onClick={() =>
+                                    openLightbox(
+                                      imageUrls,
+                                      imageIndex,
+                                      productTitle,
+                                    )
+                                  }
+                                  aria-label={`Xem ảnh ${
+                                    imageIndex + 1
+                                  } của ${productTitle}`}
+                                >
+                                  <img
+                                    src={imageUrl}
+                                    alt={`${productTitle} - ảnh ${
+                                      imageIndex + 1
+                                    }`}
+                                  />
+
+                                  <span className="purchase-buy-confirm-product-image-index">
+                                    {imageIndex + 1}/
+                                    {imageUrls.length}
+                                  </span>
+                                </button>
+                              ),
+                            )
+                          ) : (
+                            <div className="purchase-buy-confirm-product-image-empty">
+                              <ShoppingCartOutlined />
+                              <span>Chưa có ảnh</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="purchase-buy-confirm-product-content">
                           <div className="purchase-buy-confirm-product-tags">
                             <span title="Loại sản phẩm">
                               {productTypeLabel}
@@ -420,55 +680,73 @@ export default function ConsignmentBuyOrderConfirm({
                               <GlobalOutlined />
                               {getDisplayText(
                                 item?.sourceWebsite,
-                                "Chưa có website"
+                                "Chưa có website",
                               )}
+                            </span>
+
+                            <span title="Số lượng ảnh">
+                              {formatNumber(
+                                imageUrls.length,
+                              )}{" "}
+                              ảnh
                             </span>
                           </div>
 
                           <dl className="purchase-buy-confirm-product-details">
                             <div>
-                              <dt>
-                                Thuộc tính
-                              </dt>
-
+                              <dt>Thuộc tính</dt>
                               <dd>
                                 {getDisplayText(
-                                  item?.attributes
+                                  item?.attributes,
                                 )}
                               </dd>
                             </div>
 
                             <div>
-                              <dt>
-                                Ghi chú
-                              </dt>
-
+                              <dt>Ghi chú</dt>
                               <dd>
                                 {getDisplayText(
-                                  item?.note
+                                  item?.note,
                                 )}
                               </dd>
                             </div>
                           </dl>
 
-                          {item?.productLink && (
-                            <a
-                              href={
-                                item.productLink
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                              className="purchase-buy-confirm-product-link"
-                            >
-                              <LinkOutlined />
-                              Mở liên kết sản phẩm
-                            </a>
+                          {fullProductLink && (
+                            <div className="purchase-buy-confirm-product-link-box">
+                              <span className="purchase-buy-confirm-product-link-icon">
+                                <LinkOutlined />
+                              </span>
+
+                              <span className="purchase-buy-confirm-product-link-content">
+                                <small>
+                                  Liên kết sản phẩm
+                                </small>
+
+                                <span
+                                  className="purchase-buy-confirm-product-link-text"
+                                  title={fullProductLink}
+                                >
+                                  {shortProductLink}
+                                </span>
+                              </span>
+
+                              <a
+                                href={fullProductLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="purchase-buy-confirm-product-link-action"
+                                title="Mở liên kết sản phẩm"
+                              >
+                                Mở link
+                              </a>
+                            </div>
                           )}
                         </div>
-                      </article>
-                    );
-                  }
-                )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           </div>
@@ -481,45 +759,76 @@ export default function ConsignmentBuyOrderConfirm({
                 </span>
 
                 <div>
-                  <h2>
-                    Tùy chọn dịch vụ
-                  </h2>
-
+                  <h2>Dịch vụ bổ sung</h2>
                   <p>
-                    Các yêu cầu kiểm tra đã chọn.
+                    Các dịch vụ và phụ phí đang áp dụng.
                   </p>
                 </div>
               </div>
 
               <div className="purchase-buy-confirm-service-list">
-                <div>
-                  <span>
-                    Kiểm hàng
-                  </span>
+                <ConfirmStatus
+                  enabled={requiresPacking}
+                  enabledText="Có đóng gói"
+                  disabledText="Không đóng gói"
+                  description={
+                    requiresPacking
+                      ? "Hàng hóa được yêu cầu đóng gói trước khi vận chuyển."
+                      : "Không sử dụng dịch vụ đóng gói."
+                  }
+                />
 
-                  <ConfirmStatus
-                    enabled={Boolean(
-                      form?.requiresInspection
-                    )}
-                    enabledText="Có kiểm hàng"
-                    disabledText="Không kiểm hàng"
-                  />
-                </div>
+                <ConfirmStatus
+                  enabled={requiresWoodenCrate}
+                  enabledText="Có đóng thùng gỗ"
+                  disabledText="Không đóng thùng gỗ"
+                  description={
+                    requiresWoodenCrate
+                      ? `${formatNumber(
+                          woodCratePackageCount,
+                        )} kiện${
+                          Number.isFinite(
+                            woodCrateTotalFee,
+                          ) &&
+                          woodCrateTotalFee > 0
+                            ? ` • ${formatMoney(
+                                woodCrateTotalFee,
+                              )}`
+                            : ""
+                        }`
+                      : "Không sử dụng thùng gỗ."
+                  }
+                />
 
-                <div>
-                  <span>
-                    Kiểm đếm số lượng
-                  </span>
-
-                  <ConfirmStatus
-                    enabled={Boolean(
-                      form?.requiresQuantityCheck
-                    )}
-                    enabledText="Có kiểm đếm"
-                    disabledText="Không kiểm đếm"
-                  />
-                </div>
+                <ConfirmStatus
+                  enabled={requiresInsurance}
+                  enabledText="Có bảo hiểm"
+                  disabledText="Không bảo hiểm"
+                  description={
+                    requiresInsurance
+                      ? "Đơn hàng có đăng ký bảo hiểm hàng hóa."
+                      : "Đơn hàng không đăng ký bảo hiểm."
+                  }
+                />
               </div>
+
+              {selectedRuleCodes.length > 0 && (
+                <div className="purchase-buy-confirm-applied-rules">
+                  <span>Quy tắc phí đã chọn</span>
+
+                  <div>
+                    {selectedRuleCodes.map(
+                      (ruleCode) => (
+                        <em key={ruleCode}>
+                          {getServiceLabel(
+                            ruleCode,
+                          )}
+                        </em>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
             </section>
 
             <section className="purchase-buy-confirm-card">
@@ -529,12 +838,9 @@ export default function ConsignmentBuyOrderConfirm({
                 </span>
 
                 <div>
-                  <h2>
-                    Ghi chú chung
-                  </h2>
-
+                  <h2>Ghi chú chung</h2>
                   <p>
-                    Nội dung bổ sung cho toàn bộ yêu cầu.
+                    Nội dung áp dụng cho toàn bộ yêu cầu.
                   </p>
                 </div>
               </div>
@@ -542,7 +848,7 @@ export default function ConsignmentBuyOrderConfirm({
               <div className="purchase-buy-confirm-note">
                 {getDisplayText(
                   form?.generalNote,
-                  "Không có ghi chú chung."
+                  "Không có ghi chú chung.",
                 )}
               </div>
             </section>
@@ -551,16 +857,14 @@ export default function ConsignmentBuyOrderConfirm({
               <InfoCircleOutlined />
 
               <div>
-                <strong>
-                  Lưu ý trước khi gửi
-                </strong>
+                <strong>Lưu ý trước khi gửi</strong>
 
                 <p>
-                  Sau khi xác nhận, hệ thống sẽ
-                  tải ảnh sản phẩm lên và tạo yêu
-                  cầu mua hộ. VCL sẽ kiểm tra lại
-                  liên kết, thuộc tính và số lượng
-                  trước khi báo giá.
+                  Sau khi xác nhận, hệ thống sẽ tải toàn
+                  bộ hình ảnh và tạo yêu cầu mua hộ. VCL
+                  sẽ kiểm tra lại liên kết, thuộc tính,
+                  số lượng và các dịch vụ đã chọn trước
+                  khi báo giá.
                 </p>
               </div>
             </section>
@@ -568,66 +872,112 @@ export default function ConsignmentBuyOrderConfirm({
         </div>
 
         <footer className="purchase-buy-confirm-actions">
-          <button
-            type="button"
-            className="purchase-buy-confirm-edit-button"
-            disabled={isSubmitting}
-            onClick={onBack}
-          >
-            <LeftOutlined />
-            QUAY LẠI CHỈNH SỬA
-          </button>
+          <div className="purchase-buy-confirm-actions__summary">
+            <CheckCircleOutlined />
 
-          <button
-            type="button"
-            className="purchase-buy-confirm-submit-button"
-            disabled={isSubmitting}
-            onClick={handleConfirm}
-          >
-            {isSubmitting ? (
-              <>
-                <LoadingOutlined spin />
-                ĐANG TẠO YÊU CẦU...
-              </>
-            ) : (
-              <>
-                <CheckOutlined />
-                XÁC NHẬN TẠO YÊU CẦU
-              </>
-            )}
-          </button>
+            <span>
+              Đã kiểm tra{" "}
+              <strong>
+                {formatNumber(items.length)}
+              </strong>{" "}
+              mặt hàng và{" "}
+              <strong>
+                {formatNumber(totalImages)}
+              </strong>{" "}
+              ảnh
+            </span>
+          </div>
+
+          <div className="purchase-buy-confirm-actions__buttons">
+            <button
+              type="button"
+              className="purchase-buy-confirm-edit-button"
+              disabled={isSubmitting}
+              onClick={onBack}
+            >
+              <LeftOutlined />
+              QUAY LẠI CHỈNH SỬA
+            </button>
+
+            <button
+              type="button"
+              className="purchase-buy-confirm-submit-button"
+              disabled={isSubmitting}
+              onClick={handleConfirm}
+            >
+              {isSubmitting ? (
+                <>
+                  <LoadingOutlined spin />
+                  ĐANG TẠO YÊU CẦU...
+                </>
+              ) : (
+                <>
+                  <CheckOutlined />
+                  XÁC NHẬN TẠO YÊU CẦU
+                </>
+              )}
+            </button>
+          </div>
         </footer>
       </div>
 
-      {previewImage && (
+      {lightboxVisible && (
         <div
           className="purchase-buy-confirm-lightbox"
           role="presentation"
-          onClick={() =>
-            setPreviewImage("")
-          }
+          onClick={closeLightbox}
         >
           <button
             type="button"
+            className="purchase-buy-confirm-lightbox-close"
             aria-label="Đóng ảnh"
-            onClick={() =>
-              setPreviewImage("")
-            }
+            onClick={closeLightbox}
           >
             <CloseOutlined />
           </button>
 
-          <img
-            src={previewImage}
-            alt="Xem trước sản phẩm"
+          {lightbox.images.length > 1 && (
+            <button
+              type="button"
+              className="purchase-buy-confirm-lightbox-nav is-previous"
+              aria-label="Ảnh trước"
+              onClick={showPreviousImage}
+            >
+              ‹
+            </button>
+          )}
+
+          <div
+            className="purchase-buy-confirm-lightbox-content"
             onClick={(event) =>
               event.stopPropagation()
             }
-          />
+          >
+            <img
+              src={currentLightboxImage}
+              alt={lightbox.title}
+            />
 
-          <span>
-            Bấm vào vùng tối để đóng
-          </span>
+            <div className="purchase-buy-confirm-lightbox-caption">
+              <strong>{lightbox.title}</strong>
+
+              <span>
+                Ảnh {lightbox.index + 1}/
+                {lightbox.images.length}
+              </span>
+            </div>
+          </div>
+
+          {lightbox.images.length > 1 && (
+            <button
+              type="button"
+              className="purchase-buy-confirm-lightbox-nav is-next"
+              aria-label="Ảnh tiếp theo"
+              onClick={showNextImage}
+            >
+              ›
+            </button>
+          )}
         </div>
       )}
 
@@ -648,9 +998,7 @@ export default function ConsignmentBuyOrderConfirm({
               HỆ THỐNG VCL ĐANG XỬ LÝ
             </span>
 
-            <h3>
-              ĐANG TẠO YÊU CẦU MUA HỘ
-            </h3>
+            <h3>ĐANG TẠO YÊU CẦU MUA HỘ</h3>
 
             <p>
               {submitMessage ||
@@ -661,7 +1009,10 @@ export default function ConsignmentBuyOrderConfirm({
               <i />
             </span>
 
-            <div className="purchase-buy-confirm-loading-steps" aria-hidden="true">
+            <div
+              className="purchase-buy-confirm-loading-steps"
+              aria-hidden="true"
+            >
               <span>Kiểm tra dữ liệu</span>
               <span>Tải ảnh sản phẩm</span>
               <span>Tạo yêu cầu</span>

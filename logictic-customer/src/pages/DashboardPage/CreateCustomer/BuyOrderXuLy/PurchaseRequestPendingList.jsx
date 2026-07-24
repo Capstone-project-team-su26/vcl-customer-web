@@ -708,7 +708,7 @@ const PurchaseRequestPendingList = () => {
       <div className="purchase-pending-page-header">
         <div>
           <h1 className="purchase-pending-page-title">
-            YÊU CẦU MUA HỘ CHỜ DUYỆT
+            Yêu cầu mua hộ chờ duyệt
           </h1>
 
           <p className="purchase-pending-page-subtitle">
@@ -721,7 +721,7 @@ const PurchaseRequestPendingList = () => {
             {filteredPurchaseRequests.length}
           </strong>
 
-          <span>Yêu cầu</span>
+          <span>yêu cầu</span>
         </div>
       </div>
 
@@ -764,7 +764,7 @@ const PurchaseRequestPendingList = () => {
             disabled={loading}
             className="purchase-pending-reset-button"
           >
-            LÀM MỚI
+            Làm mới
           </Button>
         </div>
       </div>
@@ -884,7 +884,7 @@ const PurchaseRequestPendingList = () => {
                           </div>
 
                           <span className="purchase-pending-tag-type">
-                            MUA HỘ
+                            Mua hộ
                           </span>
 
                           <span className="purchase-pending-tag-count">
@@ -940,7 +940,7 @@ const PurchaseRequestPendingList = () => {
                         </span>
 
                         <span className="purchase-pending-status-inline">
-                          TRẠNG THÁI:{" "}
+                          Trạng thái:{" "}
                           <b>
                             Chờ duyệt
                           </b>
@@ -981,7 +981,7 @@ const PurchaseRequestPendingList = () => {
                                       {product?.productName || "Sản phẩm chưa có tên"}
                                     </span>
                                     <strong className="purchase-pending-product-quantity">
-                                      SL: {Number(product?.quantity || 0).toLocaleString("vi-VN")}
+                                      Số lượng: {Number(product?.quantity || 0).toLocaleString("vi-VN")}
                                     </strong>
                                   </div>
                                 ))
@@ -1010,31 +1010,31 @@ const PurchaseRequestPendingList = () => {
 
                           <div className="purchase-pending-request-type">
                             <span>
-                              LOẠI YÊU CẦU
+                              Loại yêu cầu
                             </span>
 
                             <strong>
-                              MUA HỘ
+                              Mua hộ
                             </strong>
                           </div>
 
                           <div className="purchase-pending-specs-list">
                             <span>
-                              Mặt hàng:{" "}
+                              Số mặt hàng:{" "}
                               <strong>
                                 {item.itemCount ?? 0}
                               </strong>
                             </span>
 
                             <span>
-                              Tổng SL:{" "}
+                              Tổng số lượng:{" "}
                               <strong>
                                 {getTotalQuantity(item).toLocaleString("vi-VN")}
                               </strong>
                             </span>
 
                             <span>
-                              Mã:{" "}
+                              Mã vận đơn:{" "}
                               <strong>
                                 {getPurchaseCode(item)}
                               </strong>

@@ -93,9 +93,14 @@ export const EMPTY_PACKAGE_SERVICES = {
   selectedPricingRuleIds: [],
   packageConfigurationByPackageId: {},
   selectedPackageConfigurations: [],
+  woodCratePackageCount: 0,
+  woodCrateQuantity: 0,
+  woodCrateUnitFee: 0,
+  woodCrateBaseFeePerPackage: 0,
   woodCrateBaseFee: 0,
   woodCrateConfigurationFee: 0,
   woodCrateTotalFee: 0,
+  woodCrateCompleted: false,
 };
 
 const normalizeCode = (value) =>
@@ -492,161 +497,6 @@ const areCodeArraysEqual = (first = [], second = []) => {
 };
 
 
-const PACKAGE_CONFIGURATION_LABELS = {
-  SMALL: {
-    name: "Thùng cỡ nhỏ",
-    size: "CỠ NHỎ",
-  },
-  MEDIUM: {
-    name: "Thùng cỡ vừa",
-    size: "CỠ VỪA",
-  },
-  LARGE: {
-    name: "Thùng cỡ lớn",
-    size: "CỠ LỚN",
-  },
-  CUSTOM: {
-    name: "Thùng tùy chỉnh",
-    size: "TÙY CHỈNH",
-  },
-};
-
-const normalizePackageConfiguration = (configuration = {}) => {
-  const id = String(
-    configuration?.id ||
-      configuration?.packageConfigurationId ||
-      "",
-  ).trim();
-
-  return {
-    ...configuration,
-    id,
-    packageConfigurationId: id,
-    configCode: normalizeCode(
-      configuration?.configCode ||
-        configuration?.code,
-    ),
-    configName: String(
-      configuration?.configName ||
-        configuration?.name ||
-        "Cấu hình thùng",
-    ).trim(),
-    length:
-      toFiniteNumberOrNull(configuration?.length) ?? 0,
-    width:
-      toFiniteNumberOrNull(configuration?.width) ?? 0,
-    height:
-      toFiniteNumberOrNull(configuration?.height) ?? 0,
-    maxWeight:
-      toFiniteNumberOrNull(
-        configuration?.maxWeight,
-      ) ?? 0,
-    packageFee:
-      toFiniteNumberOrNull(
-        configuration?.packageFee,
-      ) ?? 0,
-    estimatedFee:
-      toFiniteNumberOrNull(
-        configuration?.estimatedFee,
-      ),
-    status: normalizeCode(
-      configuration?.status,
-    ),
-  };
-};
-
-const normalizePackageConfigurationsFromApi = (
-  result,
-) => {
-  const candidates = [
-    result,
-    result?.items,
-    result?.packageConfigurations,
-    result?.configurations,
-    result?.data,
-    result?.data?.items,
-    result?.data?.packageConfigurations,
-    result?.data?.configurations,
-  ];
-
-  const rawConfigurations =
-    candidates.find(Array.isArray) || [];
-
-  return rawConfigurations
-    .filter(
-      (configuration) =>
-        configuration &&
-        typeof configuration === "object",
-    )
-    .map(normalizePackageConfiguration)
-    .filter(
-      (configuration) =>
-        configuration.id &&
-        (
-          !configuration.status ||
-          configuration.status === ACTIVE_STATUS
-        ),
-    );
-};
-
-const normalizePackageConfigurationMap = (
-  value,
-) => {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    Array.isArray(value)
-  ) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .map(([packageId, configurationId]) => [
-        String(packageId || "").trim(),
-        String(configurationId || "").trim(),
-      ])
-      .filter(
-        ([packageId, configurationId]) =>
-          packageId && configurationId,
-      ),
-  );
-};
-
-const areConfigurationMapsEqual = (
-  first,
-  second,
-) => {
-  const firstMap =
-    normalizePackageConfigurationMap(first);
-  const secondMap =
-    normalizePackageConfigurationMap(second);
-
-  const firstKeys =
-    Object.keys(firstMap).sort();
-  const secondKeys =
-    Object.keys(secondMap).sort();
-
-  if (firstKeys.length !== secondKeys.length) {
-    return false;
-  }
-
-  return firstKeys.every(
-    (key, index) =>
-      key === secondKeys[index] &&
-      firstMap[key] === secondMap[key],
-  );
-};
-
-const getPackageId = (
-  packageItem,
-  index,
-) =>
-  String(
-    packageItem?.id ||
-      packageItem?.packageId ||
-      `package-${index + 1}`,
-  ).trim();
 
 const getPackageDisplayName = (
   packageItem,
@@ -655,304 +505,152 @@ const getPackageDisplayName = (
   String(
     packageItem?.productName ||
       packageItem?.name ||
-      `Kiện hàng ${index + 1}`,
+      `Sản phẩm ${index + 1}`,
   ).trim();
 
-const getPackageMeasurements = (
-  packageItem = {},
-) => ({
-  length:
-    toFiniteNumberOrNull(
-      packageItem?.length,
-    ) ?? 0,
-  width:
-    toFiniteNumberOrNull(
-      packageItem?.width,
-    ) ?? 0,
-  height:
-    toFiniteNumberOrNull(
-      packageItem?.height,
-    ) ?? 0,
-  weight:
-    toFiniteNumberOrNull(
-      packageItem?.weight,
-    ) ?? 0,
-});
+const getProductQuantity = (packageItem) => {
+  const quantity = Number(packageItem?.quantity);
 
-const hasCompletePackageDimensions = (
-  packageItem,
-) => {
-  const {
-    length,
-    width,
-    height,
-    weight,
-  } = getPackageMeasurements(
-    packageItem,
-  );
-
-  return (
-    weight > 0 &&
-    length > 0 &&
-    width > 0 &&
-    height > 0
-  );
+  return Number.isInteger(quantity) && quantity > 0
+    ? quantity
+    : 0;
 };
 
-const formatPackageMeasurements = (
-  packageItem,
-) => {
-  const {
-    length,
-    width,
-    height,
-    weight,
-  } = getPackageMeasurements(
-    packageItem,
-  );
-
-  if (
-    weight <= 0 ||
-    length <= 0 ||
-    width <= 0 ||
-    height <= 0
-  ) {
-    return "Chưa nhập đủ cân nặng, dài × rộng × cao";
-  }
-
-  return `${formatNumber(
-    length,
-  )} × ${formatNumber(
-    width,
-  )} × ${formatNumber(
-    height,
-  )} cm • ${formatNumber(
-    weight,
-  )} kg`;
-};
-
-const getConfigurationDisplay = (
-  configuration = {},
-) => {
-  const configCode = normalizeCode(
-    configuration?.configCode,
-  );
-
-  const translated =
-    PACKAGE_CONFIGURATION_LABELS[configCode];
-
-  return {
-    name:
-      translated?.name ||
-      configuration?.configName ||
-      "Cấu hình thùng",
-    size:
-      translated?.size ||
-      configCode.replaceAll("_", " "),
-  };
-};
-
-const getConfigurationFee = (
-  configuration,
-) =>
-  toFiniteNumberOrNull(
-    configuration?.estimatedFee,
-  ) ??
-  toFiniteNumberOrNull(
-    configuration?.packageFee,
-  ) ??
-  0;
-
-const isCustomConfiguration = (
-  configuration,
-) =>
-  normalizeCode(
-    configuration?.configCode,
-  ) === "CUSTOM";
-
-const canPackageFitConfiguration = (
-  packageItem,
-  configuration,
-) => {
-  if (
-    !hasCompletePackageDimensions(
-      packageItem,
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    isCustomConfiguration(
-      configuration,
-    )
-  ) {
-    return true;
-  }
-
-  const packageMeasurements =
-    getPackageMeasurements(packageItem);
-
-  const packageDimensions = [
-    packageMeasurements.length,
-    packageMeasurements.width,
-    packageMeasurements.height,
-  ].sort((first, second) => second - first);
-
-  const configurationDimensions = [
-    Number(configuration?.length) || 0,
-    Number(configuration?.width) || 0,
-    Number(configuration?.height) || 0,
-  ].sort((first, second) => second - first);
-
-  const dimensionsFit =
-    packageDimensions.every(
-      (dimension, index) =>
-        dimension <=
-        configurationDimensions[index],
+const isValidHttpUrl = (value) => {
+  try {
+    const url = new URL(
+      String(value || "").trim(),
     );
 
-  const maxWeight =
-    Number(configuration?.maxWeight) || 0;
-
-  const weightFits =
-    packageMeasurements.weight <= 0 ||
-    maxWeight <= 0 ||
-    packageMeasurements.weight <= maxWeight;
-
-  return dimensionsFit && weightFits;
+    return (
+      url.protocol === "http:" ||
+      url.protocol === "https:"
+    );
+  } catch {
+    return false;
+  }
 };
 
-const calculateWoodCratePricing = ({
-  packages,
-  configurations,
-  configurationMap,
-  baseFeePerPackage,
-  enabled,
-}) => {
-  if (!enabled) {
-    return {
-      baseFee: 0,
-      configurationFee: 0,
-      totalFee: 0,
-      rows: [],
-    };
+const getProductImageValue = (packageItem = {}) =>
+  packageItem?.image ||
+  packageItem?.imageUrl ||
+  (Array.isArray(packageItem?.imageUrls)
+    ? packageItem.imageUrls.find(Boolean)
+    : null);
+
+const getIncompleteProductFields = (
+  packageItem = {},
+) => {
+  const missingFields = [];
+
+  if (
+    !String(packageItem?.productLink || "").trim() ||
+    !isValidHttpUrl(packageItem?.productLink)
+  ) {
+    missingFields.push("link sản phẩm");
   }
 
-  const configurationById = new Map(
-    configurations.map(
-      (configuration) => [
-        configuration.id,
-        configuration,
-      ],
-    ),
-  );
+  if (!String(packageItem?.sourceWebsite || "").trim()) {
+    missingFields.push("website nguồn");
+  }
 
-  const rows = packages.map(
-    (packageItem, index) => {
-      const packageId =
-        getPackageId(
-          packageItem,
-          index,
-        );
+  if (!String(packageItem?.productType || "").trim()) {
+    missingFields.push("loại sản phẩm");
+  }
 
-      const configurationId =
-        String(
-          configurationMap?.[packageId] ||
-            "",
-        ).trim();
+  if (!String(packageItem?.productName || "").trim()) {
+    missingFields.push("tên sản phẩm");
+  }
 
-      const configuration =
-        configurationById.get(
-          configurationId,
-        ) || null;
+  if (getProductQuantity(packageItem) <= 0) {
+    missingFields.push("số lượng");
+  }
 
-      const hasSelectedConfiguration =
-        Boolean(configuration);
+  if (!String(packageItem?.attributes || "").trim()) {
+    missingFields.push("thuộc tính");
+  }
 
-      /*
-       * Ngay khi chọn dịch vụ WOOD_CRATE,
-       * phí đóng gói mặc định được áp dụng
-       * cho toàn bộ kiện hàng.
-       */
-      const baseFee =
-        Number(baseFeePerPackage) || 0;
+  if (!getProductImageValue(packageItem)) {
+    missingFields.push("ảnh sản phẩm");
+  }
 
-      const configurationFee =
-        hasSelectedConfiguration
-          ? getConfigurationFee(
-              configuration,
-            )
-          : 0;
-
-      return {
-        packageId,
-        configuration,
-        hasSelectedConfiguration,
-        baseFee,
-        configurationFee,
-        totalFee:
-          baseFee +
-          configurationFee,
-      };
-    },
-  );
-
-  return {
-    baseFee: rows.reduce(
-      (total, row) =>
-        total + row.baseFee,
-      0,
-    ),
-    configurationFee: rows.reduce(
-      (total, row) =>
-        total + row.configurationFee,
-      0,
-    ),
-    totalFee: rows.reduce(
-      (total, row) =>
-        total + row.totalFee,
-      0,
-    ),
-    rows,
-  };
+  return missingFields;
 };
 
-const WoodCrateConfigurationPanel = ({
+const getIncompleteProducts = (packages) =>
+  (Array.isArray(packages) ? packages : [])
+    .filter(Boolean)
+    .map((packageItem, index) => ({
+      packageItem,
+      index,
+      missingFields:
+        getIncompleteProductFields(packageItem),
+    }))
+    .filter(
+      ({ missingFields }) =>
+        missingFields.length > 0,
+    );
+
+const formatIncompleteProductsMessage = (
+  incompleteProducts,
+) =>
+  incompleteProducts
+    .map(
+      ({ packageItem, index, missingFields }) =>
+        `${getPackageDisplayName(
+          packageItem,
+          index,
+        )}: ${missingFields.join(", ")}`,
+    )
+    .join(" | ");
+
+/*
+ * Quy tắc mua hộ:
+ * - Mỗi dòng sản phẩm được tính là 1 kiện đóng thùng gỗ.
+ * - quantity chỉ là số lượng sản phẩm trong kiện, không nhân số kiện.
+ */
+const calculateWoodCratePricing = ({
   packages,
-  configurations,
-  loading,
-  error,
-  configurationMap,
-  baseFeePerPackage,
-  woodCrateSelected,
-  onSelect,
+  unitFee,
+  enabled,
 }) => {
   const normalizedPackages =
     Array.isArray(packages)
-      ? packages
+      ? packages.filter(Boolean)
       : [];
 
-  const selectedPricing =
+  const packageCount = enabled
+    ? normalizedPackages.length
+    : 0;
+
+  const safeUnitFee =
+    enabled
+      ? Number(unitFee) || 0
+      : 0;
+
+  return {
+    packageCount,
+    unitFee: safeUnitFee,
+    totalFee:
+      packageCount * safeUnitFee,
+  };
+};
+
+const WoodCrateByProductPanel = ({
+  packages,
+  unitFee,
+}) => {
+  const normalizedPackages =
+    Array.isArray(packages)
+      ? packages.filter(Boolean)
+      : [];
+
+  const pricing =
     calculateWoodCratePricing({
       packages: normalizedPackages,
-      configurations,
-      configurationMap,
-      baseFeePerPackage,
-      enabled:
-        Boolean(woodCrateSelected),
+      unitFee,
+      enabled: true,
     });
-
-  const selectedCount =
-    selectedPricing.rows.filter(
-      (row) =>
-        row.hasSelectedConfiguration,
-    ).length;
-
-  const allConfigurationsSelected =
-    normalizedPackages.length > 0 &&
-    selectedCount ===
-      normalizedPackages.length;
 
   return (
     <section
@@ -963,328 +661,112 @@ const WoodCrateConfigurationPanel = ({
     >
       <div className="wood-crate-configuration-panel__header">
         <div>
-          <span>CHỌN KÍCH THƯỚC THÙNG</span>
+          <span>ĐÓNG THÙNG GỖ THEO KIỆN</span>
+
           <strong>
-            Phí đóng thùng và giá thùng
+            Mỗi sản phẩm được tính là một kiện
           </strong>
+
           <p>
-            Dịch vụ đóng thùng gỗ có phí mặc định theo
-            từng kiện. Sau khi chọn dịch vụ, hãy chọn
-            kích thước thùng phù hợp cho tất cả kiện.
+            Số lượng bên trong một sản phẩm không làm tăng
+            số kiện. Ví dụ sản phẩm có số lượng 10 vẫn chỉ
+            được tính là 1 kiện đóng thùng gỗ.
           </p>
 
-          <span
-            className={[
-              "wood-crate-auto-service-badge",
-              allConfigurationsSelected
-                ? "is-enabled"
-                : "is-waiting",
-            ].join(" ")}
-          >
-            {allConfigurationsSelected ? (
-              <CheckOutlined />
-            ) : (
-              <InfoCircleOutlined />
-            )}
-
-            {allConfigurationsSelected
-              ? `Đã chọn đủ ${selectedCount}/${normalizedPackages.length} kiện`
-              : `Đã chọn ${selectedCount}/${normalizedPackages.length} kiện`}
+          <span className="wood-crate-auto-service-badge is-enabled">
+            <CheckOutlined />
+            {pricing.packageCount} kiện từ{" "}
+            {pricing.packageCount} sản phẩm
           </span>
         </div>
 
         <div className="wood-crate-configuration-panel__base-fee">
           <small>Phí đóng thùng</small>
+
           <strong>
-            {formatMoney(
-              baseFeePerPackage,
-            )}
+            {formatMoney(unitFee)}
           </strong>
+
           <span>/ kiện</span>
         </div>
       </div>
 
-      {loading ? (
-        <div className="wood-crate-configuration-panel__state">
-          <LoadingOutlined spin />
-          Đang tải kích thước thùng...
-        </div>
-      ) : error ? (
-        <div className="wood-crate-configuration-panel__state is-error">
-          <InfoCircleOutlined />
-          {error}
-        </div>
-      ) : normalizedPackages.length === 0 ? (
+      {normalizedPackages.length === 0 ? (
         <div className="wood-crate-configuration-panel__state is-warning">
           <InfoCircleOutlined />
-          Chưa có kiện hàng để chọn kích thước thùng.
+          Chưa có sản phẩm để tính số kiện đóng thùng gỗ.
         </div>
       ) : (
         <div className="wood-crate-package-list">
           {normalizedPackages.map(
-            (packageItem, packageIndex) => {
-              const packageId =
-                getPackageId(
-                  packageItem,
-                  packageIndex,
-                );
+            (packageItem, index) => (
+              <article
+                key={
+                  packageItem?.id ||
+                  packageItem?.itemId ||
+                  `purchase-product-${index + 1}`
+                }
+                className="wood-crate-package-card"
+              >
+                <div className="wood-crate-package-card__heading">
+                  <div>
+                    <span>Kiện {index + 1}</span>
 
-              const selectedConfigurationId =
-                String(
-                  configurationMap?.[
-                    packageId
-                  ] || "",
-                ).trim();
+                    <strong>
+                      {getPackageDisplayName(
+                        packageItem,
+                        index,
+                      )}
+                    </strong>
 
-              const dimensionsComplete =
-                hasCompletePackageDimensions(
-                  packageItem,
-                );
-
-              return (
-                <article
-                  key={packageId}
-                  className={[
-                    "wood-crate-package-card",
-                    !dimensionsComplete &&
-                      "is-dimension-missing",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <div className="wood-crate-package-card__heading">
-                    <div>
-                      <span>
-                        Kiện {packageIndex + 1}
-                      </span>
-                      <strong>
-                        {getPackageDisplayName(
+                    <small>
+                      Số lượng sản phẩm:{" "}
+                      {formatNumber(
+                        getProductQuantity(
                           packageItem,
-                          packageIndex,
-                        )}
-                      </strong>
-                      <small>
-                        {formatPackageMeasurements(
-                          packageItem,
-                        )}
-                      </small>
-                    </div>
-
-                    {!dimensionsComplete && (
-                      <span className="wood-crate-package-card__required">
-                        Chưa đủ kích thước
-                      </span>
-                    )}
+                        ),
+                      )}
+                      {" • "}Tính phí: 1 kiện
+                    </small>
                   </div>
 
-                  {!dimensionsComplete ? (
-                    <div className="wood-crate-dimension-warning">
-                      <InfoCircleOutlined />
-                      <div>
-                        <strong>
-                          Chưa thể chọn kích thước thùng
-                        </strong>
-                        <span>
-                          Vui lòng nhập đầy đủ cân nặng, chiều dài, chiều rộng và chiều cao lớn hơn 0.
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="wood-crate-configuration-grid">
-                      {configurations.map(
-                        (configuration) => {
-                          const selected =
-                            selectedConfigurationId ===
-                            configuration.id;
-
-                          const fits =
-                            canPackageFitConfiguration(
-                              packageItem,
-                              configuration,
-                            );
-
-                          const {
-                            name,
-                            size,
-                          } =
-                            getConfigurationDisplay(
-                              configuration,
-                            );
-
-                          const configurationFee =
-                            getConfigurationFee(
-                              configuration,
-                            );
-
-                          const totalFee =
-                            (Number(
-                              baseFeePerPackage,
-                            ) || 0) +
-                            configurationFee;
-
-                          return (
-                            <button
-                              key={
-                                configuration.id
-                              }
-                              type="button"
-                              disabled={!fits}
-                              className={[
-                                "wood-crate-configuration-option",
-                                selected &&
-                                  "is-selected",
-                                !fits &&
-                                  "is-not-fit",
-                                isCustomConfiguration(
-                                  configuration,
-                                ) &&
-                                  "is-custom",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                              onClick={() =>
-                                onSelect(
-                                  packageItem,
-                                  packageIndex,
-                                  configuration,
-                                )
-                              }
-                            >
-                              <span className="wood-crate-configuration-option__top">
-                                <strong>
-                                  {name}
-                                </strong>
-                                <b>{size}</b>
-                              </span>
-
-                              <span className="wood-crate-configuration-option__dimension">
-                                {isCustomConfiguration(
-                                  configuration,
-                                )
-                                  ? "Theo kích thước thực tế"
-                                  : `${formatNumber(
-                                      configuration.length,
-                                    )} × ${formatNumber(
-                                      configuration.width,
-                                    )} × ${formatNumber(
-                                      configuration.height,
-                                    )} cm`}
-                              </span>
-
-                              <span className="wood-crate-configuration-option__weight">
-                                Tối đa{" "}
-                                {formatNumber(
-                                  configuration.maxWeight,
-                                )}{" "}
-                                kg
-                              </span>
-
-                              {!fits && (
-                                <span className="wood-crate-configuration-option__not-fit">
-                                  Không phù hợp
-                                </span>
-                              )}
-
-                              <span className="wood-crate-configuration-option__price">
-                                <small>
-                                  <span>
-                                    Phí đóng gói
-                                  </span>
-                                  <b>
-                                    {formatMoney(
-                                      baseFeePerPackage,
-                                    )}
-                                  </b>
-                                </small>
-
-                                <small>
-                                  <span>
-                                    Giá thùng
-                                  </span>
-                                  <b>
-                                    {formatMoney(
-                                      configurationFee,
-                                    )}
-                                  </b>
-                                </small>
-
-                                <strong>
-                                  <span>
-                                    Tổng mỗi kiện
-                                  </span>
-                                  <b>
-                                    {formatMoney(
-                                      totalFee,
-                                    )}
-                                  </b>
-                                </strong>
-                              </span>
-
-                              {selected && (
-                                <span className="wood-crate-configuration-option__selected">
-                                  <CheckOutlined />
-                                  Đã chọn
-                                </span>
-                              )}
-                            </button>
-                          );
-                        },
-                      )}
-                    </div>
-                  )}
-                </article>
-              );
-            },
+                  <span className="wood-crate-package-card__required">
+                    1 KIỆN
+                  </span>
+                </div>
+              </article>
+            ),
           )}
         </div>
       )}
 
-      <div
-        className={[
-          "wood-crate-price-summary",
-          allConfigurationsSelected
-            ? "is-complete"
-            : "is-incomplete",
-        ].join(" ")}
-      >
+      <div className="wood-crate-price-summary is-complete">
         <div className="wood-crate-price-summary__selected-count">
-          <span>
-            Kiện đã chọn thùng
-          </span>
+          <span>Tổng số kiện</span>
 
           <strong>
-            {selectedCount}/
-            {normalizedPackages.length}
+            {pricing.packageCount}
           </strong>
         </div>
 
         <div>
-          <span>
-            Phí đóng gói thùng gỗ
-          </span>
-          <strong>
-            {formatMoney(
-              selectedPricing.baseFee,
-            )}
-          </strong>
-        </div>
+          <span>Đơn giá mỗi kiện</span>
 
-        <div>
-          <span>
-            Giá kích thước thùng đã chọn
-          </span>
           <strong>
             {formatMoney(
-              selectedPricing.configurationFee,
+              pricing.unitFee,
             )}
           </strong>
         </div>
 
         <div className="wood-crate-price-summary__total">
-          <span>Tổng phí đóng thùng gỗ</span>
+          <span>
+            Tổng phí đóng thùng gỗ
+          </span>
+
           <strong>
             {formatMoney(
-              selectedPricing.totalFee,
+              pricing.totalFee,
             )}
           </strong>
         </div>
@@ -1299,11 +781,11 @@ export default function PackageOptionalServices({
   disabled = false,
   onChange,
 
-  triggerTitle = "Dịch vụ bổ sung cho đơn ký gửi",
+  triggerTitle = "Dịch vụ bổ sung cho đơn mua hộ",
   triggerDescription = "",
 
   modalEyebrow = "DỊCH VỤ BỔ SUNG",
-  modalTitle = "Lựa chọn dịch vụ cho đơn ký gửi",
+  modalTitle = "Lựa chọn dịch vụ cho đơn mua hộ",
   modalDescription =
     "Danh sách được cập nhật trực tiếp từ bảng giá hệ thống. Khi có dịch vụ mới, giao diện sẽ tự động hiển thị thêm.",
 }) {
@@ -1314,25 +796,6 @@ export default function PackageOptionalServices({
   const [pricingError, setPricingError] = useState("");
   const [draftSelectedCodes, setDraftSelectedCodes] = useState([]);
 
-  const [
-    packageConfigurations,
-    setPackageConfigurations,
-  ] = useState([]);
-
-  const [
-    packageConfigurationLoading,
-    setPackageConfigurationLoading,
-  ] = useState(true);
-
-  const [
-    packageConfigurationError,
-    setPackageConfigurationError,
-  ] = useState("");
-
-  const [
-    draftPackageConfigurationByPackageId,
-    setDraftPackageConfigurationByPackageId,
-  ] = useState({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1392,82 +855,6 @@ export default function PackageOptionalServices({
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    const controller =
-      new AbortController();
-
-    const fetchPackageConfigurations =
-      async () => {
-        try {
-          setPackageConfigurationLoading(
-            true,
-          );
-          setPackageConfigurationError("");
-
-          if (
-            typeof pricingRuleService
-              .getPackageConfigurations !==
-            "function"
-          ) {
-            throw new Error(
-              "pricingRuleService chưa có getPackageConfigurations().",
-            );
-          }
-
-          const result =
-            await pricingRuleService.getPackageConfigurations(
-              {
-                signal:
-                  controller.signal,
-                onlyActive: true,
-              },
-            );
-
-          if (
-            controller.signal.aborted
-          ) {
-            return;
-          }
-
-          setPackageConfigurations(
-            normalizePackageConfigurationsFromApi(
-              result,
-            ),
-          );
-        } catch (error) {
-          if (
-            controller.signal.aborted ||
-            isCanceledRequest(error)
-          ) {
-            return;
-          }
-
-          console.error(
-            "[PackageOptionalServices] Lỗi tải /api/package-configurations:",
-            error,
-          );
-
-          setPackageConfigurations([]);
-          setPackageConfigurationError(
-            error?.message ||
-              "Không thể tải danh sách kích thước thùng.",
-          );
-        } finally {
-          if (
-            !controller.signal.aborted
-          ) {
-            setPackageConfigurationLoading(
-              false,
-            );
-          }
-        }
-      };
-
-    fetchPackageConfigurations();
-
-    return () =>
-      controller.abort();
-  }, []);
 
   const selectedCodes = useMemo(
     () => getInitialSelectedCodes(value, pricingRules),
@@ -1526,16 +913,10 @@ export default function PackageOptionalServices({
   useEffect(() => {
     if (isOpen) {
       setDraftSelectedCodes(selectedCodes);
-      setDraftPackageConfigurationByPackageId(
-        normalizePackageConfigurationMap(
-          value?.packageConfigurationByPackageId,
-        ),
-      );
     }
   }, [
     isOpen,
     selectedCodes,
-    value?.packageConfigurationByPackageId,
   ]);
 
   const selectedRules = useMemo(() => {
@@ -1566,35 +947,34 @@ export default function PackageOptionalServices({
   const normalizedPackages = useMemo(
     () =>
       Array.isArray(packages)
-        ? packages
+        ? packages.filter(Boolean)
         : [],
     [packages],
   );
 
-  const incompleteWoodCratePackages =
+  const incompleteWoodCrateProducts =
     useMemo(
       () =>
-        normalizedPackages
-          .map(
-            (packageItem, index) => ({
-              packageItem,
-              index,
-            }),
-          )
-          .filter(
-            ({ packageItem }) =>
-              !hasCompletePackageDimensions(
-                packageItem,
-              ),
-          ),
+        getIncompleteProducts(
+          normalizedPackages,
+        ),
       [normalizedPackages],
     );
 
-  const allPackagesReadyForWoodCrate =
+  const allProductsReadyForWoodCrate =
     normalizedPackages.length > 0 &&
-    incompleteWoodCratePackages.length === 0;
+    incompleteWoodCrateProducts.length === 0;
 
-  const woodCrateBaseFeePerPackage =
+  const incompleteProductsMessage =
+    useMemo(
+      () =>
+        formatIncompleteProductsMessage(
+          incompleteWoodCrateProducts,
+        ),
+      [incompleteWoodCrateProducts],
+    );
+
+  const woodCrateUnitFee =
     toFiniteNumberOrNull(
       woodCrateRule?.value,
     ) ?? 0;
@@ -1605,39 +985,198 @@ export default function PackageOptionalServices({
         calculateWoodCratePricing({
           packages:
             normalizedPackages,
-          configurations:
-            packageConfigurations,
-          configurationMap:
-            draftPackageConfigurationByPackageId,
-          baseFeePerPackage:
-            woodCrateBaseFeePerPackage,
+          unitFee:
+            woodCrateUnitFee,
           enabled:
             isDraftWoodCrateSelected,
         }),
       [
         normalizedPackages,
-        packageConfigurations,
-        draftPackageConfigurationByPackageId,
-        woodCrateBaseFeePerPackage,
+        woodCrateUnitFee,
         isDraftWoodCrateSelected,
       ],
     );
+
+  /*
+   * Nếu người dùng đã chọn đóng thùng gỗ rồi thêm một dòng
+   * sản phẩm trống hoặc xóa dữ liệu bắt buộc, tự bỏ riêng
+   * WOOD_CRATE. Các dịch vụ VAT, thuế, bảo hiểm... vẫn giữ nguyên.
+   */
+  useEffect(() => {
+    if (
+      !value?.requiresWoodenCrate ||
+      allProductsReadyForWoodCrate
+    ) {
+      return;
+    }
+
+    const nextRuleCodes =
+      sanitizeSelectedRuleCodes(
+        value?.selectedRuleCodes ??
+          value?.selectedPricingRuleCodes ??
+          value?.pricingRuleCodes,
+      ).filter(
+        (ruleCode) =>
+          ruleCode !== "WOOD_CRATE",
+      );
+
+    const woodCrateRuleId =
+      normalizeRuleId(
+        woodCrateRule?.id,
+      );
+
+    const nextPricingRuleIds =
+      sanitizeSelectedPricingRuleIds(
+        value?.selectedPricingRuleIds ??
+          value?.pricingRuleIds,
+        hiddenPricingRuleIds,
+      ).filter(
+        (ruleId) =>
+          !woodCrateRuleId ||
+          ruleId !== woodCrateRuleId,
+      );
+
+    const hasOtherPackingService =
+      pricingRules.some(
+        (rule) =>
+          rule.ruleCode !== "WOOD_CRATE" &&
+          nextRuleCodes.includes(
+            rule.ruleCode,
+          ) &&
+          (
+            rule.ruleCode.includes(
+              "PACKING",
+            ) ||
+            rule.ruleType.includes(
+              "PACKING",
+            )
+          ),
+      );
+
+    onChange?.({
+      ...value,
+      requiresPacking:
+        hasOtherPackingService,
+      requiresWoodenCrate: false,
+      selectedRuleCodes:
+        nextRuleCodes,
+      selectedPricingRuleIds:
+        nextPricingRuleIds,
+      pricingRuleIds:
+        nextPricingRuleIds,
+      woodCratePackageCount: 0,
+      woodCrateQuantity: 0,
+      woodCrateUnitFee: 0,
+      woodCrateBaseFeePerPackage: 0,
+      woodCrateBaseFee: 0,
+      woodCrateConfigurationFee: 0,
+      woodCrateTotalFee: 0,
+      woodCrateCompleted: false,
+      packageConfigurationByPackageId: {},
+      selectedPackageConfigurations: [],
+    });
+
+    AuthNotify.warning(
+      "Đã bỏ đóng thùng gỗ",
+      "Bạn vừa thêm hoặc xóa dữ liệu bắt buộc của sản phẩm. Vui lòng nhập đủ thông tin rồi chọn lại đóng thùng gỗ.",
+    );
+  }, [
+    allProductsReadyForWoodCrate,
+    hiddenPricingRuleIds,
+    pricingRules,
+    value?.requiresWoodenCrate,
+    value?.pricingRuleIds,
+    value?.selectedPricingRuleIds,
+    value?.selectedPricingRuleCodes,
+    value?.selectedRuleCodes,
+    value?.pricingRuleCodes,
+    woodCrateRule?.id,
+  ]);
+
+  /*
+   * Khi thêm/xóa sản phẩm sau khi đã chọn đóng thùng gỗ,
+   * tự đồng bộ số kiện và tổng phí vào form cha.
+   */
+  useEffect(() => {
+    if (
+      !value?.requiresWoodenCrate ||
+      !allProductsReadyForWoodCrate
+    ) {
+      return;
+    }
+
+    const pricing =
+      calculateWoodCratePricing({
+        packages:
+          normalizedPackages,
+        unitFee:
+          woodCrateUnitFee ||
+          value?.woodCrateUnitFee ||
+          value?.woodCrateBaseFeePerPackage,
+        enabled: true,
+      });
+
+    const currentCount =
+      Number(
+        value?.woodCratePackageCount ??
+        value?.woodCrateQuantity,
+      ) || 0;
+
+    const currentTotal =
+      Number(
+        value?.woodCrateTotalFee,
+      ) || 0;
+
+    if (
+      currentCount ===
+        pricing.packageCount &&
+      currentTotal ===
+        pricing.totalFee
+    ) {
+      return;
+    }
+
+    onChange?.({
+      ...value,
+      woodCratePackageCount:
+        pricing.packageCount,
+      woodCrateQuantity:
+        pricing.packageCount,
+      woodCrateUnitFee:
+        pricing.unitFee,
+      woodCrateBaseFeePerPackage:
+        pricing.unitFee,
+      woodCrateBaseFee:
+        pricing.totalFee,
+      woodCrateConfigurationFee: 0,
+      woodCrateTotalFee:
+        pricing.totalFee,
+      woodCrateCompleted:
+        pricing.packageCount > 0,
+      packageConfigurationByPackageId: {},
+      selectedPackageConfigurations: [],
+    });
+  }, [
+    allProductsReadyForWoodCrate,
+    normalizedPackages.length,
+    value?.requiresWoodenCrate,
+    value?.woodCratePackageCount,
+    value?.woodCrateQuantity,
+    value?.woodCrateTotalFee,
+    value?.woodCrateUnitFee,
+    value?.woodCrateBaseFeePerPackage,
+    woodCrateUnitFee,
+  ]);
 
   const hasChanges = useMemo(
     () =>
       !areCodeArraysEqual(
         selectedCodes,
         draftSelectedCodes,
-      ) ||
-      !areConfigurationMapsEqual(
-        value?.packageConfigurationByPackageId,
-        draftPackageConfigurationByPackageId,
       ),
     [
-      draftPackageConfigurationByPackageId,
       draftSelectedCodes,
       selectedCodes,
-      value?.packageConfigurationByPackageId,
     ],
   );
 
@@ -1647,11 +1186,6 @@ export default function PackageOptionalServices({
     }
 
     setDraftSelectedCodes(selectedCodes);
-    setDraftPackageConfigurationByPackageId(
-      normalizePackageConfigurationMap(
-        value?.packageConfigurationByPackageId,
-      ),
-    );
     setIsOpen(true);
   };
 
@@ -1672,50 +1206,18 @@ export default function PackageOptionalServices({
 
     if (
       rule.ruleCode === "WOOD_CRATE" &&
-      !isCurrentlySelected
+      !isCurrentlySelected &&
+      !allProductsReadyForWoodCrate
     ) {
-      if (
+      AuthNotify.warning(
         normalizedPackages.length === 0
-      ) {
-        AuthNotify.warning(
-          "Chưa có kiện hàng",
-          "Vui lòng thêm ít nhất một kiện hàng trước khi chọn đóng thùng gỗ.",
-        );
-        return;
-      }
-
-      if (
-        !allPackagesReadyForWoodCrate
-      ) {
-        const packageNames =
-          incompleteWoodCratePackages
-            .map(
-              ({
-                packageItem,
-                index,
-              }) =>
-                getPackageDisplayName(
-                  packageItem,
-                  index,
-                ),
-            )
-            .join(", ");
-
-        AuthNotify.warning(
-          "Chưa đủ thông tin kiện hàng",
-          `Vui lòng nhập cân nặng, chiều dài, chiều rộng và chiều cao lớn hơn 0 cho: ${packageNames}.`,
-        );
-        return;
-      }
-    }
-
-    if (
-      rule.ruleCode === "WOOD_CRATE" &&
-      isCurrentlySelected
-    ) {
-      setDraftPackageConfigurationByPackageId(
-        {},
+          ? "Chưa có sản phẩm"
+          : "Chưa nhập đủ dữ liệu sản phẩm",
+        normalizedPackages.length === 0
+          ? "Vui lòng thêm ít nhất một sản phẩm trước khi chọn đóng thùng gỗ."
+          : `Vui lòng hoàn tất các trường bắt buộc trước khi chọn đóng thùng gỗ. ${incompleteProductsMessage}`,
       );
+      return;
     }
 
     setDraftSelectedCodes((currentCodes) => {
@@ -1738,90 +1240,9 @@ export default function PackageOptionalServices({
     });
   };
 
-  const handleSelectPackageConfiguration = (
-    packageItem,
-    packageIndex,
-    configuration,
-  ) => {
-    if (
-      disabled ||
-      !isDraftWoodCrateSelected
-    ) {
-      return;
-    }
-
-    if (
-      !hasCompletePackageDimensions(
-        packageItem,
-      )
-    ) {
-      AuthNotify.warning(
-        "Chưa đủ kích thước kiện",
-        "Vui lòng nhập đầy đủ cân nặng, chiều dài, chiều rộng và chiều cao trước khi chọn kích thước thùng.",
-      );
-      return;
-    }
-
-    if (
-      !canPackageFitConfiguration(
-        packageItem,
-        configuration,
-      )
-    ) {
-      AuthNotify.warning(
-        "Kích thước thùng không phù hợp",
-        "Loại thùng này không đáp ứng kích thước hoặc trọng lượng của kiện hàng.",
-      );
-      return;
-    }
-
-    const packageId =
-      getPackageId(
-        packageItem,
-        packageIndex,
-      );
-
-    setDraftPackageConfigurationByPackageId(
-      (currentMap) => ({
-        ...currentMap,
-        [packageId]:
-          configuration.id,
-      }),
-    );
-
-    const configurationFee =
-      getConfigurationFee(
-        configuration,
-      );
-
-    const selectedTotal =
-      woodCrateBaseFeePerPackage +
-      configurationFee;
-
-    AuthNotify.success(
-      "Đã chọn kích thước thùng",
-      `${getPackageDisplayName(
-        packageItem,
-        packageIndex,
-      )}: ${getConfigurationDisplay(
-        configuration,
-      ).name}. Phí đóng gói ${formatMoney(
-        woodCrateBaseFeePerPackage,
-      )} + giá thùng ${formatMoney(
-        configurationFee,
-      )} = ${formatMoney(
-        selectedTotal,
-      )}.`,
-    );
-  };
 
   const handleClose = () => {
     setDraftSelectedCodes(selectedCodes);
-    setDraftPackageConfigurationByPackageId(
-      normalizePackageConfigurationMap(
-        value?.packageConfigurationByPackageId,
-      ),
-    );
     setIsOpen(false);
   };
 
@@ -1831,174 +1252,20 @@ export default function PackageOptionalServices({
     }
 
     const selectedSet = new Set(
-      sanitizeSelectedRuleCodes(draftSelectedCodes),
+      sanitizeSelectedRuleCodes(
+        draftSelectedCodes,
+      ),
     );
 
-    const requiresWoodenCrate =
-      selectedSet.has(
-        "WOOD_CRATE",
+    const activeSelectedRules =
+      pricingRules.filter(
+        (rule) =>
+          !isHiddenRule(rule) &&
+          selectedSet.has(
+            rule.ruleCode,
+          ) &&
+          isRuleSelectable(rule),
       );
-
-    const normalizedPackages =
-      Array.isArray(packages)
-        ? packages
-        : [];
-
-    if (requiresWoodenCrate) {
-      if (
-        normalizedPackages.length === 0
-      ) {
-        AuthNotify.warning(
-          "Chưa có kiện hàng",
-          "Vui lòng thêm ít nhất một kiện hàng trước khi chọn đóng thùng gỗ.",
-        );
-        return;
-      }
-
-      const incompletePackages =
-        normalizedPackages
-          .map(
-            (packageItem, index) => ({
-              packageItem,
-              index,
-            }),
-          )
-          .filter(
-            ({ packageItem }) =>
-              !hasCompletePackageDimensions(
-                packageItem,
-              ),
-          );
-
-      if (
-        incompletePackages.length > 0
-      ) {
-        AuthNotify.warning(
-          "Chưa nhập đủ kích thước",
-          `Vui lòng nhập cân nặng, dài, rộng và cao cho: ${incompletePackages
-            .map(
-              ({ packageItem, index }) =>
-                getPackageDisplayName(
-                  packageItem,
-                  index,
-                ),
-            )
-            .join(", ")}.`,
-        );
-        return;
-      }
-
-      const missingConfigurationPackages =
-        normalizedPackages
-          .map(
-            (packageItem, index) => ({
-              packageItem,
-              index,
-              packageId:
-                getPackageId(
-                  packageItem,
-                  index,
-                ),
-            }),
-          )
-          .filter(
-            ({ packageId }) =>
-              !String(
-                draftPackageConfigurationByPackageId[
-                  packageId
-                ] || "",
-              ).trim(),
-          );
-
-      if (
-        missingConfigurationPackages.length > 0
-      ) {
-        AuthNotify.warning(
-          "Chưa chọn kích thước thùng",
-          `Vui lòng chọn loại thùng cho: ${missingConfigurationPackages
-            .map(
-              ({ packageItem, index }) =>
-                getPackageDisplayName(
-                  packageItem,
-                  index,
-                ),
-            )
-            .join(", ")}.`,
-        );
-        return;
-      }
-
-      const configurationById =
-        new Map(
-          packageConfigurations.map(
-            (configuration) => [
-              configuration.id,
-              configuration,
-            ],
-          ),
-        );
-
-      const invalidPackages =
-        normalizedPackages
-          .map(
-            (packageItem, index) => {
-              const packageId =
-                getPackageId(
-                  packageItem,
-                  index,
-                );
-
-              const configuration =
-                configurationById.get(
-                  draftPackageConfigurationByPackageId[
-                    packageId
-                  ],
-                );
-
-              return {
-                packageItem,
-                index,
-                configuration,
-              };
-            },
-          )
-          .filter(
-            ({
-              packageItem,
-              configuration,
-            }) =>
-              !configuration ||
-              !canPackageFitConfiguration(
-                packageItem,
-                configuration,
-              ),
-          );
-
-      if (
-        invalidPackages.length > 0
-      ) {
-        AuthNotify.warning(
-          "Cấu hình thùng không còn phù hợp",
-          `Vui lòng chọn lại kích thước thùng cho: ${invalidPackages
-            .map(
-              ({ packageItem, index }) =>
-                getPackageDisplayName(
-                  packageItem,
-                  index,
-                ),
-            )
-            .join(", ")}.`,
-        );
-        return;
-      }
-    }
-
-    const activeSelectedRules = pricingRules.filter(
-      (rule) =>
-        !isHiddenRule(rule) &&
-        selectedSet.has(rule.ruleCode) &&
-        isRuleSelectable(rule),
-    );
 
     const selectedRuleCodes =
       sanitizeSelectedRuleCodes(
@@ -2015,89 +1282,39 @@ export default function PackageOptionalServices({
         hiddenPricingRuleIds,
       );
 
-    const selectedConfigurationMap =
-      requiresWoodenCrate
-        ? normalizePackageConfigurationMap(
-            draftPackageConfigurationByPackageId,
-          )
-        : {};
-
-    const configurationById =
-      new Map(
-        packageConfigurations.map(
-          (configuration) => [
-            configuration.id,
-            configuration,
-          ],
-        ),
+    const requiresWoodenCrate =
+      selectedRuleCodes.includes(
+        "WOOD_CRATE",
       );
 
-    const selectedPackageConfigurations =
-      requiresWoodenCrate
-        ? normalizedPackages.map(
-            (packageItem, index) => {
-              const packageId =
-                getPackageId(
-                  packageItem,
-                  index,
-                );
-
-              const packageConfigurationId =
-                selectedConfigurationMap[
-                  packageId
-                ];
-
-              const configuration =
-                configurationById.get(
-                  packageConfigurationId,
-                );
-
-              return {
-                packageId,
-                packageConfigurationId,
-                configCode:
-                  configuration?.configCode ||
-                  "",
-                configName:
-                  getConfigurationDisplay(
-                    configuration,
-                  ).name,
-                packageFee:
-                  getConfigurationFee(
-                    configuration,
-                  ),
-                woodCrateBaseFee:
-                  woodCrateBaseFeePerPackage,
-                totalFee:
-                  woodCrateBaseFeePerPackage +
-                  getConfigurationFee(
-                    configuration,
-                  ),
-              };
-            },
-          )
-        : [];
-
-    const finalWoodCratePricing =
+    const woodCratePricing =
       calculateWoodCratePricing({
         packages:
           normalizedPackages,
-        configurations:
-          packageConfigurations,
-        configurationMap:
-          selectedConfigurationMap,
-        baseFeePerPackage:
-          woodCrateBaseFeePerPackage,
+        unitFee:
+          woodCrateUnitFee,
         enabled:
           requiresWoodenCrate,
       });
 
+    if (
+      requiresWoodenCrate &&
+      !allProductsReadyForWoodCrate
+    ) {
+      AuthNotify.warning(
+        normalizedPackages.length === 0
+          ? "Chưa có sản phẩm"
+          : "Chưa nhập đủ dữ liệu sản phẩm",
+        normalizedPackages.length === 0
+          ? "Vui lòng thêm ít nhất một sản phẩm trước khi chọn đóng thùng gỗ."
+          : `Vui lòng hoàn tất các trường bắt buộc trước khi lưu dịch vụ đóng thùng gỗ. ${incompleteProductsMessage}`,
+      );
+      return;
+    }
+
     const nextValue = {
       ...value,
 
-      /*
-       * Đóng thùng gỗ là một hình thức đóng gói.
-       */
       requiresPacking:
         selectedRuleCodes.some(
           (code) =>
@@ -2120,6 +1337,10 @@ export default function PackageOptionalServices({
             ),
         ),
 
+      /*
+       * Giữ tương thích với dữ liệu cũ.
+       * API mua hộ có thể chỉ dùng pricingRuleIds.
+       */
       requiresInspection:
         activeSelectedRules.some(
           (rule) =>
@@ -2133,55 +1354,41 @@ export default function PackageOptionalServices({
 
       selectedRuleCodes,
       selectedPricingRuleIds,
+      pricingRuleIds:
+        selectedPricingRuleIds,
 
-      packageConfigurationByPackageId:
-        selectedConfigurationMap,
-
-      selectedPackageConfigurations,
-
-      woodCrateBaseFeePerPackage,
-
+      /*
+       * Mua hộ không chọn kích thước/cấu hình thùng.
+       * Mỗi dòng sản phẩm là 1 kiện, không nhân quantity.
+       */
+      woodCratePackageCount:
+        woodCratePricing.packageCount,
+      woodCrateQuantity:
+        woodCratePricing.packageCount,
+      woodCrateUnitFee:
+        woodCratePricing.unitFee,
+      woodCrateBaseFeePerPackage:
+        woodCratePricing.unitFee,
       woodCrateBaseFee:
-        finalWoodCratePricing.baseFee,
-
-      woodCrateConfigurationFee:
-        finalWoodCratePricing.configurationFee,
-
+        woodCratePricing.totalFee,
+      woodCrateConfigurationFee: 0,
       woodCrateTotalFee:
-        finalWoodCratePricing.totalFee,
-
+        woodCratePricing.totalFee,
       woodCrateCompleted:
-        requiresWoodenCrate &&
-        normalizedPackages.length > 0 &&
-        selectedPackageConfigurations.length ===
-          normalizedPackages.length,
+        !requiresWoodenCrate ||
+        woodCratePricing.packageCount > 0,
+
+      packageConfigurationByPackageId: {},
+      selectedPackageConfigurations: [],
     };
 
     try {
-      console.info(
-        "[PackageOptionalServices] Giá trị dịch vụ trả về component cha:",
-        {
-          selectedRuleCodes,
-          selectedPricingRuleIds,
-          packageConfigurationByPackageId:
-            nextValue.packageConfigurationByPackageId,
-          woodCrateBaseFeePerPackage:
-            nextValue.woodCrateBaseFeePerPackage,
-          woodCrateBaseFee:
-            nextValue.woodCrateBaseFee,
-          woodCrateConfigurationFee:
-            nextValue.woodCrateConfigurationFee,
-          woodCrateTotalFee:
-            nextValue.woodCrateTotalFee,
-          woodCrateCompleted:
-            nextValue.woodCrateCompleted,
-        },
-      );
-
       onChange?.(nextValue);
       setIsOpen(false);
 
-      if (activeSelectedRules.length > 0) {
+      if (
+        activeSelectedRules.length > 0
+      ) {
         AuthNotify.success(
           "Đã lưu dịch vụ bổ sung",
           `Đã chọn: ${activeSelectedRules
@@ -2191,13 +1398,14 @@ export default function PackageOptionalServices({
       } else {
         AuthNotify.success(
           "Đã cập nhật dịch vụ",
-          "Đơn ký gửi không chọn dịch vụ bổ sung.",
+          "Đơn mua hộ không chọn dịch vụ bổ sung.",
         );
       }
     } catch (error) {
       AuthNotify.error(
         "Không thể lưu dịch vụ",
-        error?.message || "Đã xảy ra lỗi khi lưu lựa chọn dịch vụ.",
+        error?.message ||
+          "Đã xảy ra lỗi khi lưu lựa chọn dịch vụ.",
       );
     }
   };
@@ -2347,17 +1555,16 @@ export default function PackageOptionalServices({
               const Icon = getRuleIcon(rule);
               const checked = draftSelectedCodes.includes(rule.ruleCode);
               const selectable = isRuleSelectable(rule);
-              const woodCrateMeasurementMissing =
-                rule.ruleCode ===
-                  "WOOD_CRATE" &&
+              const woodCrateProductDataMissing =
+                rule.ruleCode === "WOOD_CRATE" &&
                 !checked &&
-                !allPackagesReadyForWoodCrate;
+                !allProductsReadyForWoodCrate;
 
               const itemDisabled =
                 disabled ||
                 !selectable ||
                 rule.isRequired ||
-                woodCrateMeasurementMissing;
+                woodCrateProductDataMissing;
 
               return (
                 <React.Fragment
@@ -2377,7 +1584,7 @@ export default function PackageOptionalServices({
                     "package-services-modal__item",
                     checked && "package-services-modal__item--selected",
                     itemDisabled && "package-services-modal__item--disabled",
-                    woodCrateMeasurementMissing &&
+                    woodCrateProductDataMissing &&
                       "package-services-modal__item--measurement-required",
                   ]
                     .filter(Boolean)
@@ -2442,19 +1649,21 @@ export default function PackageOptionalServices({
                       {formatRuleDescription(rule.description)}
                     </span>
 
-                    {woodCrateMeasurementMissing && (
+                    {woodCrateProductDataMissing && (
                       <span className="package-services-modal__measurement-warning">
                         <InfoCircleOutlined />
-                        Nhập đủ cân nặng, dài, rộng và cao
-                        cho tất cả kiện trước khi chọn.
+                        {normalizedPackages.length === 0
+                          ? "Thêm ít nhất một sản phẩm trước khi chọn."
+                          : `Còn ${incompleteWoodCrateProducts.length} sản phẩm chưa nhập đủ dữ liệu bắt buộc.`}
                       </span>
                     )}
+
                   </span>
 
                   <span className="package-services-modal__fee">
                     <small>
                       {rule.ruleCode === "WOOD_CRATE"
-                        ? "Phí đóng gói mặc định / kiện"
+                        ? "Phí đóng thùng / kiện"
                         : getCalculationTypeLabel(
                             rule.calculationType,
                           )}
@@ -2468,18 +1677,10 @@ export default function PackageOptionalServices({
                       "WOOD_CRATE" &&
                       checked && (
                         <em className="package-services-modal__wood-total">
-                          Phí đóng gói{" "}
+                          {draftWoodCratePricing.packageCount}
+                          {" kiện × "}
                           {formatMoney(
-                            draftWoodCratePricing.baseFee,
-                          )}
-                          {draftWoodCratePricing.configurationFee >
-                            0 && (
-                            <>
-                              {" + "}giá thùng{" "}
-                              {formatMoney(
-                                draftWoodCratePricing.configurationFee,
-                              )}
-                            </>
+                            draftWoodCratePricing.unitFee,
                           )}
                           {" = "}
                           {formatMoney(
@@ -2493,28 +1694,12 @@ export default function PackageOptionalServices({
                 {rule.ruleCode ===
                   "WOOD_CRATE" &&
                   checked && (
-                    <WoodCrateConfigurationPanel
-                      packages={packages}
-                      configurations={
-                        packageConfigurations
+                    <WoodCrateByProductPanel
+                      packages={
+                        normalizedPackages
                       }
-                      loading={
-                        packageConfigurationLoading
-                      }
-                      error={
-                        packageConfigurationError
-                      }
-                      configurationMap={
-                        draftPackageConfigurationByPackageId
-                      }
-                      baseFeePerPackage={
-                        woodCrateBaseFeePerPackage
-                      }
-                      woodCrateSelected={
-                        checked
-                      }
-                      onSelect={
-                        handleSelectPackageConfiguration
+                      unitFee={
+                        woodCrateUnitFee
                       }
                     />
                   )}
