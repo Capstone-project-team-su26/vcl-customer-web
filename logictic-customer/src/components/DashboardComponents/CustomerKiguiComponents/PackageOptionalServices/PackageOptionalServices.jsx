@@ -925,6 +925,20 @@ export default function PackageOptionalServices({
     setAutoSuggestionSignatureByPackageId,
   ] = useState({});
 
+  /*
+   * Chỉ cho phép tự động gọi API gợi ý sau khi người dùng
+   * CHỦ ĐỘNG bấm chọn "Đóng thùng gỗ" trong lần mở modal hiện tại.
+   *
+   * Nhờ vậy:
+   * - Mở modal không tự POST gợi ý.
+   * - Nhập/sửa kích thước không tự POST nếu chưa chọn thùng gỗ.
+   * - Dữ liệu WOOD_CRATE cũ trong form cha cũng không làm API tự chạy.
+   */
+  const [
+    woodCrateAutoSuggestionEnabled,
+    setWoodCrateAutoSuggestionEnabled,
+  ] = useState(false);
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -1134,6 +1148,7 @@ export default function PackageOptionalServices({
       );
       setSuggestionErrorByPackageId({});
       setAutoSuggestionSignatureByPackageId({});
+      setWoodCrateAutoSuggestionEnabled(false);
     }
   }, [
     isOpen,
@@ -1446,6 +1461,7 @@ export default function PackageOptionalServices({
     if (
       !isOpen ||
       !hasWoodCrateSelected ||
+      !woodCrateAutoSuggestionEnabled ||
       packageConfigurationsLoading ||
       packageConfigurationsError ||
       !packageItems.length
@@ -1534,6 +1550,7 @@ export default function PackageOptionalServices({
     packageConfigurationsLoading,
     packageItems,
     suggestionLoadingByPackageId,
+    woodCrateAutoSuggestionEnabled,
   ]);
 
   const handleOpen = () => {
@@ -1547,6 +1564,7 @@ export default function PackageOptionalServices({
     );
     setSuggestionErrorByPackageId({});
     setAutoSuggestionSignatureByPackageId({});
+    setWoodCrateAutoSuggestionEnabled(false);
     setIsOpen(true);
   };
 
@@ -1561,13 +1579,43 @@ export default function PackageOptionalServices({
       return;
     }
 
+    const normalizedRuleCode = normalizeCode(rule?.ruleCode);
+    const isCurrentlySelected =
+      draftSelectedCodes.includes(normalizedRuleCode);
+
+    /*
+     * Bật quyền tự gợi ý CHỈ tại thao tác người dùng chọn WOOD_CRATE.
+     * Nếu WOOD_CRATE đã có sẵn từ value cũ khi mở modal thì API không tự POST.
+     */
+    if (normalizedRuleCode === WOOD_CRATE_CODE) {
+      const willSelectWoodCrate = !isCurrentlySelected;
+
+      setWoodCrateAutoSuggestionEnabled(
+        willSelectWoodCrate,
+      );
+
+      if (willSelectWoodCrate) {
+        // Cho phép tạo một lượt gợi ý mới sau cú bấm chọn này.
+        setAutoSuggestionSignatureByPackageId({});
+      } else {
+        /*
+         * Bỏ chọn đóng thùng gỗ phải xóa toàn bộ lựa chọn kích thước.
+         * Dữ liệu gợi ý AI cũ không được giữ lại để tự kích hoạt về sau.
+         */
+        setDraftPackageConfigurationByPackageId({});
+        setSuggestedConfigurationByPackageId({});
+        setSuggestionErrorByPackageId({});
+        setAutoSuggestionSignatureByPackageId({});
+      }
+    }
+
     setDraftSelectedCodes((currentCodes) => {
       const nextCodes = new Set(currentCodes);
 
-      if (nextCodes.has(rule.ruleCode)) {
-        nextCodes.delete(rule.ruleCode);
+      if (nextCodes.has(normalizedRuleCode)) {
+        nextCodes.delete(normalizedRuleCode);
       } else {
-        nextCodes.add(rule.ruleCode);
+        nextCodes.add(normalizedRuleCode);
       }
 
       return Array.from(nextCodes);
@@ -1580,6 +1628,7 @@ export default function PackageOptionalServices({
       selectedPackageConfigurationByPackageId,
     );
     setSuggestionErrorByPackageId({});
+    setWoodCrateAutoSuggestionEnabled(false);
     setIsOpen(false);
   };
 
@@ -1623,10 +1672,12 @@ export default function PackageOptionalServices({
         WOOD_CRATE_CODE,
       );
 
-    let packageConfigurationByPackageId =
-      {};
-
+    let packageConfigurationByPackageId = {};
     let selectedPackageConfigurations = [];
+    let woodCrateOrderFee = 0;
+    let woodCrateConfigurationFee = 0;
+    let woodCrateTotalFee = 0;
+    let woodCrateCompleted = false;
 
     if (requiresWoodenCrate) {
       if (!packageItems.length) {
@@ -1637,75 +1688,79 @@ export default function PackageOptionalServices({
         return;
       }
 
-      const missingPackages =
-        packageItems.filter(
-          (packageItem) =>
-            !String(
-              draftPackageConfigurationByPackageId[
-                packageItem.id
-              ] || "",
-            ).trim(),
+      const validConfigurationIds = new Set(
+        packageConfigurations
+          .map((configuration) => String(configuration?.id || "").trim())
+          .filter(Boolean),
+      );
+
+      const missingPackages = packageItems.filter((packageItem) => {
+        const configurationId = String(
+          draftPackageConfigurationByPackageId[packageItem.id] || "",
+        ).trim();
+
+        return (
+          !configurationId ||
+          !validConfigurationIds.has(configurationId)
         );
+      });
 
       if (missingPackages.length) {
         AuthNotify.warning(
-          "Chưa chọn kích thước thùng",
-          `Vui lòng chọn cấu hình thùng cho: ${missingPackages
-            .map(
-              (packageItem) =>
-                packageItem.displayName,
-            )
+          "Bắt buộc chọn kích thước thùng",
+          `Đã chọn đóng thùng gỗ nên phải chọn cấu hình kích thước hợp lệ cho: ${missingPackages
+            .map((packageItem) => packageItem.displayName)
             .join(", ")}.`,
         );
         return;
       }
 
-      packageConfigurationByPackageId =
-        Object.fromEntries(
-          packageItems.map(
-            (packageItem) => [
-              packageItem.id,
-              String(
-                draftPackageConfigurationByPackageId[
-                  packageItem.id
-                ],
-              ).trim(),
-            ],
-          ),
+      packageConfigurationByPackageId = Object.fromEntries(
+        packageItems.map((packageItem) => [
+          packageItem.id,
+          String(
+            draftPackageConfigurationByPackageId[packageItem.id],
+          ).trim(),
+        ]),
+      );
+
+      selectedPackageConfigurations = packageItems.map((packageItem) => {
+        const packageConfigurationId =
+          packageConfigurationByPackageId[packageItem.id];
+
+        const configuration = packageConfigurations.find(
+          (item) => item.id === packageConfigurationId,
         );
 
-      selectedPackageConfigurations =
-        packageItems.map((packageItem) => {
-          const packageConfigurationId =
-            packageConfigurationByPackageId[
-              packageItem.id
-            ];
+        return {
+          packageId: packageItem.id,
+          packageIndex: packageItem.index,
+          productName: packageItem.displayName,
+          packageConfigurationId,
+          configCode: configuration?.configCode || "",
+          configName:
+            configuration?.configName || "Cấu hình đóng gói",
+          length: Number(configuration?.length) || 0,
+          width: Number(configuration?.width) || 0,
+          height: Number(configuration?.height) || 0,
+          maxWeight: Number(configuration?.maxWeight) || 0,
+          packageFee: Number(configuration?.packageFee) || 0,
+        };
+      });
 
-          const configuration =
-            packageConfigurations.find(
-              (item) =>
-                item.id ===
-                packageConfigurationId,
-            );
+      const woodCrateRule = activeSelectedRules.find(isWoodCrateRule);
 
-          return {
-            packageId: packageItem.id,
-            packageIndex:
-              packageItem.index,
-            productName:
-              packageItem.displayName,
-            packageConfigurationId,
-            configCode:
-              configuration?.configCode ||
-              "",
-            configName:
-              configuration?.configName ||
-              "Cấu hình đóng gói",
-            packageFee:
-              configuration?.packageFee ??
-              0,
-          };
-        });
+      // Phí rule đóng thùng được tính một lần cho toàn bộ đơn.
+      woodCrateOrderFee = Number(woodCrateRule?.value) || 0;
+      woodCrateConfigurationFee = selectedPackageConfigurations.reduce(
+        (total, configuration) =>
+          total + (Number(configuration?.packageFee) || 0),
+        0,
+      );
+      woodCrateTotalFee =
+        woodCrateOrderFee + woodCrateConfigurationFee;
+      woodCrateCompleted =
+        selectedPackageConfigurations.length === packageItems.length;
     }
 
     const nextValue = {
@@ -1740,6 +1795,12 @@ export default function PackageOptionalServices({
       selectedPricingRuleIds,
       packageConfigurationByPackageId,
       selectedPackageConfigurations,
+      woodCrateBaseFeePerPackage: 0,
+      woodCrateOrderFee,
+      woodCrateBaseFee: woodCrateOrderFee,
+      woodCrateConfigurationFee,
+      woodCrateTotalFee,
+      woodCrateCompleted,
     };
 
     try {
@@ -1754,6 +1815,7 @@ export default function PackageOptionalServices({
       );
 
       onChange?.(nextValue);
+      setWoodCrateAutoSuggestionEnabled(false);
       setIsOpen(false);
 
       if (activeSelectedRules.length > 0) {
@@ -1793,12 +1855,12 @@ export default function PackageOptionalServices({
           <div className="package-config-panel__header">
             <div>
               <strong>
-                Chọn kích thước thùng cho từng kiện hàng
+                Chọn kích thước thùng cho từng kiện hàng (bắt buộc)
               </strong>
               <span>
-                Hệ thống tự động gợi ý dựa trên
-                dài, rộng, cao và trọng lượng của
-                 kiện hàng .
+                Sau khi bạn chọn đóng thùng gỗ, hệ thống
+                mới gọi API để gợi ý dựa trên dài, rộng,
+                cao và trọng lượng của kiện hàng.
               </span>
             </div>
 
@@ -1934,7 +1996,9 @@ export default function PackageOptionalServices({
                           )}
                           {isSuggesting
                             ? "Đang gợi ý"
-                            : "Gợi ý lại"}
+                            : suggestedConfigurationId
+                              ? "Gợi ý lại"
+                              : "Gợi ý kích thước"}
                         </button>
                       </div>
 

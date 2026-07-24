@@ -164,6 +164,17 @@ const normalizeCode = (value) =>
     .replaceAll(" ", "_")
     .replaceAll("-", "_");
 
+const isWoodCrateServiceCode = (value) => {
+  const code = normalizeCode(value);
+
+  return (
+    code === "WOOD_CRATE" ||
+    code === "WOOD_BOX" ||
+    code.includes("WOOD_CRATE") ||
+    code.includes("WOOD_BOX")
+  );
+};
+
 const normalizeId = (value) =>
   String(value || "")
     .trim()
@@ -1631,6 +1642,16 @@ export default function ConsignmentOrderConfirm({
   const optionalServices =
     form?.optionalServices || {};
 
+  /*
+   * Đây là nguồn sự thật duy nhất để quyết định có hiển thị
+   * dịch vụ, phí và kích thước thùng gỗ hay không.
+   * Dữ liệu packageConfigurationId do API gợi ý trả về không
+   * được phép tự kích hoạt giao diện đóng thùng.
+   */
+  const woodCrateSelected =
+    optionalServices
+      ?.requiresWoodenCrate === true;
+
   const woodCrateOrderFee =
     useMemo(
       () =>
@@ -1646,45 +1667,93 @@ export default function ConsignmentOrderConfirm({
 
   const selectedServices =
     useMemo(() => {
-      const selectedRuleCodes =
-        Array.isArray(
-          optionalServices
-            ?.selectedRuleCodes,
-        )
-          ? optionalServices.selectedRuleCodes
-          : [];
+      const selectedRuleCodes = [
+        optionalServices?.selectedRuleCodes,
+        optionalServices?.selectedPricingRuleCodes,
+        optionalServices?.pricingRuleCodes,
+        optionalServices?.selectedServiceCodes,
+        optionalServices?.serviceCodes,
+      ]
+        .filter(Array.isArray)
+        .flat();
 
-      const selectedPricingRuleIds =
-        Array.isArray(
-          optionalServices
-            ?.selectedPricingRuleIds,
-        )
-          ? optionalServices
-              .selectedPricingRuleIds
-          : [];
+      const selectedPricingRuleIds = [
+        optionalServices?.selectedPricingRuleIds,
+        optionalServices?.pricingRuleIds,
+        optionalServices?.selectedServiceIds,
+        optionalServices?.serviceIds,
+      ]
+        .filter(Array.isArray)
+        .flat();
+
+      const selectedRuleObjects = [
+        optionalServices?.selectedRules,
+        optionalServices?.selectedPricingRules,
+        optionalServices?.selectedServices,
+        optionalServices?.services,
+      ]
+        .filter(Array.isArray)
+        .flat()
+        .filter(
+          (item) =>
+            item &&
+            typeof item === "object",
+        );
 
       const serviceMap = new Map();
+
+      const findRuleByCode = (rawCode) => {
+        const code = normalizeCode(rawCode);
+
+        if (!code) {
+          return null;
+        }
+
+        return (
+          pricingRuleByCode.get(code) ||
+          normalizedPricingRules.find(
+            (rule) =>
+              rule.ruleCode === code ||
+              rule.ruleType === code,
+          ) ||
+          null
+        );
+      };
 
       const appendCode = (
         rawCode,
         fallback = {},
       ) => {
-        const code =
+        const requestedCode =
           normalizeCode(rawCode);
 
         if (
-          !code ||
+          !requestedCode ||
           HIDDEN_SERVICE_CODES.has(
-            code,
+            requestedCode,
           )
         ) {
           return;
         }
 
+        /*
+         * WOOD_CRATE chỉ được xem là đã chọn khi cờ
+         * requiresWoodenCrate thực sự bằng true.
+         * Vì vậy dữ liệu gợi ý thùng còn sót lại hoặc
+         * selectedRuleCodes cũ không thể tự làm dịch vụ
+         * đóng thùng gỗ xuất hiện trên màn hình xác nhận.
+         */
+        if (
+          isWoodCrateServiceCode(
+            requestedCode,
+          ) &&
+          !woodCrateSelected
+        ) {
+          return;
+        }
+
         const rule =
-          pricingRuleByCode.get(
-            code,
-          ) ||
+          findRuleByCode(requestedCode) ||
           fallback?.rule ||
           null;
 
@@ -1695,18 +1764,35 @@ export default function ConsignmentOrderConfirm({
               )
             : null;
 
+        const code =
+          normalizeCode(
+            normalizedRule?.ruleCode ||
+              requestedCode,
+          );
+
+        if (
+          !code ||
+          HIDDEN_SERVICE_CODES.has(code)
+        ) {
+          return;
+        }
+
+        if (
+          isWoodCrateServiceCode(code) &&
+          !woodCrateSelected
+        ) {
+          return;
+        }
+
         serviceMap.set(code, {
           code,
           label: getServiceLabel(
             code,
-            normalizedRule
-              ?.ruleName ||
+            normalizedRule?.ruleName ||
               fallback?.label,
           ),
           description:
-            SERVICE_DESCRIPTIONS[
-              code
-            ] ||
+            SERVICE_DESCRIPTIONS[code] ||
             (
               hasVietnameseCharacters(
                 normalizedRule
@@ -1727,8 +1813,7 @@ export default function ConsignmentOrderConfirm({
       };
 
       selectedRuleCodes.forEach(
-        (code) =>
-          appendCode(code),
+        (code) => appendCode(code),
       );
 
       selectedPricingRuleIds.forEach(
@@ -1741,18 +1826,55 @@ export default function ConsignmentOrderConfirm({
           if (rule) {
             appendCode(
               rule.ruleCode,
-              {
-                rule,
-              },
+              { rule },
             );
           }
         },
       );
 
-      if (
-        optionalServices
-          ?.requiresWoodenCrate
-      ) {
+      selectedRuleObjects.forEach(
+        (item) => {
+          const rawCode =
+            item?.ruleCode ||
+            item?.code ||
+            item?.serviceCode ||
+            item?.ruleType;
+
+          if (rawCode) {
+            appendCode(rawCode, {
+              rule: item,
+              label:
+                item?.ruleName ||
+                item?.name ||
+                item?.label,
+              description:
+                item?.description,
+              priceLabel:
+                item?.priceLabel,
+            });
+            return;
+          }
+
+          const rawId =
+            item?.id ||
+            item?.pricingRuleId ||
+            item?.serviceId;
+
+          const rule =
+            pricingRuleById.get(
+              normalizeId(rawId),
+            );
+
+          if (rule) {
+            appendCode(
+              rule.ruleCode,
+              { rule },
+            );
+          }
+        },
+      );
+
+      if (woodCrateSelected) {
         appendCode(
           "WOOD_CRATE",
           {
@@ -1792,21 +1914,17 @@ export default function ConsignmentOrderConfirm({
           );
 
         appendCode(
-          insuranceRule
-            ?.ruleCode ||
+          insuranceRule?.ruleCode ||
             "INSURANCE",
           {
-            rule:
-              insuranceRule,
+            rule: insuranceRule,
           },
         );
       }
 
       if (
         optionalServices
-          ?.requiresPacking &&
-        !optionalServices
-          ?.requiresWoodenCrate
+          ?.requiresPacking
       ) {
         appendCode("PACKING");
       }
@@ -1821,11 +1939,20 @@ export default function ConsignmentOrderConfirm({
       pricingRuleByCode,
       pricingRuleById,
       woodCrateOrderFee,
+      woodCrateSelected,
     ]);
 
   const selectedConfigurationByPackage =
     useMemo(() => {
       const selectedMap = new Map();
+
+      /*
+       * Không chọn đóng thùng gỗ thì bỏ qua toàn bộ cấu hình thùng,
+       * kể cả packageConfigurationId đã từng được API AI gợi ý.
+       */
+      if (!woodCrateSelected) {
+        return selectedMap;
+      }
 
       const savedList =
         Array.isArray(
@@ -1918,7 +2045,36 @@ export default function ConsignmentOrderConfirm({
       configurationById,
       optionalServices,
       packages,
+      woodCrateSelected,
     ]);
+
+  const missingWoodCratePackages = useMemo(() => {
+    if (!woodCrateSelected) {
+      return [];
+    }
+
+    return packages
+      .map((pkg, index) => ({
+        packageId: getPackageId(pkg, index),
+        packageIndex: index + 1,
+        productName: String(
+          pkg?.productName || `Kiện hàng ${index + 1}`,
+        ).trim(),
+      }))
+      .filter(
+        (item) =>
+          !selectedConfigurationByPackage.has(item.packageId),
+      );
+  }, [
+    packages,
+    selectedConfigurationByPackage,
+    woodCrateSelected,
+  ]);
+
+  const woodCrateSelectionComplete =
+    !woodCrateSelected ||
+    (packages.length > 0 &&
+      missingWoodCratePackages.length === 0);
 
   const woodCratePricingSummary =
     useMemo(
@@ -2218,11 +2374,26 @@ export default function ConsignmentOrderConfirm({
             </div>
           )}
 
-          <WoodCrateSummary
-            summary={
-              woodCratePricingSummary
-            }
-          />
+          {woodCrateSelected && (
+            <>
+              <WoodCrateSummary
+                summary={
+                  woodCratePricingSummary
+                }
+              />
+
+              {!woodCrateSelectionComplete && (
+                <div className="consignment-confirm-api-notice is-error">
+                  <InfoCircleOutlined />
+                  <span>
+                    Đã chọn đóng thùng gỗ nên bắt buộc chọn kích thước cho tất cả kiện. Còn thiếu: {missingWoodCratePackages
+                      .map((item) => item.productName)
+                      .join(", ")}.
+                  </span>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div className="consignment-confirm-totals">
@@ -2284,8 +2455,7 @@ export default function ConsignmentOrderConfirm({
             </strong>
           </div>
 
-          {optionalServices
-            ?.requiresWoodenCrate && (
+          {woodCrateSelected && (
             <div className="consignment-confirm-total-card is-wood-total">
               <span>
                 Tổng phí đóng thùng
@@ -2313,8 +2483,9 @@ export default function ConsignmentOrderConfirm({
               </h2>
 
               <p>
-                Chi tiết sản phẩm, kích thước,
-                cấu hình thùng và hình ảnh.
+                {woodCrateSelected
+                  ? "Chi tiết sản phẩm, kích thước kiện, cấu hình thùng và hình ảnh."
+                  : "Chi tiết sản phẩm, kích thước kiện và hình ảnh."}
               </p>
             </div>
           </div>
@@ -2383,10 +2554,9 @@ export default function ConsignmentOrderConfirm({
                           </h3>
 
                           <p>
-                            Kiểm tra hình ảnh,
-                            thông tin sản phẩm,
-                            kích thước và cấu hình
-                            thùng trước khi xác nhận.
+                            {woodCrateSelected
+                              ? "Kiểm tra hình ảnh, thông tin sản phẩm, kích thước kiện và cấu hình thùng trước khi xác nhận."
+                              : "Kiểm tra hình ảnh, thông tin sản phẩm và kích thước kiện trước khi xác nhận."}
                           </p>
                         </div>
                       </div>
@@ -2706,15 +2876,28 @@ export default function ConsignmentOrderConfirm({
                         </section>
                       </div>
 
-                      <PackageConfigurationCard
-                        pkg={pkg}
-                        packageIndex={
-                          index + 1
-                        }
-                        selectedConfiguration={
-                          selectedConfiguration
-                        }
-                      />
+                      {woodCrateSelected &&
+                        selectedConfiguration && (
+                          <PackageConfigurationCard
+                            pkg={pkg}
+                            packageIndex={
+                              index + 1
+                            }
+                            selectedConfiguration={
+                              selectedConfiguration
+                            }
+                          />
+                        )}
+
+                      {woodCrateSelected &&
+                        !selectedConfiguration && (
+                          <div className="consignment-confirm-api-notice is-error">
+                            <InfoCircleOutlined />
+                            <span>
+                              Kiện này chưa được chọn kích thước thùng gỗ. Vui lòng quay lại chỉnh sửa trước khi tạo đơn.
+                            </span>
+                          </div>
+                        )}
                     </div>
                   </article>
                 );
@@ -2772,7 +2955,8 @@ export default function ConsignmentOrderConfirm({
             className="consignment-confirm-button is-primary"
             disabled={
               isSubmitting ||
-              masterDataLoading
+              masterDataLoading ||
+              !woodCrateSelectionComplete
             }
             onClick={onConfirm}
           >
@@ -2780,6 +2964,11 @@ export default function ConsignmentOrderConfirm({
               <>
                 <LoadingOutlined spin />
                 ĐANG TẠO ĐƠN...
+              </>
+            ) : !woodCrateSelectionComplete ? (
+              <>
+                <InfoCircleOutlined />
+                CHƯA CHỌN ĐỦ KÍCH THƯỚC THÙNG
               </>
             ) : (
               <>

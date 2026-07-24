@@ -95,6 +95,7 @@ const INITIAL_FORM = {
     packageConfigurationByPackageId: {},
     selectedPackageConfigurations: [],
     woodCrateBaseFeePerPackage: 0,
+    woodCrateOrderFee: 0,
     woodCrateBaseFee: 0,
     woodCrateConfigurationFee: 0,
     woodCrateTotalFee: 0,
@@ -333,6 +334,29 @@ const normalizePackageConfigurationMap = (value) => {
         Boolean(packageId && configurationId),
       ),
   );
+};
+
+const getMissingWoodCratePackages = ({
+  optionalServices,
+  packages,
+}) => {
+  if (optionalServices?.requiresWoodenCrate !== true) {
+    return [];
+  }
+
+  const configurationMap = normalizePackageConfigurationMap(
+    optionalServices?.packageConfigurationByPackageId,
+  );
+
+  return packages.filter((pkg) => {
+    const configurationId = String(
+      configurationMap[pkg.id] ||
+        pkg?.packageConfigurationId ||
+        "",
+    ).trim();
+
+    return !configurationId;
+  });
 };
 
 const getShippingOptionLabel = (value, label) => {
@@ -708,22 +732,23 @@ const validateConsignmentForm = ({ form, packages }) => {
     formErrors.note = "Vui lòng nhập ghi chú cho đơn ký gửi.";
   }
 
-  const packageConfigurationByPackageId =
-    normalizePackageConfigurationMap(
-      form?.optionalServices
-        ?.packageConfigurationByPackageId,
-    );
+  const missingWoodCratePackages =
+    getMissingWoodCratePackages({
+      optionalServices: form?.optionalServices,
+      packages,
+    });
+
+  const missingWoodCratePackageIds = new Set(
+    missingWoodCratePackages.map((pkg) => pkg.id),
+  );
 
   const packageErrors = Object.fromEntries(
     packages.map((pkg) => {
       const errors = validatePackage(pkg);
 
-      if (
-        form?.optionalServices?.requiresWoodenCrate &&
-        !packageConfigurationByPackageId[pkg.id]
-      ) {
+      if (missingWoodCratePackageIds.has(pkg.id)) {
         errors.packageConfigurationId =
-          "Vui lòng chọn kích thước thùng gỗ cho kiện hàng.";
+          "Đã chọn đóng thùng gỗ nên bắt buộc chọn kích thước thùng cho kiện này.";
       }
 
       return [pkg.id, errors];
@@ -1651,17 +1676,15 @@ export default function ConsignmentOrder() {
             )
           : [];
 
-      const baseFeePerPackage =
-        Number(
-          previous.optionalServices
-            ?.woodCrateBaseFeePerPackage,
-        ) || 0;
-
-      const baseFee =
+      const orderServiceFee =
         previous.optionalServices
           ?.requiresWoodenCrate
-          ? baseFeePerPackage *
-            packages.length
+          ? Number(
+              previous.optionalServices
+                ?.woodCrateOrderFee ??
+                previous.optionalServices
+                  ?.woodCrateBaseFee,
+            ) || 0
           : 0;
 
       const configurationFee =
@@ -1680,11 +1703,14 @@ export default function ConsignmentOrder() {
             nextConfigurationMap,
           selectedPackageConfigurations:
             nextSelectedConfigurations,
-          woodCrateBaseFee: baseFee,
+          woodCrateOrderFee:
+            orderServiceFee,
+          woodCrateBaseFee:
+            orderServiceFee,
           woodCrateConfigurationFee:
             configurationFee,
           woodCrateTotalFee:
-            baseFee + configurationFee,
+            orderServiceFee + configurationFee,
           woodCrateCompleted: false,
         },
       };
@@ -1779,12 +1805,16 @@ export default function ConsignmentOrder() {
           ) || 0
         : 0;
 
-    const woodCrateBaseFee =
+    const woodCrateOrderFee =
       requiresWoodenCrate
         ? Number(
-            nextServices?.woodCrateBaseFee,
+            nextServices?.woodCrateOrderFee ??
+              nextServices?.woodCrateBaseFee,
           ) || 0
         : 0;
+
+    const woodCrateBaseFee =
+      woodCrateOrderFee;
 
     const woodCrateConfigurationFee =
       requiresWoodenCrate
@@ -1803,8 +1833,11 @@ export default function ConsignmentOrder() {
 
     const woodCrateCompleted =
       requiresWoodenCrate &&
-      Boolean(
-        nextServices?.woodCrateCompleted,
+      packages.length > 0 &&
+      packages.every((pkg) =>
+        Boolean(
+          packageConfigurationByPackageId[pkg.id],
+        ),
       );
 
     setPackages((previousPackages) =>
@@ -1822,13 +1855,16 @@ export default function ConsignmentOrder() {
         ...previous,
       };
 
-      Object.keys(
-        packageConfigurationByPackageId,
-      ).forEach((packageId) => {
-        nextErrors[packageId] = {
-          ...(nextErrors[packageId] || {}),
-          packageConfigurationId: "",
-        };
+      packages.forEach((pkg) => {
+        if (
+          !requiresWoodenCrate ||
+          packageConfigurationByPackageId[pkg.id]
+        ) {
+          nextErrors[pkg.id] = {
+            ...(nextErrors[pkg.id] || {}),
+            packageConfigurationId: "",
+          };
+        }
       });
 
       return nextErrors;
@@ -1855,6 +1891,7 @@ export default function ConsignmentOrder() {
         packageConfigurationByPackageId,
         selectedPackageConfigurations,
         woodCrateBaseFeePerPackage,
+        woodCrateOrderFee,
         woodCrateBaseFee,
         woodCrateConfigurationFee,
         woodCrateTotalFee,
@@ -1928,15 +1965,13 @@ export default function ConsignmentOrder() {
         return previous;
       }
 
-      const baseFeePerPackage =
+      const orderServiceFee =
         Number(
           previous.optionalServices
-            ?.woodCrateBaseFeePerPackage,
+            ?.woodCrateOrderFee ??
+            previous.optionalServices
+              ?.woodCrateBaseFee,
         ) || 0;
-
-      const nextBaseFee =
-        baseFeePerPackage *
-        (packages.length + 1);
 
       const configurationFee =
         Number(
@@ -1948,11 +1983,10 @@ export default function ConsignmentOrder() {
         ...previous,
         optionalServices: {
           ...previous.optionalServices,
-          woodCrateBaseFee:
-            nextBaseFee,
+          woodCrateOrderFee: orderServiceFee,
+          woodCrateBaseFee: orderServiceFee,
           woodCrateTotalFee:
-            nextBaseFee +
-            configurationFee,
+            orderServiceFee + configurationFee,
           woodCrateCompleted: false,
         },
       };
@@ -2075,23 +2109,20 @@ export default function ConsignmentOrder() {
             )
           : [];
 
-      const baseFeePerPackage =
-        Number(
-          previous.optionalServices
-            ?.woodCrateBaseFeePerPackage,
-        ) || 0;
+      const nextPackageCount = Math.max(
+        packages.length - 1,
+        0,
+      );
 
-      const nextPackageCount =
-        Math.max(
-          packages.length - 1,
-          0,
-        );
-
-      const nextBaseFee =
+      const orderServiceFee =
         previous.optionalServices
           ?.requiresWoodenCrate
-          ? baseFeePerPackage *
-            nextPackageCount
+          ? Number(
+              previous.optionalServices
+                ?.woodCrateOrderFee ??
+                previous.optionalServices
+                  ?.woodCrateBaseFee,
+            ) || 0
           : 0;
 
       const nextConfigurationFee =
@@ -2108,7 +2139,7 @@ export default function ConsignmentOrder() {
             ?.requiresWoodenCrate,
         ) &&
         nextPackageCount > 0 &&
-        nextSelectedConfigurations.length ===
+        Object.keys(nextConfigurationMap).length ===
           nextPackageCount;
 
       return {
@@ -2119,12 +2150,14 @@ export default function ConsignmentOrder() {
             nextConfigurationMap,
           selectedPackageConfigurations:
             nextSelectedConfigurations,
+          woodCrateOrderFee:
+            orderServiceFee,
           woodCrateBaseFee:
-            nextBaseFee,
+            orderServiceFee,
           woodCrateConfigurationFee:
             nextConfigurationFee,
           woodCrateTotalFee:
-            nextBaseFee +
+            orderServiceFee +
             nextConfigurationFee,
           woodCrateCompleted,
         },
@@ -2363,8 +2396,11 @@ export default function ConsignmentOrder() {
             pkg.trackingCode.trim() || null,
           packageConfigurationId:
             form.optionalServices
-              ?.requiresWoodenCrate
-              ? pkg.packageConfigurationId || null
+              ?.requiresWoodenCrate === true
+              ? normalizePackageConfigurationMap(
+                  form.optionalServices
+                    ?.packageConfigurationByPackageId,
+                )[pkg.id] || null
               : null,
 
         });
@@ -3349,7 +3385,7 @@ export default function ConsignmentOrder() {
                 triggerDescription="Có thể chọn nhiều dịch vụ áp dụng chung cho tất cả kiện hàng."
                 modalEyebrow="DỊCH VỤ TOÀN ĐƠN"
                 modalTitle="Lựa chọn dịch vụ cho toàn bộ đơn ký gửi"
-                modalDescription="Bảo hiểm chỉ mở khi đã nhập giá trị cho tất cả kiện; đóng thùng gỗ chỉ mở khi đã nhập đủ số lượng, cân nặng và kích thước từng kiện."
+                modalDescription="Bảo hiểm chỉ mở khi đã nhập giá trị cho tất cả kiện. Khi chọn đóng thùng gỗ, bắt buộc chọn một cấu hình kích thước cho từng kiện trước khi lưu hoặc tạo đơn."
                 onChange={handleOptionalServicesChange}
               />
 
