@@ -250,6 +250,89 @@ const normalizePricingRuleIds = (value) => {
   );
 };
 
+const normalizePricingRuleCode = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+
+const normalizeStringArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => String(item || "").trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
+const normalizePricingRuleFromApi = (rule = {}) => {
+  const id = String(
+    rule?.id || rule?.pricingRuleId || "",
+  ).trim();
+
+  return {
+    ...rule,
+    id,
+    pricingRuleId: String(
+      rule?.pricingRuleId || id,
+    ).trim(),
+    ruleName: String(
+      rule?.ruleName ||
+        rule?.name ||
+        rule?.displayName ||
+        rule?.ruleCode ||
+        "Dịch vụ bổ sung",
+    ).trim(),
+    ruleCode: normalizePricingRuleCode(
+      rule?.ruleCode || rule?.code,
+    ),
+    ruleType: normalizePricingRuleCode(
+      rule?.ruleType || rule?.type,
+    ),
+    calculationType: normalizePricingRuleCode(
+      rule?.calculationType ||
+        rule?.calculationMethod,
+    ),
+    conditionType:
+      rule?.conditionType === null ||
+      rule?.conditionType === undefined
+        ? null
+        : String(rule.conditionType).trim(),
+    conditionValue:
+      rule?.conditionValue === null ||
+      rule?.conditionValue === undefined
+        ? null
+        : String(rule.conditionValue).trim(),
+    value: toFiniteNumberOrNull(rule?.value),
+    minAmount: toFiniteNumberOrNull(
+      rule?.minAmount,
+    ),
+    maxAmount: toFiniteNumberOrNull(
+      rule?.maxAmount,
+    ),
+    appliedAmount:
+      toFiniteNumberOrNull(
+        rule?.appliedAmount ??
+          rule?.feeAmount ??
+          rule?.calculatedAmount ??
+          rule?.actualAmount,
+      ),
+    isRequired: Boolean(rule?.isRequired),
+    status: normalizePricingRuleCode(
+      rule?.status || "ACTIVE",
+    ),
+    description: String(
+      rule?.description || rule?.note || "",
+    ).trim(),
+  };
+};
+
 const normalizePricingRuleOptions = (apiResult) => {
   const candidates = [
     apiResult,
@@ -265,38 +348,302 @@ const normalizePricingRuleOptions = (apiResult) => {
   const rawRules = candidates.find(Array.isArray) || [];
 
   return rawRules
-    .map((rule) => {
-      if (!rule || typeof rule !== "object") {
-        return null;
-      }
-
-      const id = String(
-        rule?.id || rule?.pricingRuleId || "",
-      ).trim();
-
-      if (!id) {
-        return null;
-      }
-
-      return {
-        ...rule,
-        id,
-        ruleName: String(
-          rule?.ruleName ||
-            rule?.name ||
-            rule?.displayName ||
-            rule?.ruleCode ||
-            "Dịch vụ bổ sung",
-        ).trim(),
-        ruleCode: String(rule?.ruleCode || "").trim(),
-        ruleType: String(rule?.ruleType || "").trim(),
-        description: String(
-          rule?.description || "",
-        ).trim(),
-      };
-    })
-    .filter(Boolean);
+    .filter(
+      (rule) =>
+        rule &&
+        typeof rule === "object" &&
+        !Array.isArray(rule),
+    )
+    .map(normalizePricingRuleFromApi)
+    .filter((rule) => rule.id || rule.ruleCode);
 };
+
+const HIDDEN_ADDITIONAL_SERVICE_CODES = new Set([
+  "VOLUMETRIC_DIVISOR",
+  "VAT",
+  "IMPORT_TAX",
+  "DOMESTIC_FEE",
+]);
+
+const WOOD_CRATE_RULE_CODE = "WOOD_CRATE";
+const VAT_RULE_CODE = "VAT";
+const IMPORT_TAX_RULE_CODE = "IMPORT_TAX";
+const DEFAULT_WOOD_CRATE_ORDER_FEE = 35000;
+
+const isWoodCratePricingRule = (rule) => {
+  const searchableValue = [
+    rule?.ruleCode,
+    rule?.ruleType,
+    rule?.ruleName,
+  ]
+    .map(normalizePricingRuleCode)
+    .join(" ");
+
+  return (
+    searchableValue.includes("WOOD_CRATE") ||
+    searchableValue.includes("WOOD_BOX") ||
+    searchableValue.includes("THUNG_GO")
+  );
+};
+
+const getPackageConfigurationFee = (configuration) =>
+  toFiniteNumberOrNull(
+    configuration?.estimatedFee ??
+      configuration?.packageFee ??
+      configuration?.fee ??
+      configuration?.price,
+  ) ?? 0;
+
+const formatPercent = (value) => {
+  const number = toFiniteNumberOrNull(value);
+
+  if (number === null) {
+    return null;
+  }
+
+  return `${new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 4,
+  }).format(number)}%`;
+};
+
+const formatPricingRuleUnit = (conditionType) => {
+  const rawValue = String(
+    conditionType || "",
+  ).trim();
+
+  if (!rawValue) {
+    return "";
+  }
+
+  const unitMatch = rawValue.match(
+    /^(?:VND|VNĐ|₫|Đ)\s*\/\s*(.+)$/i,
+  );
+
+  if (!unitMatch?.[1]) {
+    return "";
+  }
+
+  const normalizedUnit =
+    normalizePricingRuleCode(unitMatch[1]);
+
+  const translatedUnit = {
+    PACKAGE: "kiện",
+    KIEN: "kiện",
+    ORDER: "đơn",
+    DON: "đơn",
+    ITEM: "sản phẩm",
+    PRODUCT: "sản phẩm",
+    SAN_PHAM: "sản phẩm",
+    KG: "kg",
+    CBM: "m³",
+    M3: "m³",
+  }[normalizedUnit];
+
+  return translatedUnit || unitMatch[1].trim();
+};
+
+const formatPricingRuleFee = (rule) => {
+  if (!rule || rule?.isMissing) {
+    return "Chưa xác định mức phí";
+  }
+
+  const calculationType =
+    normalizePricingRuleCode(
+      rule?.calculationType,
+    );
+
+  const value = toFiniteNumberOrNull(
+    rule?.value,
+  );
+
+  /*
+   * WOOD_CRATE là phí dịch vụ tính một lần cho toàn bộ đơn.
+   * Không dùng conditionType VND/kiện để nhân theo số kiện.
+   */
+  if (isWoodCratePricingRule(rule)) {
+    const orderFee =
+      value ?? DEFAULT_WOOD_CRATE_ORDER_FEE;
+
+    return `${formatMoney(orderFee)} / đơn`;
+  }
+
+  if (Number.isFinite(rule.appliedAmount)) {
+    return formatMoney(rule.appliedAmount);
+  }
+
+  const unit = formatPricingRuleUnit(
+    rule?.conditionType,
+  );
+
+  if (value === null) {
+    return "Theo báo giá hệ thống";
+  }
+
+  if (calculationType === "PERCENTAGE") {
+    return formatPercent(value) || "Theo tỷ lệ hệ thống";
+  }
+
+  if (calculationType === "FIXED") {
+    return `${formatMoney(value)}${
+      unit ? ` / ${unit}` : ""
+    }`;
+  }
+
+  return `${new Intl.NumberFormat(
+    "vi-VN",
+    {
+      maximumFractionDigits: 4,
+    },
+  ).format(value)}${
+    unit ? ` / ${unit}` : ""
+  }`;
+};
+
+const formatPricingRuleFeeDetail = (rule) => {
+  if (!rule || rule?.isMissing) {
+    return "Không tìm thấy quy tắc tương ứng trong bảng giá.";
+  }
+
+  const parts = [];
+  const conditionType =
+    normalizePricingRuleCode(
+      rule?.conditionType,
+    );
+
+  const conditionValue =
+    toFiniteNumberOrNull(
+      rule?.conditionValue,
+    );
+
+  if (
+    conditionType ===
+      "MIN_DECLARED_VALUE" &&
+    conditionValue !== null
+  ) {
+    parts.push(
+      `Áp dụng từ giá trị khai báo ${formatMoney(
+        conditionValue,
+      )}`,
+    );
+  }
+
+  if (
+    conditionType ===
+      "MAX_DECLARED_VALUE" &&
+    conditionValue !== null
+  ) {
+    parts.push(
+      `Áp dụng đến giá trị khai báo ${formatMoney(
+        conditionValue,
+      )}`,
+    );
+  }
+
+  if (
+    rule?.minAmount !== null &&
+    rule?.minAmount !== undefined
+  ) {
+    parts.push(
+      `Tối thiểu ${formatMoney(
+        rule.minAmount,
+      )}`,
+    );
+  }
+
+  if (
+    rule?.maxAmount !== null &&
+    rule?.maxAmount !== undefined
+  ) {
+    parts.push(
+      `Tối đa ${formatMoney(
+        rule.maxAmount,
+      )}`,
+    );
+  }
+
+  return parts.join(" • ");
+};
+
+const getPricingRuleObjectsFromConsignment = (
+  consignment,
+) => {
+  const candidates = [
+    consignment?.pricingRules,
+    consignment?.selectedPricingRules,
+    consignment?.additionalServices,
+    consignment?.optionalServices
+      ?.pricingRules,
+    consignment?.optionalServices
+      ?.selectedPricingRules,
+  ];
+
+  return candidates
+    .filter(Array.isArray)
+    .flat()
+    .filter(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        !Array.isArray(item),
+    );
+};
+
+const getPricingRuleIdsFromConsignment = (
+  consignment,
+) =>
+  normalizePricingRuleIds([
+    ...normalizeStringArray(
+      consignment?.pricingRuleIds,
+    ),
+    ...normalizeStringArray(
+      consignment?.selectedPricingRuleIds,
+    ),
+    ...normalizeStringArray(
+      consignment?.optionalServices
+        ?.selectedPricingRuleIds,
+    ),
+    ...getPricingRuleObjectsFromConsignment(
+      consignment,
+    )
+      .map(
+        (rule) =>
+          rule?.id ||
+          rule?.pricingRuleId,
+      )
+      .filter(Boolean),
+  ]);
+
+const getPricingRuleCodesFromConsignment = (
+  consignment,
+) =>
+  Array.from(
+    new Set(
+      [
+        ...normalizeStringArray(
+          consignment?.pricingRuleCodes,
+        ),
+        ...normalizeStringArray(
+          consignment?.selectedRuleCodes,
+        ),
+        ...normalizeStringArray(
+          consignment?.optionalServices
+            ?.selectedRuleCodes,
+        ),
+        ...getPricingRuleObjectsFromConsignment(
+          consignment,
+        )
+          .map(
+            (rule) =>
+              rule?.ruleCode ||
+              rule?.code ||
+              rule?.ruleType,
+          )
+          .filter(Boolean),
+      ]
+        .map(normalizePricingRuleCode)
+        .filter(Boolean),
+    ),
+  );
 
 const formatPricingRuleCode = (value) => {
   const code = String(value || "").trim();
@@ -1075,6 +1422,17 @@ const ConsignmentListDetail = () => {
          * Dữ liệu từ trang danh sách chỉ có một số field tóm tắt.
          * Ghép với API chi tiết để không làm mất pricingRuleIds/itemNames.
          */
+        const preferNonEmptyArray = (
+          primary,
+          fallback,
+        ) =>
+          Array.isArray(primary) &&
+          primary.length > 0
+            ? primary
+            : Array.isArray(fallback)
+              ? fallback
+              : [];
+
         const mergedResponseData = {
           ...(summaryData &&
           typeof summaryData === "object"
@@ -1082,15 +1440,70 @@ const ConsignmentListDetail = () => {
             : {}),
           ...responseData,
           pricingRuleIds:
-            Array.isArray(
+            preferNonEmptyArray(
               responseData?.pricingRuleIds,
-            )
-              ? responseData.pricingRuleIds
-              : summaryData?.pricingRuleIds || [],
+              summaryData?.pricingRuleIds,
+            ),
+          selectedPricingRuleIds:
+            preferNonEmptyArray(
+              responseData
+                ?.selectedPricingRuleIds,
+              summaryData
+                ?.selectedPricingRuleIds,
+            ),
+          selectedRuleCodes:
+            preferNonEmptyArray(
+              responseData
+                ?.selectedRuleCodes,
+              summaryData
+                ?.selectedRuleCodes,
+            ),
+          pricingRuleCodes:
+            preferNonEmptyArray(
+              responseData
+                ?.pricingRuleCodes,
+              summaryData
+                ?.pricingRuleCodes,
+            ),
+          pricingRules:
+            preferNonEmptyArray(
+              responseData?.pricingRules,
+              summaryData?.pricingRules,
+            ),
+          selectedPricingRules:
+            preferNonEmptyArray(
+              responseData
+                ?.selectedPricingRules,
+              summaryData
+                ?.selectedPricingRules,
+            ),
+          additionalServices:
+            preferNonEmptyArray(
+              responseData
+                ?.additionalServices,
+              summaryData
+                ?.additionalServices,
+            ),
+          optionalServices:
+            responseData?.optionalServices &&
+            typeof responseData
+              .optionalServices ===
+              "object"
+              ? {
+                  ...(summaryData
+                    ?.optionalServices ||
+                    {}),
+                  ...responseData
+                    .optionalServices,
+                }
+              : summaryData
+                  ?.optionalServices ||
+                {},
           itemNames:
-            Array.isArray(responseData?.itemNames)
-              ? responseData.itemNames
-              : summaryData?.itemNames || [],
+            preferNonEmptyArray(
+              responseData?.itemNames,
+              summaryData?.itemNames,
+            ),
         };
 
         setConsignment(
@@ -1490,35 +1903,316 @@ const ConsignmentListDetail = () => {
     [pricingRuleOptions],
   );
 
+  const pricingRuleCodeMap = useMemo(
+    () =>
+      new Map(
+        pricingRuleOptions
+          .filter((rule) => rule.ruleCode)
+          .map((rule) => [
+            normalizePricingRuleCode(
+              rule.ruleCode,
+            ),
+            rule,
+          ]),
+      ),
+    [pricingRuleOptions],
+  );
+
   const selectedPricingRules = useMemo(() => {
-    const selectedIds = normalizePricingRuleIds(
-      consignment?.pricingRuleIds,
-    );
+    const selectedRuleMap = new Map();
 
-    return selectedIds.map((pricingRuleId) => {
-      const matchedRule = pricingRuleMap.get(
-        normalizePricingRuleId(pricingRuleId),
-      );
+    const appendRule = (
+      rawRule,
+      fallback = {},
+    ) => {
+      const normalizedRule =
+        normalizePricingRuleFromApi({
+          ...fallback,
+          ...(rawRule || {}),
+        });
 
-      if (matchedRule) {
-        return {
-          ...matchedRule,
-          pricingRuleId,
-          isMissing: false,
-        };
+      const ruleCode =
+        normalizePricingRuleCode(
+          normalizedRule.ruleCode ||
+            normalizedRule.ruleType,
+        );
+
+      if (
+        ruleCode &&
+        HIDDEN_ADDITIONAL_SERVICE_CODES.has(
+          ruleCode,
+        )
+      ) {
+        return;
       }
 
-      return {
-        id: pricingRuleId,
-        pricingRuleId,
-        ruleName: "Dịch vụ chưa xác định",
-        ruleCode: "",
-        ruleType: "",
-        description: "",
-        isMissing: true,
+      const pricingRuleId = String(
+        normalizedRule.id ||
+          normalizedRule.pricingRuleId ||
+          fallback?.pricingRuleId ||
+          "",
+      ).trim();
+
+      const key =
+        ruleCode ||
+        normalizePricingRuleId(
+          pricingRuleId,
+        );
+
+      if (!key) {
+        return;
+      }
+
+      const nextRule = {
+        ...normalizedRule,
+        id:
+          normalizedRule.id ||
+          pricingRuleId,
+        pricingRuleId:
+          pricingRuleId ||
+          normalizedRule.id ||
+          ruleCode,
+        ruleCode,
+        isMissing: Boolean(
+          fallback?.isMissing,
+        ),
       };
+
+      nextRule.feeLabel =
+        formatPricingRuleFee(nextRule);
+
+      nextRule.feeDetail =
+        formatPricingRuleFeeDetail(
+          nextRule,
+        );
+
+      selectedRuleMap.set(key, {
+        ...(selectedRuleMap.get(key) ||
+          {}),
+        ...nextRule,
+      });
+    };
+
+    getPricingRuleObjectsFromConsignment(
+      consignment,
+    ).forEach((rawRule) => {
+      const rawId = String(
+        rawRule?.id ||
+          rawRule?.pricingRuleId ||
+          "",
+      ).trim();
+
+      const rawCode =
+        normalizePricingRuleCode(
+          rawRule?.ruleCode ||
+            rawRule?.code ||
+            rawRule?.ruleType,
+        );
+
+      const matchedRule =
+        (rawId &&
+          pricingRuleMap.get(
+            normalizePricingRuleId(
+              rawId,
+            ),
+          )) ||
+        (rawCode &&
+          pricingRuleCodeMap.get(
+            rawCode,
+          )) ||
+        null;
+
+      appendRule({
+        ...(matchedRule || {}),
+        ...rawRule,
+      });
     });
-  }, [consignment?.pricingRuleIds, pricingRuleMap]);
+
+    getPricingRuleIdsFromConsignment(
+      consignment,
+    ).forEach((pricingRuleId) => {
+      const normalizedSelectedId =
+        normalizePricingRuleId(
+          pricingRuleId,
+        );
+
+      const alreadyAdded =
+        Array.from(
+          selectedRuleMap.values(),
+        ).some(
+          (rule) =>
+            normalizePricingRuleId(
+              rule?.id ||
+                rule?.pricingRuleId,
+            ) === normalizedSelectedId,
+        );
+
+      if (alreadyAdded) {
+        return;
+      }
+
+      const matchedRule =
+        pricingRuleMap.get(
+          normalizedSelectedId,
+        );
+
+      if (matchedRule) {
+        appendRule(matchedRule, {
+          pricingRuleId,
+        });
+
+        return;
+      }
+
+      appendRule(
+        {
+          id: pricingRuleId,
+          pricingRuleId,
+          ruleName:
+            "Dịch vụ chưa xác định",
+        },
+        {
+          pricingRuleId,
+          isMissing: true,
+        },
+      );
+    });
+
+    getPricingRuleCodesFromConsignment(
+      consignment,
+    ).forEach((ruleCode) => {
+      const matchedRule =
+        pricingRuleCodeMap.get(
+          ruleCode,
+        );
+
+      appendRule(
+        matchedRule || {
+          ruleCode,
+          ruleName:
+            PRICING_RULE_VI_LABELS[
+              ruleCode
+            ] ||
+            formatPricingRuleCode(
+              ruleCode,
+            ),
+        },
+        {
+          isMissing: !matchedRule,
+        },
+      );
+    });
+
+    const appendLegacyRule = (
+      ruleCode,
+      enabled,
+    ) => {
+      if (!enabled) {
+        return;
+      }
+
+      const matchedRule =
+        pricingRuleCodeMap.get(
+          ruleCode,
+        ) ||
+        pricingRuleOptions.find(
+          (rule) =>
+            normalizePricingRuleCode(
+              rule.ruleType,
+            ) === ruleCode ||
+            normalizePricingRuleCode(
+              rule.ruleCode,
+            ).includes(ruleCode),
+        );
+
+      appendRule(
+        matchedRule || {
+          ruleCode,
+          ruleName:
+            PRICING_RULE_VI_LABELS[
+              ruleCode
+            ] ||
+            formatPricingRuleCode(
+              ruleCode,
+            ),
+        },
+        {
+          isMissing: !matchedRule,
+        },
+      );
+    };
+
+    appendLegacyRule(
+      "WOOD_CRATE",
+      Boolean(
+        consignment?.requiresWoodenCrate ||
+          consignment
+            ?.optionalServices
+            ?.requiresWoodenCrate,
+      ),
+    );
+
+    appendLegacyRule(
+      "SUR_INSPECTION",
+      Boolean(
+        consignment?.requiresInspection ||
+          consignment
+            ?.optionalServices
+            ?.requiresInspection,
+      ),
+    );
+
+    if (
+      consignment?.requiresInsurance ||
+      consignment?.optionalServices
+        ?.requiresInsurance
+    ) {
+      const insuranceRule =
+        pricingRuleOptions.find(
+          (rule) =>
+            normalizePricingRuleCode(
+              rule.ruleCode,
+            ).includes(
+              "INSURANCE",
+            ) ||
+            normalizePricingRuleCode(
+              rule.ruleType,
+            ).includes(
+              "INSURANCE",
+            ),
+        );
+
+      appendRule(
+        insuranceRule || {
+          ruleCode: "INSURANCE",
+          ruleName:
+            PRICING_RULE_VI_LABELS
+              .INSURANCE,
+        },
+        {
+          isMissing: !insuranceRule,
+        },
+      );
+    }
+
+    return Array.from(
+      selectedRuleMap.values(),
+    ).sort((first, second) =>
+      getPricingRuleDisplayName(
+        first,
+      ).localeCompare(
+        getPricingRuleDisplayName(
+          second,
+        ),
+        "vi",
+      ),
+    );
+  }, [
+    consignment,
+    pricingRuleCodeMap,
+    pricingRuleMap,
+    pricingRuleOptions,
+  ]);
 
   const packageConfigurationMap = useMemo(
     () =>
@@ -1715,6 +2409,141 @@ const ConsignmentListDetail = () => {
     hasWoodCrateService,
   ]);
 
+  const woodCrateFeeSummary = useMemo(() => {
+    if (!hasWoodCrateService) {
+      return {
+        enabled: false,
+        orderFee: 0,
+        configurationFee: 0,
+        totalFee: 0,
+        configuredPackageCount: 0,
+        packageCount: items.length,
+      };
+    }
+
+    const woodRule =
+      pricingRuleCodeMap.get(
+        WOOD_CRATE_RULE_CODE,
+      ) ||
+      pricingRuleOptions.find(
+        isWoodCratePricingRule,
+      ) ||
+      null;
+
+    const orderFee =
+      toFiniteNumberOrNull(woodRule?.value) ??
+      DEFAULT_WOOD_CRATE_ORDER_FEE;
+
+    const configuredItems = items.filter(
+      (item) => item?.packageConfiguration,
+    );
+
+    const configurationFee = configuredItems.reduce(
+      (total, item) =>
+        total +
+        getPackageConfigurationFee(
+          item.packageConfiguration,
+        ),
+      0,
+    );
+
+    return {
+      enabled: true,
+      orderFee,
+      configurationFee,
+      totalFee: orderFee + configurationFee,
+      configuredPackageCount:
+        configuredItems.length,
+      packageCount: items.length,
+      rule: woodRule,
+    };
+  }, [
+    hasWoodCrateService,
+    items,
+    pricingRuleCodeMap,
+    pricingRuleOptions,
+  ]);
+
+  const taxRuleInfo = useMemo(() => {
+    const vatRule =
+      pricingRuleCodeMap.get(VAT_RULE_CODE) ||
+      pricingRuleOptions.find(
+        (rule) =>
+          normalizePricingRuleCode(
+            rule?.ruleCode,
+          ) === VAT_RULE_CODE,
+      ) ||
+      null;
+
+    const importTaxRule =
+      pricingRuleCodeMap.get(
+        IMPORT_TAX_RULE_CODE,
+      ) ||
+      pricingRuleOptions.find(
+        (rule) =>
+          normalizePricingRuleCode(
+            rule?.ruleCode,
+          ) === IMPORT_TAX_RULE_CODE,
+      ) ||
+      null;
+
+    return {
+      vatPercent: formatPercent(
+        vatRule?.value,
+      ),
+      vatDescription:
+        vatRule?.description || "",
+      vatConditionType:
+        vatRule?.conditionType || null,
+      importTaxPercent: formatPercent(
+        importTaxRule?.value,
+      ),
+      importTaxDescription:
+        importTaxRule?.description || "",
+      importTaxConditionType:
+        importTaxRule?.conditionType || null,
+    };
+  }, [
+    pricingRuleCodeMap,
+    pricingRuleOptions,
+  ]);
+
+  const displaySelectedPricingRules =
+    useMemo(
+      () =>
+        selectedPricingRules.map((rule) => {
+          if (!isWoodCratePricingRule(rule)) {
+            return rule;
+          }
+
+          return {
+            ...rule,
+            feeLabel: formatMoney(
+              woodCrateFeeSummary.totalFee,
+            ),
+            feeDetail: [
+              `${formatMoney(
+                woodCrateFeeSummary.orderFee,
+              )} phí dịch vụ / toàn đơn`,
+              `${formatMoney(
+                woodCrateFeeSummary.configurationFee,
+              )} tổng phí cấu hình thùng`,
+              `${woodCrateFeeSummary.configuredPackageCount}/${woodCrateFeeSummary.packageCount} kiện đã có cấu hình`,
+            ].join(" • "),
+            orderFee:
+              woodCrateFeeSummary.orderFee,
+            configurationFee:
+              woodCrateFeeSummary.configurationFee,
+            totalFee:
+              woodCrateFeeSummary.totalFee,
+          };
+        }),
+      [
+        selectedPricingRules,
+        woodCrateFeeSummary,
+      ],
+    );
+
   const customer = consignment?.customer || {};
   const quotation = consignment?.quotation || null;
   const totalPackageCount = items.length;
@@ -1797,8 +2626,10 @@ const ConsignmentListDetail = () => {
         consignment?.consignmentType,
       )}
       summaryCards={summaryCards}
-      selectedPricingRules={selectedPricingRules}
+      selectedPricingRules={displaySelectedPricingRules}
       pricingRuleError={pricingRuleError}
+      woodCrateFeeSummary={woodCrateFeeSummary}
+      taxRuleInfo={taxRuleInfo}
       packageConfigurationLoading={
         packageConfigurationLoading
       }

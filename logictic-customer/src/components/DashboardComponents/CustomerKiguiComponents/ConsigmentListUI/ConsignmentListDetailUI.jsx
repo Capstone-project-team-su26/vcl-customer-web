@@ -372,89 +372,346 @@ const ProductTableSection = ({ items, columns }) => (
   </section>
 );
 
+const isWoodCrateDisplayRule = (rule) => {
+  const searchableValue = [
+    rule?.ruleCode,
+    rule?.ruleType,
+    rule?.ruleName,
+  ]
+    .map((value) =>
+      String(value || "")
+        .trim()
+        .toUpperCase(),
+    )
+    .join(" ");
+
+  return (
+    searchableValue.includes("WOOD_CRATE") ||
+    searchableValue.includes("WOOD_BOX") ||
+    searchableValue.includes("THÙNG GỖ")
+  );
+};
+
 const ShippingInformation = ({
   consignment,
   statusClass,
   statusLabel,
   consignmentTypeLabel,
-  selectedPricingRules,
+  selectedPricingRules = [],
   pricingRuleError,
+  woodCrateFeeSummary,
   translatedNote,
   getRuleDisplayName,
   getRuleColorClass,
-}) => (
-  <section className="detail-section-card">
-    <div className="detail-section-header">
-      <div className="detail-section-icon shipping">
-        <LocalShippingOutlinedIcon />
+}) => {
+  const rules = Array.isArray(
+    selectedPricingRules,
+  )
+    ? selectedPricingRules
+    : [];
+
+  return (
+    <section className="detail-section-card">
+      <div className="detail-section-header">
+        <div className="detail-section-icon shipping">
+          <LocalShippingOutlinedIcon />
+        </div>
+
+        <div>
+          <h2>Thông tin vận chuyển</h2>
+          <p>Dịch vụ, mức phí và trạng thái lô hàng</p>
+        </div>
       </div>
 
-      <div>
-        <h2>Thông tin vận chuyển</h2>
-        <p>Dịch vụ và trạng thái lô hàng</p>
-      </div>
-    </div>
-
-    <Descriptions
-      bordered
-      column={1}
-      size="middle"
-      className="detail-descriptions"
-    >
-      <Descriptions.Item label="Trạng thái">
-        <span className={`detail-inline-status status-${statusClass}`}>
-          {statusLabel}
-        </span>
-      </Descriptions.Item>
-
-      <Descriptions.Item label="Loại vận chuyển">
-        {consignmentTypeLabel}
-      </Descriptions.Item>
-
-      <Descriptions.Item label="Tuyến">
-        {consignment.route || "-"}
-      </Descriptions.Item>
-
-      <Descriptions.Item label="Dịch vụ bổ sung">
-        {selectedPricingRules.length > 0 ? (
-          <div className="detail-pricing-rule-list">
-            {selectedPricingRules.map((rule) => {
-              const name = getRuleDisplayName(rule);
-
-              return (
-                <Tooltip
-                  key={rule.pricingRuleId}
-                  title={rule.description || name}
-                >
-                  <Tag
-                    className={`detail-pricing-rule-tag ${getRuleColorClass(
-                      rule,
-                    )} ${rule.isMissing ? "service-missing" : ""}`}
-                  >
-                    <span className="detail-pricing-rule-dot" />
-                    <span>{name}</span>
-                  </Tag>
-                </Tooltip>
-              );
-            })}
-          </div>
-        ) : (
-          <span className="detail-pending-value">
-            {pricingRuleError || "Không sử dụng dịch vụ bổ sung"}
+      <Descriptions
+        bordered
+        column={1}
+        size="middle"
+        className="detail-descriptions"
+      >
+        <Descriptions.Item label="Trạng thái">
+          <span
+            className={`detail-inline-status status-${statusClass}`}
+          >
+            {statusLabel}
           </span>
-        )}
-      </Descriptions.Item>
+        </Descriptions.Item>
 
-      <Descriptions.Item label="Ghi chú kiện hàng">
-        <span className="detail-translated-note">{translatedNote}</span>
-      </Descriptions.Item>
-    </Descriptions>
-  </section>
-);
+        <Descriptions.Item label="Loại vận chuyển">
+          {consignmentTypeLabel}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Tuyến">
+          {consignment.route || "-"}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Dịch vụ bổ sung">
+          {rules.length > 0 ? (
+            <div
+              className="detail-pricing-rule-list"
+              style={{
+                display: "grid",
+                gap: 10,
+                width: "100%",
+              }}
+            >
+              {rules.map((rule, index) => {
+                const name =
+                  getRuleDisplayName(rule);
+
+                const feeLabel =
+                  rule?.feeLabel ||
+                  "Theo báo giá hệ thống";
+
+                const isWoodCrate =
+                  isWoodCrateDisplayRule(rule);
+
+                const tooltipTitle = (
+                  <div
+                    style={{
+                      maxWidth: 340,
+                    }}
+                  >
+                    <strong>{name}</strong>
+
+                    {rule?.description && (
+                      <p
+                        style={{
+                          margin:
+                            "6px 0 0",
+                        }}
+                      >
+                        {rule.description}
+                      </p>
+                    )}
+
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontWeight: 700,
+                      }}
+                    >
+                      Mức phí: {feeLabel}
+                    </div>
+
+                    {rule?.feeDetail && (
+                      <div
+                        style={{
+                          marginTop: 4,
+                        }}
+                      >
+                        {rule.feeDetail}
+                      </div>
+                    )}
+                  </div>
+                );
+
+                return (
+                  <Tooltip
+                    key={
+                      rule.pricingRuleId ||
+                      rule.id ||
+                      rule.ruleCode ||
+                      index
+                    }
+                    title={tooltipTitle}
+                    placement="top"
+                  >
+                    <div
+                      className={`detail-pricing-rule-item ${getRuleColorClass(
+                        rule,
+                      )} ${
+                        rule.isMissing
+                          ? "service-missing"
+                          : ""
+                      }`}
+                      style={{
+                        display: "grid",
+                        gap: 7,
+                        padding:
+                          "11px 12px",
+                        border:
+                          "1px solid #e2e8f0",
+                        borderRadius: 10,
+                        background:
+                          "#ffffff",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent:
+                            "space-between",
+                          gap: 12,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Tag
+                          className={`detail-pricing-rule-tag ${getRuleColorClass(
+                            rule,
+                          )} ${
+                            rule.isMissing
+                              ? "service-missing"
+                              : ""
+                          }`}
+                          style={{
+                            margin: 0,
+                          }}
+                        >
+                          <span className="detail-pricing-rule-dot" />
+                          <span>{name}</span>
+                        </Tag>
+
+                        <strong
+                          style={{
+                            color:
+                              rule.isMissing
+                                ? "#94a3b8"
+                                : "#0f172a",
+                            whiteSpace:
+                              "nowrap",
+                          }}
+                        >
+                          {isWoodCrate
+                            ? `Tổng: ${feeLabel}`
+                            : feeLabel}
+                        </strong>
+                      </div>
+
+                      {isWoodCrate &&
+                        woodCrateFeeSummary?.enabled && (
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(150px, 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {[
+                              {
+                                label:
+                                  "Phí dịch vụ toàn đơn",
+                                value:
+                                  woodCrateFeeSummary.orderFee,
+                              },
+                              {
+                                label:
+                                  "Tổng phí cấu hình thùng",
+                                value:
+                                  woodCrateFeeSummary.configurationFee,
+                              },
+                              {
+                                label:
+                                  "Tổng phí đóng thùng gỗ",
+                                value:
+                                  woodCrateFeeSummary.totalFee,
+                              },
+                            ].map((item) => (
+                              <div
+                                key={item.label}
+                                style={{
+                                  display: "grid",
+                                  gap: 3,
+                                  padding: "9px 10px",
+                                  borderRadius: 8,
+                                  background: "#f8fafc",
+                                  border:
+                                    "1px solid #e2e8f0",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    color: "#64748b",
+                                    fontSize: 11,
+                                    lineHeight: 1.35,
+                                  }}
+                                >
+                                  {item.label}
+                                </span>
+
+                                <strong
+                                  style={{
+                                    color: "#0f172a",
+                                    fontSize: 13,
+                                  }}
+                                >
+                                  {typeof item.value ===
+                                  "number"
+                                    ? new Intl.NumberFormat(
+                                        "vi-VN",
+                                        {
+                                          style:
+                                            "currency",
+                                          currency: "VND",
+                                          maximumFractionDigits: 0,
+                                        },
+                                      ).format(item.value)
+                                    : "0 ₫"}
+                                </strong>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                      {rule?.description && (
+                        <span
+                          style={{
+                            color:
+                              "#64748b",
+                            fontSize: 13,
+                            lineHeight: 1.55,
+                          }}
+                        >
+                          {rule.description}
+                        </span>
+                      )}
+
+                      {rule?.feeDetail && (
+                        <small
+                          style={{
+                            color:
+                              "#475569",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {rule.feeDetail}
+                        </small>
+                      )}
+                    </div>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="detail-pending-value">
+              {pricingRuleError ||
+                "Không sử dụng dịch vụ bổ sung"}
+            </span>
+          )}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Số dịch vụ bổ sung">
+          <strong>
+            {rules.length} dịch vụ
+          </strong>
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Ghi chú kiện hàng">
+          <span className="detail-translated-note">
+            {translatedNote}
+          </span>
+        </Descriptions.Item>
+      </Descriptions>
+    </section>
+  );
+};
 
 const QuotationInfoLabel = ({
   label,
   description,
+  details,
 }) => (
   <div className="quotation-info-label">
     <span>{label}</span>
@@ -463,7 +720,20 @@ const QuotationInfoLabel = ({
       title={
         <div className="quotation-info-tooltip">
           <strong>{label}</strong>
-          <p>{description}</p>
+
+          {description && <p>{description}</p>}
+
+          {details && (
+            <div
+              style={{
+                display: "grid",
+                gap: 6,
+                marginTop: 8,
+              }}
+            >
+              {details}
+            </div>
+          )}
         </div>
       }
       placement="top"
@@ -490,6 +760,7 @@ const QuotationInformation = ({
   statusClass,
   statusLabel,
   quoteTypeLabel,
+  taxRuleInfo = {},
   formatMoney,
   formatDateTime,
   formatDateTimeTitle,
@@ -560,13 +831,61 @@ const QuotationInformation = ({
           <div>
             <QuotationInfoLabel
               label="Thuế và phí nhập khẩu"
-              description="Thuế nhập khẩu và các khoản phí liên quan được hệ thống tạm tính. Số tiền thực tế có thể thay đổi sau khi cơ quan hải quan xác nhận."
+              description="Mức phần trăm được lấy trực tiếp từ quy tắc IMPORT_TAX của API bảng giá."
+              details={
+                <>
+                  <div>
+                    Thuế nhập khẩu mặc định:{" "}
+                    <strong>
+                      {taxRuleInfo.importTaxPercent ||
+                        "Chưa có dữ liệu từ API"}
+                    </strong>
+                  </div>
+
+                  {taxRuleInfo.importTaxDescription && (
+                    <span>
+                      {taxRuleInfo.importTaxDescription}
+                    </span>
+                  )}
+                </>
+              }
             />
 
             <strong>
               {formatMoney(quotation.taxAndDuty)}
             </strong>
           </div>
+
+          {(quotation.vat !== null &&
+            quotation.vat !== undefined) && (
+            <div>
+              <QuotationInfoLabel
+                label="VAT dịch vụ logistics"
+                description="Mức phần trăm được lấy trực tiếp từ quy tắc VAT của API bảng giá."
+                details={
+                  <>
+                    <div>
+                      VAT đang áp dụng:{" "}
+                      <strong>
+                        {taxRuleInfo.vatPercent ||
+                          "Chưa có dữ liệu từ API"}
+                      </strong>
+                    </div>
+
+                    {taxRuleInfo.vatDescription && (
+                      <span>
+                        {taxRuleInfo.vatDescription}
+                      </span>
+                    )}
+                  </>
+                }
+              />
+
+              <strong>
+                {formatMoney(quotation.vat)}
+              </strong>
+            </div>
+          )}
 
           <div className="quotation-total-row">
             <QuotationInfoLabel
@@ -1375,6 +1694,8 @@ export default function ConsignmentListDetailUI({
   summaryCards,
   selectedPricingRules,
   pricingRuleError,
+  woodCrateFeeSummary,
+  taxRuleInfo,
   packageConfigurationLoading,
   packageConfigurationError,
   hasWoodCrateService,
@@ -1532,6 +1853,7 @@ export default function ConsignmentListDetailUI({
             consignmentTypeLabel={consignmentTypeLabel}
             selectedPricingRules={selectedPricingRules}
             pricingRuleError={pricingRuleError}
+            woodCrateFeeSummary={woodCrateFeeSummary}
             translatedNote={translatedConsignmentNote}
             getRuleDisplayName={getRuleDisplayName}
             getRuleColorClass={getRuleColorClass}
@@ -1542,6 +1864,7 @@ export default function ConsignmentListDetailUI({
             statusClass={quotationStatusClass}
             statusLabel={quotationStatusLabel}
             quoteTypeLabel={quoteTypeLabel}
+            taxRuleInfo={taxRuleInfo}
             formatMoney={formatMoney}
             formatDateTime={formatDateTime}
             formatDateTimeTitle={formatDateTimeTitle}
