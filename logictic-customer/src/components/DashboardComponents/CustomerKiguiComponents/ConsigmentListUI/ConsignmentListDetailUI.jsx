@@ -831,7 +831,7 @@ const QuotationInformation = ({
           <div>
             <QuotationInfoLabel
               label="Thuế và phí nhập khẩu"
-              description="Mức phần trăm được lấy trực tiếp từ quy tắc IMPORT_TAX của API bảng giá."
+              description="Mức phần trăm được lấy trực tiếp từ quy tắc thuế của bảng giá hệ thống."
               details={
                 <>
                   <div>
@@ -847,6 +847,28 @@ const QuotationInformation = ({
                       {taxRuleInfo.importTaxDescription}
                     </span>
                   )}
+
+                  <div
+                    style={{
+                      height: 1,
+                      margin: "8px 0 4px",
+                      background:
+                        "rgba(255, 255, 255, 0.18)",
+                    }}
+                  />
+
+                  <div>
+                    VAT dịch vụ logistics:{" "}
+                    <strong>
+                      {taxRuleInfo.vatPercent ||
+                        "Chưa có dữ liệu từ API"}
+                    </strong>
+                  </div>
+
+                  <span>
+                    {taxRuleInfo.vatDescription ||
+                      "VAT = (FreightCharge + ServiceFee) × 8%. Không gồm phí vận chuyển nội địa (DOMESTIC_FEE)."}
+                  </span>
                 </>
               }
             />
