@@ -475,18 +475,50 @@ const getMessageSenderId = (message) => {
 };
 
 const isMessageMine = (message, currentUserId) => {
-  if (typeof message?.isMine === "boolean") return message.isMine;
-  if (typeof message?.fromMe === "boolean") return message.fromMe;
+  const senderRole = normalizeRoleKey(getMessageSenderRole(message));
 
-  const senderId = getMessageSenderId(message);
-
-  if (senderId && currentUserId) {
-    return senderId === currentUserId;
+  /*
+   * Đây là màn hình chat phía Customer:
+   * - Customer luôn nằm bên phải (is-mine).
+   * - Sale/CSKH luôn nằm bên trái (is-other).
+   *
+   * Ưu tiên role trước vì một số API trả isMine/fromMe theo góc nhìn
+   * của nhân viên Sale, khiến giao diện phía Customer bị đảo hai bên.
+   */
+  if (senderRole === "CUSTOMER" || senderRole === "CUSTOMERUSER") {
+    return true;
   }
 
-  const role = String(getMessageSenderRole(message)).toLowerCase();
+  if (
+    senderRole === "SALE" ||
+    senderRole === "SALES" ||
+    senderRole === "SALESSTAFF" ||
+    senderRole.includes("SALE") ||
+    senderRole.includes("STAFF") ||
+    senderRole === "ADMIN" ||
+    senderRole === "ADMINISTRATOR" ||
+    senderRole === "MANAGER" ||
+    senderRole.includes("WAREHOUSE")
+  ) {
+    return false;
+  }
 
-  return role === "customer";
+  const senderId = String(getMessageSenderId(message) || "").trim();
+  const normalizedCurrentUserId = String(currentUserId || "").trim();
+
+  if (senderId && normalizedCurrentUserId) {
+    return senderId === normalizedCurrentUserId;
+  }
+
+  if (typeof message?.isMine === "boolean") {
+    return message.isMine;
+  }
+
+  if (typeof message?.fromMe === "boolean") {
+    return message.fromMe;
+  }
+
+  return false;
 };
 
 const getConversationTitle = (conversation) => {
