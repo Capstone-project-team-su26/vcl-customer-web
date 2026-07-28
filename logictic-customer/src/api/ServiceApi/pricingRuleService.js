@@ -379,6 +379,72 @@ const normalizePackageSuggestionPayload = (
 };
 
 /* =========================================================
+   ADDITIONAL SERVICE FEE HELPERS
+   ========================================================= */
+
+const extractAdditionalServiceFees = (data) => {
+  const candidates = [
+    data,
+    data?.items,
+    data?.fees,
+    data?.additionalServiceFees,
+    data?.data,
+    data?.data?.items,
+    data?.data?.fees,
+    data?.data?.additionalServiceFees,
+  ];
+
+  return candidates.find(Array.isArray) || [];
+};
+
+const normalizeAdditionalServiceFee = (item = {}) => {
+  return {
+    ...item,
+
+    id: String(
+      item?.id ||
+        item?.additionalServiceFeeId ||
+        "",
+    ).trim(),
+
+    feeName: String(
+      item?.feeName ||
+        item?.name ||
+        "Phụ phí",
+    ).trim(),
+
+    feeCode: normalizeCode(
+      item?.feeCode ||
+        item?.code,
+    ),
+
+    calculationType: normalizeCode(
+      item?.calculationType,
+    ),
+
+    value:
+      toFiniteNumberOrNull(item?.value) ?? 0,
+
+    unit: String(
+      item?.unit || "",
+    ).trim(),
+
+    isActive: normalizeBoolean(
+      item?.isActive,
+    ),
+
+    description: String(
+      item?.description ||
+        item?.note ||
+        "",
+    ).trim(),
+
+    createdAt: item?.createdAt || null,
+    updatedAt: item?.updatedAt || null,
+  };
+};
+
+/* =========================================================
    SERVICE
    ========================================================= */
 
@@ -845,6 +911,131 @@ const pricingRuleService = {
       );
     }
   },
+
+  /**
+   * GET /api/additional-service-fees
+   *
+   * Lấy danh sách phụ phí dịch vụ.
+   *
+   * @param {{
+   *   signal?: AbortSignal,
+   *   activeOnly?: boolean
+   * }} options
+   *
+   * @returns {Promise<Array>}
+   */
+  getAdditionalServiceFees: async (
+    options = {},
+  ) => {
+    const {
+      signal,
+      activeOnly = false,
+    } = options;
+
+    try {
+      console.info(
+        "[Additional Service Fee API] GET /api/additional-service-fees",
+        {
+          activeOnly,
+        },
+      );
+
+      const response = await axiosInstance.get(
+        "/api/additional-service-fees",
+        {
+          signal,
+          params: {
+            activeOnly,
+          },
+          headers: {
+            Accept: "*/*",
+          },
+        },
+      );
+
+      const responseData = getResponseData(response);
+
+      const fees = extractAdditionalServiceFees(
+        responseData,
+      ).map(normalizeAdditionalServiceFee);
+
+      console.info(
+        "[Additional Service Fee API] Danh sách phụ phí:",
+        fees,
+      );
+
+      return fees;
+    } catch (error) {
+      if (isCanceledRequest(error)) {
+        throw error;
+      }
+
+      console.error(
+        "[GET /api/additional-service-fees]",
+        error?.response?.data || error,
+      );
+
+      throw new Error(
+        getErrorMessage(
+          error,
+          "Không thể tải danh sách phụ phí dịch vụ.",
+        ),
+      );
+    }
+  },
+
+  /**
+   * Lấy tỷ lệ đặt cọc đơn ký gửi từ feeCode DEPOSIT_RATE.
+   *
+   * @param {{
+   *   signal?: AbortSignal,
+   *   activeOnly?: boolean
+   * }} options
+   *
+   * @returns {Promise<object>}
+   */
+  getDepositRate: async (
+    options = {},
+  ) => {
+    const {
+      signal,
+      activeOnly = true,
+    } = options;
+
+    const fees = await pricingRuleService
+      .getAdditionalServiceFees({
+        signal,
+        activeOnly,
+      });
+
+    const depositRate = fees.find(
+      (fee) => fee.feeCode === "DEPOSIT_RATE",
+    );
+
+    if (!depositRate) {
+      throw new Error(
+        "Không tìm thấy tỷ lệ cọc đơn ký gửi.",
+      );
+    }
+
+    const value = Number(depositRate.value);
+
+    if (
+      !Number.isFinite(value) ||
+      value < 0 ||
+      value > 100
+    ) {
+      throw new Error(
+        "Tỷ lệ cọc không hợp lệ.",
+      );
+    }
+
+    return {
+      ...depositRate,
+      value,
+    };
+  },
+
 };
 
 export const {
@@ -854,6 +1045,8 @@ export const {
   getServicePricingById,
   getPackageConfigurations,
   suggestPackageConfiguration,
+  getAdditionalServiceFees,
+  getDepositRate,
 } = pricingRuleService;
 
 export default pricingRuleService;
