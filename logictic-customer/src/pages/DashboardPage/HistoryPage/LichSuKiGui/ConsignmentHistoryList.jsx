@@ -43,7 +43,7 @@ import "./ConsignmentHistoryList.css";
 
 const { RangePicker } = DatePicker;
 
-const DEFAULT_PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 450;
 
 /* =========================================================
@@ -288,6 +288,7 @@ const STATUS_FALLBACK_LABELS = Object.freeze({
   WAITING_QUOTATION: "Chờ báo giá",
   PENDING_QUOTATION: "Chờ báo giá",
   QUOTATION_SENT: "Đã gửi báo giá",
+  QUOTATION_CONFIRMED: "Đã xác nhận báo giá",
   QUOTED: "Đã có báo giá",
   QUOTATION_ACCEPTED: "Đã chấp nhận báo giá",
   QUOTATION_REJECTED: "Đã từ chối báo giá",
@@ -765,9 +766,7 @@ const ConsignmentHistoryList = () => {
       }
 
       optionMap.set(key, {
-        value: String(
-          option.value
-        ).trim(),
+        value: key,
         label:
           option.label ||
           STATUS_FALLBACK_LABELS[
@@ -796,7 +795,7 @@ const ConsignmentHistoryList = () => {
       }
 
       optionMap.set(key, {
-        value: rawStatus,
+        value: key,
         label:
           STATUS_FALLBACK_LABELS[
             key
@@ -902,9 +901,7 @@ const ConsignmentHistoryList = () => {
   };
 
   const handleStatusChange = (value) => {
-    setStatusInput(
-      String(value || "").trim()
-    );
+    setStatusInput(normalizeStatusKey(value));
 
     setPageNumber(1);
   };
@@ -975,7 +972,7 @@ const ConsignmentHistoryList = () => {
     setPageNumber(nextPageNumber);
 
     const scrollTarget =
-      document.querySelector(".page-sub-content") ||
+      document.querySelector(".consignment-data-scroll") ||
       window;
 
     if (scrollTarget === window) {
@@ -1107,6 +1104,7 @@ const ConsignmentHistoryList = () => {
         "WAITING_QUOTATION",
         "PENDING_QUOTATION",
         "QUOTATION_SENT",
+        "QUOTATION_CONFIRMED",
         "QUOTED",
         "QUOTATION_ACCEPTED",
       ].includes(normalizedStatus)
@@ -1314,6 +1312,7 @@ const ConsignmentHistoryList = () => {
         </div>
       </div>
 
+      <div className="consignment-data-scroll">
       {loading ? (
         <div className="vcl-loading-box">
           <CircularProgress size={38} />
@@ -1324,7 +1323,6 @@ const ConsignmentHistoryList = () => {
           </div>
         </div>
       ) : (
-        <>
           <div className="card-list">
             {visibleConsignments.length ===
             0 ? (
@@ -1654,7 +1652,10 @@ const ConsignmentHistoryList = () => {
             )}
           </div>
 
-          {totalCount > 0 && (
+        )}
+      </div>
+
+      {totalCount > 0 && (
             <div className="pagination-section">
               <span className="pagination-summary">
                 Hiển thị{" "}
@@ -1685,8 +1686,6 @@ const ConsignmentHistoryList = () => {
                 showLastButton
               />
             </div>
-          )}
-        </>
       )}
     </div>
   );
