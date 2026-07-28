@@ -52,7 +52,7 @@
       #f6f8fc;
   }
   
-  /* Ă„ÂĂ¡Â»â€œng bĂ¡Â»â„¢ font cho tĂ¡ÂºÂ¥t cĂ¡ÂºÂ£ thÄ‚ nh phĂ¡ÂºÂ§n bÄ‚Âªn trong */
+  /* Ä‚â€Ă‚ÂÄ‚Â¡Ă‚Â»Ă¢â‚¬Å“ng bÄ‚Â¡Ă‚Â»Ă¢â€Â¢ font cho tÄ‚Â¡Ă‚ÂºĂ‚Â¥t cÄ‚Â¡Ă‚ÂºĂ‚Â£ thĂ„â€ nh phÄ‚Â¡Ă‚ÂºĂ‚Â§n bĂ„â€Ă‚Âªn trong */
   
   .vcl-container *,
   .vcl-container *::before,
@@ -1146,8 +1146,8 @@
     }
   
     /*
-     * DÄ‚Â¹ng 16px trÄ‚Âªn Ă„â€˜iĂ¡Â»â€¡n thoĂ¡ÂºÂ¡i Ă„â€˜Ă¡Â»Æ’ trÄ‚Â¬nh duyĂ¡Â»â€¡t iOS
-     * khÄ‚Â´ng tĂ¡Â»Â± phÄ‚Â³ng to khi ngĂ†Â°Ă¡Â»Âi dÄ‚Â¹ng nhĂ¡ÂºÂ­p liĂ¡Â»â€¡u.
+     * DĂ„â€Ă‚Â¹ng 16px trĂ„â€Ă‚Âªn Ä‚â€Ă¢â‚¬ËœiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n thoÄ‚Â¡Ă‚ÂºĂ‚Â¡i Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă†â€™ trĂ„â€Ă‚Â¬nh duyÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡t iOS
+     * khĂ„â€Ă‚Â´ng tÄ‚Â¡Ă‚Â»Ă‚Â± phĂ„â€Ă‚Â³ng to khi ngÄ‚â€ Ă‚Â°Ä‚Â¡Ă‚Â»Ă‚Âi dĂ„â€Ă‚Â¹ng nhÄ‚Â¡Ă‚ÂºĂ‚Â­p liÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡u.
      */
   
     .filter-search-input .ant-input,
@@ -1335,7 +1335,7 @@
   }
 
 /* =========================================================
-   CONSIGNMENT CARD Ă¢â‚¬â€ STABLE HEADER, COPY CODE, PRODUCT INFO
+   CONSIGNMENT CARD Ä‚Â¢Ă¢â€Â¬Ă¢â‚¬Â STABLE HEADER, COPY CODE, PRODUCT INFO
    ========================================================= */
 
 .vcl-container .consignment-card {
@@ -1668,7 +1668,7 @@
   }
 }
 /* =========================================================
-   PRODUCT NAME LIST Ă¢â‚¬â€ TÄ‚ÂCH NHIĂ¡Â»â‚¬U SĂ¡ÂºÂ¢N PHĂ¡ÂºÂ¨M THÄ‚â‚¬NH TĂ¡Â»ÂªNG DÄ‚â€™NG
+   PRODUCT NAME LIST Ä‚Â¢Ă¢â€Â¬Ă¢â‚¬Â TĂ„â€Ă‚ÂCH NHIÄ‚Â¡Ă‚Â»Ă¢â€Â¬U SÄ‚Â¡Ă‚ÂºĂ‚Â¢N PHÄ‚Â¡Ă‚ÂºĂ‚Â¨M THĂ„â€Ă¢â€Â¬NH TÄ‚Â¡Ă‚Â»Ă‚ÂªNG DĂ„â€Ă¢â‚¬â„¢NG
    ========================================================= */
 
 .vcl-container .product-name-group {
@@ -1839,7 +1839,7 @@
 
 
 /* =========================================================
-   VIá»†T HĂ“A TRáº NG THĂI + MĂ€U Sáº®C PHĂ‚N LOáº I
+   VIĂ¡Â»â€ T HÄ‚â€œA TRĂ¡Âº NG THÄ‚ÂI + MÄ‚â‚¬U SĂ¡ÂºÂ®C PHÄ‚â€N LOĂ¡Âº I
    ========================================================= */
 
 .vcl-container .filter-status-select {
@@ -1902,63 +1902,63 @@
   background: currentColor;
 }
 
-/* Chá» duyá»‡t, chá» Ä‘áº·t cá»c, chá» thanh toĂ¡n */
+/* ChĂ¡Â»Â duyĂ¡Â»â€¡t, chĂ¡Â»Â Ă„â€˜Ă¡ÂºÂ·t cĂ¡Â»Âc, chĂ¡Â»Â thanh toÄ‚Â¡n */
 .vcl-container .status-pending {
   color: #b54708 !important;
   background: #fffaeb !important;
   border-color: #fedf89 !important;
 }
 
-/* ÄĂ£ gá»­i bĂ¡o giĂ¡ / Ä‘ang chá» xá»­ lĂ½ bĂ¡o giĂ¡ */
+/* Ă„ÂÄ‚Â£ gĂ¡Â»Â­i bÄ‚Â¡o giÄ‚Â¡ / Ă„â€˜ang chĂ¡Â»Â xĂ¡Â»Â­ lÄ‚Â½ bÄ‚Â¡o giÄ‚Â¡ */
 .vcl-container .status-quotation {
   color: #6941c6 !important;
   background: #f4f3ff !important;
   border-color: #d9d6fe !important;
 }
 
-/* ÄĂ£ thanh toĂ¡n cá»c / thanh toĂ¡n má»™t pháº§n */
+/* Ă„ÂÄ‚Â£ thanh toÄ‚Â¡n cĂ¡Â»Âc / thanh toÄ‚Â¡n mĂ¡Â»â„¢t phĂ¡ÂºÂ§n */
 .vcl-container .status-deposit-paid {
   color: #0f766e !important;
   background: #f0fdfa !important;
   border-color: #99f6e4 !important;
 }
 
-/* Äang xá»­ lĂ½, Ä‘Ă³ng gĂ³i, kiá»ƒm hĂ ng, thĂ´ng quan */
+/* Ă„Âang xĂ¡Â»Â­ lÄ‚Â½, Ă„â€˜Ä‚Â³ng gÄ‚Â³i, kiĂ¡Â»Æ’m hÄ‚ ng, thÄ‚Â´ng quan */
 .vcl-container .status-processing {
   color: #175cd3 !important;
   background: #eff8ff !important;
   border-color: #b2ddff !important;
 }
 
-/* Äang váº­n chuyá»ƒn, Ä‘ang giao hĂ ng, hoĂ n hĂ ng */
+/* Ă„Âang vĂ¡ÂºÂ­n chuyĂ¡Â»Æ’n, Ă„â€˜ang giao hÄ‚ ng, hoÄ‚ n hÄ‚ ng */
 .vcl-container .status-shipping {
   color: #0e7490 !important;
   background: #ecfeff !important;
   border-color: #a5f3fc !important;
 }
 
-/* ÄĂ£ thanh toĂ¡n, Ä‘Ă£ giao, hoĂ n thĂ nh */
+/* Ă„ÂÄ‚Â£ thanh toÄ‚Â¡n, Ă„â€˜Ä‚Â£ giao, hoÄ‚ n thÄ‚ nh */
 .vcl-container .status-completed {
   color: #067647 !important;
   background: #ecfdf3 !important;
   border-color: #abefc6 !important;
 }
 
-/* ÄĂ£ há»§y, tá»« chá»‘i, tháº¥t báº¡i, háº¿t háº¡n */
+/* Ă„ÂÄ‚Â£ hĂ¡Â»Â§y, tĂ¡Â»Â« chĂ¡Â»â€˜i, thĂ¡ÂºÂ¥t bĂ¡ÂºÂ¡i, hĂ¡ÂºÂ¿t hĂ¡ÂºÂ¡n */
 .vcl-container .status-canceled {
   color: #b42318 !important;
   background: #fef3f2 !important;
   border-color: #fecdca !important;
 }
 
-/* Tráº¡ng thĂ¡i má»›i chÆ°a phĂ¢n loáº¡i */
+/* TrĂ¡ÂºÂ¡ng thÄ‚Â¡i mĂ¡Â»â€ºi chĂ†Â°a phÄ‚Â¢n loĂ¡ÂºÂ¡i */
 .vcl-container .status-neutral {
   color: #475467 !important;
   background: #f2f4f7 !important;
   border-color: #d0d5dd !important;
 }
 
-/* Giá»¯ tÆ°Æ¡ng thĂ­ch vá»›i class cÅ© trong dá»± Ă¡n */
+/* GiĂ¡Â»Â¯ tĂ†Â°Ă†Â¡ng thÄ‚Â­ch vĂ¡Â»â€ºi class cĂ…Â© trong dĂ¡Â»Â± Ä‚Â¡n */
 .vcl-container .status-approved,
 .vcl-container .status-delivered {
   color: #067647 !important;
@@ -1984,5 +1984,106 @@
   .vcl-container .status-badge-center {
     white-space: normal;
     text-align: center;
+  }
+}
+
+/* =========================================================
+   FIXED HEADER + FILTER + PAGINATION
+   Chá»‰ vĂ¹ng dá»¯ liá»‡u Ä‘Æ¡n hĂ ng Ä‘Æ°á»£c cuá»™n.
+   ========================================================= */
+
+.vcl-container {
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.vcl-container > .page-header,
+.vcl-container > .filter-section,
+.vcl-container > .pagination-section {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.vcl-container > .page-header {
+  margin-bottom: 16px;
+}
+
+.vcl-container > .filter-section {
+  margin-bottom: 12px;
+}
+
+.consignment-data-scroll {
+  width: 100%;
+  max-width: 1500px;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 2px 6px 16px;
+
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+.consignment-data-scroll .card-list {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.consignment-data-scroll .vcl-loading-box,
+.consignment-data-scroll .empty-container {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.vcl-container > .pagination-section {
+  max-width: 1500px;
+  margin: 12px auto 0;
+  position: relative;
+  z-index: 5;
+  box-shadow:
+    0 -8px 24px rgba(15, 23, 42, 0.04),
+    0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+@media (max-width: 900px) {
+  .vcl-container {
+    padding: 18px;
+  }
+
+  .consignment-data-scroll {
+    padding-right: 2px;
+    padding-left: 2px;
+  }
+
+  .vcl-container > .pagination-section {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .vcl-container {
+    padding: 14px;
+  }
+
+  .vcl-container > .page-header {
+    margin-bottom: 12px;
+  }
+
+  .vcl-container > .filter-section {
+    margin-bottom: 10px;
+  }
+
+  .pagination-section {
+    align-items: stretch;
   }
 }
