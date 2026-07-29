@@ -2,7 +2,7 @@ import axios from "axios";
 
 /* ================= CONFIG ================= */
 
-const DEFAULT_API_BASE_URL = "https://vcl.henrytech.cloud/";
+const DEFAULT_API_BASE_URL = "https://api-vcl.zushin.io.vn";
 const UPLOAD_ENDPOINT = "/api/uploads/images";
 
 const getEnvValue = (value) => {
