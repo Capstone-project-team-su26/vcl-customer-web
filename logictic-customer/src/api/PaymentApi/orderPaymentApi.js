@@ -17,12 +17,13 @@ const getResponseData = (response) => {
 const findArrayFromResult = (result) => {
   const candidates = [
     result,
-    result?.data,
     result?.items,
     result?.results,
     result?.payments,
     result?.histories,
     result?.paymentHistories,
+
+    result?.data,
     result?.data?.items,
     result?.data?.results,
     result?.data?.payments,
@@ -30,7 +31,11 @@ const findArrayFromResult = (result) => {
     result?.data?.paymentHistories,
   ];
 
-  return candidates.find(Array.isArray) || [];
+  return (
+    candidates.find(
+      Array.isArray,
+    ) || []
+  );
 };
 
 /* =========================================================
@@ -43,29 +48,39 @@ const normalizeOrderId = (orderId) => {
 
   if (!normalizedOrderId) {
     throw new Error(
-      "Không tìm thấy mã đơn hàng."
+      "Không tìm thấy mã đơn hàng.",
     );
   }
 
   return normalizedOrderId;
 };
 
-const getRequestSignal = (options = {}) => {
+const getRequestSignal = (
+  options = {},
+) => {
+  // Trường hợp truyền trực tiếp AbortSignal
   if (
-    typeof options?.addEventListener ===
-    "function"
+    options &&
+    typeof options.addEventListener ===
+      "function"
   ) {
     return options;
   }
 
+  // Trường hợp truyền { signal }
   return options?.signal;
 };
 
-const isCanceledRequest = (error) => {
+const isCanceledRequest = (
+  error,
+) => {
   return (
-    error?.code === "ERR_CANCELED" ||
-    error?.name === "CanceledError" ||
-    error?.name === "AbortError"
+    error?.code ===
+      "ERR_CANCELED" ||
+    error?.name ===
+      "CanceledError" ||
+    error?.name ===
+      "AbortError"
   );
 };
 
@@ -73,89 +88,114 @@ const isCanceledRequest = (error) => {
    REQUEST HELPER
    ========================================================= */
 
-const getOrderPaymentRequest = async (
-  orderId,
-  suffix = "",
-  options = {}
-) => {
-  const normalizedOrderId =
-    normalizeOrderId(orderId);
+const getOrderPaymentRequest =
+  async (
+    orderId,
+    suffix = "",
+    options = {},
+  ) => {
+    const normalizedOrderId =
+      normalizeOrderId(orderId);
 
-  const normalizedSuffix =
-    String(suffix ?? "")
-      .trim()
-      .replace(/^\/+/, "")
-      .replace(/\/+$/, "");
+    const normalizedSuffix =
+      String(suffix ?? "")
+        .trim()
+        .replace(/^\/+/, "")
+        .replace(/\/+$/, "");
 
-  const endpoint = normalizedSuffix
-    ? `/api/orders/${encodeURIComponent(
-        normalizedOrderId
-      )}/payments/${normalizedSuffix}`
-    : `/api/orders/${encodeURIComponent(
-        normalizedOrderId
-      )}/payments`;
-
-  try {
-    const response =
-      await axiosInstance.get(
-        endpoint,
-        {
-          signal:
-            getRequestSignal(
-              options
-            ),
-
-          params:
-            options?.params,
-
-          headers: {
-            Accept: "*/*",
-            ...(options?.headers || {}),
-          },
-        }
+    const encodedOrderId =
+      encodeURIComponent(
+        normalizedOrderId,
       );
 
-    return getResponseData(response);
-  } catch (error) {
-    if (!isCanceledRequest(error)) {
-      console.error(
-        `[Order Payment API] GET ${endpoint} thất bại:`,
-        error?.response?.data ||
-          error?.message
-      );
+    const endpoint =
+      normalizedSuffix
+        ? `/api/orders/${encodedOrderId}/payments/${normalizedSuffix}`
+        : `/api/orders/${encodedOrderId}/payments`;
+
+    const signal =
+      getRequestSignal(options);
+
+    const requestConfig = {
+      params: options?.params,
+      headers: {
+        Accept:
+          "application/json",
+        ...(options?.headers ||
+          {}),
+      },
+    };
+
+    if (signal) {
+      requestConfig.signal =
+        signal;
     }
 
-    throw error;
-  }
-};
+    try {
+      const response =
+        await axiosInstance.get(
+          endpoint,
+          requestConfig,
+        );
+
+      return getResponseData(
+        response,
+      );
+    } catch (error) {
+      if (
+        !isCanceledRequest(error)
+      ) {
+        console.error(
+          `[Order Payment API] GET ${endpoint} thất bại:`,
+          {
+            status:
+              error?.response
+                ?.status,
+            data:
+              error?.response
+                ?.data,
+            message:
+              error?.message,
+            orderId:
+              normalizedOrderId,
+          },
+        );
+      }
+
+      throw error;
+    }
+  };
 
 /* =========================================================
    GET /api/orders/{orderId}/payments
    ========================================================= */
 
-export const getOrderPaymentsApi = async (
-  orderId,
-  options = {}
-) => {
-  return getOrderPaymentRequest(
+export const getOrderPaymentsApi =
+  async (
     orderId,
-    "",
-    options
-  );
-};
+    options = {},
+  ) => {
+    return getOrderPaymentRequest(
+      orderId,
+      "",
+      options,
+    );
+  };
 
 export const getOrderPaymentListApi =
   async (
     orderId,
-    options = {}
+    options = {},
   ) => {
     const result =
       await getOrderPaymentsApi(
         orderId,
-        options
+        options,
       );
 
-    return findArrayFromResult(result);
+    return findArrayFromResult(
+      result,
+    );
   };
 
 /* =========================================================
@@ -165,27 +205,29 @@ export const getOrderPaymentListApi =
 export const getOrderPaymentHistoryApi =
   async (
     orderId,
-    options = {}
+    options = {},
   ) => {
     return getOrderPaymentRequest(
       orderId,
       "history",
-      options
+      options,
     );
   };
 
 export const getOrderPaymentHistoryListApi =
   async (
     orderId,
-    options = {}
+    options = {},
   ) => {
     const result =
       await getOrderPaymentHistoryApi(
         orderId,
-        options
+        options,
       );
 
-    return findArrayFromResult(result);
+    return findArrayFromResult(
+      result,
+    );
   };
 
 /* =========================================================
