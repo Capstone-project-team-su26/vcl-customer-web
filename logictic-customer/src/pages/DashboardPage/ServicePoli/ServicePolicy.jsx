@@ -29,12 +29,31 @@ const PRIORITY_COLUMNS = [
 const HIDDEN_COLUMNS = [
   "serviceCode",
   "servicePricingId",
+  "pricingRule",
+  "pricingRules",
+  "pricingRuleIds",
+  "boxPricingRule",
+  "boxPricingRules",
   "description",
   "unit",
   "unitType",
   "carrierId",
   "id",
 ];
+
+const normalizeFieldKey = (value) => {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+};
+
+const isHiddenColumn = (column) => {
+  const normalizedColumn = normalizeFieldKey(column);
+
+  return HIDDEN_COLUMNS.some(
+    (hiddenColumn) => normalizeFieldKey(hiddenColumn) === normalizedColumn,
+  );
+};
 
 const STATUS_LABELS = {
   ACTIVE: "Đang áp dụng",
@@ -299,7 +318,7 @@ export default function ServicePolicy() {
     servicePricings.forEach((item) => {
       if (item && typeof item === "object" && !Array.isArray(item)) {
         Object.keys(item).forEach((key) => {
-          if (!HIDDEN_COLUMNS.includes(key)) {
+          if (!isHiddenColumn(key)) {
             columnSet.add(key);
           }
         });

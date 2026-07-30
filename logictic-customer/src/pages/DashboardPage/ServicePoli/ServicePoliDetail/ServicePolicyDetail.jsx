@@ -33,11 +33,30 @@ const PRIORITY_FIELDS = [
 const HIDDEN_FIELDS = [
   "id",
   "servicePricingId",
+  "pricingRule",
+  "pricingRules",
+  "pricingRuleIds",
+  "boxPricingRule",
+  "boxPricingRules",
   "carrierId",
   "serviceCode",
   "description",
   "unit",
 ];
+
+const normalizeFieldKey = (value) => {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+};
+
+const isHiddenField = (field) => {
+  const normalizedField = normalizeFieldKey(field);
+
+  return HIDDEN_FIELDS.some(
+    (hiddenField) => normalizeFieldKey(hiddenField) === normalizedField,
+  );
+};
 
 const STATUS_LABELS = {
   ACTIVE: "Đang áp dụng",
@@ -350,7 +369,7 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
     }
 
     const keys = Object.keys(detail).filter(
-      (key) => !HIDDEN_FIELDS.includes(key),
+      (key) => !isHiddenField(key),
     );
     const orderedKeys = [
       ...PRIORITY_FIELDS.filter((key) => keys.includes(key)),
