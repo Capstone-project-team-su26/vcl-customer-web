@@ -186,6 +186,14 @@ export default function Sidebar() {
     pathname === "/warehouse/export" ||
     pathname.startsWith("/warehouse/export/");
 
+  const warehouseCustomsActive =
+    pathname === "/warehouse/customs" ||
+    pathname.startsWith("/warehouse/customs/");
+
+  const warehouseReceiptsActive =
+    pathname === "/warehouse/receipts" ||
+    pathname.startsWith("/warehouse/receipts/");
+
   const toggleSubMenu = (menuKey) => {
     setOpenSubMenus((previousState) => ({
       ...previousState,
@@ -547,7 +555,9 @@ export default function Sidebar() {
                 : ""
             } ${
               warehouseInventoryActive ||
-              warehouseExportActive
+              warehouseExportActive ||
+              warehouseCustomsActive ||
+              warehouseReceiptsActive
                 ? "submenu-parent-active"
                 : ""
             }`}
@@ -578,7 +588,7 @@ export default function Sidebar() {
                     : ""
                 }`}
               >
-                Tồn kho tổng
+                Tồn kho & nhập kho
               </NavLink>
 
               <NavLink
@@ -590,6 +600,30 @@ export default function Sidebar() {
                 }`}
               >
                 Xuất kho
+              </NavLink>
+
+              <NavLink
+                to="/warehouse/customs"
+                className={
+                  "submenu-item " +
+                  (warehouseCustomsActive
+                    ? "active-sub"
+                    : "")
+                }
+              >
+                Thông quan
+              </NavLink>
+
+              <NavLink
+                to="/warehouse/receipts"
+                className={
+                  "submenu-item " +
+                  (warehouseReceiptsActive
+                    ? "active-sub"
+                    : "")
+                }
+              >
+                Phiếu nhập kho
               </NavLink>
             </div>
           )}

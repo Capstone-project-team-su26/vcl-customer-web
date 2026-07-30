@@ -71,6 +71,13 @@ import BuyForMeQuotationList from "../pages/DashboardPage/CreateCustomer/CheckHa
 import ConsignmentHistoryList from "../pages/DashboardPage/HistoryPage/LichSuKiGui/ConsignmentHistoryList"
 import OrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuKiGui/OrderPaymentHisstory/OrderPaymentHistory"
 import TransactionHistoryTabs from "../pages/DashboardPage/HistoryPage/HistoryGiaoDich/TransactionHistoryTabs"
+import {
+  CustomsTrackingPage,
+  WarehouseExportPage,
+  WarehouseInventoryPage,
+  WarehouseReceiptPage,
+  WarehouseShipmentDetailPage,
+} from "../pages/DashboardPage/WarehouseTracking/WarehouseTrackingPages";
 
 const AppRouter = () => {
   return (
@@ -193,6 +200,30 @@ const AppRouter = () => {
 <Route
   path="/transaction-history"
   element={<TransactionHistoryTabs />}
+/>
+<Route
+  path="/warehouse/inventory"
+  element={<WarehouseInventoryPage />}
+/>
+<Route
+  path="/warehouse/inventory/:shipmentId"
+  element={<WarehouseShipmentDetailPage />}
+/>
+<Route
+  path="/warehouse/export"
+  element={<WarehouseExportPage />}
+/>
+<Route
+  path="/warehouse/customs"
+  element={<CustomsTrackingPage />}
+/>
+<Route
+  path="/warehouse/receipts"
+  element={<WarehouseReceiptPage />}
+/>
+<Route
+  path="/warehouse/receipts/:receiptId"
+  element={<WarehouseReceiptPage />}
 />
 
 

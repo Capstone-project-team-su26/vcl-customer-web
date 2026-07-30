@@ -46,6 +46,12 @@ const PAGE_META = [
       "Xem chi tiết chi phí và xác nhận báo giá.",
   },
   {
+    match: "/warehouse",
+    title: "THEO DÕI KHO HÀNG",
+    subtitle:
+      "Theo dõi nhập kho, thông quan và xuất kho quốc tế.",
+  },
+  {
     match: "/settings/profile-config",
     title: "CẤU HÌNH TÀI KHOẢN",
     subtitle:
