@@ -496,7 +496,6 @@ const BuyForMeQuotationList = () => {
       const searchableContent = [
         item.purchaseRequestId,
         item.purchaseCode,
-        item.customerId,
         item.receiverName,
         item.itemCount,
         item.status,

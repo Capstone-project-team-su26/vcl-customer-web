@@ -628,12 +628,6 @@ function FullOrderData({ shipment }) {
           </header>
           <div className="warehouse-full-card__rows">
             <FullDataRow
-              label="Customer ID"
-              value={shipment.customer.customerId}
-              code
-              wide
-            />
-            <FullDataRow
               label="Tên khách hàng"
               value={shipment.customer.fullName}
             />

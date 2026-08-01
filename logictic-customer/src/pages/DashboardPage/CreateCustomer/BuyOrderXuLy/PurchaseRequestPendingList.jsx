@@ -488,7 +488,6 @@ const PurchaseRequestPendingList = () => {
       const searchableContent = [
         item.purchaseRequestId,
         item.purchaseCode,
-        item.customerId,
         item.receiverName,
         item.itemCount,
         item.status,

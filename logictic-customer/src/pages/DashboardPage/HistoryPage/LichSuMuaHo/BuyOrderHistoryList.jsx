@@ -194,6 +194,45 @@ const renderStatusTag = (status) => {
   }
 };
 
+const formatShippingOption = (option) => {
+  if (!option) return "Tiêu chuẩn";
+  const normalized = String(option).trim().toUpperCase();
+
+  switch (normalized) {
+    case "STANDARD":
+    case "STD":
+      return "Tiêu chuẩn";
+    case "EXPRESS":
+    case "FAST":
+      return "Hỏa tốc";
+    case "SAVING":
+    case "ECONOMY":
+      return "Tiết kiệm";
+    case "AIR":
+      return "Hàng không";
+    case "SEA":
+      return "Đường biển";
+    default:
+      return option;
+  }
+};
+
+const getCurrentUserName = () => {
+  try {
+    const userString = sessionStorage.getItem("user");
+    if (userString) {
+      const parsed = JSON.parse(userString);
+      if (parsed?.fullName) return parsed.fullName;
+      if (parsed?.name) return parsed.name;
+    }
+  } catch {}
+  return (
+    sessionStorage.getItem("fullName") ||
+    sessionStorage.getItem("userName") ||
+    ""
+  );
+};
+
 const normalizeText = (value) => {
   return String(value ?? "")
     .normalize("NFD")
@@ -710,7 +749,12 @@ const BuyOrderHistoryList = () => {
                   <div>
                     <span>Khách hàng</span>
                     <strong>
-                      {order.customerName || order.createdByName || "-"}
+                      {order.customerName ||
+                        order.createdByName ||
+                        order.customer?.fullName ||
+                        getCurrentUserName() ||
+                        order.receiverName ||
+                        "-"}
                     </strong>
                   </div>
                   <div>
@@ -721,13 +765,16 @@ const BuyOrderHistoryList = () => {
                     <span>Tuyến vận chuyển</span>
                     <strong>
                       {order.route || "Trung Quốc --> VN"}{" "}
-                      <small>({order.shippingOption || "Standard"})</small>
+                      <small>
+                        ({formatShippingOption(order.shippingOption)})
+                      </small>
                     </strong>
                   </div>
                   <div>
                     <span>Người nhận hàng</span>
                     <strong>
-                      {order.receiverName || "-"} ({order.receiverPhone || "-"})
+                      {order.receiverName || "-"}
+                      {order.receiverPhone ? ` (${order.receiverPhone})` : ""}
                     </strong>
                   </div>
                 </div>
