@@ -867,7 +867,7 @@ const BuyForMeQuotationListDetail = () => {
                           const qItem = quotationItems.find(
                             (qi) => qi.itemId === product.itemId || qi.itemId === product._id
                           ) || quotationItems[idx];
-                          const uPrice = Number(qItem?.unitPrice ?? qItem?.price ?? product.unitPrice ?? product.price || 0);
+                          const uPrice = Number(qItem?.unitPrice || qItem?.price || product.unitPrice || product.price || 0);
                           const lTotal = Number(qItem?.lineTotal ?? (uPrice * Number(product.quantity || 1)));
 
                           if (uPrice <= 0 && lTotal <= 0) return null;
