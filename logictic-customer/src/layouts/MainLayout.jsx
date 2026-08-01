@@ -1,6 +1,8 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -10,8 +12,11 @@ import {
 import {
   HomeOutlined,
 } from "@ant-design/icons";
+import { Badge, Tooltip } from "antd";
+import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 
 import Sidebar from "../layouts/SidebarLayout/Sidebar";
+import NotificationPanel from "./NotificationPanel/NotificationPanel";
 import "./MainLayout.css";
 
 const PAGE_META = [
@@ -219,6 +224,13 @@ export default function MainLayout() {
   const [currentTime, setCurrentTime] =
     useState(() => new Date());
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const handleOpenNotif = useCallback(() => setNotifOpen((v) => !v), []);
+  const handleCloseNotif = useCallback(() => setNotifOpen(false), []);
+  const bellRef = useRef(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const handleUnreadCountChange = useCallback((count) => setUnreadCount(count), []);
+
   useEffect(() => {
     const intervalId =
       window.setInterval(() => {
@@ -309,6 +321,36 @@ export default function MainLayout() {
           </div>
 
           <div className="main-header-actions">
+            {/* Notification Bell */}
+            <div style={{ position: "relative" }}>
+              <Tooltip title="Thông báo" placement="bottom">
+                <button
+                  ref={bellRef}
+                  type="button"
+                  className="header-bell-btn"
+                  aria-label="Thông báo"
+                  aria-expanded={notifOpen}
+                  onClick={handleOpenNotif}
+                >
+                  <Badge
+                    count={unreadCount > 99 ? "99+" : unreadCount}
+                    showZero={false}
+                    size="small"
+                    style={{ backgroundColor: "#ea580c" }}
+                  >
+                    <NotificationsOutlinedIcon fontSize="medium" />
+                  </Badge>
+                </button>
+              </Tooltip>
+
+              <NotificationPanel
+                open={notifOpen}
+                onClose={handleCloseNotif}
+                anchorRef={bellRef}
+                onUnreadCountChange={handleUnreadCountChange}
+              />
+            </div>
+
             <div
               className={[
                 "time-scene-card",
@@ -343,25 +385,6 @@ export default function MainLayout() {
 
               <span className="time-scene-status-dot" />
             </div>
-
-            {/* <div className="header-balance-box">
-              <div className="header-balance-icon">
-                <WalletIcon />
-              </div>
-
-              <div className="header-balance-copy">
-                <span>
-                  SỐ DƯ KHẢ DỤNG
-                </span>
-
-                <strong>
-                  {balance.toLocaleString(
-                    "vi-VN"
-                  )}
-                  <small>đ</small>
-                </strong>
-              </div>
-            </div> */}
           </div>
         </header>
 
