@@ -806,21 +806,31 @@ const BuyForMeQuotationListDetail = () => {
                       <div className="product-header-line">
                         <div className="product-title-group">
                           <span className="product-idx-tag">#{idx + 1}</span>
-                          <h3 className="product-title">{product.productName}</h3>
+                          <h3 className="product-title">
+                            {(() => {
+                              const name = product.productName || product.name || product.title || product.product_name;
+                              if (!name || String(name).trim() === String(product.quantity)) {
+                                return product.productType || product.categoryName || `Sản phẩm #${idx + 1}`;
+                              }
+                              return name;
+                            })()}
+                          </h3>
                         </div>
 
                         <div className="product-action-tags">
-                          <span className="product-type-pill">
-                            {product.productType || "Sản phẩm"}
-                          </span>
-                          {product.sourceWebsite && (
-                            <span className="product-website-pill">
-                              {product.sourceWebsite}
+                          {(product.productType || product.categoryName) && (
+                            <span className="product-type-pill">
+                              {product.productType || product.categoryName}
                             </span>
                           )}
-                          {product.productLink && (
+                          {(product.sourceWebsite || product.domain) && (
+                            <span className="product-website-pill">
+                              {product.sourceWebsite || product.domain}
+                            </span>
+                          )}
+                          {(product.productLink || product.link) && (
                             <a
-                              href={product.productLink}
+                              href={product.productLink || product.link}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="product-external-link"
@@ -833,20 +843,56 @@ const BuyForMeQuotationListDetail = () => {
 
                       <div className="product-details-grid">
                         <div className="detail-item qty-item">
-                          <span>Số lượng</span>
-                          <strong>{product.quantity}</strong>
+                          <span>SỐ LƯỢNG</span>
+                          <strong>{product.quantity || product.qty || 1}</strong>
                         </div>
                         <div className="detail-item">
-                          <span>Phân loại hàng</span>
-                          <strong>{product.attributes || "Mặc định"}</strong>
+                          <span>PHẦN LOẠI HÀNG</span>
+                          <strong>
+                            {(() => {
+                              const attr = product.attributes || product.variant || product.classification;
+                              if (!attr || String(attr).trim() === String(product.quantity)) {
+                                return "Mặc định";
+                              }
+                              return attr;
+                            })()}
+                          </strong>
                         </div>
                         <div className="detail-item">
-                          <span>Nguồn hàng</span>
-                          <strong>{product.sourceWebsite || "-"}</strong>
+                          <span>NGUỒN HÀNG</span>
+                          <strong>{product.sourceWebsite || product.domain || "-"}</strong>
                         </div>
-                        {product.note && (
+
+                        {(() => {
+                          const qItem = quotationItems.find(
+                            (qi) => qi.itemId === product.itemId || qi.itemId === product._id
+                          ) || quotationItems[idx];
+                          const uPrice = Number(qItem?.unitPrice ?? qItem?.price ?? product.unitPrice ?? product.price || 0);
+                          const lTotal = Number(qItem?.lineTotal ?? (uPrice * Number(product.quantity || 1)));
+
+                          if (uPrice <= 0 && lTotal <= 0) return null;
+
+                          return (
+                            <>
+                              {uPrice > 0 && (
+                                <div className="detail-item">
+                                  <span>ĐƠN GIÁ BÁO GIÁ</span>
+                                  <strong>{formatVndCurrency(uPrice)}</strong>
+                                </div>
+                              )}
+                              {lTotal > 0 && (
+                                <div className="detail-item qty-item">
+                                  <span>TỔNG TIỀN HÀNG</span>
+                                  <strong>{formatVndCurrency(lTotal)}</strong>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+
+                        {product.note && String(product.note).trim() !== String(product.quantity) && (
                           <div className="detail-item full-row">
-                            <span>Ghi chú sản phẩm</span>
+                            <span>GHI CHÚ SẢN PHẨM</span>
                             <strong>{product.note}</strong>
                           </div>
                         )}
