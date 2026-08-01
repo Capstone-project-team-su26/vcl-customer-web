@@ -36,7 +36,7 @@ import {
   getProductTypesApi,
 } from "../../../../api/OrderApi/consignmentApi";
 
-import { createPurchaseRequestApi } from "../../../../api/OrderApi/purchaseRequestApi";
+import { createPurchaseRequestApi } from "../../../../api/PurchaseAPI/purchaseRequestApi";
 
 import {
   getDistrictsByProvinceCode,

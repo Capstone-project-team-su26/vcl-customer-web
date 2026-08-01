@@ -52,7 +52,7 @@ import {
   rejectQuotationApi,
   confirmAndPayQuotationApi,
   getPaymentCheckoutUrl,
-} from "../../../../../api/OrderApi/purchaseRequestApi";
+} from "../../../../../api/PurchaseAPI/purchaseRequestApi";
 
 import QuotationCancelDialog from "../../../../../components/DashboardComponents/CustomerKiguiComponents/QuotationPayments/CancelPayments/QuotationCancelDialog";
 import QuotationPaymentConfirmDialog, {

@@ -31,7 +31,7 @@ import AuthNotify from "../../../../utils/AuthNotify";
 
 import {
   getPurchaseRequestsApi,
-} from "../../../../api/OrderApi/purchaseRequestApi";
+} from "../../../../api/PurchaseAPI/purchaseRequestApi";
 
 import {
   apiToUtcIso,
@@ -860,8 +860,8 @@ const BuyForMeQuotationList = () => {
                             <button
                               type="button"
                               className={`purchase-pending-copy-code-button ${copiedCode === item.purchaseCode
-                                  ? "is-copied"
-                                  : ""
+                                ? "is-copied"
+                                : ""
                                 }`}
                               aria-label={`Sao chép mã vận đơn ${getPurchaseCode(item)}`}
                               title={

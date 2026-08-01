@@ -31,7 +31,7 @@ import AuthNotify from "../../../../utils/AuthNotify";
 
 import {
   getPurchaseRequestsApi,
-} from "../../../../api/OrderApi/purchaseRequestApi";
+} from "../../../../api/PurchaseAPI/purchaseRequestApi";
 
 import {
   apiToUtcIso,

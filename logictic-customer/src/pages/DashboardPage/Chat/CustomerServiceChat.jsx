@@ -46,7 +46,7 @@ import {
 import AuthNotify from "../../../utils/AuthNotify";
 
 import { getConsignmentsApi } from "../../../api/OrderApi/consignmentApi";
-import { getPurchaseRequestsApi } from "../../../api/OrderApi/purchaseRequestApi";
+import { getPurchaseRequestsApi } from "../../../api/PurchaseAPI/purchaseRequestApi";
 import { uploadImages } from "../../../api/Upload/UploadImage";
 
 import {

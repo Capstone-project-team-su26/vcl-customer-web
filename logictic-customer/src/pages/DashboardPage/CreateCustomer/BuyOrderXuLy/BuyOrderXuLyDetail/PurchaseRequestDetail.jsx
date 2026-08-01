@@ -42,7 +42,7 @@ import {
   formatVietnamDateTime,
 } from "../../../../../utils/timeUtc";
 
-import { getPurchaseRequestDetailApi } from "../../../../../api/OrderApi/purchaseRequestApi";
+import { getPurchaseRequestDetailApi } from "../../../../../api/PurchaseAPI/purchaseRequestApi";
 import { getProductTypesApi } from "../../../../../api/OrderApi/consignmentApi";
 
 import "./PurchaseRequestDetail.css";
