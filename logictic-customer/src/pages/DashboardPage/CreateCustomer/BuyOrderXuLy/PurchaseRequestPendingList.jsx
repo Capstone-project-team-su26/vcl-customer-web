@@ -506,7 +506,7 @@ const PurchaseRequestPendingList = () => {
 
       const createdDate = getUtcDateOnly(
         item.createdAtUtc ||
-          item.createdAt
+        item.createdAt
       );
 
       const matchesStartDate =
@@ -539,7 +539,7 @@ const PurchaseRequestPendingList = () => {
     1,
     Math.ceil(
       filteredPurchaseRequests.length /
-        DEFAULT_PAGE_SIZE
+      DEFAULT_PAGE_SIZE
     )
   );
 
@@ -552,7 +552,7 @@ const PurchaseRequestPendingList = () => {
       return filteredPurchaseRequests.slice(
         startIndex,
         startIndex +
-          DEFAULT_PAGE_SIZE
+        DEFAULT_PAGE_SIZE
       );
     }, [
       filteredPurchaseRequests,
@@ -695,8 +695,8 @@ const PurchaseRequestPendingList = () => {
 
   const hasActiveFilter = Boolean(
     searchInput.trim() ||
-      (dateRangeInput?.[0] &&
-        dateRangeInput?.[1])
+    (dateRangeInput?.[0] &&
+      dateRangeInput?.[1])
   );
 
   /* =========================================================
@@ -781,7 +781,7 @@ const PurchaseRequestPendingList = () => {
         <>
           <div className="purchase-pending-card-list">
             {visiblePurchaseRequests.length ===
-            0 ? (
+              0 ? (
               <div className="purchase-pending-empty-container">
                 <div className="purchase-pending-empty-icon">
                   📭
@@ -851,11 +851,10 @@ const PurchaseRequestPendingList = () => {
 
                             <button
                               type="button"
-                              className={`purchase-pending-copy-code-button ${
-                                copiedCode === item.purchaseCode
-                                  ? "is-copied"
-                                  : ""
-                              }`}
+                              className={`purchase-pending-copy-code-button ${copiedCode === item.purchaseCode
+                                ? "is-copied"
+                                : ""
+                                }`}
                               aria-label={`Sao chép mã vận đơn ${getPurchaseCode(item)}`}
                               title={
                                 copiedCode === item.purchaseCode
@@ -927,14 +926,14 @@ const PurchaseRequestPendingList = () => {
                         <span
                           title={formatDateUtcTitle(
                             item.createdAtUtc ||
-                              item.createdAt
+                            item.createdAt
                           )}
                         >
                           📅 Ngày tạo:{" "}
                           <strong>
                             {formatDate(
                               item.createdAtUtc ||
-                                item.createdAt
+                              item.createdAt
                             )}
                           </strong>
                         </span>
@@ -1051,35 +1050,35 @@ const PurchaseRequestPendingList = () => {
 
           {filteredPurchaseRequests.length >
             0 && (
-            <div className="purchase-pending-pagination-section">
-              <span className="purchase-pending-pagination-summary">
-                Hiển thị{" "}
-                <strong>
-                  {
-                    visiblePurchaseRequests.length
-                  }
-                </strong>{" "}
-                mục trên trang này, tổng cộng{" "}
-                <strong>
-                  {
-                    filteredPurchaseRequests.length
-                  }
-                </strong>{" "}
-                mục
-              </span>
+              <div className="purchase-pending-pagination-section">
+                <span className="purchase-pending-pagination-summary">
+                  Hiển thị{" "}
+                  <strong>
+                    {
+                      visiblePurchaseRequests.length
+                    }
+                  </strong>{" "}
+                  mục trên trang này, tổng cộng{" "}
+                  <strong>
+                    {
+                      filteredPurchaseRequests.length
+                    }
+                  </strong>{" "}
+                  mục
+                </span>
 
-              <Pagination
-                count={totalPages}
-                page={pageNumber}
-                onChange={handlePageChange}
-                disabled={loading}
-                color="primary"
-                shape="rounded"
-                showFirstButton
-                showLastButton
-              />
-            </div>
-          )}
+                <Pagination
+                  count={totalPages}
+                  page={pageNumber}
+                  onChange={handlePageChange}
+                  disabled={loading}
+                  color="primary"
+                  shape="rounded"
+                  showFirstButton
+                  showLastButton
+                />
+              </div>
+            )}
         </>
       )}
     </div>
