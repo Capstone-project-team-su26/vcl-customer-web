@@ -628,10 +628,10 @@ export const acceptQuotationApi = async (
 };
 
 /**
- * Khách hàng xác nhận báo giá ký gửi
+ * Khách hàng xác nhận báo giá yêu cầu mua hộ
  * và tạo giao dịch thanh toán.
  *
- * PUT /api/quotations/{quotationId}/confirm-and-pay
+ * PUT /api/purchase-requests/{purchaseRequestId}/quotation/confirm-and-pay
  *
  * Request body:
  * {
@@ -639,17 +639,15 @@ export const acceptQuotationApi = async (
  *   cancelUrl: string,
  *   paymentMethod: string
  * }
- *
- * API trả về thông tin/link thanh toán cho frontend.
  */
 export const confirmAndPayQuotationApi = async (
-  quotationId,
+  purchaseRequestIdOrQuotationId,
   payload = {},
   options = {}
 ) => {
   const id = validateId(
-    quotationId,
-    "Không tìm thấy mã báo giá để thanh toán."
+    purchaseRequestIdOrQuotationId,
+    "Không tìm thấy mã yêu cầu mua hộ hoặc mã báo giá để thanh toán."
   );
 
   const requestPayload = {
@@ -657,47 +655,54 @@ export const confirmAndPayQuotationApi = async (
       payload.returnUrl,
       "đường dẫn quay lại sau thanh toán"
     ),
-
     cancelUrl: validateAbsoluteUrl(
       payload.cancelUrl,
       "đường dẫn khi hủy thanh toán"
     ),
-
-    // Backend chỉ nhận đúng giá trị này
-    paymentMethod: "SEPAY",
+    paymentMethod: payload.paymentMethod || "SEPAY",
   };
 
   try {
     const response = await axiosInstance.put(
-      `/api/quotations/${encodeURIComponent(
-        id
-      )}/confirm-and-pay`,
+      `/api/purchase-requests/${encodeURIComponent(id)}/quotation/confirm-and-pay`,
       requestPayload,
       {
         signal: getSignal(options),
         headers: {
-          Accept:
-            "text/plain, application/json",
-          "Content-Type":
-            "application/json",
+          Accept: "application/json, text/plain, */*",
+          "Content-Type": "application/json",
         },
       }
     );
 
     return response.data;
   } catch (error) {
+    if (error?.response?.status === 404 || error?.response?.status === 405) {
+      try {
+        const fallbackResponse = await axiosInstance.put(
+          `/api/quotations/${encodeURIComponent(id)}/confirm-and-pay`,
+          requestPayload,
+          {
+            signal: getSignal(options),
+            headers: {
+              Accept: "application/json, text/plain, */*",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        return fallbackResponse.data;
+      } catch (fallbackErr) {
+        throw fallbackErr;
+      }
+    }
+
     if (!isCanceledRequest(error)) {
-      console.error(
-        "Lỗi xác nhận thanh toán SePay:",
-        {
-          status:
-            error?.response?.status,
-          response:
-            error?.response?.data,
-          quotationId: id,
-          payload: requestPayload,
-        }
-      );
+      console.error("Lỗi xác nhận thanh toán mua hộ:", {
+        status: error?.response?.status,
+        response: error?.response?.data,
+        id,
+        payload: requestPayload,
+      });
     }
 
     throw error;

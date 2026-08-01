@@ -297,9 +297,16 @@ const BuyForMeQuotationListDetail = () => {
   };
 
   const handleConfirmAndPay = async (selectedMethod) => {
-    const quotationId = detailData?.quotation?.quotationId;
-    if (!quotationId) {
-      AuthNotify.error("Lỗi", "Không tìm thấy mã báo giá để thao tác.");
+    const targetId =
+      requestId ||
+      detailData?.purchaseRequestId ||
+      detailData?.quotation?.quotationId;
+
+    if (!targetId) {
+      AuthNotify.error(
+        "Lỗi",
+        "Không tìm thấy mã yêu cầu mua hộ để thao tác."
+      );
       return;
     }
 
@@ -310,7 +317,7 @@ const BuyForMeQuotationListDetail = () => {
       );
 
       if (selectedMethod === PAYMENT_METHODS.OFFLINE) {
-        await acceptQuotationApi(quotationId);
+        await acceptQuotationApi(targetId);
         AuthNotify.success(
           "Đã chấp nhận báo giá",
           "Hệ thống đã ghi nhận việc bạn chấp nhận báo giá."
@@ -324,9 +331,10 @@ const BuyForMeQuotationListDetail = () => {
         const returnUrl = `${window.location.origin}/check-orders/buy-on-behalf/${requestId}?status=success`;
         const cancelUrl = `${window.location.origin}/check-orders/buy-on-behalf/${requestId}?status=cancel`;
 
-        const response = await confirmAndPayQuotationApi(quotationId, {
+        const response = await confirmAndPayQuotationApi(targetId, {
           returnUrl,
           cancelUrl,
+          paymentMethod: "SEPAY",
         });
 
         const checkoutUrl = getPaymentCheckoutUrl(response);
