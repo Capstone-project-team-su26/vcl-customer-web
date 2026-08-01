@@ -168,9 +168,9 @@ export default function Sidebar() {
 
   const historyPurchaseActive =
     pathname === "/history/buy-on-behalf" ||
-    pathname.startsWith(
-      "/history/buy-on-behalf/"
-    );
+    pathname.startsWith("/history/buy-on-behalf/") ||
+    pathname === "/history/buy-order" ||
+    pathname.startsWith("/history/buy-order/");
 
   const historyConsignmentActive =
     pathname === "/history/consignment" ||

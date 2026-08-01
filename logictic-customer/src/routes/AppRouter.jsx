@@ -70,6 +70,7 @@ import CustomerServiceChat from "../pages/DashboardPage/Chat/CustomerServiceChat
 import BuyForMeQuotationList from "../pages/DashboardPage/CreateCustomer/CheckHangMuaHo/BuyForMeQuotationList"
 import BuyForMeQuotationListDetail from "../pages/DashboardPage/CreateCustomer/CheckHangMuaHo/BuyForMeQuotationListDetail/BuyForMeQuotationListDetail"
 import ConsignmentHistoryList from "../pages/DashboardPage/HistoryPage/LichSuKiGui/ConsignmentHistoryList"
+import BuyOrderHistoryList from "../pages/DashboardPage/HistoryPage/LichSuMuaHo/BuyOrderHistoryList"
 import OrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuKiGui/OrderPaymentHisstory/OrderPaymentHistory"
 import TransactionHistoryTabs from "../pages/DashboardPage/HistoryPage/HistoryGiaoDich/TransactionHistoryTabs"
 import {
@@ -197,6 +198,14 @@ const AppRouter = () => {
 <Route
   path="/history/consignment"
   element={<ConsignmentHistoryList />}
+/>
+<Route
+  path="/history/buy-on-behalf"
+  element={<BuyOrderHistoryList />}
+/>
+<Route
+  path="/history/buy-order"
+  element={<BuyOrderHistoryList />}
 />
 <Route
   path="/orders/:orderId/payments/history"

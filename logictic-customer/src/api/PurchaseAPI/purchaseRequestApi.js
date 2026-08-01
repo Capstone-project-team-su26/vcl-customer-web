@@ -446,14 +446,30 @@ export const createPurchaseRequestApi = async (
 
 
 export const getPurchaseRequestsApi = async (
+  pageNumber,
+  pageSize,
   options = {}
 ) => {
   try {
+    let opts = options;
+    let params = {};
+
+    if (typeof pageNumber === "object" && pageNumber !== null) {
+      opts = pageNumber;
+    } else {
+      if (pageNumber !== undefined) params.pageNumber = pageNumber;
+      if (pageSize !== undefined) params.pageSize = pageSize;
+    }
+
+    if (opts.params) {
+      params = { ...params, ...opts.params };
+    }
+
     const response = await axiosInstance.get(
       "/api/purchase-requests",
       {
-        signal: getSignal(options),
-
+        params,
+        signal: getSignal(opts),
         headers: {
           Accept: "application/json, */*",
         },
