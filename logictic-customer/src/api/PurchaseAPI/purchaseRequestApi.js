@@ -63,6 +63,13 @@ const getApiErrorMessage = (
   error,
   fallbackMessage
 ) => {
+  if (
+    error?.message === "Network Error" ||
+    error?.code === "ERR_NETWORK"
+  ) {
+    return "Lỗi kết nối máy chủ (Network Error). Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.";
+  }
+
   const responseData =
     error?.response?.data;
 
@@ -448,7 +455,7 @@ export const getPurchaseRequestsApi = async (
         signal: getSignal(options),
 
         headers: {
-          Accept: "*/*",
+          Accept: "application/json, */*",
         },
       }
     );
@@ -458,8 +465,10 @@ export const getPurchaseRequestsApi = async (
     if (!isCanceledRequest(error)) {
       console.error(
         "Lỗi lấy danh sách yêu cầu mua hộ:",
-        error?.response?.data ||
-          error?.message
+        getApiErrorMessage(
+          error,
+          "Không thể lấy danh sách yêu cầu mua hộ."
+        )
       );
     }
 
@@ -467,44 +476,51 @@ export const getPurchaseRequestsApi = async (
   }
 };
 
-export const getPurchaseRequestDetailApi =
-  async (
+/**
+ * Lấy chi tiết một yêu cầu mua hộ theo ID.
+ *
+ * GET /api/purchase-requests/{purchaseRequestId}
+ */
+export const getPurchaseRequestDetailApi = async (
+  purchaseRequestId,
+  options = {}
+) => {
+  const id = validateId(
     purchaseRequestId,
-    options = {}
-  ) => {
-    const id = validateId(
-      purchaseRequestId,
-      "Không tìm thấy mã yêu cầu mua hộ."
+    "Không tìm thấy mã yêu cầu mua hộ."
+  );
+
+  try {
+    const response = await axiosInstance.get(
+      `/api/purchase-requests/${encodeURIComponent(id)}`,
+      {
+        signal: getSignal(options),
+
+        headers: {
+          Accept: "application/json, */*",
+        },
+      }
     );
 
-    try {
-      const response =
-        await axiosInstance.get(
-          `/api/purchase-requests/${encodeURIComponent(
-            id
-          )}`,
-          {
-            signal: getSignal(options),
-
-            headers: {
-              Accept: "*/*",
-            },
-          }
-        );
-
-      return response.data;
-    } catch (error) {
-      if (!isCanceledRequest(error)) {
-        console.error(
-          "Lỗi lấy chi tiết yêu cầu mua hộ:",
-          error?.response?.data ||
-            error?.message
-        );
-      }
-
-      throw error;
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi lấy chi tiết yêu cầu mua hộ:",
+        getApiErrorMessage(
+          error,
+          "Không thể lấy chi tiết yêu cầu mua hộ."
+        )
+      );
     }
-  };
+
+    throw error;
+  }
+};
+
+// Aliases cho hàm lấy chi tiết yêu cầu mua hộ
+export const getPurchaseRequestByIdApi = getPurchaseRequestDetailApi;
+export const getPurchaseRequestById = getPurchaseRequestDetailApi;
 
 
 export const rejectQuotationApi = async (

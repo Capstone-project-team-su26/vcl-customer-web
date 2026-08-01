@@ -61,6 +61,13 @@ const getApiErrorMessage = (
   error,
   fallbackMessage
 ) => {
+  if (
+    error?.message === "Network Error" ||
+    error?.code === "ERR_NETWORK"
+  ) {
+    return "Lỗi kết nối máy chủ (Network Error). Vui lòng kiểm tra lại mạng hoặc đăng nhập lại.";
+  }
+
   const responseData =
     error?.response?.data;
 

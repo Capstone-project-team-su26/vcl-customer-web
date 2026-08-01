@@ -68,6 +68,7 @@ import PurchaseRequestPendingList from "../pages/DashboardPage/CreateCustomer/Bu
 import PurchaseRequestDetail from "../pages/DashboardPage/CreateCustomer/BuyOrderXuLy/BuyOrderXuLyDetail/PurchaseRequestDetail"; // Import
 import CustomerServiceChat from "../pages/DashboardPage/Chat/CustomerServiceChat"; // Import
 import BuyForMeQuotationList from "../pages/DashboardPage/CreateCustomer/CheckHangMuaHo/BuyForMeQuotationList"
+import BuyForMeQuotationListDetail from "../pages/DashboardPage/CreateCustomer/CheckHangMuaHo/BuyForMeQuotationListDetail/BuyForMeQuotationListDetail"
 import ConsignmentHistoryList from "../pages/DashboardPage/HistoryPage/LichSuKiGui/ConsignmentHistoryList"
 import OrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuKiGui/OrderPaymentHisstory/OrderPaymentHistory"
 import TransactionHistoryTabs from "../pages/DashboardPage/HistoryPage/HistoryGiaoDich/TransactionHistoryTabs"
@@ -186,9 +187,13 @@ const AppRouter = () => {
           />
           <Route path="/customer-service-chat" element={<CustomerServiceChat />} />
           <Route
-  path="/check-orders/buy-on-behalf"
-  element={<BuyForMeQuotationList />}
-/>
+            path="/check-orders/buy-on-behalf"
+            element={<BuyForMeQuotationList />}
+          />
+          <Route
+            path="/check-orders/buy-on-behalf/:requestId"
+            element={<BuyForMeQuotationListDetail />}
+          />
 <Route
   path="/history/consignment"
   element={<ConsignmentHistoryList />}
