@@ -55,7 +55,7 @@ const PAYMENT_METHOD_OPTIONS = [
     value: PAYMENT_METHODS.ONLINE,
     title: "Thanh toán online",
     subtitle:
-      "Thanh toán tiền cọc qua SePay bằng mã VietQR do backend cung cấp.",
+      "Thanh toán tiền cọc qua SePay bằng mã VietQR do hệ thống cung cấp.",
     badge: "SePay",
     icon: CreditCardRoundedIcon,
   },
@@ -89,6 +89,11 @@ const QuotationPaymentConfirmDialog = ({
   loading = false,
   consignmentCode = "-",
   totalAmount = 0,
+  customDepositAmount = null,
+  customDepositDescription = "",
+  productsSubtotal = null,
+  servicesSubtotal = null,
+  servicesDeposit = null,
   formatMoney = (value) =>
     Number(value || 0).toLocaleString(
       "vi-VN",
@@ -183,7 +188,7 @@ const QuotationPaymentConfirmDialog = ({
         const calculationType =
           String(
             result?.calculationType ||
-              "",
+            "",
           )
             .trim()
             .toUpperCase();
@@ -213,9 +218,9 @@ const QuotationPaymentConfirmDialog = ({
         if (
           error?.name === "AbortError" ||
           error?.name ===
-            "CanceledError" ||
+          "CanceledError" ||
           error?.code ===
-            "ERR_CANCELED"
+          "ERR_CANCELED"
         ) {
           return;
         }
@@ -223,7 +228,7 @@ const QuotationPaymentConfirmDialog = ({
         console.error(
           "Lỗi lấy tỷ lệ cọc:",
           error?.response?.data ||
-            error,
+          error,
         );
 
         setDepositRateData(null);
@@ -309,6 +314,10 @@ const QuotationPaymentConfirmDialog = ({
 
   const depositAmount =
     useMemo(() => {
+      if (customDepositAmount !== null && customDepositAmount !== undefined) {
+        return Math.max(Number(customDepositAmount || 0), 0);
+      }
+
       if (depositRate === null) {
         return 0;
       }
@@ -318,25 +327,21 @@ const QuotationPaymentConfirmDialog = ({
         depositRate
       );
     }, [
+      customDepositAmount,
       normalizedTotalAmount,
       depositRate,
     ]);
 
   const remainingAmount =
     useMemo(() => {
-      if (depositRate === null) {
-        return normalizedTotalAmount;
-      }
-
       return Math.max(
         normalizedTotalAmount -
-          depositAmount,
+        depositAmount,
         0,
       );
     }, [
       normalizedTotalAmount,
       depositAmount,
-      depositRate,
     ]);
 
   const isOffline =
@@ -347,10 +352,14 @@ const QuotationPaymentConfirmDialog = ({
     selectedMethod ===
     PAYMENT_METHODS.ONLINE;
 
+  const hasCustomDeposit =
+    customDepositAmount !== null && customDepositAmount !== undefined;
+
   const canUseOnlinePayment =
-    !depositRateLoading &&
-    !depositRateError &&
-    depositPercent !== null;
+    hasCustomDeposit ||
+    (!depositRateLoading &&
+      !depositRateError &&
+      depositPercent !== null);
 
   const selectedMethodLabel =
     isOnline
@@ -376,12 +385,12 @@ const QuotationPaymentConfirmDialog = ({
 
     if (
       method ===
-        PAYMENT_METHODS.ONLINE &&
+      PAYMENT_METHODS.ONLINE &&
       !canUseOnlinePayment
     ) {
       setMethodError(
         depositRateError ||
-          "Đang tải tỷ lệ cọc. Vui lòng thử lại.",
+        "Đang tải tỷ lệ cọc. Vui lòng thử lại.",
       );
 
       return;
@@ -423,7 +432,7 @@ const QuotationPaymentConfirmDialog = ({
 
     if (
       selectedMethod ===
-        PAYMENT_METHODS.ONLINE &&
+      PAYMENT_METHODS.ONLINE &&
       !canUseOnlinePayment
     ) {
       setMethodError(
@@ -444,13 +453,13 @@ const QuotationPaymentConfirmDialog = ({
       selectedMethod ===
         PAYMENT_METHODS.ONLINE
         ? {
-            depositRate:
-              depositPercent,
-            depositAmount,
-            remainingAmount,
-            fee:
-              depositRateData,
-          }
+          depositRate:
+            depositPercent,
+          depositAmount,
+          remainingAmount,
+          fee:
+            depositRateData,
+        }
         : null,
     );
   };
@@ -468,6 +477,11 @@ const QuotationPaymentConfirmDialog = ({
       PaperProps={{
         className:
           "quotation-dialog-paper quotation-payment-dialog-paper",
+        style: {
+          fontFamily:
+            "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+          borderRadius: "16px",
+        },
       }}
     >
       <DialogTitle className="quotation-dialog-title quotation-payment-dialog-title">
@@ -484,12 +498,14 @@ const QuotationPaymentConfirmDialog = ({
             Xác nhận thủ công
             offline hoặc thanh toán
             cọc{" "}
-            {depositRateLoading
-              ? "..."
-              : depositPercent !==
+            {hasCustomDeposit
+              ? (customDepositDescription || "100% tiền hàng + 50% phí dịch vụ")
+              : depositRateLoading
+                ? "..."
+                : depositPercent !==
                   null
-                ? `${depositPercent}%`
-                : "theo cấu hình hệ thống"}{" "}
+                  ? `${depositPercent}%`
+                  : "theo cấu hình hệ thống"}{" "}
             qua SePay.
           </span>
         </div>
@@ -497,7 +513,7 @@ const QuotationPaymentConfirmDialog = ({
 
       <DialogContent className="quotation-dialog-content quotation-payment-dialog-content">
         <div className="quotation-dialog-summary quotation-payment-summary">
-          <div className="is-consignment">
+          <div className="is-consignment" style={{ minHeight: "50px", padding: "8px 12px", gap: "2px", gridTemplateRows: "auto auto" }}>
             <span>
               Mã vận đơn
             </span>
@@ -531,7 +547,20 @@ const QuotationPaymentConfirmDialog = ({
               toán online
             </span>
 
-            {depositRateLoading ? (
+            {hasCustomDeposit ? (
+              <>
+                <strong>
+                  {formatMoney(
+                    depositAmount,
+                  )}
+                </strong>
+
+                <small>
+                  {customDepositDescription ||
+                    "100% tiền hàng + 50% phí dịch vụ & cước"}
+                </small>
+              </>
+            ) : depositRateLoading ? (
               <div className="quotation-deposit-rate-loading">
                 <CircularProgress
                   size={18}
@@ -589,6 +618,82 @@ const QuotationPaymentConfirmDialog = ({
               </>
             )}
           </div>
+
+          {hasCustomDeposit && productsSubtotal !== null && (
+            <div
+              className="quotation-deposit-breakdown-card"
+              style={{
+                gridColumn: "1 / -1",
+                background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                border: "1px solid #bae6fd",
+                borderRadius: "8px",
+                padding: "6px 10px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                fontFamily: "inherit",
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 700,
+                  color: "#0369a1",
+                  fontSize: "0.76rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <span>💡 Chi tiết báo giá mua hộ:</span>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+                  gap: "6px",
+                  fontSize: "0.78rem",
+                  color: "#334155",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#ffffff",
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    border: "1px solid #e0f2fe",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ color: "#475569", fontWeight: 500 }}>• Tiền hàng (100%):</span>
+                  <strong style={{ color: "#0284c7", fontSize: "0.84rem", whiteSpace: "nowrap", marginLeft: "8px", fontWeight: 700 }}>
+                    {formatMoney(productsSubtotal)}
+                  </strong>
+                </div>
+
+                {servicesDeposit !== null && (
+                  <div
+                    style={{
+                      background: "#ffffff",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #e0f2fe",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ color: "#475569", fontWeight: 500 }}>• Phí dịch vụ & cước (50%):</span>
+                    <strong style={{ color: "#0284c7", fontSize: "0.84rem", whiteSpace: "nowrap", marginLeft: "8px", fontWeight: 700 }}>
+                      {formatMoney(servicesDeposit)}
+                    </strong>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <section
@@ -666,7 +771,7 @@ const QuotationPaymentConfirmDialog = ({
                   canUseOnlinePayment
                 ) {
                   subtitle =
-                    `Thanh toán cọc ${depositPercent}% qua SePay bằng mã VietQR do backend cung cấp.`;
+                    `Thanh toán cọc ${depositPercent}% qua SePay bằng mã VietQR do hệ thống cung cấp.`;
                 }
 
                 return (
@@ -685,9 +790,9 @@ const QuotationPaymentConfirmDialog = ({
                     className={[
                       "quotation-payment-method-option",
                       selected &&
-                        "is-selected",
+                      "is-selected",
                       optionDisabled &&
-                        "is-disabled",
+                      "is-disabled",
                       `is-${methodClassName}`,
                     ]
                       .filter(Boolean)
@@ -759,10 +864,10 @@ const QuotationPaymentConfirmDialog = ({
                 ? "Hệ thống chỉ ghi nhận việc bạn chấp nhận báo giá. Không tạo giao dịch SePay; bộ phận phụ trách sẽ liên hệ để xác nhận thanh toán thủ công."
                 : isOnline
                   ? `Bạn sẽ thanh toán trước ${formatMoney(
-                      depositAmount,
-                    )} qua VietQR. Số tiền còn lại là ${formatMoney(
-                      remainingAmount,
-                    )}.`
+                    depositAmount,
+                  )} qua VietQR. Số tiền còn lại là ${formatMoney(
+                    remainingAmount,
+                  )}.`
                   : depositRateLoading
                     ? "Hệ thống đang tải tỷ lệ cọc. Bạn vẫn có thể chọn xác nhận offline."
                     : depositRateError

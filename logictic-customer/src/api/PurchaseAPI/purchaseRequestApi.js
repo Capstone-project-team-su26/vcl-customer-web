@@ -540,12 +540,12 @@ export const getPurchaseRequestById = getPurchaseRequestDetailApi;
 
 
 export const rejectQuotationApi = async (
-  quotationId,
+  quotationIdOrPurchaseRequestId,
   rejectionReason,
   options = {}
 ) => {
   const id = validateId(
-    quotationId,
+    quotationIdOrPurchaseRequestId,
     "Không tìm thấy mã báo giá để từ chối."
   );
 
@@ -584,6 +584,25 @@ export const rejectQuotationApi = async (
 
     return response.data;
   } catch (error) {
+    if (error?.response?.status === 404 || error?.response?.status === 405) {
+      try {
+        const fallbackResponse = await axiosInstance.put(
+          `/api/purchase-requests/${encodeURIComponent(id)}/quotation/reject`,
+          requestPayload,
+          {
+            signal: getSignal(options),
+            headers: {
+              Accept: "text/plain, application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        return fallbackResponse.data;
+      } catch (fallbackErr) {
+        throw fallbackErr;
+      }
+    }
+
     if (!isCanceledRequest(error)) {
       console.error(
         "Lỗi từ chối báo giá:",
@@ -603,11 +622,11 @@ export const rejectQuotationApi = async (
 };
 
 export const acceptQuotationApi = async (
-  quotationId,
+  quotationIdOrPurchaseRequestId,
   options = {}
 ) => {
   const id = validateId(
-    quotationId,
+    quotationIdOrPurchaseRequestId,
     "Không tìm thấy mã báo giá để chấp nhận."
   );
 
@@ -629,6 +648,24 @@ export const acceptQuotationApi = async (
 
     return response.data;
   } catch (error) {
+    if (error?.response?.status === 404 || error?.response?.status === 405) {
+      try {
+        const fallbackResponse = await axiosInstance.put(
+          `/api/purchase-requests/${encodeURIComponent(id)}/quotation/accept`,
+          null,
+          {
+            signal: getSignal(options),
+            headers: {
+              Accept: "text/plain, application/json",
+            },
+          }
+        );
+        return fallbackResponse.data;
+      } catch (fallbackErr) {
+        throw fallbackErr;
+      }
+    }
+
     if (!isCanceledRequest(error)) {
       console.error(
         "Lỗi chấp nhận báo giá:",

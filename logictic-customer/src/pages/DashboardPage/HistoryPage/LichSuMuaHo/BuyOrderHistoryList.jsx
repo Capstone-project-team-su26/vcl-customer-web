@@ -246,7 +246,7 @@ const normalizeText = (value) => {
 
 const formatVndCurrency = (value) => {
   const number = Number(value || 0);
-  return `${number.toLocaleString("vi-VN")} đ`;
+  return `${Math.round(number).toLocaleString("vi-VN")} đ`;
 };
 
 const formatDateDisplay = (value) => {

@@ -42,7 +42,7 @@ import "./BuyOrderPaymentHistory.css";
 
 const formatVndCurrency = (amount) => {
   const number = Number(amount || 0);
-  return `${number.toLocaleString("vi-VN")} đ`;
+  return `${Math.round(number).toLocaleString("vi-VN")} đ`;
 };
 
 const formatDateDisplay = (dateString) => {

@@ -94,7 +94,7 @@ const getApiErrorMessage = (error, fallbackMessage) => {
 
 const formatVndCurrency = (value) => {
   const number = Number(value || 0);
-  return `${number.toLocaleString("vi-VN")} đ`;
+  return `${Math.round(number).toLocaleString("vi-VN")} đ`;
 };
 
 const formatDateDisplay = (value) => {
@@ -265,7 +265,13 @@ const BuyForMeQuotationListDetail = () => {
   };
 
   const handleConfirmRejectQuotation = async (reason) => {
-    const quotationId = detailData?.quotation?.quotationId;
+    const quotationId =
+      detailData?.quotation?.quotationId ||
+      detailData?.quotationId ||
+      detailData?.quotation?.id ||
+      requestId ||
+      detailData?.purchaseRequestId;
+
     if (!quotationId) {
       AuthNotify.error("Lỗi", "Không tìm thấy mã báo giá để từ chối.");
       return;
@@ -297,12 +303,18 @@ const BuyForMeQuotationListDetail = () => {
   };
 
   const handleConfirmAndPay = async (selectedMethod) => {
-    const targetId =
+    const quotationId =
+      detailData?.quotation?.quotationId ||
+      detailData?.quotationId ||
+      detailData?.quotation?.id;
+
+    const purchaseRequestId =
       requestId ||
       detailData?.purchaseRequestId ||
-      detailData?.quotation?.quotationId;
+      detailData?.id ||
+      quotationId;
 
-    if (!targetId) {
+    if (!purchaseRequestId && !quotationId) {
       AuthNotify.error(
         "Lỗi",
         "Không tìm thấy mã yêu cầu mua hộ để thao tác."
@@ -317,7 +329,10 @@ const BuyForMeQuotationListDetail = () => {
       );
 
       if (selectedMethod === PAYMENT_METHODS.OFFLINE) {
-        await acceptQuotationApi(targetId);
+        // acceptQuotationApi prefers quotationId, fallback to purchaseRequestId
+        const targetQuotationId = quotationId || purchaseRequestId;
+        await acceptQuotationApi(targetQuotationId);
+
         AuthNotify.success(
           "Đã chấp nhận báo giá",
           "Hệ thống đã ghi nhận việc bạn chấp nhận báo giá."
@@ -331,7 +346,9 @@ const BuyForMeQuotationListDetail = () => {
         const returnUrl = `${window.location.origin}/check-orders/buy-on-behalf/${requestId}?status=success`;
         const cancelUrl = `${window.location.origin}/check-orders/buy-on-behalf/${requestId}?status=cancel`;
 
-        const response = await confirmAndPayQuotationApi(targetId, {
+        // confirmAndPayQuotationApi prefers purchaseRequestId, fallback to quotationId
+        const targetPurchaseRequestId = purchaseRequestId || quotationId;
+        const response = await confirmAndPayQuotationApi(targetPurchaseRequestId, {
           returnUrl,
           cancelUrl,
           paymentMethod: "SEPAY",
@@ -375,6 +392,85 @@ const BuyForMeQuotationListDetail = () => {
   const additionalFees = Array.isArray(quotation?.additionalFees)
     ? quotation.additionalFees
     : [];
+
+  const productsSubtotal = useMemo(() => {
+    if (Number(quotation?.productsSubtotal) > 0) {
+      return Number(quotation.productsSubtotal);
+    }
+    if (Number(quotation?.productsSubTotal) > 0) {
+      return Number(quotation.productsSubTotal);
+    }
+    return quotationItems.reduce((acc, item) => {
+      const lineTotal = Number(
+        item.lineTotal ?? (Number(item.unitPrice || 0) * Number(item.quantity || 0))
+      );
+      return acc + lineTotal;
+    }, 0);
+  }, [quotation, quotationItems]);
+
+  const additionalFeesTotal = useMemo(() => {
+    return additionalFees.reduce((acc, fee) => {
+      return acc + Number(fee?.amount ?? fee?.feeAmount ?? 0);
+    }, 0);
+  }, [additionalFees]);
+
+  const serviceFee = useMemo(() => {
+    const rawFee =
+      quotation?.serviceFee ??
+      quotation?.purchaseFee ??
+      quotation?.serviceFeeAmount ??
+      quotation?.purchaseFeeAmount;
+
+    if (rawFee !== undefined && rawFee !== null && rawFee !== "" && !isNaN(Number(rawFee))) {
+      return Number(rawFee);
+    }
+    return additionalFeesTotal;
+  }, [quotation, additionalFeesTotal]);
+
+  const shippingFee = useMemo(() => {
+    return Number(
+      quotation?.shippingFee ??
+      quotation?.freightFee ??
+      quotation?.estimatedFreightCharge ??
+      0
+    );
+  }, [quotation]);
+
+  const importTax = useMemo(() => {
+    return Number(quotation?.importTax ?? 0);
+  }, [quotation]);
+
+  const vat = useMemo(() => {
+    return Number(quotation?.vat ?? 0);
+  }, [quotation]);
+
+  const computedTotalAmount = useMemo(() => {
+    if (additionalFees.length > 0) {
+      return productsSubtotal + additionalFeesTotal;
+    }
+    if (Number(quotation?.totalAmount) > 0) {
+      return Number(quotation.totalAmount);
+    }
+    if (Number(quotation?.totalEstimatedCost) > 0) {
+      return Number(quotation.totalEstimatedCost);
+    }
+    return productsSubtotal + serviceFee + shippingFee + importTax + vat;
+  }, [additionalFees.length, productsSubtotal, additionalFeesTotal, quotation, serviceFee, shippingFee, importTax, vat]);
+
+  const servicesSubtotal = useMemo(() => {
+    const pSub = Math.max(Number(productsSubtotal || 0), 0);
+    const total = Math.max(Number(computedTotalAmount || 0), 0);
+    return Math.max(total - pSub, 0);
+  }, [productsSubtotal, computedTotalAmount]);
+
+  const servicesDeposit = useMemo(() => {
+    return Math.round(servicesSubtotal * 0.5);
+  }, [servicesSubtotal]);
+
+  const buyForMeDepositAmount = useMemo(() => {
+    const pSub = Math.max(Number(productsSubtotal || 0), 0);
+    return pSub + servicesDeposit;
+  }, [productsSubtotal, servicesDeposit]);
 
   const statusNormalized = String(requestInfo.status || "")
     .trim()
@@ -495,11 +591,16 @@ const BuyForMeQuotationListDetail = () => {
             <div className="quotation-hero-total">
               <span>TỔNG BÁO GIÁ ĐƠN HÀNG</span>
               <strong>
-                {formatVndCurrency(quotation?.totalAmount || 0)}
+                {formatVndCurrency(computedTotalAmount)}
               </strong>
+              {quotation && buyForMeDepositAmount > 0 && (
+                <div style={{ margin: "6px 0 2px", fontSize: "0.92rem", fontWeight: 700, color: "#38bdf8" }}>
+                  Tiền cọc online: {formatVndCurrency(buyForMeDepositAmount)}
+                </div>
+              )}
               <small>
                 {quotation
-                  ? "Đã bao gồm tiền hàng, phí dịch vụ mua hộ & phụ phí"
+                  ? "100% tiền hàng + 50% phí dịch vụ & cước (Tự động làm tròn)"
                   : "Chờ nhân viên cập nhật báo giá"}
               </small>
             </div>
@@ -781,7 +882,7 @@ const BuyForMeQuotationListDetail = () => {
                           Báo giá đơn hàng sản phẩm ({quotationItems.length})
                         </span>
                         <strong>
-                          {formatVndCurrency(quotation.productsSubtotal)}
+                          {formatVndCurrency(productsSubtotal)}
                         </strong>
                       </div>
 
@@ -888,45 +989,89 @@ const BuyForMeQuotationListDetail = () => {
                   <div className="statement-line">
                     <span>Tiền hàng sản phẩm</span>
                     <strong>
-                      {formatVndCurrency(quotation.productsSubtotal)}
+                      {formatVndCurrency(productsSubtotal)}
                     </strong>
                   </div>
 
-                  <div className="statement-line">
-                    <span>Phí dịch vụ mua hộ</span>
-                    <strong>{formatVndCurrency(quotation.purchaseFee)}</strong>
-                  </div>
+                  {additionalFees.length > 0 ? (
+                    additionalFees.map((fee, idx) => {
+                      const feeAmt = Number(
+                        fee?.amount ?? fee?.feeAmount ?? fee?.value ?? 0
+                      );
+                      if (feeAmt <= 0) return null;
+                      return (
+                        <div className="statement-line" key={fee.id || idx}>
+                          <span>
+                            {fee.feeName || fee.name || fee.title || "Phụ phí"}
+                          </span>
+                          <strong>{formatVndCurrency(feeAmt)}</strong>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <>
+                      {serviceFee > 0 && (
+                        <div className="statement-line">
+                          <span>Phí dịch vụ mua hộ</span>
+                          <strong>{formatVndCurrency(serviceFee)}</strong>
+                        </div>
+                      )}
 
-                  <div className="statement-line">
-                    <span>Phí vận chuyển</span>
-                    <strong>{formatVndCurrency(quotation.shippingFee)}</strong>
-                  </div>
+                      {shippingFee > 0 && (
+                        <div className="statement-line">
+                          <span>Phí vận chuyển</span>
+                          <strong>{formatVndCurrency(shippingFee)}</strong>
+                        </div>
+                      )}
 
-                  {Number(quotation.importTax) > 0 && (
-                    <div className="statement-line">
-                      <span>Thuế nhập khẩu</span>
-                      <strong>
-                        {formatVndCurrency(quotation.importTax)}
-                      </strong>
-                    </div>
-                  )}
+                      {importTax > 0 && (
+                        <div className="statement-line">
+                          <span>Thuế nhập khẩu</span>
+                          <strong>
+                            {formatVndCurrency(importTax)}
+                          </strong>
+                        </div>
+                      )}
 
-                  {Number(quotation.vat) > 0 && (
-                    <div className="statement-line">
-                      <span>Thuế VAT (8%)</span>
-                      <strong>{formatVndCurrency(quotation.vat)}</strong>
-                    </div>
+                      {vat > 0 && (
+                        <div className="statement-line">
+                          <span>Thuế VAT (8%)</span>
+                          <strong>{formatVndCurrency(vat)}</strong>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <div className="statement-divider" />
 
+                  <div className="statement-line" style={{ background: "rgba(37, 99, 235, 0.07)", padding: "8px 10px", borderRadius: 8, margin: "8px 0", flexDirection: "column", alignItems: "stretch", gap: 4 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontWeight: 700, color: "#1d4ed8", fontSize: "0.85rem" }}>
+                        Tiền cọc khi thanh toán online
+                      </span>
+                      <strong style={{ fontSize: "1rem", color: "#1d4ed8", fontWeight: 800 }}>
+                        {formatVndCurrency(buyForMeDepositAmount)}
+                      </strong>
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: "#475569", background: "rgba(255, 255, 255, 0.8)", padding: "4px 8px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>• Tiền hàng (100%):</span>
+                        <strong style={{ color: "#0f172a" }}>{formatVndCurrency(productsSubtotal)}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>• Phí dịch vụ & cước (50%):</span>
+                        <strong style={{ color: "#0f172a" }}>{formatVndCurrency(servicesDeposit)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="statement-total-banner">
                     <div>
                       <span>TỔNG BÁO GIÁ ĐƠN HÀNG</span>
-                      <small>Đã gồm tiền hàng, cước & thuế phí</small>
+                      <small>Đã gồm tiền hàng, cước & thuế phí (Hệ thống tự động làm tròn giá tiền)</small>
                     </div>
                     <strong className="grand-price">
-                      {formatVndCurrency(quotation.totalAmount)}
+                      {formatVndCurrency(computedTotalAmount)}
                     </strong>
                   </div>
                 </div>
@@ -947,8 +1092,12 @@ const BuyForMeQuotationListDetail = () => {
                 <span>BÁO GIÁ CHÍNH THỨC MUA HỘ</span>
                 <strong>Xác nhận đơn hàng & Chọn phương thức thanh toán</strong>
                 <small>
-                  Tổng báo giá:{" "}
-                  <b>{formatVndCurrency(quotation?.totalAmount || 0)}</b>
+                  Tổng: <b>{formatVndCurrency(computedTotalAmount)}</b>
+                  <span style={{ margin: "0 6px", opacity: 0.5 }}>|</span>
+                  Cọc online: <b style={{ color: "#38bdf8" }}>{formatVndCurrency(buyForMeDepositAmount)}</b>
+                  <span style={{ marginLeft: 6, opacity: 0.85 }}>
+                    (100% tiền hàng + 50% phí dịch vụ & cước)
+                  </span>
                 </small>
               </div>
 
@@ -997,7 +1146,7 @@ const BuyForMeQuotationListDetail = () => {
             open={rejectDialogOpen}
             loading={quotationAction === "reject"}
             consignmentCode={requestInfo.purchaseCode || requestId}
-            totalAmount={quotation?.totalAmount || 0}
+            totalAmount={computedTotalAmount}
             formatMoney={formatVndCurrency}
             onClose={handleCloseRejectDialog}
             onConfirm={handleConfirmRejectQuotation}
@@ -1008,8 +1157,12 @@ const BuyForMeQuotationListDetail = () => {
             open={paymentDialogOpen}
             loading={quotationAction === "pay" || quotationAction === "accept"}
             consignmentCode={requestInfo.purchaseCode || requestId}
-            totalAmount={quotation?.totalAmount || 0}
-            depositRate={null}
+            totalAmount={computedTotalAmount}
+            customDepositAmount={buyForMeDepositAmount}
+            customDepositDescription="100% tiền hàng + 50% phí dịch vụ & cước"
+            productsSubtotal={productsSubtotal}
+            servicesSubtotal={servicesSubtotal}
+            servicesDeposit={servicesDeposit}
             formatMoney={formatVndCurrency}
             onClose={handleClosePaymentDialog}
             onConfirm={handleConfirmAndPay}

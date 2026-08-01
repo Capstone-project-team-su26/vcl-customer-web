@@ -1149,3 +1149,31 @@
     grid-column: span 1;
   }
 }
+
+/* =========================================================
+   FIX MODAL DIALOG TYPOGRAPHY & FONT-FAMILY OVERRIDE
+   ========================================================= */
+
+body .quotation-dialog-paper,
+body .quotation-payment-dialog-paper,
+body .quotation-payment-dialog,
+body .quotation-payment-dialog-paper *,
+body .quotation-dialog-paper *,
+body .quotation-payment-dialog * {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+body .quotation-payment-summary .is-consignment {
+  grid-column: 1 / -1;
+  min-height: 50px !important;
+  padding: 8px 12px !important;
+  gap: 2px !important;
+  grid-template-rows: auto auto !important;
+}
+
+body .quotation-payment-summary .is-total,
+body .quotation-payment-summary .is-deposit {
+  min-height: 76px !important;
+  padding: 8px 12px !important;
+  gap: 4px !important;
+}
