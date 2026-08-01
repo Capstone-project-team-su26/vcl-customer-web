@@ -49,6 +49,7 @@ const STATUS_FILTERS = {
   PENDING_REVIEW: "PENDING_REVIEW", // Chờ duyệt
   WAITING_PAYMENT: "WAITING_PAYMENT", // Chờ thanh toán / Đã báo giá
   PAID: "PAID", // Đã thanh toán / Đã xác nhận
+  COMPLETED: "COMPLETED", // Hoàn thành
   REJECTED: "REJECTED", // Đã từ chối / Đã hủy
   PROCESSING: "PROCESSING", // Đang mua hàng
 };
@@ -96,10 +97,12 @@ const getStatusCategory = (status) => {
     .trim()
     .toUpperCase();
 
+  if (normalized === "COMPLETED") {
+    return STATUS_FILTERS.COMPLETED;
+  }
+
   if (
-    ["ACCEPTED", "PAID", "CONFIRMED", "APPROVED", "COMPLETED"].includes(
-      normalized
-    )
+    ["ACCEPTED", "PAID", "CONFIRMED", "APPROVED"].includes(normalized)
   ) {
     return STATUS_FILTERS.PAID;
   }
@@ -280,7 +283,7 @@ const writeTextToClipboard = async (text) => {
    MAIN COMPONENT: BuyOrderHistoryList
    ========================================================= */
 
-const BuyOrderHistoryList = () => {
+const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
   const navigate = useNavigate();
 
   const [rawOrders, setRawOrders] = useState([]);
@@ -289,7 +292,7 @@ const BuyOrderHistoryList = () => {
   // Filters state
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState(STATUS_FILTERS.ALL);
+  const [selectedStatus, setSelectedStatus] = useState(defaultStatus || STATUS_FILTERS.ALL);
   const [dateRangeInput, setDateRangeInput] = useState(null);
 
   // Pagination state

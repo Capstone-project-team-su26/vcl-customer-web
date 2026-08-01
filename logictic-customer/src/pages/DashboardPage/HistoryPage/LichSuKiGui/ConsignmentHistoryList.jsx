@@ -521,7 +521,7 @@ const formatDateUtcTitle = (value) => {
   })}`;
 };
 
-const ConsignmentHistoryList = () => {
+const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
   const navigate = useNavigate();
 
   const [consignments, setConsignments] = useState([]);
@@ -533,7 +533,7 @@ const ConsignmentHistoryList = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [statusInput, setStatusInput] =
-    useState("");
+    useState(defaultStatus || "");
 
   const [dateRangeInput, setDateRangeInput] =
     useState(null);
