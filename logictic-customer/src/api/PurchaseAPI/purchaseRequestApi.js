@@ -930,4 +930,43 @@ export const getPaymentCheckoutUrl = (
   return normalizeText(url);
 };
 
+/**
+ * Lấy lịch sử thanh toán của một yêu cầu mua hộ.
+ * GET /api/purchase-requests/{requestId}/payments
+ */
+export const getPurchaseRequestPaymentHistoryApi = async (
+  requestId,
+  options = {}
+) => {
+  if (!requestId) {
+    throw new Error("Mã yêu cầu mua hộ (requestId) là bắt buộc.");
+  }
+
+  try {
+    const response = await axiosInstance.get(
+      `/api/purchase-requests/${requestId}/payments`,
+      {
+        signal: getSignal(options),
+        headers: {
+          Accept: "application/json, */*",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        `Lỗi lấy lịch sử thanh toán yêu cầu mua hộ [${requestId}]:`,
+        getApiErrorMessage(
+          error,
+          "Không thể lấy lịch sử thanh toán của yêu cầu mua hộ."
+        )
+      );
+    }
+
+    throw error;
+  }
+};
+
 export default createPurchaseRequestApi;

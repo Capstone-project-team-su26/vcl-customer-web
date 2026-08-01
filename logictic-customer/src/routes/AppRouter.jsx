@@ -71,6 +71,7 @@ import BuyForMeQuotationList from "../pages/DashboardPage/CreateCustomer/CheckHa
 import BuyForMeQuotationListDetail from "../pages/DashboardPage/CreateCustomer/CheckHangMuaHo/BuyForMeQuotationListDetail/BuyForMeQuotationListDetail"
 import ConsignmentHistoryList from "../pages/DashboardPage/HistoryPage/LichSuKiGui/ConsignmentHistoryList"
 import BuyOrderHistoryList from "../pages/DashboardPage/HistoryPage/LichSuMuaHo/BuyOrderHistoryList"
+import BuyOrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuMuaHo/BuyPaymentHistoryDetail/BuyOrderPaymentHistory"
 import OrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuKiGui/OrderPaymentHisstory/OrderPaymentHistory"
 import TransactionHistoryTabs from "../pages/DashboardPage/HistoryPage/HistoryGiaoDich/TransactionHistoryTabs"
 import {
@@ -142,8 +143,8 @@ const AppRouter = () => {
         <Route
           path="/offers-announcements-blog"
           element={<OffersAnnouncementsBlog />}
-        />  
-        
+        />
+
         <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/quotation-page" element={<QuotationPage />} />
         <Route path="/about-us" element={<AboutUs />} />
@@ -195,50 +196,66 @@ const AppRouter = () => {
             path="/check-orders/buy-on-behalf/:requestId"
             element={<BuyForMeQuotationListDetail />}
           />
-<Route
-  path="/history/consignment"
-  element={<ConsignmentHistoryList />}
-/>
-<Route
-  path="/history/buy-on-behalf"
-  element={<BuyOrderHistoryList />}
-/>
-<Route
-  path="/history/buy-order"
-  element={<BuyOrderHistoryList />}
-/>
-<Route
-  path="/orders/:orderId/payments/history"
-  element={<OrderPaymentHistory />}
-/>
-<Route
-  path="/transaction-history"
-  element={<TransactionHistoryTabs />}
-/>
-<Route
-  path="/warehouse/inventory"
-  element={<WarehouseInventoryPage />}
-/>
-<Route
-  path="/warehouse/inventory/:shipmentId"
-  element={<WarehouseShipmentDetailPage />}
-/>
-<Route
-  path="/warehouse/export"
-  element={<WarehouseExportPage />}
-/>
-<Route
-  path="/warehouse/customs"
-  element={<CustomsTrackingPage />}
-/>
-<Route
-  path="/warehouse/receipts"
-  element={<WarehouseReceiptPage />}
-/>
-<Route
-  path="/warehouse/receipts/:receiptId"
-  element={<WarehouseReceiptPage />}
-/>
+          <Route
+            path="/history/consignment"
+            element={<ConsignmentHistoryList />}
+          />
+          <Route
+            path="/history/buy-on-behalf"
+            element={<BuyOrderHistoryList />}
+          />
+          <Route
+            path="/history/buy-order"
+            element={<BuyOrderHistoryList />}
+          />
+          <Route
+            path="/orders/:orderId/payments/history"
+            element={<OrderPaymentHistory />}
+          />
+          <Route
+            path="/history/buy-on-behalf/:requestId/payments"
+            element={<BuyOrderPaymentHistory />}
+          />
+          <Route
+            path="/history/buy-order/:requestId/payments"
+            element={<BuyOrderPaymentHistory />}
+          />
+          <Route
+            path="/purchase-requests/:requestId/payments/history"
+            element={<BuyOrderPaymentHistory />}
+          />
+          <Route
+            path="/purchase-requests/:requestId/payments"
+            element={<BuyOrderPaymentHistory />}
+          />
+          <Route
+            path="/transaction-history"
+            element={<TransactionHistoryTabs />}
+          />
+          <Route
+            path="/warehouse/inventory"
+            element={<WarehouseInventoryPage />}
+          />
+          <Route
+            path="/warehouse/inventory/:shipmentId"
+            element={<WarehouseShipmentDetailPage />}
+          />
+          <Route
+            path="/warehouse/export"
+            element={<WarehouseExportPage />}
+          />
+          <Route
+            path="/warehouse/customs"
+            element={<CustomsTrackingPage />}
+          />
+          <Route
+            path="/warehouse/receipts"
+            element={<WarehouseReceiptPage />}
+          />
+          <Route
+            path="/warehouse/receipts/:receiptId"
+            element={<WarehouseReceiptPage />}
+          />
 
 
 

@@ -225,7 +225,7 @@ const getCurrentUserName = () => {
       if (parsed?.fullName) return parsed.fullName;
       if (parsed?.name) return parsed.name;
     }
-  } catch {}
+  } catch { }
   return (
     sessionStorage.getItem("fullName") ||
     sessionStorage.getItem("userName") ||
@@ -406,12 +406,12 @@ const BuyOrderHistoryList = () => {
       const dataArray = Array.isArray(dataObj?.items)
         ? dataObj.items
         : Array.isArray(dataObj)
-        ? dataObj
-        : Array.isArray(response?.items)
-        ? response.items
-        : Array.isArray(response)
-        ? response
-        : [];
+          ? dataObj
+          : Array.isArray(response?.items)
+            ? response.items
+            : Array.isArray(response)
+              ? response
+              : [];
 
       setRawOrders(dataArray);
     } catch (error) {
@@ -427,8 +427,8 @@ const BuyOrderHistoryList = () => {
       AuthNotify.error(
         "Không tải được lịch sử mua hộ",
         error?.response?.data?.message ||
-          error?.message ||
-          "Không thể kết nối đến máy chủ."
+        error?.message ||
+        "Không thể kết nối đến máy chủ."
       );
     } finally {
       if (!signal?.aborted) {
@@ -496,8 +496,8 @@ const BuyOrderHistoryList = () => {
 
         const itemsText = Array.isArray(order.items)
           ? order.items
-              .map((i) => normalizeText(i.productName))
-              .join(" ")
+            .map((i) => normalizeText(i.productName))
+            .join(" ")
           : "";
 
         const isMatch =
@@ -705,7 +705,8 @@ const BuyOrderHistoryList = () => {
             const quotation = order.quotation;
             const items = Array.isArray(order.items) ? order.items : [];
             const isCopied = copiedCode === order.purchaseCode;
-            const requestId = order.purchaseRequestId;
+            const requestId =
+              order.purchaseRequestId || order.id || order.requestId;
 
             return (
               <article
@@ -723,9 +724,8 @@ const BuyOrderHistoryList = () => {
                       {order.purchaseCode && (
                         <button
                           type="button"
-                          className={`card-copy-button ${
-                            isCopied ? "is-copied" : ""
-                          }`}
+                          className={`card-copy-button ${isCopied ? "is-copied" : ""
+                            }`}
                           onClick={() => handleCopyCode(order.purchaseCode)}
                         >
                           {isCopied ? (
@@ -794,7 +794,7 @@ const BuyOrderHistoryList = () => {
                           key={item.itemId || itemIdx}
                         >
                           {Array.isArray(item.imageUrls) &&
-                          item.imageUrls.length > 0 ? (
+                            item.imageUrls.length > 0 ? (
                             <Image
                               src={item.imageUrls[0]}
                               alt={item.productName}
@@ -847,7 +847,7 @@ const BuyOrderHistoryList = () => {
                     endIcon={<ArrowForwardIcon />}
                     onClick={() =>
                       navigate(
-                        `/check-orders/buy-on-behalf/${requestId}`,
+                        `/history/buy-on-behalf/${requestId}/payments`,
                         {
                           state: { purchaseRequest: order },
                         }
@@ -855,7 +855,7 @@ const BuyOrderHistoryList = () => {
                     }
                     className="card-detail-button"
                   >
-                    Xem chi tiết & Thanh toán
+                    Xem lịch sử thanh toán
                   </Button>
                 </div>
               </article>

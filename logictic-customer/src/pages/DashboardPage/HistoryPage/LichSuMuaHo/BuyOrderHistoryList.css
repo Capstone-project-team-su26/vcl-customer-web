@@ -575,6 +575,31 @@
   font-weight: 900;
 }
 
+.buy-order-history-page .card-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.buy-order-history-page .card-history-button.MuiButton-root {
+  min-height: 40px;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  text-transform: none !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+}
+
+.buy-order-history-page .card-history-button.MuiButton-root:hover {
+  background: #f8fafc !important;
+  color: #ea580c !important;
+  border-color: #f97316 !important;
+}
+
 .buy-order-history-page .card-detail-button.MuiButton-root {
   min-height: 40px;
   padding: 0 18px !important;
