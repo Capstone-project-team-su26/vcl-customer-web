@@ -2066,16 +2066,18 @@ export default function ConsignmentOrderConfirm({
                         <div className="confirm-package-card__quick-stats">
                           <div>
                             <span>Số lượng</span>
-                            <strong>{formatNumber(pkg.quantity)}</strong>
+                            <strong>{formatNumber(pkg.quantity)} sản phẩm</strong>
                           </div>
                           <div>
                             <span>Khối lượng</span>
                             <strong>{formatNumber(pkg.weight)} kg</strong>
                           </div>
-                          <div className="is-value">
-                            <span>Giá trị khai báo</span>
-                            <strong>{formatVnd(pkg.declaredValue)}</strong>
-                          </div>
+                          {Number(pkg.declaredValue) > 0 && (
+                            <div className="is-value">
+                              <span>Giá trị khai báo</span>
+                              <strong>{formatVnd(pkg.declaredValue)}</strong>
+                            </div>
+                          )}
                         </div>
                       </header>
 
@@ -2132,12 +2134,14 @@ export default function ConsignmentOrderConfirm({
 
                             <div className="confirm-product-info__specs-table">
                               <div className="specs-row">
-                                <div className="specs-cell">
-                                  <span>Mã vận đơn nội địa:</span>
-                                  <strong className="tracking-code-val">
-                                    {pkg.trackingCode?.trim() || pkg?.domesticTrackingCode?.trim() || "Chưa có mã"}
-                                  </strong>
-                                </div>
+                                {(pkg.trackingCode?.trim() || pkg?.domesticTrackingCode?.trim()) && (
+                                  <div className="specs-cell">
+                                    <span>Mã vận đơn nội địa:</span>
+                                    <strong className="tracking-code-val">
+                                      {pkg.trackingCode?.trim() || pkg?.domesticTrackingCode?.trim()}
+                                    </strong>
+                                  </div>
+                                )}
                                 <div className="specs-cell">
                                   <span>Số lượng:</span>
                                   <strong>{formatNumber(pkg.quantity)} sản phẩm</strong>
@@ -2146,10 +2150,12 @@ export default function ConsignmentOrderConfirm({
                                   <span>Khối lượng:</span>
                                   <strong>{formatNumber(pkg.weight)} kg</strong>
                                 </div>
-                                <div className="specs-cell">
-                                  <span>Giá trị khai báo:</span>
-                                  <strong className="declared-val">{formatVnd(pkg.declaredValue)}</strong>
-                                </div>
+                                {Number(pkg.declaredValue) > 0 && (
+                                  <div className="specs-cell">
+                                    <span>Giá trị khai báo:</span>
+                                    <strong className="declared-val">{formatVnd(pkg.declaredValue)}</strong>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -2185,51 +2191,70 @@ export default function ConsignmentOrderConfirm({
               <div className="consignment-confirm-section-title">
                 <span><SafetyCertificateOutlined /></span>
                 <div>
-                  <h2>Dịch vụ bổ sung ({selectedServices.length})</h2>
-                  <p>Các dịch vụ được đăng ký đi kèm đơn ký gửi.</p>
+                  <h2>Dịch vụ & Tiện ích</h2>
+                  <p>Quy trình vận chuyển & các dịch vụ được đăng ký đi kèm đơn ký gửi.</p>
                 </div>
               </div>
 
-              {selectedServices.length > 0 ? (
-                <div className="consignment-confirm-service-list">
-                  {selectedServices.map((service) => (
-                    <ServiceCard key={service.code} service={service} />
-                  ))}
-                </div>
-              ) : (
-                <div className="consignment-confirm-empty-service">
-                  Không sử dụng dịch vụ bổ sung nào.
-                </div>
-              )}
-
-              {woodCrateSelected && (
+              {(selectedServices.length > 0 || woodCrateSelected) ? (
                 <>
-                  <WoodCrateSummary summary={woodCratePricingSummary} />
-                  {!woodCrateSelectionComplete && (
-                    <div className="consignment-confirm-api-notice is-error" style={{ marginTop: 12 }}>
-                      <InfoCircleOutlined />
-                      <span>
-                        Chưa chọn đủ kích thước thùng gỗ cho các kiện: {missingWoodCratePackages.map((item) => item.productName).join(", ")}.
-                      </span>
+                  {selectedServices.length > 0 && (
+                    <div className="consignment-confirm-service-list">
+                      {selectedServices.map((service) => (
+                        <ServiceCard key={service.code} service={service} />
+                      ))}
                     </div>
                   )}
+
+                  {woodCrateSelected && (
+                    <>
+                      <WoodCrateSummary summary={woodCratePricingSummary} />
+                      {!woodCrateSelectionComplete && (
+                        <div className="consignment-confirm-api-notice is-error" style={{ marginTop: 12 }}>
+                          <InfoCircleOutlined />
+                          <span>
+                            Chưa chọn đủ kích thước thùng gỗ cho các kiện: {missingWoodCratePackages.map((item) => item.productName).join(", ")}.
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </>
+              ) : (
+                <div className="consignment-confirm-service-card is-sapphire">
+                  <div className="service-card-left">
+                    <div className="service-icon-badge">
+                      <CheckOutlined />
+                    </div>
+                    <div className="service-card-info">
+                      <div className="service-card-title-row">
+                        <strong>Vận chuyển tiêu chuẩn</strong>
+                        <span className="service-price-badge">Tiêu chuẩn VCL Việt Nam Logistics</span>
+                      </div>
+                      <p className="service-description" style={{ margin: "4px 0 0 0" }}>
+                        Đơn hàng áp dụng quy trình vận chuyển & theo dõi hành trình tiêu chuẩn của Việt Nam Logistics (VCL).
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Note Section */}
-            <div className="consignment-confirm-section">
-              <div className="consignment-confirm-section-title">
-                <span><InfoCircleOutlined /></span>
-                <div>
-                  <h2>Ghi chú đơn hàng</h2>
-                  <p>Thông tin ghi chú đính kèm cho đơn ký gửi.</p>
+            {/* Note Section - Only show if note is filled */}
+            {Boolean(form.note?.trim()) && (
+              <div className="consignment-confirm-section">
+                <div className="consignment-confirm-section-title">
+                  <span><InfoCircleOutlined /></span>
+                  <div>
+                    <h2>Ghi chú đơn hàng</h2>
+                    <p>Thông tin ghi chú đính kèm cho đơn ký gửi.</p>
+                  </div>
                 </div>
+                <p className="consignment-confirm-note">
+                  {form.note.trim()}
+                </p>
               </div>
-              <p className="consignment-confirm-note">
-                {form.note?.trim() || "Không có ghi chú."}
-              </p>
-            </div>
+            )}
           </div>
 
           {/* Right Column: Receiver Info, Order Cost Breakdown & Confirmation Action */}
@@ -2268,13 +2293,6 @@ export default function ConsignmentOrderConfirm({
                 <div className="sidebar-info-row is-address">
                   <span>Địa chỉ giao hàng</span>
                   <strong>{receiverAddress}</strong>
-                </div>
-
-                <div className="sidebar-info-row">
-                  <span>Yêu cầu kiểm hàng</span>
-                  <Tag color={inspectionRequested ? "green" : "default"}>
-                    {inspectionRequested ? "Có kiểm hàng" : "Không kiểm hàng"}
-                  </Tag>
                 </div>
               </div>
             </div>

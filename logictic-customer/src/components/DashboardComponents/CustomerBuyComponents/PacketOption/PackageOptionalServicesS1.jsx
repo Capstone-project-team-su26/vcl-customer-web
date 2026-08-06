@@ -22,11 +22,14 @@ const VOLUMETRIC_DIVISOR_CODE = "VOLUMETRIC_DIVISOR";
 
 const HIDDEN_RULE_CODES = new Set([
   "DOMESTIC_FEE",
+  "PURCHASE_FEE",
+  "SERVICE_PURCHASE_FEE",
+  "BUYING_FEE",
 ]);
 
-
 const HIDDEN_RULE_IDS = new Set([
-  "0385131b-214c-49b8-9de2-116d62f27111",
+  "0385131b-214c-49b8-9de2-116d62f27111", // DOMESTIC_FEE
+  "35905dcf-4e55-4cc7-ab9a-2453e012fe74", // PURCHASE_FEE / Phí dịch vụ mua hộ
 ]);
 
 const normalizeRuleId = (value) =>
@@ -61,6 +64,7 @@ const RULE_CODE_LABELS = {
   DOMESTIC_FEE: "Phí vận chuyển nội địa",
   SUR_INSPECTION: "Phụ phí kiểm hàng",
   SUR_INSURANCE_3PERCENT: "Phụ phí bảo hiểm",
+  PURCHASE_FEE: "Phí dịch vụ mua hộ",
 };
 
 const RULE_TYPE_LABELS = {
@@ -69,6 +73,7 @@ const RULE_TYPE_LABELS = {
   INSPECTION: "Kiểm hàng",
   INSURANCE: "Bảo hiểm hàng hóa",
   PACKING: "Đóng gói hàng hóa",
+  PURCHASE_FEE: "Dịch vụ mua hộ",
 };
 
 const CONDITION_TYPE_LABELS = {
@@ -128,7 +133,13 @@ const isHiddenRule = (rule) => {
   return (
     HIDDEN_RULE_CODES.has(ruleCode) ||
     HIDDEN_RULE_CODES.has(ruleType) ||
-    HIDDEN_RULE_IDS.has(ruleId)
+    HIDDEN_RULE_IDS.has(ruleId) ||
+    ruleCode.includes("PURCHASE") ||
+    ruleType.includes("PURCHASE") ||
+    ruleCode.includes("VAT") ||
+    ruleType.includes("VAT") ||
+    ruleCode.includes("IMPORT_TAX") ||
+    ruleType.includes("IMPORT_TAX")
   );
 };
 
@@ -138,7 +149,13 @@ const sanitizeSelectedRuleCodes = (value) => {
       normalizeStringArray(value)
         .map(normalizeCode)
         .filter(Boolean)
-        .filter((ruleCode) => !HIDDEN_RULE_CODES.has(ruleCode)),
+        .filter(
+          (ruleCode) =>
+            !HIDDEN_RULE_CODES.has(ruleCode) &&
+            !ruleCode.includes("PURCHASE") &&
+            !ruleCode.includes("VAT") &&
+            !ruleCode.includes("IMPORT_TAX"),
+        ),
     ),
   );
 };

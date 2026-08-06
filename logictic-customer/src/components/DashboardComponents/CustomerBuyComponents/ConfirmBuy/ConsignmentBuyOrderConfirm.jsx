@@ -26,6 +26,7 @@ const SERVICE_CODE_LABELS = {
   WOOD_CRATE: "Đóng thùng gỗ",
   WOOD_BOX: "Đóng thùng gỗ",
   PACKING: "Đóng gói hàng hóa",
+  CARTON_REPACK: "Phí đóng lại kiện carton",
   SUR_PACKING: "Phụ phí đóng gói",
   SUR_INSURANCE_3PERCENT: "Bảo hiểm hàng hóa",
   INSURANCE: "Bảo hiểm hàng hóa",
@@ -35,7 +36,7 @@ const SERVICE_CODE_LABELS = {
   DOMESTIC_FEE: "Phí vận chuyển nội địa",
   LOCAL_FREIGHT_TEMP: "Phí vận chuyển nội địa",
   SUR_INSPECTION: "Phụ phí kiểm hàng",
-  INSPECTION: "Kiểm hàng",
+  INSPECTION: "Kiểm đếm hàng hóa",
 };
 
 const getOptionLabel = (options = [], value) => {
@@ -107,9 +108,9 @@ const normalizeStringArray = (value) => {
 const getReceiverAddress = (form) =>
   getDisplayText(
     form?.selectedDeliveryAddress ||
-      form?.receiverAddress ||
-      form?.deliveryAddress ||
-      form?.address,
+    form?.receiverAddress ||
+    form?.deliveryAddress ||
+    form?.address,
     "Chưa cập nhật",
   );
 
@@ -131,12 +132,12 @@ const getImageUrlFromEntry = (entry) => {
 
   return String(
     entry?.previewUrl ||
-      entry?.url ||
-      entry?.imageUrl ||
-      entry?.fileUrl ||
-      entry?.secureUrl ||
-      entry?.path ||
-      "",
+    entry?.url ||
+    entry?.imageUrl ||
+    entry?.fileUrl ||
+    entry?.secureUrl ||
+    entry?.path ||
+    "",
   ).trim();
 };
 
@@ -169,22 +170,36 @@ const getShortProductLink = (value) => {
   try {
     const url = new URL(fullLink);
     const host = url.hostname.replace(/^www\./, "");
-    const path = `${url.pathname}${url.search}`;
+    let rawPath = `${url.pathname}${url.search}`;
+    let path = rawPath;
+
+    try {
+      path = decodeURIComponent(rawPath);
+    } catch {
+      path = rawPath;
+    }
 
     if (!path || path === "/") {
       return host;
     }
 
     const compactPath =
-      path.length > 54
-        ? `${path.slice(0, 51)}...`
+      path.length > 50
+        ? `${path.slice(0, 47)}...`
         : path;
 
     return `${host}${compactPath}`;
   } catch {
-    return fullLink.length > 68
-      ? `${fullLink.slice(0, 65)}...`
-      : fullLink;
+    let text = fullLink;
+    try {
+      text = decodeURIComponent(fullLink);
+    } catch {
+      text = fullLink;
+    }
+
+    return text.length > 60
+      ? `${text.slice(0, 57)}...`
+      : text;
   }
 };
 
@@ -203,35 +218,74 @@ const getServiceLabel = (code) => {
     );
 };
 
+const getServiceMeta = (code) => {
+  const normalized = normalizeCode(code);
+
+  if (normalized.includes("WOOD")) {
+    return {
+      themeClass: "is-amber",
+      icon: <CheckOutlined />,
+      defaultDescription: "Đóng gói thùng gỗ gia cố chuyên dụng bảo vệ hàng hóa cồng kềnh/dễ vỡ.",
+    };
+  }
+
+  if (normalized.includes("INSURANCE")) {
+    return {
+      themeClass: "is-violet",
+      icon: <SafetyCertificateOutlined />,
+      defaultDescription: "Đơn hàng có đăng ký gói bảo hiểm bảo vệ 100% giá trị.",
+    };
+  }
+
+  if (normalized.includes("PACKING") || normalized.includes("CARTON") || normalized.includes("REPACK")) {
+    return {
+      themeClass: "is-emerald",
+      icon: <CheckOutlined />,
+      defaultDescription: "Bọc màng co và gia cố thùng carton tiêu chuẩn xuất khẩu.",
+    };
+  }
+
+  if (normalized.includes("INSPECTION")) {
+    return {
+      themeClass: "is-sapphire",
+      icon: <CheckOutlined />,
+      defaultDescription: "Kiểm đếm chi tiết số lượng, phân loại thuộc tính và đính kèm ảnh đối soát.",
+    };
+  }
+
+  return {
+    themeClass: "is-sapphire",
+    icon: <CheckOutlined />,
+    defaultDescription: "Dịch vụ bổ sung theo chính sách mua hộ.",
+  };
+};
+
 const ConfirmStatus = ({
-  enabled,
-  enabledText,
-  disabledText,
+  code,
+  title,
   description,
-}) => (
-  <div
-    className={[
-      "purchase-buy-confirm-service-status",
-      enabled ? "is-enabled" : "is-disabled",
-    ].join(" ")}
-  >
-    <span className="purchase-buy-confirm-service-status__icon">
-      {enabled ? (
-        <CheckCircleOutlined />
-      ) : (
-        <CloseOutlined />
-      )}
-    </span>
+  badgeText,
+}) => {
+  const meta = getServiceMeta(code);
+  const displayDesc = description || meta.defaultDescription;
 
-    <span className="purchase-buy-confirm-service-status__content">
-      <strong>
-        {enabled ? enabledText : disabledText}
-      </strong>
-
-      {description && <small>{description}</small>}
-    </span>
-  </div>
-);
+  return (
+    <div className={`purchase-buy-confirm-service-card ${meta.themeClass}`}>
+      <div className="service-card-left">
+        <div className="service-icon-badge">
+          {meta.icon}
+        </div>
+        <div className="service-card-info">
+          <div className="service-card-title-row">
+            <strong>{title}</strong>
+            {badgeText && <span className="service-card-badge">{badgeText}</span>}
+          </div>
+          <p>{displayDesc}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function ConsignmentBuyOrderConfirm({
   form,
@@ -300,31 +354,31 @@ export default function ConsignmentBuyOrderConfirm({
     () =>
       normalizeStringArray(
         optionalServices?.selectedRuleCodes ??
-          optionalServices?.selectedPricingRuleCodes ??
-          optionalServices?.pricingRuleCodes,
+        optionalServices?.selectedPricingRuleCodes ??
+        optionalServices?.pricingRuleCodes,
       ),
     [optionalServices],
   );
 
   const requiresPacking = Boolean(
     optionalServices?.requiresPacking ??
-      form?.requiresPacking,
+    form?.requiresPacking,
   );
 
   const requiresWoodenCrate = Boolean(
     optionalServices?.requiresWoodenCrate ??
-      form?.requiresWoodenCrate,
+    form?.requiresWoodenCrate,
   );
 
   const requiresInsurance = Boolean(
     optionalServices?.requiresInsurance ??
-      form?.requiresInsurance,
+    form?.requiresInsurance,
   );
 
   const woodCratePackageCount =
     Number(
       optionalServices?.woodCratePackageCount ??
-        optionalServices?.woodCrateQuantity,
+      optionalServices?.woodCrateQuantity,
     ) ||
     (requiresWoodenCrate ? items.length : 0);
 
@@ -381,7 +435,7 @@ export default function ConsignmentBuyOrderConfirm({
       ...current,
       index:
         current.index >=
-        current.images.length - 1
+          current.images.length - 1
           ? 0
           : current.index + 1,
     }));
@@ -414,7 +468,7 @@ export default function ConsignmentBuyOrderConfirm({
             <p>
               Kiểm tra đầy đủ tuyến hàng, người nhận,
               dịch vụ, hình ảnh và thông tin từng sản
-              phẩm trước khi gửi yêu cầu đến VCL.
+              phẩm trước khi gửi yêu cầu đến Việt Nam Logistics
             </p>
           </div>
 
@@ -425,25 +479,25 @@ export default function ConsignmentBuyOrderConfirm({
         </section>
 
         <section className="purchase-buy-confirm-summary-grid">
-          <article>
+          <div className="summary-metric-card">
             <span>
               <EnvironmentOutlined />
             </span>
 
             <small>Tuyến vận chuyển</small>
             <strong>{routeLabel}</strong>
-          </article>
+          </div>
 
-          <article>
+          <div className="summary-metric-card">
             <span>
               <GlobalOutlined />
             </span>
 
             <small>Phương thức</small>
             <strong>{shippingOptionLabel}</strong>
-          </article>
+          </div>
 
-          <article>
+          <div className="summary-metric-card">
             <span>
               <ShoppingCartOutlined />
             </span>
@@ -452,9 +506,9 @@ export default function ConsignmentBuyOrderConfirm({
             <strong>
               {formatNumber(items.length)} mặt hàng
             </strong>
-          </article>
+          </div>
 
-          <article>
+          <div className="summary-metric-card">
             <span>
               <CheckOutlined />
             </span>
@@ -463,7 +517,7 @@ export default function ConsignmentBuyOrderConfirm({
             <strong>
               {formatNumber(totalQuantity)} sản phẩm
             </strong>
-          </article>
+          </div>
         </section>
 
         <div className="purchase-buy-confirm-main-grid">
@@ -614,7 +668,7 @@ export default function ConsignmentBuyOrderConfirm({
                         className={[
                           "purchase-buy-confirm-product-body",
                           imageUrls.length === 0 &&
-                            "has-no-image",
+                          "has-no-image",
                         ]
                           .filter(Boolean)
                           .join(" ")}
@@ -623,9 +677,9 @@ export default function ConsignmentBuyOrderConfirm({
                           className={[
                             "purchase-buy-confirm-product-gallery",
                             imageUrls.length === 1 &&
-                              "is-single",
+                            "is-single",
                             imageUrls.length === 2 &&
-                              "is-double",
+                            "is-double",
                           ]
                             .filter(Boolean)
                             .join(" ")}
@@ -644,15 +698,13 @@ export default function ConsignmentBuyOrderConfirm({
                                       productTitle,
                                     )
                                   }
-                                  aria-label={`Xem ảnh ${
-                                    imageIndex + 1
-                                  } của ${productTitle}`}
+                                  aria-label={`Xem ảnh ${imageIndex + 1
+                                    } của ${productTitle}`}
                                 >
                                   <img
                                     src={imageUrl}
-                                    alt={`${productTitle} - ảnh ${
-                                      imageIndex + 1
-                                    }`}
+                                    alt={`${productTitle} - ảnh ${imageIndex + 1
+                                      }`}
                                   />
 
                                   <span className="purchase-buy-confirm-product-image-index">
@@ -692,25 +744,23 @@ export default function ConsignmentBuyOrderConfirm({
                             </span>
                           </div>
 
-                          <dl className="purchase-buy-confirm-product-details">
-                            <div>
-                              <dt>Thuộc tính</dt>
-                              <dd>
-                                {getDisplayText(
-                                  item?.attributes,
-                                )}
-                              </dd>
-                            </div>
+                          {(Boolean(item?.attributes?.trim()) || Boolean(item?.note?.trim())) && (
+                            <div className="purchase-buy-confirm-product-details">
+                              {Boolean(item?.attributes?.trim()) && (
+                                <div className="product-detail-item">
+                                  <span className="product-detail-label">Thuộc tính:</span>
+                                  <strong className="product-detail-value">{item.attributes.trim()}</strong>
+                                </div>
+                              )}
 
-                            <div>
-                              <dt>Ghi chú</dt>
-                              <dd>
-                                {getDisplayText(
-                                  item?.note,
-                                )}
-                              </dd>
+                              {Boolean(item?.note?.trim()) && (
+                                <div className="product-detail-item">
+                                  <span className="product-detail-label">Ghi chú:</span>
+                                  <strong className="product-detail-value">{item.note.trim()}</strong>
+                                </div>
+                              )}
                             </div>
-                          </dl>
+                          )}
 
                           {fullProductLink && (
                             <div className="purchase-buy-confirm-product-link-box">
@@ -759,99 +809,94 @@ export default function ConsignmentBuyOrderConfirm({
                 </span>
 
                 <div>
-                  <h2>Dịch vụ bổ sung</h2>
+                  <h2>Dịch vụ & Tiện ích</h2>
                   <p>
-                    Các dịch vụ và phụ phí đang áp dụng.
+                    Quy trình vận chuyển & các gói dịch vụ đính kèm.
                   </p>
                 </div>
               </div>
 
               <div className="purchase-buy-confirm-service-list">
-                <ConfirmStatus
-                  enabled={requiresPacking}
-                  enabledText="Có đóng gói"
-                  disabledText="Không đóng gói"
-                  description={
-                    requiresPacking
-                      ? "Hàng hóa được yêu cầu đóng gói trước khi vận chuyển."
-                      : "Không sử dụng dịch vụ đóng gói."
-                  }
-                />
-
-                <ConfirmStatus
-                  enabled={requiresWoodenCrate}
-                  enabledText="Có đóng thùng gỗ"
-                  disabledText="Không đóng thùng gỗ"
-                  description={
-                    requiresWoodenCrate
-                      ? `${formatNumber(
-                          woodCratePackageCount,
-                        )} kiện${
-                          Number.isFinite(
-                            woodCrateTotalFee,
-                          ) &&
-                          woodCrateTotalFee > 0
-                            ? ` • ${formatMoney(
-                                woodCrateTotalFee,
-                              )}`
-                            : ""
-                        }`
-                      : "Không sử dụng thùng gỗ."
-                  }
-                />
-
-                <ConfirmStatus
-                  enabled={requiresInsurance}
-                  enabledText="Có bảo hiểm"
-                  disabledText="Không bảo hiểm"
-                  description={
-                    requiresInsurance
-                      ? "Đơn hàng có đăng ký bảo hiểm hàng hóa."
-                      : "Đơn hàng không đăng ký bảo hiểm."
-                  }
-                />
-              </div>
-
-              {selectedRuleCodes.length > 0 && (
-                <div className="purchase-buy-confirm-applied-rules">
-                  <span>Quy tắc phí đã chọn</span>
-
-                  <div>
-                    {selectedRuleCodes.map(
-                      (ruleCode) => (
-                        <em key={ruleCode}>
-                          {getServiceLabel(
-                            ruleCode,
-                          )}
-                        </em>
-                      ),
+                {(requiresPacking || requiresWoodenCrate || requiresInsurance || selectedRuleCodes.length > 0) ? (
+                  <>
+                    {requiresPacking && (
+                      <ConfirmStatus
+                        code="PACKING"
+                        title="Đóng gói hàng hóa"
+                        description="Hàng hóa được bọc màng co và xốp khí gia cố an toàn."
+                      />
                     )}
+
+                    {requiresWoodenCrate && (
+                      <ConfirmStatus
+                        code="WOOD_CRATE"
+                        title="Đóng thùng gỗ"
+                        badgeText={
+                          Number.isFinite(woodCrateTotalFee) && woodCrateTotalFee > 0
+                            ? `${formatNumber(woodCratePackageCount)} kiện • ${formatMoney(woodCrateTotalFee)}`
+                            : `${formatNumber(woodCratePackageCount)} kiện`
+                        }
+                        description="Gia cố thùng gỗ chuyên dụng cho kiện hàng cồng kềnh/dễ vỡ."
+                      />
+                    )}
+
+                    {requiresInsurance && (
+                      <ConfirmStatus
+                        code="INSURANCE"
+                        title="Bảo hiểm hàng hóa"
+                        description="Bảo hiểm an toàn 100% giá trị hàng hóa đối với mọi sự cố."
+                      />
+                    )}
+
+                    {selectedRuleCodes
+                      .filter(code => !["WOOD_CRATE", "WOOD_BOX", "PACKING", "SUR_INSURANCE_3PERCENT", "INSURANCE"].includes(code))
+                      .map(ruleCode => (
+                        <ConfirmStatus
+                          key={ruleCode}
+                          code={ruleCode}
+                          title={getServiceLabel(ruleCode)}
+                        />
+                      ))}
+                  </>
+                ) : (
+                  <div className="purchase-buy-confirm-service-card is-sapphire">
+                    <div className="service-card-left">
+                      <div className="service-icon-badge">
+                        <CheckOutlined />
+                      </div>
+                      <div className="service-card-info">
+                        <div className="service-card-title-row">
+                          <strong>Vận chuyển tiêu chuẩn</strong>
+                          <span className="service-card-badge">Tiêu chuẩn Việt Nam Logistics</span>
+                        </div>
+                        <p>Đơn hàng áp dụng quy trình vận chuyển & theo dõi hành trình tiêu chuẩn của Việt Nam Logistics.</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </section>
-
-            <section className="purchase-buy-confirm-card">
-              <div className="purchase-buy-confirm-card-header">
-                <span className="purchase-buy-confirm-card-icon is-purple">
-                  <FileTextOutlined />
-                </span>
-
-                <div>
-                  <h2>Ghi chú chung</h2>
-                  <p>
-                    Nội dung áp dụng cho toàn bộ yêu cầu.
-                  </p>
-                </div>
-              </div>
-
-              <div className="purchase-buy-confirm-note">
-                {getDisplayText(
-                  form?.generalNote,
-                  "Không có ghi chú chung.",
                 )}
               </div>
             </section>
+
+            {Boolean(form?.generalNote?.trim()) && (
+              <section className="purchase-buy-confirm-card">
+                <div className="purchase-buy-confirm-card-header">
+                  <span className="purchase-buy-confirm-card-icon is-purple">
+                    <FileTextOutlined />
+                  </span>
+
+                  <div>
+                    <h2>Ghi chú chung</h2>
+                    <p>
+                      Nội dung áp dụng cho toàn bộ yêu cầu.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="purchase-buy-confirm-note">
+                  {form.generalNote.trim()}
+                </div>
+              </section>
+            )}
 
             <section className="purchase-buy-confirm-notice">
               <InfoCircleOutlined />
@@ -861,7 +906,7 @@ export default function ConsignmentBuyOrderConfirm({
 
                 <p>
                   Sau khi xác nhận, hệ thống sẽ tải toàn
-                  bộ hình ảnh và tạo yêu cầu mua hộ. VCL
+                  bộ hình ảnh và tạo yêu cầu mua hộ. Việt Nam Logistics
                   sẽ kiểm tra lại liên kết, thuộc tính,
                   số lượng và các dịch vụ đã chọn trước
                   khi báo giá.
@@ -995,7 +1040,7 @@ export default function ConsignmentBuyOrderConfirm({
             </div>
 
             <span className="purchase-buy-confirm-loading-eyebrow">
-              HỆ THỐNG VCL ĐANG XỬ LÝ
+              HỆ THỐNG VIỆT NAM LOGISTICS ĐANG XỬ LÝ
             </span>
 
             <h3>ĐANG TẠO YÊU CẦU MUA HỘ</h3>
