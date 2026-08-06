@@ -3144,6 +3144,14 @@ const QuotationDetail = () => {
 
   const timeItems = [
     {
+      key: "created",
+      label: "Ngày tạo đơn",
+      value:
+        consignmentDetail?.createdAtUtc ||
+        consignmentDetail?.createdAt,
+      dotClass: "created",
+    },
+    {
       key: "quotationCreated",
       label: "Ngày báo giá",
       value:
@@ -3154,20 +3162,13 @@ const QuotationDetail = () => {
       dotClass: "active",
     },
     {
-      key: "created",
-      label: "Ngày tạo đơn",
-      value:
-        consignmentDetail?.createdAtUtc ||
-        consignmentDetail?.createdAt,
-      dotClass: "created",
-    },
-    {
       key: "expired",
       label: "Ngày hết hạn",
       value: quotation.expiredAtUtc || quotation.expiredAt,
       dotClass: hasExpired ? "expired" : "active",
     },
   ].filter((item) => hasUiValue(item.value));
+
 
   return (
     <div
