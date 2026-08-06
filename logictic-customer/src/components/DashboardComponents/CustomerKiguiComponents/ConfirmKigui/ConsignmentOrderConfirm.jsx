@@ -5,6 +5,7 @@ import React, {
 } from "react";
 import {
   CheckCircleOutlined,
+  CheckOutlined,
   EnvironmentOutlined,
   InfoCircleOutlined,
   LeftOutlined,
@@ -1158,7 +1159,9 @@ function ServiceCard({ service }) {
     <article className={`consignment-confirm-service-card ${getServiceClassName(service.code)}`}>
       <div className="service-card-header">
         <div className="service-card-title">
-          <span className="service-dot" />
+          <span className="service-icon-badge">
+            <CheckOutlined />
+          </span>
           <strong className="service-name">{service.label}</strong>
         </div>
         <span className="service-price-badge">{service.priceLabel}</span>
