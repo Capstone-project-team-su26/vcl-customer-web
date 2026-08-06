@@ -939,22 +939,25 @@ const ConsignmentList = () => {
               normalizedSearch
             );
 
-          const createdDate =
+          const targetDate =
             getUtcDateOnly(
-              item.createdAtUtc ||
+              item.quotationCreatedAtUtc ||
+                item.quotationCreatedAt ||
+                item.statusUpdatedAt ||
+                item.createdAtUtc ||
                 item.createdAt
             );
 
           const matchesStartDate =
             !startDate ||
-            (createdDate !== null &&
-              createdDate >=
+            (targetDate !== null &&
+              targetDate >=
                 startDate);
 
           const matchesEndDate =
             !endDate ||
-            (createdDate !== null &&
-              createdDate <=
+            (targetDate !== null &&
+              targetDate <=
                 endDate);
 
           return (
@@ -963,7 +966,22 @@ const ConsignmentList = () => {
             matchesEndDate
           );
         }
-      );
+      ).sort((a, b) => {
+        const getQuotationTime = (item) => {
+          const rawIso =
+            item.quotationCreatedAtUtc ||
+            item.quotationCreatedAt ||
+            item.statusUpdatedAt ||
+            item.createdAtUtc ||
+            item.createdAt;
+
+          if (!rawIso) return 0;
+          const timeMs = new Date(rawIso).getTime();
+          return Number.isNaN(timeMs) ? 0 : timeMs;
+        };
+
+        return getQuotationTime(b) - getQuotationTime(a);
+      });
     }, [
       consignments,
       dateRangeInput,
@@ -1438,6 +1456,25 @@ const ConsignmentList = () => {
                           <strong>
                             {item.receiverName ||
                               "-"}
+                          </strong>
+                        </span>
+
+                        <span
+                          className="tag-quotation-date-badge"
+                          title={formatDateUtcTitle(
+                            item.quotationCreatedAtUtc ||
+                              item.quotationCreatedAt ||
+                              item.statusUpdatedAt
+                          )}
+                        >
+                          🏷️ Ngày báo giá:{" "}
+                          <strong>
+                            {formatDate(
+                              item.quotationCreatedAtUtc ||
+                                item.quotationCreatedAt ||
+                                item.statusUpdatedAt ||
+                                item.createdAt
+                            )}
                           </strong>
                         </span>
 

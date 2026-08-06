@@ -194,19 +194,19 @@ const normalizeStatusOptions = (apiResult) => {
 
       const value = normalizeStatus(
         item?.value ||
-          item?.code ||
-          item?.status ||
-          item?.statusCode ||
-          item?.id,
+        item?.code ||
+        item?.status ||
+        item?.statusCode ||
+        item?.id,
       );
 
       const label = String(
         item?.label ||
-          item?.name ||
-          item?.displayName ||
-          item?.statusName ||
-          item?.description ||
-          formatStatusCode(value),
+        item?.name ||
+        item?.displayName ||
+        item?.statusName ||
+        item?.description ||
+        formatStatusCode(value),
       ).trim();
 
       return {
@@ -271,7 +271,7 @@ const translateSalesNoteService = (
 
   return (
     SALES_NOTE_SERVICE_LABELS[
-      normalizedCode
+    normalizedCode
     ] ||
     translateFeeLabelToVietnamese(
       rawValue
@@ -486,14 +486,14 @@ const normalizeObjectLabel = (value) => {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return String(
       value?.label ||
-        value?.name ||
-        value?.displayName ||
-        value?.productTypeName ||
-        value?.productTypeCode ||
-        value?.code ||
-        value?.value ||
-        value?.id ||
-        "",
+      value?.name ||
+      value?.displayName ||
+      value?.productTypeName ||
+      value?.productTypeCode ||
+      value?.code ||
+      value?.value ||
+      value?.id ||
+      "",
     ).trim();
   }
 
@@ -584,12 +584,12 @@ const normalizeProductTypeOptions = (result) =>
         value: String(item?.value || item?.id || item?.code || "").trim(),
         label: String(
           item?.label ||
-            item?.name ||
-            item?.displayName ||
-            item?.productTypeName ||
-            item?.description ||
-            item?.code ||
-            "",
+          item?.name ||
+          item?.displayName ||
+          item?.productTypeName ||
+          item?.description ||
+          item?.code ||
+          "",
         ).trim(),
       };
     })
@@ -669,11 +669,11 @@ const normalizeItemImages = (source, itemIndex) => {
       typeof image === "string"
         ? image
         : image?.previewUrl ||
-          image?.url ||
-          image?.imageUrl ||
-          image?.referenceUrl ||
-          image?.fileUrl ||
-          image?.src;
+        image?.url ||
+        image?.imageUrl ||
+        image?.referenceUrl ||
+        image?.fileUrl ||
+        image?.src;
 
     const normalizedUrl = String(url || "").trim();
 
@@ -714,51 +714,51 @@ const getItemArrayCandidates = (
   consignmentDetail,
   locationState,
 ) => [
-  consignmentDetail?.items,
-  consignmentDetail?.orderItems,
-  consignmentDetail?.consignmentItems,
-  consignmentDetail?.packages,
-  consignmentDetail?.parcels,
-  consignmentDetail?.products,
-  consignmentDetail?.order?.items,
-  consignmentDetail?.order?.packages,
+    consignmentDetail?.items,
+    consignmentDetail?.orderItems,
+    consignmentDetail?.consignmentItems,
+    consignmentDetail?.packages,
+    consignmentDetail?.parcels,
+    consignmentDetail?.products,
+    consignmentDetail?.order?.items,
+    consignmentDetail?.order?.packages,
 
-  quotation?.items,
-  quotation?.orderItems,
-  quotation?.consignmentItems,
-  quotation?.packages,
-  quotation?.parcels,
-  quotation?.products,
-  quotation?.order?.items,
-  quotation?.order?.orderItems,
-  quotation?.order?.packages,
-  quotation?.consignment?.items,
-  quotation?.consignment?.packages,
+    quotation?.items,
+    quotation?.orderItems,
+    quotation?.consignmentItems,
+    quotation?.packages,
+    quotation?.parcels,
+    quotation?.products,
+    quotation?.order?.items,
+    quotation?.order?.orderItems,
+    quotation?.order?.packages,
+    quotation?.consignment?.items,
+    quotation?.consignment?.packages,
 
-  orderSummary?.items,
-  orderSummary?.orderItems,
-  orderSummary?.consignmentItems,
-  orderSummary?.packages,
-  orderSummary?.parcels,
-  orderSummary?.products,
-  orderSummary?.order?.items,
-  orderSummary?.order?.packages,
+    orderSummary?.items,
+    orderSummary?.orderItems,
+    orderSummary?.consignmentItems,
+    orderSummary?.packages,
+    orderSummary?.parcels,
+    orderSummary?.products,
+    orderSummary?.order?.items,
+    orderSummary?.order?.packages,
 
-  locationState?.items,
-  locationState?.orderItems,
-  locationState?.packages,
-  locationState?.parcels,
-  locationState?.products,
-  locationState?.form?.packages,
-];
+    locationState?.items,
+    locationState?.orderItems,
+    locationState?.packages,
+    locationState?.parcels,
+    locationState?.products,
+    locationState?.form?.packages,
+  ];
 
 const normalizeOrderItem = (item, index) => {
   const source =
     item && typeof item === "object"
       ? item
       : {
-          productName: item,
-        };
+        productName: item,
+      };
 
   const dimensions =
     source?.dimensions ||
@@ -1514,6 +1514,13 @@ const normalizeQuotationTime = (quotation) => {
         )
       ),
 
+    quotationCreatedAtUtc:
+      normalizeApiTimeToUtc(
+        quotation.quotationCreatedAt ||
+        quotation.createdAt ||
+        quotation.updatedAt
+      ),
+
     createdAtUtc:
       normalizeApiTimeToUtc(
         quotation.createdAt
@@ -1534,8 +1541,8 @@ const normalizeQuotationTime = (quotation) => {
         quotation.additionalFees
       )
         ? quotation.additionalFees.map(
-            normalizeAdditionalFeeTime
-          )
+          normalizeAdditionalFeeTime
+        )
         : [],
   };
 };
@@ -2013,7 +2020,7 @@ const resolveSePayCheckoutUrl = (apiResult) => {
   } catch {
     const configuredApiBase = String(
       import.meta.env.VITE_API_BASE_URL ||
-        "https://api-vcl.zushin.io.vn",
+      "https://api-vcl.zushin.io.vn",
     ).trim();
 
     let apiOrigin = "https://api-vcl.zushin.io.vn";
@@ -2682,13 +2689,13 @@ const QuotationDetail = () => {
       Number(displayTotalCost)
     )
       ? Number(displayTotalCost) *
-        depositRate
+      depositRate
       : 0;
 
   const remainingAmount =
     Math.max(
       Number(displayTotalCost) -
-        depositAmount,
+      depositAmount,
       0,
     );
 
@@ -3085,7 +3092,7 @@ const QuotationDetail = () => {
     "Yêu cầu kiểm hàng",
     typeof orderDisplayData
       .requiresInspection ===
-      "boolean",
+    "boolean",
     getBooleanLabel(
       orderDisplayData
         .requiresInspection
@@ -3137,9 +3144,21 @@ const QuotationDetail = () => {
 
   const timeItems = [
     {
+      key: "quotationCreated",
+      label: "Ngày báo giá",
+      value:
+        quotation.quotationCreatedAtUtc ||
+        quotation.quotationCreatedAt ||
+        quotation.createdAtUtc ||
+        quotation.createdAt,
+      dotClass: "active",
+    },
+    {
       key: "created",
-      label: "Ngày tạo báo giá",
-      value: quotation.createdAtUtc || quotation.createdAt,
+      label: "Ngày tạo đơn",
+      value:
+        consignmentDetail?.createdAtUtc ||
+        consignmentDetail?.createdAt,
       dotClass: "created",
     },
     {
@@ -3194,7 +3213,7 @@ const QuotationDetail = () => {
                     className={[
                       "quotation-copy-code-button",
                       copiedConsignmentCode === displayConsignmentCode &&
-                        "is-copied",
+                      "is-copied",
                     ]
                       .filter(Boolean)
                       .join(" ")}
@@ -3226,31 +3245,46 @@ const QuotationDetail = () => {
             </div>
 
             {(hasUiValue(quotation.quoteType) ||
-              hasUiValue(quotation.createdAtUtc || quotation.createdAt)) && (
-              <div className="quotation-meta-row">
-                {hasUiValue(quotation.quoteType) && (
-                  <span>
-                    Loại báo giá
-                    <strong>{getQuoteTypeLabel(quotation.quoteType)}</strong>
-                  </span>
-                )}
+              hasUiValue(quotation.quotationCreatedAtUtc || quotation.quotationCreatedAt || quotation.createdAtUtc || quotation.createdAt)) && (
+                <div className="quotation-meta-row">
+                  {hasUiValue(quotation.quoteType) && (
+                    <span>
+                      Loại báo giá
+                      <strong>{getQuoteTypeLabel(quotation.quoteType)}</strong>
+                    </span>
+                  )}
 
-                {hasUiValue(quotation.createdAtUtc || quotation.createdAt) && (
-                  <span>
-                    Ngày tạo
-                    <strong
-                      title={formatDateTimeUtcTitle(
-                        quotation.createdAtUtc || quotation.createdAt,
-                      )}
-                    >
-                      {formatDateTime(
-                        quotation.createdAtUtc || quotation.createdAt,
-                      )}
-                    </strong>
-                  </span>
-                )}
-              </div>
-            )}
+                  {hasUiValue(quotation.quotationCreatedAtUtc || quotation.quotationCreatedAt || quotation.createdAtUtc || quotation.createdAt) && (
+                    <span>
+                      Ngày báo giá
+                      <strong
+                        title={formatDateTimeUtcTitle(
+                          quotation.quotationCreatedAtUtc || quotation.quotationCreatedAt || quotation.createdAtUtc || quotation.createdAt,
+                        )}
+                      >
+                        {formatDateTime(
+                          quotation.quotationCreatedAtUtc || quotation.quotationCreatedAt || quotation.createdAtUtc || quotation.createdAt,
+                        )}
+                      </strong>
+                    </span>
+                  )}
+
+                  {hasUiValue(consignmentDetail?.createdAtUtc || consignmentDetail?.createdAt) && (
+                    <span>
+                      Ngày tạo đơn
+                      <strong
+                        title={formatDateTimeUtcTitle(
+                          consignmentDetail?.createdAtUtc || consignmentDetail?.createdAt,
+                        )}
+                      >
+                        {formatDateTime(
+                          consignmentDetail?.createdAtUtc || consignmentDetail?.createdAt,
+                        )}
+                      </strong>
+                    </span>
+                  )}
+                </div>
+              )}
           </div>
         </div>
 
@@ -3341,23 +3375,22 @@ const QuotationDetail = () => {
                 className="quotation-product-card"
               >
                 <header className="quotation-product-card-header">
-                  <span className="quotation-product-index">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
+                  <div className="quotation-product-card-header-left">
+                    <span className="quotation-product-index">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
 
-                  <div>
-                    <small>Sản phẩm {index + 1}</small>
+                    <div>
+                      <small>Sản phẩm {index + 1}</small>
 
-                    <h3>{item.productName}</h3>
+                      <h3>{item.productName}</h3>
 
-                    {hasUiValue(item.productTypeLabel) && (
-                      <p>{item.productTypeLabel}</p>
-                    )}
+                      {hasUiValue(item.productTypeLabel) && (
+                        <p>{item.productTypeLabel}</p>
+                      )}
+                    </div>
                   </div>
 
-                  {hasUiValue(item.configurationName) && (
-                    <Tag color="geekblue">{item.configurationName}</Tag>
-                  )}
                 </header>
 
                 <ProductInfoGrid item={item} />
@@ -3378,50 +3411,59 @@ const QuotationDetail = () => {
                   </div>
                 )}
 
-                {item.images.length > 0 && (
-                  <div className="quotation-product-images">
-                    <div className="quotation-product-images-title">
-                      <span>Hình ảnh sản phẩm</span>
+                {(item.images.length > 0 ||
+                  item.configurationName ||
+                  item.configurationCode) && (
+                    <div className="quotation-product-support-grid">
+                      {item.images.length > 0 && (
+                        <div className="quotation-product-images">
+                          <div className="quotation-product-images-title">
+                            <span>Hình ảnh sản phẩm</span>
+                            <strong>{item.images.length} ảnh</strong>
+                          </div>
 
-                      <strong>{item.images.length} ảnh</strong>
-                    </div>
+                          <div className="quotation-product-images-grid">
+                            <Image.PreviewGroup>
+                              {item.images.map((image, imageIndex) => (
+                                <Image
+                                  key={image.id}
+                                  src={image.url}
+                                  width={112}
+                                  height={112}
+                                  alt={`Sản phẩm ${index + 1} - ảnh ${imageIndex + 1}`}
+                                  style={{
+                                    objectFit: "cover",
+                                    borderRadius: 10,
+                                    display: "block",
+                                  }}
+                                  preview={{ mask: "Xem" }}
+                                />
+                              ))}
+                            </Image.PreviewGroup>
+                          </div>
+                        </div>
+                      )}
 
-                    <Image.PreviewGroup>
-                      <div className="quotation-product-images-grid">
-                        {item.images.map((image, imageIndex) => (
-                          <Image
-                            key={image.id}
-                            src={image.url}
-                            alt={`Sản phẩm ${index + 1} - ảnh ${imageIndex + 1}`}
-                            className="quotation-product-image"
-                            preview={{
-                              mask: "Xem ảnh",
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </Image.PreviewGroup>
-                  </div>
-                )}
+                      {(item.configurationName || item.configurationCode) && (
+                        <div className="quotation-product-configuration">
+                          <span>Cấu hình đóng gói</span>
 
-                {(item.configurationName || item.configurationCode) && (
-                  <div className="quotation-product-configuration">
-                    <span>Cấu hình đóng gói</span>
+                          <div>
+                            <strong>
+                              {item.configurationName ||
+                                formatStatusCode(item.configurationCode)}
+                            </strong>
 
-                    <div>
-                      <strong>
-                        {item.configurationName ||
-                          formatStatusCode(item.configurationCode)}
-                      </strong>
-
-                      {item.configurationFee !== null && (
-                        <small>
-                          Giá cấu hình: {formatMoney(item.configurationFee)}
-                        </small>
+                            {item.configurationFee !== null && (
+                              <small>
+                                Giá cấu hình: {formatMoney(item.configurationFee)}
+                              </small>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
+                  )}
               </article>
             ))}
           </div>
@@ -3568,215 +3610,146 @@ const QuotationDetail = () => {
         </section>
       </div>
 
+      {/* HIDDEN: Danh sách phụ phí — ẩn theo yêu cầu
       <section className="quotation-card quotation-fees-detail-section">
-        <div className="quotation-section-header">
-          <div className="quotation-section-icon cost">
-            <PaymentsOutlinedIcon />
-          </div>
-
-          <div>
-            <h2>Danh sách phụ phí</h2>
-
-            <p>Tên phí, cách tính, số lượng và trạng thái áp dụng</p>
-          </div>
-        </div>
-
-        {(!costSummary.serviceBreakdownMatches ||
-          !costSummary.totalMatches) && (
-          <div className="quotation-reconciliation-notice is-warning">
-            <InfoOutlinedIcon />
-
-            <div>
-              <strong>Dữ liệu chi phí chưa khớp</strong>
-
-              <span>
-                Phí dịch vụ API: {formatMoney(costSummary.serviceFee)}. Tổng chi
-                tiết dịch vụ: {formatMoney(costSummary.additionalFeesTotal)}.
-              </span>
-            </div>
-          </div>
-        )}
-
-        {reconciledCostItems.length === 0 ? (
-          <div className="quotation-fee-empty">
-            Báo giá hiện tại không có phụ phí.
-          </div>
-        ) : (
-          <div className="quotation-fees-detail-grid">
-            {reconciledCostItems.map((fee) => (
-              <article
-                key={fee.key}
-                className={[
-                  "quotation-fee-detail-card",
-                  !fee.enabled && "is-disabled",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <div className="quotation-fee-detail-header">
-                  <div>
-                    <span className="quotation-fee-code">
-                      {getFeeCodeLabel(fee.code)}
-                    </span>
-
-                    <h3>{getFeeLabel(fee.raw || fee)}</h3>
-                  </div>
-
-                  <strong>{formatMoney(fee.value)}</strong>
-                </div>
-
-                <div className="quotation-fee-tags">
-                  <Tag color={fee.enabled ? "green" : "default"}>
-                    {fee.enabled ? "Đã tính trong phí dịch vụ" : "Chưa áp dụng"}
-                  </Tag>
-
-                  <Tag color={fee.required ? "red" : "blue"}>
-                    {fee.required ? "Bắt buộc" : "Tùy chọn"}
-                  </Tag>
-
-                  <Tag color="gold">{fee.calculationType}</Tag>
-                </div>
-
-                <FeeDetailGrid fee={fee} />
-              </article>
-            ))}
-          </div>
-        )}
+        ...
       </section>
+      */}
+
 
       {(timeItems.length > 0 ||
         hasUiValue(
           displaySalesNote
         )) && (
-        <div className="quotation-bottom-grid">
-          {timeItems.length > 0 && (
-            <section className="quotation-card">
-              <div className="quotation-section-header">
-                <div className="quotation-section-icon time">
-                  <AccessTimeOutlinedIcon />
-                </div>
+          <div className="quotation-bottom-grid">
+            {timeItems.length > 0 && (
+              <section className="quotation-card">
+                <div className="quotation-section-header">
+                  <div className="quotation-section-icon time">
+                    <AccessTimeOutlinedIcon />
+                  </div>
 
-                <div>
-                  <h2>
-                    Thời gian hiệu lực
-                  </h2>
-
-                  <p>
-                    Thời điểm tạo và hết hạn báo giá
-                  </p>
-                </div>
-              </div>
-
-              <div className="quotation-time-line">
-                {timeItems.map(
-                  (item, index) => (
-                    <React.Fragment
-                      key={item.key}
-                    >
-                      {index > 0 && (
-                        <div className="quotation-time-connector" />
-                      )}
-
-                      <div className="quotation-time-item">
-                        <span
-                          className={`quotation-time-dot ${item.dotClass}`}
-                        />
-
-                        <div>
-                          <span>
-                            {item.label}
-                          </span>
-
-                          <strong
-                            title={formatDateTimeUtcTitle(
-                              item.value
-                            )}
-                          >
-                            {formatDateTime(
-                              item.value
-                            )}
-                          </strong>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  )
-                )}
-              </div>
-            </section>
-          )}
-
-          {hasUiValue(
-            displaySalesNote
-          ) && (
-            <section className="quotation-card quotation-sale-note-card">
-              <div className="quotation-section-header">
-                <div className="quotation-section-icon note">
-                  <ReceiptLongOutlinedIcon />
-                </div>
-
-                <div>
-                  <h2>
-                    Ghi chú từ nhân viên Sale
-                  </h2>
-
-                  <p>
-                    Thông tin bổ sung từ bộ phận báo giá
-                  </p>
-                </div>
-              </div>
-
-              <div className="quotation-sales-note">
-                {hasUiValue(
-                  saleNoteData.summary
-                ) && (
-                  <div className="quotation-sales-note__summary">
-                    <span>
-                      Nội dung từ Sale
-                    </span>
+                  <div>
+                    <h2>
+                      Thời gian hiệu lực
+                    </h2>
 
                     <p>
-                      {saleNoteData.summary}
+                      Thời điểm tạo và hết hạn báo giá
                     </p>
                   </div>
-                )}
+                </div>
 
-                {saleNoteData
-                  .requirements.length >
-                  0 && (
-                  <div className="quotation-sales-note__requirements">
-                    {saleNoteData.requirements.map(
-                      (requirement) => (
-                        <div
-                          key={
-                            requirement.key
-                          }
-                          className={`quotation-sales-note__item is-${requirement.type}`}
-                        >
-                          <span className="quotation-sales-note__dot" />
+                <div className="quotation-time-line">
+                  {timeItems.map(
+                    (item, index) => (
+                      <React.Fragment
+                        key={item.key}
+                      >
+                        {index > 0 && (
+                          <div className="quotation-time-connector" />
+                        )}
+
+                        <div className="quotation-time-item">
+                          <span
+                            className={`quotation-time-dot ${item.dotClass}`}
+                          />
 
                           <div>
-                            <small>
-                              {
-                                requirement.label
-                              }
-                            </small>
+                            <span>
+                              {item.label}
+                            </span>
 
-                            <strong>
-                              {
-                                requirement.value
-                              }
+                            <strong
+                              title={formatDateTimeUtcTitle(
+                                item.value
+                              )}
+                            >
+                              {formatDateTime(
+                                item.value
+                              )}
                             </strong>
                           </div>
                         </div>
-                      )
-                    )}
+                      </React.Fragment>
+                    )
+                  )}
+                </div>
+              </section>
+            )}
+
+            {hasUiValue(
+              displaySalesNote
+            ) && (
+                <section className="quotation-card quotation-sale-note-card">
+                  <div className="quotation-section-header">
+                    <div className="quotation-section-icon note">
+                      <ReceiptLongOutlinedIcon />
+                    </div>
+
+                    <div>
+                      <h2>
+                        Ghi chú từ nhân viên Sale
+                      </h2>
+
+                      <p>
+                        Thông tin bổ sung từ bộ phận báo giá
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
+
+                  <div className="quotation-sales-note">
+                    {hasUiValue(
+                      saleNoteData.summary
+                    ) && (
+                        <div className="quotation-sales-note__summary">
+                          <span>
+                            Nội dung từ Sale
+                          </span>
+
+                          <p>
+                            {saleNoteData.summary}
+                          </p>
+                        </div>
+                      )}
+
+                    {saleNoteData
+                      .requirements.length >
+                      0 && (
+                        <div className="quotation-sales-note__requirements">
+                          {saleNoteData.requirements.map(
+                            (requirement) => (
+                              <div
+                                key={
+                                  requirement.key
+                                }
+                                className={`quotation-sales-note__item is-${requirement.type}`}
+                              >
+                                <span className="quotation-sales-note__dot" />
+
+                                <div>
+                                  <small>
+                                    {
+                                      requirement.label
+                                    }
+                                  </small>
+
+                                  <strong>
+                                    {
+                                      requirement.value
+                                    }
+                                  </strong>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
+                  </div>
+                </section>
+              )}
+          </div>
+        )}
       {showQuotationActions && (
         <aside
           className={[

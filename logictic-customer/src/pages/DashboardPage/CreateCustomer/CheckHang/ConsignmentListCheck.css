@@ -1752,3 +1752,44 @@
     font-size: 13px;
   }
 }
+
+/* =========================================================
+   QUOTATION DATE BADGE STYLING
+   ========================================================= */
+
+.tag-quotation-date-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 12px !important;
+  color: #b45309 !important;
+  background-color: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(180, 83, 9, 0.08) !important;
+  transition: all 0.2s ease !important;
+}
+
+.tag-quotation-date-badge:hover {
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  box-shadow: 0 3px 8px rgba(180, 83, 9, 0.14) !important;
+}
+
+.tag-quotation-date-badge strong {
+  color: #92400e !important;
+  font-weight: 800 !important;
+}
+
+.consignment-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.consignment-card:hover {
+  border-color: #93c5fd !important;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.09) !important;
+  transform: translateY(-2px) !important;
+}

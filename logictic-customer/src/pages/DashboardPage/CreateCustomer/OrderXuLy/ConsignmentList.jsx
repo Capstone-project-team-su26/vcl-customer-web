@@ -92,9 +92,9 @@ const collectProductNames = (source) => {
 
     return collectProductNames(
       source.items ||
-        source.productNames ||
-        source.itemNames ||
-        []
+      source.productNames ||
+      source.itemNames ||
+      []
     );
   }
 
@@ -347,8 +347,8 @@ const ConsignmentList = () => {
             ? "Tải lại dữ liệu thất bại"
             : "Không tải được danh sách ký gửi",
           error?.response?.data?.message ||
-            error?.message ||
-            "Không thể tải danh sách ký gửi."
+          error?.message ||
+          "Không thể tải danh sách ký gửi."
         );
 
         setConsignments([]);
@@ -446,7 +446,7 @@ const ConsignmentList = () => {
   const filteredConsignments = useMemo(() => {
     const normalizedSearch = normalizeText(searchInput);
 
-  
+
     const startDate =
       dateRangeInput?.[0]?.format(
         "YYYY-MM-DD"
@@ -521,7 +521,7 @@ const ConsignmentList = () => {
     1,
     Math.ceil(
       filteredConsignments.length /
-        DEFAULT_PAGE_SIZE
+      DEFAULT_PAGE_SIZE
     )
   );
 
@@ -544,7 +544,7 @@ const ConsignmentList = () => {
     }
   }, [pageNumber, totalPages]);
 
- 
+
 
   const handleSearchChange = (event) => {
     setSearchInput(event.target.value);
@@ -746,8 +746,8 @@ const ConsignmentList = () => {
 
   const hasActiveFilter = Boolean(
     searchInput.trim() ||
-      (dateRangeInput?.[0] &&
-        dateRangeInput?.[1])
+    (dateRangeInput?.[0] &&
+      dateRangeInput?.[1])
   );
 
   /* =========================================================
@@ -826,7 +826,7 @@ const ConsignmentList = () => {
             className={[
               "filter-reset-button",
               (loading) &&
-                "is-loading",
+              "is-loading",
             ]
               .filter(Boolean)
               .join(" ")}
@@ -850,7 +850,7 @@ const ConsignmentList = () => {
         <>
           <div className="card-list">
             {visibleConsignments.length ===
-            0 ? (
+              0 ? (
               <div className="empty-container">
                 <div className="empty-icon">
                   📭
@@ -932,8 +932,8 @@ const ConsignmentList = () => {
                                 className={[
                                   "copy-tracking-button",
                                   copiedTrackingCode ===
-                                    getTrackingCode(item) &&
-                                    "is-copied",
+                                  getTrackingCode(item) &&
+                                  "is-copied",
                                 ]
                                   .filter(Boolean)
                                   .join(" ")}
@@ -949,7 +949,7 @@ const ConsignmentList = () => {
                                 }
                               >
                                 {copiedTrackingCode ===
-                                getTrackingCode(item) ? (
+                                  getTrackingCode(item) ? (
                                   <>
                                     <CheckRoundedIcon />
                                     <span>Đã chép</span>
@@ -1017,14 +1017,14 @@ const ConsignmentList = () => {
                         <span
                           title={formatDateUtcTitle(
                             item.createdAtUtc ||
-                              item.createdAt
+                            item.createdAt
                           )}
                         >
                           📅 Ngày tạo:{" "}
                           <strong>
                             {formatDate(
                               item.createdAtUtc ||
-                                item.createdAt
+                              item.createdAt
                             )}
                           </strong>
                         </span>
@@ -1070,7 +1070,7 @@ const ConsignmentList = () => {
                                   className={[
                                     "product-name-list",
                                     productNames.length === 1 &&
-                                      "is-single",
+                                    "is-single",
                                   ]
                                     .filter(Boolean)
                                     .join(" ")}
@@ -1181,37 +1181,37 @@ const ConsignmentList = () => {
 
           {filteredConsignments.length >
             0 && (
-            <div className="pagination-section">
-              <span className="pagination-summary">
-                Hiển thị{" "}
-                <strong>
-                  {
-                    visibleConsignments.length
-                  }
-                </strong>{" "}
-                mục trên trang này, tổng cộng{" "}
-                <strong>
-                  {
-                    filteredConsignments.length
-                  }
-                </strong>{" "}
-                mục
-              </span>
+              <div className="pagination-section">
+                <span className="pagination-summary">
+                  Hiển thị{" "}
+                  <strong>
+                    {
+                      visibleConsignments.length
+                    }
+                  </strong>{" "}
+                  mục trên trang này, tổng cộng{" "}
+                  <strong>
+                    {
+                      filteredConsignments.length
+                    }
+                  </strong>{" "}
+                  mục
+                </span>
 
-              <Pagination
-                count={totalPages}
-                page={pageNumber}
-                onChange={
-                  handlePageChange
-                }
-                disabled={loading}
-                color="primary"
-                shape="rounded"
-                showFirstButton
-                showLastButton
-              />
-            </div>
-          )}
+                <Pagination
+                  count={totalPages}
+                  page={pageNumber}
+                  onChange={
+                    handlePageChange
+                  }
+                  disabled={loading}
+                  color="primary"
+                  shape="rounded"
+                  showFirstButton
+                  showLastButton
+                />
+              </div>
+            )}
         </>
       )}
     </div>
