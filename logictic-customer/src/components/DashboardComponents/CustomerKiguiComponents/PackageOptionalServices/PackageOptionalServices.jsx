@@ -21,11 +21,16 @@ const WOOD_CRATE_CODE = "WOOD_CRATE";
 const INSURANCE_CODE = "SUR_INSURANCE_3PERCENT";
 
 /*
- * Các quy tắc chỉ dùng để hệ thống tính phí,
- * không hiển thị trong danh sách dịch vụ để khách hàng lựa chọn.
+ * Các quy tắc chỉ dùng để hệ thống tính phí hoặc dành riêng cho dịch vụ Mua Hộ,
+ * không hiển thị trong danh sách dịch vụ bổ sung để khách hàng Ký Gửi lựa chọn.
  */
 const HIDDEN_RULE_CODES = new Set([
   "DOMESTIC_FEE",
+  "PURCHASE_FEE",
+  "PURCHASE_FEE_FIXED",
+  "PURCHASE_FEE_PERCENT",
+  "VAT",
+  "IMPORT_TAX",
 ]);
 
 /*
@@ -127,7 +132,13 @@ const isHiddenRule = (rule) => {
   return (
     HIDDEN_RULE_CODES.has(ruleCode) ||
     HIDDEN_RULE_CODES.has(ruleType) ||
-    HIDDEN_RULE_IDS.has(ruleId)
+    HIDDEN_RULE_IDS.has(ruleId) ||
+    ruleCode.includes("PURCHASE") ||
+    ruleType.includes("PURCHASE") ||
+    ruleCode.includes("VAT") ||
+    ruleType.includes("VAT") ||
+    ruleCode.includes("IMPORT_TAX") ||
+    ruleType.includes("IMPORT_TAX")
   );
 };
 
@@ -137,7 +148,13 @@ const sanitizeSelectedRuleCodes = (value) => {
       normalizeStringArray(value)
         .map(normalizeCode)
         .filter(Boolean)
-        .filter((ruleCode) => !HIDDEN_RULE_CODES.has(ruleCode)),
+        .filter(
+          (ruleCode) =>
+            !HIDDEN_RULE_CODES.has(ruleCode) &&
+            !ruleCode.includes("PURCHASE") &&
+            !ruleCode.includes("VAT") &&
+            !ruleCode.includes("IMPORT_TAX"),
+        ),
     ),
   );
 };

@@ -155,6 +155,12 @@ const PACKAGE_CONFIGURATION_LABELS = {
 
 const HIDDEN_SERVICE_CODES = new Set([
   "VOLUMETRIC_DIVISOR",
+  "DOMESTIC_FEE",
+  "PURCHASE_FEE",
+  "PURCHASE_FEE_FIXED",
+  "PURCHASE_FEE_PERCENT",
+  "VAT",
+  "IMPORT_TAX",
 ]);
 
 const normalizeCode = (value) =>
@@ -1147,200 +1153,94 @@ function SummaryItem({
   );
 }
 
-function ServiceCard({
-  service,
-}) {
+function ServiceCard({ service }) {
   return (
-    <article
-      className={[
-        "consignment-confirm-service-card",
-        getServiceClassName(
-          service.code,
-        ),
-      ].join(" ")}
-    >
-      <div className="consignment-confirm-service-card__heading">
-        <span className="consignment-confirm-service-dot" />
-
-        <div>
-          <strong>
-            {service.label}
-          </strong>
-
-          <small>
-            {service.priceLabel}
-          </small>
+    <article className={`consignment-confirm-service-card ${getServiceClassName(service.code)}`}>
+      <div className="service-card-header">
+        <div className="service-card-title">
+          <span className="service-dot" />
+          <strong className="service-name">{service.label}</strong>
         </div>
+        <span className="service-price-badge">{service.priceLabel}</span>
       </div>
-
       {service.description && (
-        <p>
-          {service.description}
-        </p>
+        <p className="service-description">{service.description}</p>
       )}
     </article>
   );
 }
 
-function WoodCrateSummary({
-  summary,
-}) {
+function WoodCrateSummary({ summary }) {
   if (!summary?.enabled) {
     return null;
   }
 
   return (
-    <section className="consignment-confirm-wood-summary is-order-scope">
-      <div className="consignment-confirm-wood-summary__header">
-        <div className="consignment-confirm-wood-summary__icon">
-          <SafetyCertificateOutlined />
+    <section className="consignment-confirm-wood-summary">
+      <div className="wood-summary-header">
+        <div className="wood-summary-title">
+          <SafetyCertificateOutlined className="wood-summary-icon" />
+          <div>
+            <h4>Chi phí đóng thùng gỗ đơn hàng</h4>
+            <p>Phí dịch vụ 35.000 ₫ tính 1 lần/đơn + Tổng giá kích thước thùng của các kiện hàng.</p>
+          </div>
         </div>
-
-        <div className="consignment-confirm-wood-summary__title">
-          <span>
-            CHI PHÍ ĐÓNG THÙNG GỖ
-          </span>
-
-          <h3>
-            Phí dịch vụ tính một lần cho toàn bộ đơn
-          </h3>
-
-          <p>
-            Phí 35.000 ₫ không nhân theo số kiện.
-            Mỗi kiện chỉ cộng thêm giá kích thước
-            thùng đã chọn cho sản phẩm đó.
-          </p>
-        </div>
-
-        <Tag className="consignment-confirm-wood-summary__count">
-          {summary.selectedCount}/
-          {summary.packageCount} kiện đã chọn thùng
+        <Tag color="orange" className="wood-summary-count-tag">
+          {summary.selectedCount}/{summary.packageCount} kiện đã chọn thùng
         </Tag>
       </div>
 
-      <div className="consignment-confirm-wood-summary__pricing">
-        <div className="consignment-confirm-wood-price-card is-order-fee">
-          <PriceInfoLabel
-            label="Phí dịch vụ đóng thùng gỗ"
-            tooltip="Khoản phí cố định được tính một lần cho toàn bộ đơn ký gửi, không nhân với số lượng kiện."
-          />
-
-          <strong>
-            {formatVnd(
-              summary.orderServiceFee,
-            )}
-          </strong>
-
-          <small>
-            Tính 1 lần / toàn bộ đơn
-          </small>
+      <div className="wood-cost-formula-bar">
+        <div className="wood-cost-step">
+          <span className="cost-step-label">Phí dịch vụ đóng thùng toàn đơn</span>
+          <strong className="cost-step-val">{formatVnd(summary.orderServiceFee)}</strong>
         </div>
-
-        <div className="consignment-confirm-wood-price-card is-box-fee">
-          <PriceInfoLabel
-            label="Tổng giá thùng theo kiện"
-            tooltip="Tổng giá SMALL, MEDIUM, LARGE hoặc CUSTOM đã chọn riêng cho từng kiện hàng."
-          />
-
-          <strong>
-            {formatVnd(
-              summary.configurationFee,
-            )}
-          </strong>
-
-          <small>
-            Cộng giá thùng của từng sản phẩm
-          </small>
+        <span className="cost-formula-op">+</span>
+        <div className="wood-cost-step">
+          <span className="cost-step-label">Tổng giá thùng theo kiện</span>
+          <strong className="cost-step-val">{formatVnd(summary.configurationFee)}</strong>
         </div>
-
-        <div className="consignment-confirm-wood-price-card is-total">
-          <PriceInfoLabel
-            label="Tổng phí đóng thùng gỗ"
-            tooltip="Phí dịch vụ toàn đơn cộng tổng giá cấu hình thùng của tất cả kiện."
-          />
-
-          <strong>
-            {formatVnd(
-              summary.totalFee,
-            )}
-          </strong>
-
-          <small>
-            Phí toàn đơn + giá thùng từng kiện
-          </small>
+        <span className="cost-formula-op">=</span>
+        <div className="wood-cost-step is-total-step">
+          <span className="cost-step-label">Tổng phí đóng thùng gỗ</span>
+          <strong className="cost-step-total">{formatVnd(summary.totalFee)}</strong>
         </div>
       </div>
 
       {summary.rows.length > 0 && (
-        <div className="consignment-confirm-wood-breakdown">
-          <div className="consignment-confirm-wood-breakdown__title">
-            <div>
-              <strong>
-                Chi tiết kích thước thùng theo sản phẩm
-              </strong>
-
-              <span>
-                Mỗi dòng tương ứng một kiện hàng.
-              </span>
-            </div>
+        <div className="wood-itemized-breakdown">
+          <div className="wood-breakdown-head">
+            <span className="wood-breakdown-title-badge">CHI TIẾT THEO KIỆN HÀNG</span>
+            <p>Phân bổ kích thước thùng gỗ và chi phí tương ứng của từng kiện</p>
           </div>
-
-          <div className="consignment-confirm-wood-breakdown__list">
-            {summary.rows.map(
-              (row) => (
-                <div
-                  key={row.packageId}
-                  className="consignment-confirm-wood-breakdown__row"
-                >
-                  <span className="consignment-confirm-wood-breakdown__index">
-                    {row.packageIndex}
-                  </span>
-
-                  <div className="consignment-confirm-wood-breakdown__product">
-                    <strong>
-                      {row.productName}
-                    </strong>
-
-                    <small>
-                      Kiện: {row.packageDimensions}
-                    </small>
+          <div className="wood-breakdown-rows">
+            {summary.rows.map((row) => (
+              <div key={row.packageId} className="wood-breakdown-row">
+                <div className="wood-row-left">
+                  <span className="wood-row-num">#{row.packageIndex}</span>
+                  <div className="wood-row-product-info">
+                    <strong className="wood-row-product-name">{row.productName}</strong>
+                    <span className="wood-row-sub">Kích thước kiện hàng: {row.packageDimensions}</span>
                   </div>
-
-                  <div className="consignment-confirm-wood-breakdown__configuration">
-                    <Tag>
-                      {row.configurationSize}
-                    </Tag>
-
-                    <span>
-                      {row.configurationName}
-                    </span>
-
-                    <small>
-                      Thùng: {row.configurationDimensions}
-                    </small>
-                  </div>
-
-                  <strong className="consignment-confirm-wood-breakdown__fee">
-                    {formatVnd(
-                      row.packageFee,
-                    )}
-                  </strong>
                 </div>
-              ),
-            )}
+
+                <div className="wood-row-center">
+                  <Tag color="blue" className="wood-size-tag">{row.configurationSize}</Tag>
+                  <div className="wood-row-config-info">
+                    <strong className="wood-config-name">{row.configurationName}</strong>
+                    <span className="wood-row-sub">Kích thước thùng gỗ: {row.configurationDimensions}</span>
+                  </div>
+                </div>
+
+                <div className="wood-row-right">
+                  <span className="wood-price-label">Giá thùng kiện này</span>
+                  <strong className="wood-row-price">{formatVnd(row.packageFee)}</strong>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
-
-      <div className="consignment-confirm-wood-summary__note">
-        <InfoCircleOutlined />
-
-        <span>
-          Phí dịch vụ đóng thùng gỗ chỉ xuất hiện một
-          lần trong tổng đơn. Giá hiển thị tại từng kiện
-          bên dưới chỉ là giá kích thước thùng của kiện đó.
-        </span>
-      </div>
     </section>
   );
 }
@@ -1354,168 +1254,38 @@ function PackageConfigurationCard({
     return null;
   }
 
-  const {
-    name,
-    size,
-  } = getConfigurationDisplay(
-    selectedConfiguration,
-  );
-
-  const packageFee =
-    getConfigurationFee(
-      selectedConfiguration,
-    );
-
-  const productName =
-    String(
-      pkg?.productName ||
-        `Kiện hàng ${packageIndex}`,
-    ).trim();
-
-  const isCustomConfiguration =
-    normalizeCode(
-      selectedConfiguration
-        ?.configCode,
-    ) === "CUSTOM";
-
-  const boxLength =
-    isCustomConfiguration
-      ? pkg?.length
-      : selectedConfiguration
-          ?.length;
-
-  const boxWidth =
-    isCustomConfiguration
-      ? pkg?.width
-      : selectedConfiguration
-          ?.width;
-
-  const boxHeight =
-    isCustomConfiguration
-      ? pkg?.height
-      : selectedConfiguration
-          ?.height;
+  const { name, size } = getConfigurationDisplay(selectedConfiguration);
+  const packageFee = getConfigurationFee(selectedConfiguration);
+  const isCustomConfiguration = normalizeCode(selectedConfiguration?.configCode) === "CUSTOM";
+  const boxLength = isCustomConfiguration ? pkg?.length : selectedConfiguration?.length;
+  const boxWidth = isCustomConfiguration ? pkg?.width : selectedConfiguration?.width;
+  const boxHeight = isCustomConfiguration ? pkg?.height : selectedConfiguration?.height;
 
   return (
-    <section className="confirm-box-config">
-      <div className="confirm-box-config__header">
-        <div className="confirm-box-config__title">
-          <span className="confirm-box-config__icon">
-            <SafetyCertificateOutlined />
-          </span>
-
-          <div>
-            <small>
-              THÔNG TIN CẤU HÌNH ĐÓNG THÙNG
-            </small>
-
-            <h4>
-              {productName}
-            </h4>
-
-            <p>
-              Cấu hình đã chọn cho kiện{" "}
-              {packageIndex}
+    <div className="confirm-box-config">
+      <div className="confirm-box-config__main-row">
+        <div className="confirm-box-config__info">
+          <SafetyCertificateOutlined className="confirm-box-config__icon" />
+          <div className="confirm-box-config__details">
+            <div className="confirm-box-config__title-line">
+              <span className="confirm-box-config__label">Cấu hình đóng thùng gỗ:</span>
+              <strong className="confirm-box-config__name">{name}</strong>
+              <Tag color="blue" className="confirm-box-config__tag">{size}</Tag>
+            </div>
+            <p className="confirm-box-config__specs">
+              Kích thước thùng: <strong>{formatNumber(boxLength)} × {formatNumber(boxWidth)} × {formatNumber(boxHeight)} cm</strong>
+              <span className="dot-divider">•</span>
+              Tải trọng tối đa: <strong>{formatNumber(selectedConfiguration?.maxWeight)} kg</strong>
             </p>
           </div>
         </div>
 
-        <Tag className="confirm-box-config__size">
-          {size}
-        </Tag>
-      </div>
-
-      <div className="confirm-box-config__content">
-        <div className="confirm-box-config__main">
-          <span>
-            Loại thùng
-          </span>
-
-          <strong>
-            {name}
-          </strong>
-
-          <p>
-            {isCustomConfiguration
-              ? "Thùng được đóng theo kích thước thực tế của kiện hàng."
-              : "Kích thước thùng được lấy từ cấu hình đã chọn trên hệ thống."}
-          </p>
-        </div>
-
-        <div className="confirm-box-config__dimensions">
-          <div>
-            <span>Chiều dài thùng</span>
-
-            <strong>
-              {formatNumber(
-                boxLength,
-              )}{" "}
-              cm
-            </strong>
-          </div>
-
-          <div>
-            <span>Chiều rộng thùng</span>
-
-            <strong>
-              {formatNumber(
-                boxWidth,
-              )}{" "}
-              cm
-            </strong>
-          </div>
-
-          <div>
-            <span>Chiều cao thùng</span>
-
-            <strong>
-              {formatNumber(
-                boxHeight,
-              )}{" "}
-              cm
-            </strong>
-          </div>
-
-          <div>
-            <span>Tải trọng tối đa</span>
-
-            <strong>
-              {formatNumber(
-                selectedConfiguration
-                  ?.maxWeight,
-              )}{" "}
-              kg
-            </strong>
-          </div>
-        </div>
-
-        <div className="confirm-box-config__price">
-          <span>
-            Giá thùng của kiện này
-          </span>
-
-          <strong>
-            {formatVnd(packageFee)}
-          </strong>
-
-          <small>
-            Không bao gồm phí dịch vụ đóng
-            thùng gỗ tính một lần cho toàn đơn.
-          </small>
+        <div className="confirm-box-config__price-pill">
+          <span className="price-pill-label">Giá thùng kiện này</span>
+          <strong className="price-pill-value">{formatVnd(packageFee)}</strong>
         </div>
       </div>
-
-      <div className="confirm-box-config__note">
-        <InfoCircleOutlined />
-
-        <span>
-          Phí 35.000 ₫ của dịch vụ đóng
-          thùng gỗ chỉ tính một lần cho đơn.
-          Khu vực này chỉ hiển thị giá kích
-          thước thùng của sản phẩm.
-        </span>
-      </div>
-    </section>
+    </div>
   );
 }
 
@@ -1731,7 +1501,10 @@ export default function ConsignmentOrderConfirm({
           !requestedCode ||
           HIDDEN_SERVICE_CODES.has(
             requestedCode,
-          )
+          ) ||
+          requestedCode.includes("PURCHASE") ||
+          requestedCode.includes("VAT") ||
+          requestedCode.includes("IMPORT_TAX")
         ) {
           return;
         }
@@ -2172,6 +1945,7 @@ export default function ConsignmentOrderConfirm({
   return (
     <div className="consignment-confirm-page">
       <div className="consignment-confirm-shell">
+        {/* Top bar with Stepper */}
         <div className="consignment-confirm-topbar">
           <button
             type="button"
@@ -2180,803 +1954,414 @@ export default function ConsignmentOrderConfirm({
             onClick={onBack}
           >
             <LeftOutlined />
-            QUAY LẠI CHỈNH SỬA
+            <span>Quay lại chỉnh sửa</span>
           </button>
+
+          <div className="consignment-confirm-stepper">
+            <span className="stepper-step is-completed">
+              <CheckCircleOutlined /> 1. Tạo đơn
+            </span>
+            <span className="stepper-divider" />
+            <span className="stepper-step is-active">
+              <ShoppingOutlined /> 2. Xác nhận thông tin
+            </span>
+            <span className="stepper-divider" />
+            <span className="stepper-step">
+              <CheckCircleOutlined /> 3. Hoàn tất
+            </span>
+          </div>
 
           <div className="consignment-confirm-status">
             <CheckCircleOutlined />
-            THÔNG TIN ĐÃ HỢP LỆ
+            <span>Thông tin hợp lệ</span>
           </div>
         </div>
 
+        {/* Hero Banner Header */}
         <div className="consignment-confirm-hero">
-          <div className="consignment-confirm-hero-icon">
-            <ShoppingOutlined />
-          </div>
-
           <div className="consignment-confirm-hero-copy">
             <span className="consignment-confirm-hero-eyebrow">
-              XÁC NHẬN ĐƠN KÝ GỬI
+              XÁC NHẬN TẠO ĐƠN KÝ GỬI
             </span>
-
-            <h1>
-              Kiểm tra lại toàn bộ thông tin
-              trước khi tạo đơn
-            </h1>
-
+            <h1>Kiểm tra thông tin chi tiết lô hàng</h1>
             <p>
-              Hãy kiểm tra người nhận, tuyến vận
-              chuyển, dịch vụ bổ sung, giá đóng
-              thùng và thông tin từng kiện.
+              Vui lòng xem lại thông tin người nhận, tuyến hàng, dịch vụ bổ sung và các kiện hàng trước khi gửi yêu cầu.
             </p>
           </div>
 
           <div className="consignment-confirm-hero-stats">
             <div>
               <span>Số kiện</span>
-              <strong>
-                {packages.length}
-              </strong>
+              <strong>{packages.length}</strong>
             </div>
-
             <div>
-              <span>Dịch vụ</span>
-              <strong>
-                {
-                  selectedServices.length
-                }
-              </strong>
+              <span>Tổng sản phẩm</span>
+              <strong>{formatNumber(totals.quantity)}</strong>
             </div>
-
             <div>
-              <span>Ảnh sản phẩm</span>
-              <strong>
-                {totals.images}
-              </strong>
+              <span>Tổng khối lượng</span>
+              <strong>{formatNumber(totals.weight)} kg</strong>
+            </div>
+            <div>
+              <span>Số dịch vụ</span>
+              <strong>{selectedServices.length}</strong>
             </div>
           </div>
         </div>
 
+        {/* Notices */}
         {masterDataLoading && (
           <div className="consignment-confirm-api-notice is-loading">
             <LoadingOutlined spin />
-
-            <span>
-              Đang tải tên dịch vụ, mức giá
-              và cấu hình thùng...
-            </span>
+            <span>Đang tải tên dịch vụ, mức giá và cấu hình thùng...</span>
           </div>
         )}
 
-        {!masterDataLoading &&
-          masterDataError && (
-            <div className="consignment-confirm-api-notice is-error">
-              <InfoCircleOutlined />
-
-              <span>
-                Không thể tải đầy đủ tên dịch vụ,
-                mức giá hoặc cấu hình thùng.
-                Vui lòng quay lại và thử lại.
-              </span>
-            </div>
-          )}
-
-        <div className="consignment-confirm-section">
-          <div className="consignment-confirm-section-title">
-            <span>
-              <EnvironmentOutlined />
-            </span>
-
-            <div>
-              <h2>
-                Thông tin giao nhận
-              </h2>
-
-              <p>
-                Tuyến vận chuyển và thông tin
-                người nhận cuối cùng.
-              </p>
-            </div>
+        {!masterDataLoading && masterDataError && (
+          <div className="consignment-confirm-api-notice is-error">
+            <InfoCircleOutlined />
+            <span>Không thể tải đầy đủ tên dịch vụ, mức giá hoặc cấu hình thùng. Vui lòng quay lại và thử lại.</span>
           </div>
+        )}
 
-          <div className="consignment-confirm-summary-grid">
-            <SummaryItem
-              label="Tuyến hàng"
-              value={routeLabel}
-              tone="route"
-            />
-
-            <SummaryItem
-              label="Hình thức vận chuyển"
-              value={shippingLabel}
-              tone="shipping"
-            />
-
-            <SummaryItem
-              label="Người nhận"
-              value={
-                form.receiverName
-              }
-            />
-
-            <SummaryItem
-              label="Số điện thoại"
-              value={
-                form.receiverPhone
-              }
-            />
-
-            <SummaryItem
-              label="Địa chỉ nhận hàng"
-              value={receiverAddress}
-              fullWidth
-            />
-
-            <SummaryItem
-              label="Yêu cầu kiểm hàng"
-              value={
-                inspectionRequested
-                  ? "Có yêu cầu kiểm hàng"
-                  : "Không yêu cầu kiểm hàng"
-              }
-              tone={
-                inspectionRequested
-                  ? "success"
-                  : "neutral"
-              }
-            />
-
-            <SummaryItem
-              label="Số dịch vụ bổ sung"
-              value={`${selectedServices.length} dịch vụ`}
-              tone="service"
-            />
-          </div>
-        </div>
-
-        <div className="consignment-confirm-section">
-          <div className="consignment-confirm-section-title">
-            <span>
-              <SafetyCertificateOutlined />
-            </span>
-
-            <div>
-              <h2>
-                Dịch vụ bổ sung
-              </h2>
-
-              <p>
-                Tên dịch vụ và mức giá được
-                đối chiếu từ bảng giá hệ thống.
-              </p>
-            </div>
-          </div>
-
-          {selectedServices.length >
-          0 ? (
-            <div className="consignment-confirm-service-list">
-              {selectedServices.map(
-                (service) => (
-                  <ServiceCard
-                    key={
-                      service.code
-                    }
-                    service={
-                      service
-                    }
-                  />
-                ),
-              )}
-            </div>
-          ) : (
-            <div className="consignment-confirm-empty-service">
-              Không sử dụng dịch vụ bổ sung.
-            </div>
-          )}
-
-          {woodCrateSelected && (
-            <>
-              <WoodCrateSummary
-                summary={
-                  woodCratePricingSummary
-                }
-              />
-
-              {!woodCrateSelectionComplete && (
-                <div className="consignment-confirm-api-notice is-error">
-                  <InfoCircleOutlined />
-                  <span>
-                    Đã chọn đóng thùng gỗ nên bắt buộc chọn kích thước cho tất cả kiện. Còn thiếu: {missingWoodCratePackages
-                      .map((item) => item.productName)
-                      .join(", ")}.
-                  </span>
+        {/* 2-Column Checkout Review Layout Grid */}
+        <div className="consignment-confirm-main-grid">
+          {/* Left Column: Packages, Services & Notes */}
+          <div className="consignment-confirm-left-col">
+            {/* Packages Section */}
+            <div className="consignment-confirm-section">
+              <div className="consignment-confirm-section-title">
+                <span><ShoppingOutlined /></span>
+                <div>
+                  <h2>Danh sách kiện hàng ({packages.length} kiện)</h2>
+                  <p>Chi tiết từng kiện hàng, mã vận đơn, thông số kích thước và ảnh sản phẩm.</p>
                 </div>
-              )}
-            </>
-          )}
-        </div>
+              </div>
 
-        <div className="consignment-confirm-totals">
-          <div className="consignment-confirm-total-card is-package">
-            <span>Tổng số kiện</span>
+              <div className="consignment-confirm-package-list">
+                {packages.map((pkg, index) => {
+                  const packageVolume = calculatePackageVolume(pkg);
+                  const images = normalizePackageImages(pkg);
+                  const packageId = getPackageId(pkg, index);
+                  const selectedConfiguration = selectedConfigurationByPackage.get(packageId) || null;
+                  const productName = String(pkg?.productName || "Chưa có tên sản phẩm").trim();
+                  const productTypeLabel = getOptionLabel(productTypeOptions, pkg.productType, "productType");
 
-            <strong>
-              {packages.length}
-            </strong>
-          </div>
-
-          <div className="consignment-confirm-total-card is-quantity">
-            <span>
-              Tổng số lượng sản phẩm
-            </span>
-
-            <strong>
-              {formatNumber(
-                totals.quantity,
-              )}
-            </strong>
-          </div>
-
-          <div className="consignment-confirm-total-card is-weight">
-            <span>
-              Tổng khối lượng
-            </span>
-
-            <strong>
-              {formatNumber(
-                totals.weight,
-              )}{" "}
-              kg
-            </strong>
-          </div>
-
-          <div className="consignment-confirm-total-card is-volume">
-            <span>
-              Tổng thể tích
-            </span>
-
-            <strong>
-              {formatNumber(
-                totals.volume,
-              )}{" "}
-              cm³
-            </strong>
-          </div>
-
-          <div className="consignment-confirm-total-card is-value">
-            <span>
-              Tổng giá trị khai báo
-            </span>
-
-            <strong>
-              {formatVnd(
-                totals.declaredValue,
-              )}
-            </strong>
-          </div>
-
-          {woodCrateSelected && (
-            <div className="consignment-confirm-total-card is-wood-total">
-              <span>
-                Tổng phí đóng thùng
-              </span>
-
-              <strong>
-                {formatVnd(
-                  woodCratePricingSummary
-                    .totalFee,
-                )}
-              </strong>
-            </div>
-          )}
-        </div>
-
-        <div className="consignment-confirm-section">
-          <div className="consignment-confirm-section-title">
-            <span>
-              <ShoppingOutlined />
-            </span>
-
-            <div>
-              <h2>
-                Danh sách kiện hàng
-              </h2>
-
-              <p>
-                {woodCrateSelected
-                  ? "Chi tiết sản phẩm, kích thước kiện, cấu hình thùng và hình ảnh."
-                  : "Chi tiết sản phẩm, kích thước kiện và hình ảnh."}
-              </p>
-            </div>
-          </div>
-
-          <div className="consignment-confirm-package-list">
-            {packages.map(
-              (pkg, index) => {
-                const packageVolume =
-                  calculatePackageVolume(
-                    pkg,
-                  );
-
-                const images =
-                  normalizePackageImages(
-                    pkg,
-                  );
-
-                const packageId =
-                  getPackageId(
-                    pkg,
-                    index,
-                  );
-
-                const selectedConfiguration =
-                  selectedConfigurationByPackage.get(
-                    packageId,
-                  ) || null;
-
-                const productName =
-                  String(
-                    pkg?.productName ||
-                      "Chưa có tên sản phẩm",
-                  ).trim();
-
-                const productTypeLabel =
-                  getOptionLabel(
-                    productTypeOptions,
-                    pkg.productType,
-                    "productType",
-                  );
-
-                return (
-                  <article
-                    key={packageId}
-                    className="confirm-package-card"
-                  >
-                    <header className="confirm-package-card__header">
-                      <div className="confirm-package-card__identity">
-                        <span className="confirm-package-card__number">
-                          {String(
-                            index + 1,
-                          ).padStart(
-                            2,
-                            "0",
-                          )}
-                        </span>
-
-                        <div>
-                          <small>
-                            KIỆN HÀNG THỨ{" "}
-                            {index + 1}
-                          </small>
-
-                          <h3>
-                            {productName}
-                          </h3>
-
-                          <p>
-                            {woodCrateSelected
-                              ? "Kiểm tra hình ảnh, thông tin sản phẩm, kích thước kiện và cấu hình thùng trước khi xác nhận."
-                              : "Kiểm tra hình ảnh, thông tin sản phẩm và kích thước kiện trước khi xác nhận."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="confirm-package-card__quick-stats">
-                        <div>
-                          <span>Số lượng</span>
-
-                          <strong>
-                            {formatNumber(
-                              pkg.quantity,
-                            )}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <span>Khối lượng</span>
-
-                          <strong>
-                            {formatNumber(
-                              pkg.weight,
-                            )}{" "}
-                            kg
-                          </strong>
-                        </div>
-
-                        <div className="is-value">
-                          <span>
-                            Giá trị khai báo
+                  return (
+                    <article key={packageId} className="confirm-package-card">
+                      <header className="confirm-package-card__header">
+                        <div className="confirm-package-card__identity">
+                          <span className="confirm-package-card__number">
+                            {String(index + 1).padStart(2, "0")}
                           </span>
-
-                          <strong>
-                            {formatVnd(
-                              pkg.declaredValue,
-                            )}
-                          </strong>
+                          <div>
+                            <small>KIỆN HÀNG #{index + 1}</small>
+                            <h3>{productName}</h3>
+                          </div>
                         </div>
-                      </div>
-                    </header>
 
-                    <div className="confirm-package-card__body">
-                      <div className="confirm-package-overview">
-                        <section className="confirm-package-media">
-                          <div className="confirm-package-block-title">
-                            <div>
-                              <span>
-                                HÌNH ẢNH SẢN PHẨM
+                        <div className="confirm-package-card__quick-stats">
+                          <div>
+                            <span>Số lượng</span>
+                            <strong>{formatNumber(pkg.quantity)}</strong>
+                          </div>
+                          <div>
+                            <span>Khối lượng</span>
+                            <strong>{formatNumber(pkg.weight)} kg</strong>
+                          </div>
+                          <div className="is-value">
+                            <span>Giá trị khai báo</span>
+                            <strong>{formatVnd(pkg.declaredValue)}</strong>
+                          </div>
+                        </div>
+                      </header>
+
+                      <div className="confirm-package-card__body">
+                        <div className="confirm-package-overview">
+                          <section className="confirm-package-media">
+                            <div className="confirm-package-block-title">
+                              <span className="media-title-label">HÌNH ẢNH SẢN PHẨM</span>
+                              <span className="media-count-badge">
+                                {images.length > 0 ? `${images.length} ảnh` : "Chưa có ảnh"}
                               </span>
-
-                              <strong>
-                                {images.length >
-                                0
-                                  ? `${images.length} ảnh đã tải lên`
-                                  : "Chưa có hình ảnh"}
-                              </strong>
                             </div>
 
-                            <Tag>
-                              KIỆN {index + 1}
-                            </Tag>
-                          </div>
-
-                          {images.length > 0 ? (
-                            <>
+                            {images.length > 0 ? (
                               <Image.PreviewGroup>
                                 <Carousel
                                   className="confirm-package-carousel"
-                                  autoplay={
-                                    images.length >
-                                    1
-                                  }
-                                  autoplaySpeed={
-                                    3200
-                                  }
+                                  autoplay={images.length > 1}
+                                  autoplaySpeed={3200}
                                   pauseOnHover
-                                  dots={
-                                    images.length >
-                                    1
-                                  }
+                                  dots={images.length > 1}
                                 >
-                                  {images.map(
-                                    (
-                                      image,
-                                      imageIndex,
-                                    ) => (
-                                      <div
-                                        key={
-                                          image.id
-                                        }
-                                        className="confirm-package-carousel__slide"
-                                      >
-                                        <Image
-                                          src={
-                                            image.previewUrl
-                                          }
-                                          alt={`Ảnh ${
-                                            imageIndex +
-                                            1
-                                          } của ${productName}`}
-                                          className="confirm-package-carousel__image"
-                                          preview={{
-                                            mask:
-                                              "Xem ảnh",
-                                          }}
-                                        />
-
-                                        <span className="confirm-package-carousel__counter">
-                                          Ảnh{" "}
-                                          {imageIndex +
-                                            1}
-                                          /
-                                          {
-                                            images.length
-                                          }
-                                        </span>
-                                      </div>
-                                    ),
-                                  )}
+                                  {images.map((image, imageIndex) => (
+                                    <div key={image.id} className="confirm-package-carousel__slide">
+                                      <Image
+                                        src={image.previewUrl}
+                                        alt={`Ảnh ${imageIndex + 1} của ${productName}`}
+                                        className="confirm-package-carousel__image"
+                                        preview={{ mask: "Xem ảnh" }}
+                                      />
+                                      <span className="confirm-package-carousel__counter">
+                                        Ảnh {imageIndex + 1}/{images.length}
+                                      </span>
+                                    </div>
+                                  ))}
                                 </Carousel>
                               </Image.PreviewGroup>
-
-                              <div className="confirm-package-media__footer">
-                                <InfoCircleOutlined />
-
-                                <span>
-                                  Bấm vào ảnh để xem
-                                  kích thước lớn.
-                                </span>
+                            ) : (
+                              <div className="confirm-package-media__empty">
+                                <ShoppingOutlined />
+                                <strong>Chưa có hình ảnh</strong>
+                                <span>Chưa tải lên ảnh đính kèm.</span>
                               </div>
-                            </>
-                          ) : (
-                            <div className="confirm-package-media__empty">
-                              <ShoppingOutlined />
+                            )}
+                          </section>
 
-                              <strong>
-                                Chưa có hình ảnh
-                              </strong>
-
-                              <span>
-                                Kiện hàng này chưa tải
-                                lên ảnh sản phẩm.
-                              </span>
-                            </div>
-                          )}
-                        </section>
-
-                        <section className="confirm-product-info">
-                          <div className="confirm-package-block-title">
-                            <div>
-                              <span>
-                                THÔNG TIN SẢN PHẨM
-                              </span>
-
-                              <strong>
-                                Chi tiết kiện hàng
-                              </strong>
-                            </div>
-
-                            <Tag className="confirm-product-info__type-tag">
-                              {productTypeLabel}
-                            </Tag>
-                          </div>
-
-                          <div className="confirm-product-info__grid">
-                            <div className="is-product-name">
-                              <span>
-                                Tên sản phẩm
-                              </span>
-
-                              <strong>
-                                {productName}
-                              </strong>
-                            </div>
-
-                            <div>
-                              <span>
-                                Loại hàng hóa
-                              </span>
-
-                              <strong>
-                                {
-                                  productTypeLabel
-                                }
-                              </strong>
-                            </div>
-
-                            <div>
-                              <span>
-                                Số lượng sản phẩm
-                              </span>
-
-                              <strong>
-                                {formatNumber(
-                                  pkg.quantity,
-                                )}
-                              </strong>
-                            </div>
-
-                            <div>
-                              <span>
-                                Khối lượng kiện
-                              </span>
-
-                              <strong>
-                                {formatNumber(
-                                  pkg.weight,
-                                )}{" "}
-                                kg
-                              </strong>
-                            </div>
-
-                            <div className="is-tracking">
-                              <span>
-                                Mã vận đơn nội địa
-                              </span>
-
-                              <strong>
-                                {pkg.trackingCode
-                                  ?.trim() ||
-                                  pkg
-                                    ?.domesticTrackingCode
-                                    ?.trim() ||
-                                  "Chưa có mã vận đơn"}
-                              </strong>
-                            </div>
-
-                            <div className="is-declared-value">
-                              <span>
-                                Giá trị khai báo
-                              </span>
-
-                              <strong>
-                                {formatVnd(
-                                  pkg.declaredValue,
-                                )}
-                              </strong>
-                            </div>
-                          </div>
-
-                          <div className="confirm-package-dimensions">
-                            <div className="confirm-package-dimensions__header">
-                              <div>
-                                <span>
-                                  KÍCH THƯỚC KIỆN HÀNG
-                                </span>
-
-                                <strong>
-                                  Dài × Rộng × Cao
-                                </strong>
-                              </div>
-
-                              <small>
-                                Đơn vị: cm
-                              </small>
-                            </div>
-
-                            <div className="confirm-package-dimensions__grid">
-                              <div className="is-length">
-                                <span>
-                                  Chiều dài
-                                </span>
-
-                                <strong>
-                                  {formatNumber(
-                                    pkg.length,
-                                  )}
-                                </strong>
-
-                                <small>cm</small>
-                              </div>
-
-                              <div className="is-width">
-                                <span>
-                                  Chiều rộng
-                                </span>
-
-                                <strong>
-                                  {formatNumber(
-                                    pkg.width,
-                                  )}
-                                </strong>
-
-                                <small>cm</small>
-                              </div>
-
-                              <div className="is-height">
-                                <span>
-                                  Chiều cao
-                                </span>
-
-                                <strong>
-                                  {formatNumber(
-                                    pkg.height,
-                                  )}
-                                </strong>
-
-                                <small>cm</small>
-                              </div>
-
-                              <div className="is-volume">
-                                <span>
-                                  Thể tích
-                                </span>
-
-                                <strong>
-                                  {formatNumber(
-                                    packageVolume,
-                                  )}
-                                </strong>
-
-                                <small>
-                                  cm³
-                                </small>
+                          <section className="confirm-product-info">
+                            <div className="confirm-product-info__header">
+                              <div className="product-title-group">
+                                <h3>{productName}</h3>
+                                <Tag color="blue">{productTypeLabel}</Tag>
                               </div>
                             </div>
-                          </div>
-                        </section>
-                      </div>
 
-                      {woodCrateSelected &&
-                        selectedConfiguration && (
+                            <div className="confirm-product-info__specs-table">
+                              <div className="specs-row">
+                                <div className="specs-cell">
+                                  <span>Mã vận đơn nội địa:</span>
+                                  <strong className="tracking-code-val">
+                                    {pkg.trackingCode?.trim() || pkg?.domesticTrackingCode?.trim() || "Chưa có mã"}
+                                  </strong>
+                                </div>
+                                <div className="specs-cell">
+                                  <span>Số lượng:</span>
+                                  <strong>{formatNumber(pkg.quantity)} sản phẩm</strong>
+                                </div>
+                                <div className="specs-cell">
+                                  <span>Khối lượng:</span>
+                                  <strong>{formatNumber(pkg.weight)} kg</strong>
+                                </div>
+                                <div className="specs-cell">
+                                  <span>Giá trị khai báo:</span>
+                                  <strong className="declared-val">{formatVnd(pkg.declaredValue)}</strong>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="confirm-package-dimensions-bar">
+                              <div className="dim-bar-left">
+                                <span className="dim-bar-label">Kích thước kiện hàng (Dài × Rộng × Cao):</span>
+                                <strong className="dim-bar-val">{formatNumber(pkg.length)} × {formatNumber(pkg.width)} × {formatNumber(pkg.height)} cm</strong>
+                              </div>
+                              <div className="dim-bar-right">
+                                <span className="dim-bar-label">Thể tích:</span>
+                                <strong className="dim-bar-volume">{formatNumber(packageVolume)} cm³</strong>
+                              </div>
+                            </div>
+                          </section>
+                        </div>
+
+                        {woodCrateSelected && selectedConfiguration && (
                           <PackageConfigurationCard
                             pkg={pkg}
-                            packageIndex={
-                              index + 1
-                            }
-                            selectedConfiguration={
-                              selectedConfiguration
-                            }
+                            packageIndex={index + 1}
+                            selectedConfiguration={selectedConfiguration}
                           />
                         )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
 
-                      {woodCrateSelected &&
-                        !selectedConfiguration && (
-                          <div className="consignment-confirm-api-notice is-error">
-                            <InfoCircleOutlined />
-                            <span>
-                              Kiện này chưa được chọn kích thước thùng gỗ. Vui lòng quay lại chỉnh sửa trước khi tạo đơn.
-                            </span>
-                          </div>
-                        )}
+            {/* Services Section */}
+            <div className="consignment-confirm-section">
+              <div className="consignment-confirm-section-title">
+                <span><SafetyCertificateOutlined /></span>
+                <div>
+                  <h2>Dịch vụ bổ sung ({selectedServices.length})</h2>
+                  <p>Các dịch vụ được đăng ký đi kèm đơn ký gửi.</p>
+                </div>
+              </div>
+
+              {selectedServices.length > 0 ? (
+                <div className="consignment-confirm-service-list">
+                  {selectedServices.map((service) => (
+                    <ServiceCard key={service.code} service={service} />
+                  ))}
+                </div>
+              ) : (
+                <div className="consignment-confirm-empty-service">
+                  Không sử dụng dịch vụ bổ sung nào.
+                </div>
+              )}
+
+              {woodCrateSelected && (
+                <>
+                  <WoodCrateSummary summary={woodCratePricingSummary} />
+                  {!woodCrateSelectionComplete && (
+                    <div className="consignment-confirm-api-notice is-error" style={{ marginTop: 12 }}>
+                      <InfoCircleOutlined />
+                      <span>
+                        Chưa chọn đủ kích thước thùng gỗ cho các kiện: {missingWoodCratePackages.map((item) => item.productName).join(", ")}.
+                      </span>
                     </div>
-                  </article>
-                );
-              },
-            )}
-          </div>
-        </div>
+                  )}
+                </>
+              )}
+            </div>
 
-        <div className="consignment-confirm-section">
-          <div className="consignment-confirm-section-title">
-            <span>
-              <InfoCircleOutlined />
-            </span>
-
-            <div>
-              <h2>Ghi chú chung</h2>
-
-              <p>
-                Thông tin bổ sung được gửi kèm
-                yêu cầu ký gửi.
+            {/* Note Section */}
+            <div className="consignment-confirm-section">
+              <div className="consignment-confirm-section-title">
+                <span><InfoCircleOutlined /></span>
+                <div>
+                  <h2>Ghi chú đơn hàng</h2>
+                  <p>Thông tin ghi chú đính kèm cho đơn ký gửi.</p>
+                </div>
+              </div>
+              <p className="consignment-confirm-note">
+                {form.note?.trim() || "Không có ghi chú."}
               </p>
             </div>
           </div>
 
-          <p className="consignment-confirm-note">
-            {form.note?.trim() ||
-              "Không có ghi chú."}
-          </p>
-        </div>
+          {/* Right Column: Receiver Info, Order Cost Breakdown & Confirmation Action */}
+          <div className="consignment-confirm-right-col">
+            {/* Delivery Info Card */}
+            <div className="consignment-confirm-sidebar-card">
+              <div className="sidebar-card-header">
+                <EnvironmentOutlined className="sidebar-card-icon" />
+                <div>
+                  <h3>Thông tin giao nhận</h3>
+                  <p>Tuyến hàng & địa chỉ người nhận</p>
+                </div>
+              </div>
 
-        <div className="consignment-confirm-warning">
-          <SafetyCertificateOutlined />
+              <div className="sidebar-info-list">
+                <div className="sidebar-info-row is-highlight">
+                  <span>Tuyến vận chuyển</span>
+                  <strong>{routeLabel}</strong>
+                </div>
 
-          <span>
-            Sau khi xác nhận, hệ thống sẽ tải
-            ảnh và gửi yêu cầu tạo đơn. Vui
-            lòng không đóng, quay lại hoặc tải
-            lại trang trong lúc xử lý.
-          </span>
-        </div>
+                <div className="sidebar-info-row">
+                  <span>Hình thức vận chuyển</span>
+                  <strong>{shippingLabel}</strong>
+                </div>
 
-        <div className="consignment-confirm-actions">
-          <button
-            type="button"
-            className="consignment-confirm-button is-secondary"
-            disabled={isSubmitting}
-            onClick={onBack}
-          >
-            <LeftOutlined />
-            QUAY LẠI CHỈNH SỬA
-          </button>
+                <div className="sidebar-info-row">
+                  <span>Người nhận hàng</span>
+                  <strong>{form.receiverName}</strong>
+                </div>
 
-          <button
-            type="button"
-            className="consignment-confirm-button is-primary"
-            disabled={
-              isSubmitting ||
-              masterDataLoading ||
-              !woodCrateSelectionComplete
-            }
-            onClick={onConfirm}
-          >
-            {isSubmitting ? (
-              <>
-                <LoadingOutlined spin />
-                ĐANG TẠO ĐƠN...
-              </>
-            ) : !woodCrateSelectionComplete ? (
-              <>
-                <InfoCircleOutlined />
-                CHƯA CHỌN ĐỦ KÍCH THƯỚC THÙNG
-              </>
-            ) : (
-              <>
-                <CheckCircleOutlined />
-                XÁC NHẬN TẠO ĐƠN
-              </>
-            )}
-          </button>
+                <div className="sidebar-info-row">
+                  <span>Số điện thoại</span>
+                  <strong>{form.receiverPhone}</strong>
+                </div>
+
+                <div className="sidebar-info-row is-address">
+                  <span>Địa chỉ giao hàng</span>
+                  <strong>{receiverAddress}</strong>
+                </div>
+
+                <div className="sidebar-info-row">
+                  <span>Yêu cầu kiểm hàng</span>
+                  <Tag color={inspectionRequested ? "green" : "default"}>
+                    {inspectionRequested ? "Có kiểm hàng" : "Không kiểm hàng"}
+                  </Tag>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Metrics Breakdown Card */}
+            <div className="consignment-confirm-sidebar-card">
+              <div className="sidebar-card-header">
+                <ShoppingOutlined className="sidebar-card-icon" />
+                <div>
+                  <h3>Tổng quan đơn hàng</h3>
+                  <p>Tổng hợp thông số & giá trị</p>
+                </div>
+              </div>
+
+              <div className="sidebar-metrics-grid">
+                <div className="metric-row">
+                  <span>Tổng số kiện hàng</span>
+                  <strong>{packages.length} kiện</strong>
+                </div>
+                <div className="metric-row">
+                  <span>Tổng số sản phẩm</span>
+                  <strong>{formatNumber(totals.quantity)} sản phẩm</strong>
+                </div>
+                <div className="metric-row">
+                  <span>Tổng khối lượng</span>
+                  <strong>{formatNumber(totals.weight)} kg</strong>
+                </div>
+                <div className="metric-row">
+                  <span>Tổng thể tích</span>
+                  <strong>{formatNumber(totals.volume)} cm³</strong>
+                </div>
+                <div className="metric-row is-highlight-green">
+                  <span>Tổng giá trị khai báo</span>
+                  <strong>{formatVnd(totals.declaredValue)}</strong>
+                </div>
+
+                {woodCrateSelected && (
+                  <div className="metric-row is-highlight-amber">
+                    <span>Tổng phí đóng thùng</span>
+                    <strong>{formatVnd(woodCratePricingSummary.totalFee)}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Panel Card */}
+            <div className="consignment-confirm-sidebar-card is-action-card">
+              <div className="consignment-confirm-warning">
+                <SafetyCertificateOutlined />
+                <span>
+                  Vui lòng kiểm tra kỹ thông tin. Sau khi xác nhận, hệ thống sẽ tiến hành gửi yêu cầu tạo đơn.
+                </span>
+              </div>
+
+              <div className="sidebar-action-buttons">
+                <button
+                  type="button"
+                  className="consignment-confirm-button is-primary"
+                  disabled={isSubmitting || masterDataLoading || !woodCrateSelectionComplete}
+                  onClick={onConfirm}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <LoadingOutlined spin />
+                      ĐANG TẠO ĐƠN...
+                    </>
+                  ) : !woodCrateSelectionComplete ? (
+                    <>
+                      <InfoCircleOutlined />
+                      CHƯA CHỌN ĐỦ KÍCH THƯỚC THÙNG
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircleOutlined />
+                      XÁC NHẬN TẠO ĐƠN KÝ GỬI
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  className="consignment-confirm-button is-secondary"
+                  disabled={isSubmitting}
+                  onClick={onBack}
+                >
+                  <LeftOutlined /> Quay lại chỉnh sửa
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
