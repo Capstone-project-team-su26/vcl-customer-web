@@ -135,6 +135,7 @@ const createEmptyFormErrors = () => ({
   receiverName: "",
   receiverPhone: "",
   selectedDeliveryAddress: "",
+  optionalServices: "",
   note: "",
 });
 
@@ -732,6 +733,11 @@ const validateConsignmentForm = ({ form, packages }) => {
     formErrors.note = "Vui lòng nhập ghi chú cho đơn ký gửi.";
   }
 
+  if (form?.optionalServices?.requiresWoodenCrate !== true) {
+    formErrors.optionalServices =
+      "Đóng thùng gỗ là dịch vụ bắt buộc. Vui lòng mở mục dịch vụ và chọn cấu hình thùng cho từng kiện.";
+  }
+
   const missingWoodCratePackages =
     getMissingWoodCratePackages({
       optionalServices: form?.optionalServices,
@@ -741,6 +747,10 @@ const validateConsignmentForm = ({ form, packages }) => {
   const missingWoodCratePackageIds = new Set(
     missingWoodCratePackages.map((pkg) => pkg.id),
   );
+
+  if (missingWoodCratePackages.length > 0) {
+    formErrors.optionalServices = `Còn ${missingWoodCratePackages.length} kiện chưa có cấu hình thùng gỗ. Vui lòng chọn cấu hình cho từng kiện.`;
+  }
 
   const packageErrors = Object.fromEntries(
     packages.map((pkg) => {
@@ -1372,7 +1382,7 @@ export default function ConsignmentOrder() {
     window.setTimeout(() => {
       document
         .querySelector(
-          ".input-has-error, .upload-has-error, .address-list-has-error",
+          '.input-has-error, .upload-has-error, .address-list-has-error, [aria-invalid="true"]',
         )
         ?.scrollIntoView({
           behavior: "smooth",
@@ -1749,6 +1759,10 @@ export default function ConsignmentOrder() {
     const requiresWoodenCrate = Boolean(
       nextServices?.requiresWoodenCrate,
     );
+
+    if (requiresWoodenCrate) {
+      clearFormError("optionalServices");
+    }
 
     const packageConfigurationByPackageId =
       requiresWoodenCrate
@@ -2314,7 +2328,12 @@ export default function ConsignmentOrder() {
               Boolean(errors?.packageConfigurationId)
           ).length;
 
-      if (missingPackageConfigurationCount > 0) {
+      if (form.optionalServices?.requiresWoodenCrate !== true) {
+        AuthNotify.warning(
+          "Đóng thùng gỗ là bắt buộc",
+          result.formErrors.optionalServices,
+        );
+      } else if (missingPackageConfigurationCount > 0) {
         AuthNotify.warning(
           "Chưa chọn kích thước thùng gỗ",
           `Còn ${missingPackageConfigurationCount} kiện chưa có cấu hình thùng. Vui lòng mở mục dịch vụ và chọn kích thước.`,
@@ -3374,20 +3393,23 @@ export default function ConsignmentOrder() {
               </div>
               <FieldLabelTooltip
                   label="CHỌN LOẠI DỊCH VỤ"
-                  
+                  required
                 />
 
               <PackageOptionalServices
                 value={form.optionalServices}
                 packages={packages}
+                error={formErrors.optionalServices}
                 disabled={isSubmitting}
                 triggerTitle="Dịch vụ áp dụng cho toàn bộ đơn"
-                triggerDescription="Có thể chọn nhiều dịch vụ áp dụng chung cho tất cả kiện hàng."
+                triggerDescription="Đóng thùng gỗ là bắt buộc; các dịch vụ còn lại có thể chọn thêm."
                 modalEyebrow="DỊCH VỤ TOÀN ĐƠN"
                 modalTitle="Lựa chọn dịch vụ cho toàn bộ đơn ký gửi"
-                modalDescription="Bảo hiểm chỉ mở khi đã nhập giá trị cho tất cả kiện. Khi chọn đóng thùng gỗ, bắt buộc chọn một cấu hình kích thước cho từng kiện trước khi lưu hoặc tạo đơn."
+                modalDescription="Đóng thùng gỗ là bắt buộc và phải có một cấu hình kích thước cho từng kiện. Bảo hiểm chỉ mở khi đã nhập giá trị cho tất cả kiện."
                 onChange={handleOptionalServicesChange}
               />
+
+              <FieldError message={formErrors.optionalServices} />
 
               <div className="input-field-group">
                 <FieldLabelTooltip

@@ -847,7 +847,11 @@ const getInitialSelectedCodes = (value, rules) => {
   });
 
   rules.forEach((rule) => {
-    if (rule.isRequired && isRuleSelectable(rule)) {
+    if (
+      rule.isRequired &&
+      !isWoodCrateRule(rule) &&
+      isRuleSelectable(rule)
+    ) {
       selectedCodes.add(rule.ruleCode);
     }
   });
@@ -869,6 +873,7 @@ const areCodeArraysEqual = (first = [], second = []) => {
 export default function PackageOptionalServices({
   value = EMPTY_PACKAGE_SERVICES,
   packages = [],
+  error = "",
   disabled = false,
   onChange,
 
@@ -1161,6 +1166,16 @@ export default function PackageOptionalServices({
     return pricingRules.filter((rule) => selectedSet.has(rule.ruleCode));
   }, [pricingRules, selectedCodes]);
 
+  const hasIncompleteRequiredWoodCrate =
+    selectedRules.some(isWoodCrateRule) &&
+    (!packageItems.length ||
+      packageItems.some(
+        (packageItem) =>
+          !selectedPackageConfigurationByPackageId[
+            packageItem.id
+          ],
+      ));
+
   /*
    * Khi người dùng xóa dữ liệu bắt buộc sau khi đã chọn dịch vụ,
    * tự động bỏ dịch vụ không còn đủ điều kiện khỏi form cha.
@@ -1173,7 +1188,7 @@ export default function PackageOptionalServices({
     const selectedSet = new Set(selectedCodes);
     const unavailableSelectedRules = pricingRules.filter(
       (rule) =>
-        !rule.isRequired &&
+        (!rule.isRequired || isWoodCrateRule(rule)) &&
         selectedSet.has(rule.ruleCode) &&
         !getRuleAvailability(rule, packageItems).available,
     );
@@ -1573,7 +1588,7 @@ export default function PackageOptionalServices({
       disabled ||
       isHiddenRule(rule) ||
       !isRuleSelectable(rule) ||
-      rule.isRequired ||
+      (rule.isRequired && !isWoodCrateRule(rule)) ||
       !getRuleAvailability(rule, packageItems).available
     ) {
       return;
@@ -1643,6 +1658,42 @@ export default function PackageOptionalServices({
       ),
     );
 
+    const mandatoryWoodCrateRule = pricingRules.find(
+      (rule) =>
+        !isHiddenRule(rule) &&
+        isRuleSelectable(rule) &&
+        isWoodCrateRule(rule),
+    );
+
+    if (!mandatoryWoodCrateRule) {
+      AuthNotify.error(
+        "Thiếu dịch vụ đóng thùng gỗ",
+        "Không tìm thấy quy tắc đóng thùng gỗ đang hoạt động. Vui lòng tải lại dữ liệu hoặc liên hệ quản trị viên.",
+      );
+      return;
+    }
+
+    if (!selectedSet.has(mandatoryWoodCrateRule.ruleCode)) {
+      AuthNotify.warning(
+        "Đóng thùng gỗ là bắt buộc",
+        "Vui lòng bấm chọn dịch vụ đóng thùng gỗ và chọn cấu hình cho từng kiện trước khi lưu.",
+      );
+      return;
+    }
+
+    const woodCrateAvailability = getRuleAvailability(
+      mandatoryWoodCrateRule,
+      packageItems,
+    );
+
+    if (!woodCrateAvailability.available) {
+      AuthNotify.warning(
+        "Chưa đủ thông tin đóng thùng gỗ",
+        woodCrateAvailability.reason,
+      );
+      return;
+    }
+
     const activeSelectedRules =
       pricingRules.filter(
         (rule) =>
@@ -1668,9 +1719,7 @@ export default function PackageOptionalServices({
       );
 
     const requiresWoodenCrate =
-      selectedRuleCodes.includes(
-        WOOD_CRATE_CODE,
-      );
+      activeSelectedRules.some(isWoodCrateRule);
 
     let packageConfigurationByPackageId = {};
     let selectedPackageConfigurations = [];
@@ -2146,6 +2195,7 @@ export default function PackageOptionalServices({
       <button
         type="button"
         disabled={disabled}
+        aria-invalid={Boolean(error)}
         className={[
           "package-services-trigger",
           selectedRules.length > 0 && "package-services-trigger--active",
@@ -2199,13 +2249,18 @@ export default function PackageOptionalServices({
         <span
           className={[
             "package-services-trigger__status",
-            selectedRules.length > 0 ? "is-active" : "is-optional",
+            selectedRules.length > 0 &&
+            !hasIncompleteRequiredWoodCrate
+              ? "is-active"
+              : "is-optional",
           ].join(" ")}
         >
           <span className="package-services-trigger__status-dot" />
-          {selectedRules.length > 0
-            ? `${selectedRules.length} đã chọn`
-            : "Không bắt buộc"}
+          {hasIncompleteRequiredWoodCrate
+            ? "Cần chọn cấu hình"
+            : selectedRules.length > 0
+              ? `${selectedRules.length} đã chọn`
+              : "Bắt buộc"}
         </span>
       </button>
 
@@ -2274,6 +2329,8 @@ export default function PackageOptionalServices({
               const Icon = getRuleIcon(rule);
               const checked = draftSelectedCodes.includes(rule.ruleCode);
               const selectable = isRuleSelectable(rule);
+              const isWoodCrateService = isWoodCrateRule(rule);
+              const isInsuranceService = isInsuranceRule(rule);
               const availability = getRuleAvailability(
                 rule,
                 packageItems,
@@ -2281,10 +2338,8 @@ export default function PackageOptionalServices({
               const itemDisabled =
                 disabled ||
                 !selectable ||
-                rule.isRequired ||
+                (rule.isRequired && !isWoodCrateService) ||
                 !availability.available;
-              const isWoodCrateService = isWoodCrateRule(rule);
-              const isInsuranceService = isInsuranceRule(rule);
 
               return (
                 <React.Fragment
@@ -2353,6 +2408,8 @@ export default function PackageOptionalServices({
                           {getRuleDisplayName(
                             rule,
                           )}
+                          {(rule.isRequired || isWoodCrateService) &&
+                            " (Bắt buộc)"}
                         </strong>
 
                         <Tooltip
