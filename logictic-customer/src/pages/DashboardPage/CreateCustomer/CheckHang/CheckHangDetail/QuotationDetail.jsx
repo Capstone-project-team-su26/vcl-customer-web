@@ -3235,15 +3235,16 @@ const QuotationDetail = () => {
                       </>
                     )}
                   </button>
+
+                  <span
+                    className={`quotation-status-badge status-${effectiveStatusClass}`}
+                  >
+                    {getQuotationStatusLabel(effectiveStatus)}
+                  </span>
                 </div>
               </div>
-
-              <span
-                className={`quotation-status-badge status-${effectiveStatusClass}`}
-              >
-                {getQuotationStatusLabel(effectiveStatus)}
-              </span>
             </div>
+
 
             {(hasUiValue(quotation.quoteType) ||
               hasUiValue(quotation.quotationCreatedAtUtc || quotation.quotationCreatedAt || quotation.createdAtUtc || quotation.createdAt)) && (
@@ -3369,105 +3370,130 @@ const QuotationDetail = () => {
             </Tag>
           </div>
 
-          <div className="quotation-products-grid">
-            {quotationOrderItems.map((item, index) => (
-              <article
-                key={item.id || `product-${index + 1}`}
-                className="quotation-product-card"
-              >
-                <header className="quotation-product-card-header">
-                  <div className="quotation-product-card-header-left">
-                    <span className="quotation-product-index">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-
-                    <div>
-                      <small>Sản phẩm {index + 1}</small>
-
-                      <h3>{item.productName}</h3>
-
-                      {hasUiValue(item.productTypeLabel) && (
-                        <p>{item.productTypeLabel}</p>
-                      )}
-                    </div>
-                  </div>
-
-                </header>
-
-                <ProductInfoGrid item={item} />
-
-                {isValidExternalUrl(item.productUrl) && (
-                  <div className="quotation-product-extra">
-                    <div>
-                      <span>Website nguồn</span>
-
-                      <a
-                        href={item.productUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {item.productUrl}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {(item.images.length > 0 ||
-                  item.configurationName ||
-                  item.configurationCode) && (
-                    <div className="quotation-product-support-grid">
-                      {item.images.length > 0 && (
-                        <div className="quotation-product-images">
-                          <div className="quotation-product-images-title">
-                            <span>Hình ảnh sản phẩm</span>
-                            <strong>{item.images.length} ảnh</strong>
-                          </div>
-
-                          <div className="quotation-product-images-grid">
-                            <Image.PreviewGroup>
-                              {item.images.map((image, imageIndex) => (
-                                <Image
-                                  key={image.id}
-                                  src={image.url}
-                                  width={112}
-                                  height={112}
-                                  alt={`Sản phẩm ${index + 1} - ảnh ${imageIndex + 1}`}
-                                  style={{
-                                    objectFit: "cover",
-                                    borderRadius: 10,
-                                    display: "block",
-                                  }}
-                                  preview={{ mask: "Xem" }}
-                                />
-                              ))}
-                            </Image.PreviewGroup>
-                          </div>
-                        </div>
-                      )}
-
-                      {(item.configurationName || item.configurationCode) && (
-                        <div className="quotation-product-configuration">
-                          <span>Cấu hình đóng gói</span>
-
-                          <div>
-                            <strong>
-                              {item.configurationName ||
-                                formatStatusCode(item.configurationCode)}
-                            </strong>
-
-                            {item.configurationFee !== null && (
-                              <small>
-                                Giá cấu hình: {formatMoney(item.configurationFee)}
-                              </small>
+          <div className="quotation-products-table-wrapper">
+            <table className="quotation-products-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "55px", textAlign: "center" }}>STT</th>
+                  <th style={{ width: "70px", textAlign: "center" }}>Ảnh</th>
+                  <th style={{ textAlign: "left", paddingLeft: "16px" }}>
+                    Tên sản phẩm & Danh mục
+                  </th>
+                  <th style={{ width: "95px", textAlign: "center" }}>Số lượng</th>
+                  <th style={{ width: "110px", textAlign: "right" }}>Trọng lượng</th>
+                  <th style={{ width: "135px", textAlign: "center" }}>Kích thước</th>
+                  <th style={{ width: "115px", textAlign: "right" }}>Quy đổi DIM</th>
+                  <th style={{ width: "135px", textAlign: "right" }}>Giá trị khai báo</th>
+                  <th style={{ width: "160px", textAlign: "left", paddingLeft: "14px" }}>
+                    Cấu hình đóng gói
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {quotationOrderItems.map((item, index) => (
+                  <tr key={item.id || `product-${index + 1}`}>
+                    <td style={{ textAlign: "center" }}>
+                      <span className="product-table-index">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      {item.images && item.images.length > 0 ? (
+                        <Image.PreviewGroup>
+                          <div className="product-table-image-box">
+                            <Image
+                              src={item.images[0].url}
+                              width={44}
+                              height={44}
+                              alt={item.productName}
+                              style={{ objectFit: "cover", borderRadius: 8 }}
+                              preview={{ mask: "Xem" }}
+                            />
+                            {item.images.length > 1 && (
+                              <span className="product-table-img-badge">
+                                +{item.images.length - 1}
+                              </span>
                             )}
                           </div>
-                        </div>
+                        </Image.PreviewGroup>
+                      ) : (
+                        <div className="product-table-no-img">N/A</div>
                       )}
-                    </div>
-                  )}
-              </article>
-            ))}
+                    </td>
+                    <td style={{ textAlign: "left", paddingLeft: "16px" }}>
+                      <div className="product-table-name-group">
+                        <strong className="product-table-title">
+                          {item.productName}
+                        </strong>
+
+
+                        {hasUiValue(item.productTypeLabel) && (
+                          <span className="product-table-category">
+                            {item.productTypeLabel}
+                          </span>
+                        )}
+
+                        {isValidExternalUrl(item.productUrl) && (
+                          <a
+                            href={item.productUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="product-table-link"
+                          >
+                            Link sản phẩm ↗
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <span className="product-table-badge">
+                        {item.quantity ? `${item.quantity} cái` : "-"}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <strong>{formatNumber(item.weight)} kg</strong>
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <span>
+                        {formatItemDimensions(item) || "-"}
+                      </span>
+                      {hasUiValue(item.volumeCbm) && (
+                        <small className="product-table-sub">
+                          {item.volumeCbm} cm³
+                        </small>
+                      )}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <span>{formatNumber(item.dimWeight)} kg</span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <strong className="product-table-price">
+                        {formatMoney(item.declaredValue)}
+                      </strong>
+                    </td>
+                    <td>
+                      {item.configurationName || item.configurationCode ? (
+                        <div className="product-table-config-tag">
+                          <span>
+                            {item.configurationName ||
+                              formatStatusCode(item.configurationCode)}
+                          </span>
+                          {item.configurationFee !== null && (
+                            <small>
+                              +{formatMoney(item.configurationFee)}
+                            </small>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="product-table-empty">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
         </section>
       )}
       <div

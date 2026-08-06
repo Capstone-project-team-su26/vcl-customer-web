@@ -257,27 +257,34 @@
 }
 
 .quotation-title-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 16px;
+  display: block;
 }
 
 .quotation-eyebrow {
-  display: block;
-  margin-bottom: 7px;
-  color: #92400e;
-  font-size: 12px;
-  line-height: 1.35;
-  font-weight: 750;
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ffedd5;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.2;
 }
+
+
+
 
 .quotation-code-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 10px 12px;
 }
+
 
 .quotation-code-row h1 {
   max-width: 100%;
@@ -539,16 +546,16 @@
 .quotation-order-summary {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid var(--qt-border);
-  border-radius: 17px;
-  box-shadow: 0 7px 20px rgba(15, 23, 42, 0.04);
+  gap: 16px 20px;
+  margin-top: 16px;
+  padding: 18px 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
   .quotation-order-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -562,21 +569,22 @@
 
 .quotation-order-summary>div {
   min-width: 0;
-  min-height: 72px;
-  padding: 12px 14px;
-  display: grid;
-  grid-template-rows: minmax(18px, auto) auto;
-  align-content: start;
-  gap: 5px;
-  background: #ffffff;
-  border: 1px solid #edf2f7;
-  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
 }
 
 .quotation-order-summary .is-address {
   grid-column: 1 / -1;
-  min-height: auto;
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
+  margin-top: 4px;
 }
+
 
 
 .quotation-order-summary span,
@@ -3050,14 +3058,9 @@ body .quotation-payment-dialog * {
 }
 
 .quotation-order-summary {
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.quotation-order-summary>div {
-  min-height: 72px;
-  padding: 12px 14px;
-}
 
 /* ---------- Product cards ---------- */
 .quotation-product-card {
@@ -3736,4 +3739,186 @@ body .quotation-payment-dialog * {
     width: 96px !important;
     height: 96px !important;
   }
+}
+
+/* ==========================================================================
+   Enterprise Logistics Table View
+   ========================================================================== */
+.quotation-products-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.quotation-products-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--qt-font-sans, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif) !important;
+}
+
+.quotation-products-table thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 13px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  text-align: left;
+}
+
+
+.quotation-products-table tbody td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.quotation-products-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.quotation-products-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.product-table-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 750;
+  font-size: 12px;
+}
+
+.product-table-image-box {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+}
+
+.product-table-img-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.product-table-no-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-table-name-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.product-table-title {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.product-table-category {
+  display: inline-block;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.product-table-link {
+  color: #2563eb;
+  font-size: 11.5px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.product-table-link:hover {
+  text-decoration: underline;
+}
+
+.product-table-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-weight: 650;
+  font-size: 13px;
+  color: #334155;
+}
+
+.product-table-sub {
+  display: block;
+  color: #94a3b8;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.product-table-price {
+  color: #d97706;
+  font-size: 14.5px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.product-table-config-tag {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 5px 11px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.product-table-config-tag small {
+  color: #2563eb;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.product-table-empty {
+  color: #cbd5e1;
+  font-weight: 500;
 }
