@@ -778,25 +778,18 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
                     </strong>
                   </div>
                   <div>
-                    <span>Ngày tạo & Cập nhật</span>
-                    <strong>
-                      {formatDateDisplay(order.createdAt)}
-                      {order.statusUpdatedAt &&
-                        order.statusUpdatedAt !== order.createdAt && (
-                          <small
-                            style={{
-                              display: "block",
-                              color: "#059669",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              marginTop: 2,
-                            }}
-                          >
-                            Cập nhật: {formatDateDisplay(order.statusUpdatedAt)}
-                          </small>
-                        )}
-                    </strong>
+                    <span>Ngày tạo</span>
+                    <strong>{formatDateDisplay(order.createdAt)}</strong>
                   </div>
+                  {order.statusUpdatedAt &&
+                    order.statusUpdatedAt !== order.createdAt && (
+                      <div>
+                        <span>Ngày cập nhật</span>
+                        <strong style={{ color: "#059669" }}>
+                          {formatDateDisplay(order.statusUpdatedAt)}
+                        </strong>
+                      </div>
+                    )}
                   <div>
                     <span>Tuyến vận chuyển</span>
                     <strong>
@@ -871,12 +864,25 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
 
                 {/* Bottom Total Price & Action Bar */}
                 <div className="card-footer-bar">
-                  <div className="footer-price-box">
-                    <span>TỔNG THÀNH TIỀN BÁO GIÁ</span>
-                    <strong>
-                      {formatVndCurrency(quotation?.totalAmount || 0)}
-                    </strong>
-                  </div>
+                  {(() => {
+                    const totalAmount = Number(
+                      quotation?.totalAmount ??
+                      order.totalBillAmount ??
+                      order.totalAmount ??
+                      0
+                    );
+
+                    if (totalAmount > 0) {
+                      return (
+                        <div className="footer-price-box">
+                          <span>TỔNG THÀNH TIỀN BÁO GIÁ</span>
+                          <strong>{formatVndCurrency(totalAmount)}</strong>
+                        </div>
+                      );
+                    }
+
+                    return <div />;
+                  })()}
 
                   <div className="card-footer-actions">
                     <Button

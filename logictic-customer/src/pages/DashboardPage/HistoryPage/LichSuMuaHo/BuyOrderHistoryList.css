@@ -577,6 +577,12 @@
   font-weight: 900;
 }
 
+.buy-order-history-page .footer-pending-quote-label {
+  color: #d97706;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
 .buy-order-history-page .card-footer-actions {
   display: flex;
   align-items: center;

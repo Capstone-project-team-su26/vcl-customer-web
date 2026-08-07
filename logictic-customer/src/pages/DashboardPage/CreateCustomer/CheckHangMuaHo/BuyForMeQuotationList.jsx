@@ -34,6 +34,7 @@ import {
 } from "../../../../api/PurchaseAPI/purchaseRequestApi";
 
 import {
+  apiToTimestamp,
   apiToUtcIso,
   formatUtcDateTime,
   formatVietnamDateTime,
@@ -488,7 +489,15 @@ const BuyForMeQuotationList = () => {
         "YYYY-MM-DD"
       ) || null;
 
-    return purchaseRequests.filter((item) => {
+    const getLatestTimestamp = (item) => {
+      const t1 = apiToTimestamp(item.statusUpdatedAt) || 0;
+      const t2 = apiToTimestamp(item.quotationCreatedAt) || 0;
+      const t3 = apiToTimestamp(item.createdAtUtc || item.createdAt) || 0;
+      const t4 = apiToTimestamp(item.updatedAtUtc || item.updatedAt) || 0;
+      return Math.max(t1, t2, t3, t4);
+    };
+
+    const filtered = purchaseRequests.filter((item) => {
       if (
         !isQuotedStatus(item.status)
       ) {
@@ -540,6 +549,13 @@ const BuyForMeQuotationList = () => {
         matchesStartDate &&
         matchesEndDate
       );
+    });
+
+    // Sort descending by latest UTC timestamp (Newest orders first)
+    return [...filtered].sort((a, b) => {
+      const timeA = getLatestTimestamp(a);
+      const timeB = getLatestTimestamp(b);
+      return timeB - timeA;
     });
   }, [
     purchaseRequests,
@@ -953,6 +969,19 @@ const BuyForMeQuotationList = () => {
                             )}
                           </strong>
                         </span>
+
+                        {item.statusUpdatedAt &&
+                          item.statusUpdatedAt !== item.createdAt && (
+                            <span
+                              title={formatDateUtcTitle(item.statusUpdatedAt)}
+                              style={{ color: "#059669" }}
+                            >
+                              🕒 Ngày cập nhật:{" "}
+                              <strong>
+                                {formatDate(item.statusUpdatedAt)}
+                              </strong>
+                            </span>
+                          )}
 
                         <span className="purchase-pending-status-inline">
                           TRẠNG THÁI:{" "}
