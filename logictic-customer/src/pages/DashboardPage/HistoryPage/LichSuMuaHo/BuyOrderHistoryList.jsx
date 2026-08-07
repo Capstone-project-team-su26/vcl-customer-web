@@ -31,7 +31,7 @@ import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 
 import AuthNotify from "../../../../utils/AuthNotify";
 import { getPurchaseRequestsApi } from "../../../../api/PurchaseAPI/purchaseRequestApi";
-import { formatVietnamDateTime } from "../../../../utils/timeUtc";
+import { apiToTimestamp, formatVietnamDateTime } from "../../../../utils/timeUtc";
 
 import "./BuyOrderHistoryList.css";
 
@@ -403,18 +403,20 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
   const fetchOrders = useCallback(async (signal) => {
     try {
       setLoading(true);
-      const response = await getPurchaseRequestsApi({ signal });
+      const response = await getPurchaseRequestsApi(1, 100, { signal });
 
       const dataObj = response?.data || response;
-      const dataArray = Array.isArray(dataObj?.items)
-        ? dataObj.items
-        : Array.isArray(dataObj)
-          ? dataObj
-          : Array.isArray(response?.items)
-            ? response.items
-            : Array.isArray(response)
-              ? response
-              : [];
+      let dataArray = [];
+
+      if (Array.isArray(dataObj?.items)) {
+        dataArray = dataObj.items;
+      } else if (Array.isArray(dataObj)) {
+        dataArray = dataObj;
+      } else if (Array.isArray(response?.items)) {
+        dataArray = response.items;
+      } else if (Array.isArray(response)) {
+        dataArray = response;
+      }
 
       setRawOrders(dataArray);
     } catch (error) {
@@ -464,7 +466,15 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
       ? dateRangeInput[1].endOf("day").valueOf()
       : null;
 
-    return rawOrders.filter((order) => {
+    const getLatestTimestamp = (order) => {
+      const t1 = apiToTimestamp(order.statusUpdatedAt) || 0;
+      const t2 = apiToTimestamp(order.quotationCreatedAt) || 0;
+      const t3 = apiToTimestamp(order.createdAt) || 0;
+      const t4 = apiToTimestamp(order.updatedAt) || 0;
+      return Math.max(t1, t2, t3, t4);
+    };
+
+    const filtered = rawOrders.filter((order) => {
       // 1. Filter by Status (Exact raw code match OR category match)
       if (selectedStatus !== STATUS_FILTERS.ALL) {
         const orderRawStatus = String(order.status || "")
@@ -482,8 +492,8 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
 
       // 2. Filter by Date Range
       if (fromTimestamp || toTimestamp) {
-        const orderTime = new Date(order.createdAt).getTime();
-        if (Number.isNaN(orderTime)) return false;
+        const orderTime = getLatestTimestamp(order);
+        if (!orderTime) return false;
         if (fromTimestamp && orderTime < fromTimestamp) return false;
         if (toTimestamp && orderTime > toTimestamp) return false;
       }
@@ -514,6 +524,13 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
       }
 
       return true;
+    });
+
+    // Sort descending by latest UTC timestamp (Newest created/updated orders always first)
+    return [...filtered].sort((a, b) => {
+      const timeA = getLatestTimestamp(a);
+      const timeB = getLatestTimestamp(b);
+      return timeB - timeA;
     });
   }, [rawOrders, selectedStatus, dateRangeInput, debouncedSearch]);
 
@@ -761,8 +778,24 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
                     </strong>
                   </div>
                   <div>
-                    <span>Ngày tạo</span>
-                    <strong>{formatDateDisplay(order.createdAt)}</strong>
+                    <span>Ngày tạo & Cập nhật</span>
+                    <strong>
+                      {formatDateDisplay(order.createdAt)}
+                      {order.statusUpdatedAt &&
+                        order.statusUpdatedAt !== order.createdAt && (
+                          <small
+                            style={{
+                              display: "block",
+                              color: "#059669",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              marginTop: 2,
+                            }}
+                          >
+                            Cập nhật: {formatDateDisplay(order.statusUpdatedAt)}
+                          </small>
+                        )}
+                    </strong>
                   </div>
                   <div>
                     <span>Tuyến vận chuyển</span>
@@ -845,21 +878,33 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
                     </strong>
                   </div>
 
-                  <Button
-                    variant="contained"
-                    endIcon={<ArrowForwardIcon />}
-                    onClick={() =>
-                      navigate(
-                        `/history/buy-on-behalf/${requestId}/payments`,
-                        {
-                          state: { purchaseRequest: order },
-                        }
-                      )
-                    }
-                    className="card-detail-button"
-                  >
-                    Xem lịch sử thanh toán
-                  </Button>
+                  <div className="card-footer-actions">
+                    <Button
+                      variant="outlined"
+                      onClick={() =>
+                        navigate(`/check-orders/buy-on-behalf/${requestId}`)
+                      }
+                      className="card-quotation-button"
+                    >
+                      Chi tiết báo giá
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      endIcon={<ArrowForwardIcon />}
+                      onClick={() =>
+                        navigate(
+                          `/history/buy-on-behalf/${requestId}/payments`,
+                          {
+                            state: { purchaseRequest: order },
+                          }
+                        )
+                      }
+                      className="card-detail-button"
+                    >
+                      Lịch sử thanh toán
+                    </Button>
+                  </div>
                 </div>
               </article>
             );

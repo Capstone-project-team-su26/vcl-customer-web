@@ -584,9 +584,10 @@
   flex-wrap: wrap;
 }
 
-.buy-order-history-page .card-history-button.MuiButton-root {
+.buy-order-history-page .card-history-button.MuiButton-root,
+.buy-order-history-page .card-quotation-button.MuiButton-root {
   min-height: 40px;
-  padding: 0 14px !important;
+  padding: 0 16px !important;
   border-radius: 12px !important;
   font-size: 13px !important;
   font-weight: 800 !important;
@@ -596,8 +597,9 @@
   background: #ffffff !important;
 }
 
-.buy-order-history-page .card-history-button.MuiButton-root:hover {
-  background: #f8fafc !important;
+.buy-order-history-page .card-history-button.MuiButton-root:hover,
+.buy-order-history-page .card-quotation-button.MuiButton-root:hover {
+  background: #fff7ed !important;
   color: #ea580c !important;
   border-color: #f97316 !important;
 }
