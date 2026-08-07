@@ -554,13 +554,14 @@ const BuyForMeQuotationListDetail = () => {
                           </span>
                         </button>
                       )}
+
+                      <div className="quotation-status-badge">
+                        {formatStatusTag(requestInfo.status)}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="quotation-status-badge">
-                    {formatStatusTag(requestInfo.status)}
-                  </div>
                 </div>
+
 
                 <div className="quotation-meta-row">
                   <span>

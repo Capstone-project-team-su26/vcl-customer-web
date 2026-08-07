@@ -3798,9 +3798,10 @@ const QuotationDetail = () => {
 
             <strong>
               {canConfirmAndPay
-                ? "Chọn xác nhận offline hoặc thanh toán SePay"
+                ? "Xác nhận và thanh toán cọc qua SePay"
                 : "Xác nhận lựa chọn của bạn"}
             </strong>
+
 
             <small>
               {canConfirmAndPay ? (

@@ -52,28 +52,30 @@ const PACKAGE_NUMBER_FIELDS = [
   {
     field: "weight",
     label: "CÂN NẶNG KIỆN HÀNG (KG)",
-    tooltip: "Nhập tổng cân nặng của kiện hàng theo đơn vị kilogram (kg).",
-    placeholder: "Nhập cân nặng...",
+    tooltip: "Nhập tổng cân nặng của kiện hàng (tối đa 3 kg/kiện).",
+    placeholder: "Nhập cân nặng (tối đa 3 kg)...",
+
   },
   {
     field: "length",
     label: "DÀI (CM)",
-    tooltip: "Nhập chiều dài của kiện hàng theo đơn vị centimet (cm).",
-    placeholder: "Nhập chiều dài...",
+    tooltip: "Nhập chiều dài của kiện hàng (tối đa 100 cm).",
+    placeholder: "Nhập chiều dài (tối đa 100 cm)...",
   },
   {
     field: "width",
     label: "RỘNG (CM)",
-    tooltip: "Nhập chiều rộng của kiện hàng theo đơn vị centimet (cm).",
-    placeholder: "Nhập chiều rộng...",
+    tooltip: "Nhập chiều rộng của kiện hàng (tối đa 200 cm).",
+    placeholder: "Nhập chiều rộng (tối đa 200 cm)...",
   },
   {
     field: "height",
     label: "CAO (CM)",
-    tooltip: "Nhập chiều cao của kiện hàng theo đơn vị centimet (cm).",
-    placeholder: "Nhập chiều cao...",
+    tooltip: "Nhập chiều cao của kiện hàng (tối đa 50 cm).",
+    placeholder: "Nhập chiều cao (tối đa 50 cm)...",
   },
 ];
+
 
 const INITIAL_FORM = {
   route: "",
@@ -642,6 +644,7 @@ const uploadPackageImage = async (file) => {
 };
 
 const validatePositiveNumber = (value, label) => {
+
   if (value === "") {
     return `Vui lòng nhập ${label}.`;
   }
@@ -670,6 +673,8 @@ const validatePackage = (pkg) => {
     errors.quantity = "Vui lòng nhập số lượng.";
   } else if (!Number.isInteger(quantity) || quantity < 1) {
     errors.quantity = "Số lượng phải là số nguyên từ 1 trở lên.";
+  } else if (quantity > 5) {
+    errors.quantity = "Số lượng tối đa 5 sản phẩm trên 1 kiện hàng.";
   }
 
   const declaredValue = Number(pkg.declaredValue);
@@ -678,20 +683,45 @@ const validatePackage = (pkg) => {
     errors.declaredValue = "Vui lòng nhập giá trị khai báo.";
   } else if (!Number.isFinite(declaredValue) || declaredValue <= 0) {
     errors.declaredValue = "Giá trị kiện hàng phải lớn hơn 0.";
+  } else if (declaredValue > 6000000) {
+    errors.declaredValue = "Giá trị 1 kiện hàng không được vượt quá 6.000.000 đ.";
   }
 
-  [
-    ["weight", "cân nặng"],
-    ["length", "chiều dài"],
-    ["width", "chiều rộng"],
-    ["height", "chiều cao"],
-  ].forEach(([field, label]) => {
-    const message = validatePositiveNumber(pkg[field], label);
+  const weight = Number(pkg.weight);
+  if (pkg.weight === "") {
+    errors.weight = "Vui lòng nhập cân nặng.";
+  } else if (!Number.isFinite(weight) || weight <= 0) {
+    errors.weight = "Cân nặng phải lớn hơn 0.";
+  } else if (weight > 3) {
+    errors.weight = "Cân nặng tối đa 3 kg cho mỗi kiện hàng.";
+  }
 
-    if (message) {
-      errors[field] = message;
-    }
-  });
+  const length = Number(pkg.length);
+  if (pkg.length === "") {
+    errors.length = "Vui lòng nhập chiều dài.";
+  } else if (!Number.isFinite(length) || length <= 0) {
+    errors.length = "Chiều dài phải lớn hơn 0.";
+  } else if (length > 100) {
+    errors.length = "Chiều dài tối đa 100 cm.";
+  }
+
+  const width = Number(pkg.width);
+  if (pkg.width === "") {
+    errors.width = "Vui lòng nhập chiều rộng.";
+  } else if (!Number.isFinite(width) || width <= 0) {
+    errors.width = "Chiều rộng phải lớn hơn 0.";
+  } else if (width > 200) {
+    errors.width = "Chiều rộng tối đa 200 cm.";
+  }
+
+  const height = Number(pkg.height);
+  if (pkg.height === "") {
+    errors.height = "Vui lòng nhập chiều cao.";
+  } else if (!Number.isFinite(height) || height <= 0) {
+    errors.height = "Chiều cao phải lớn hơn 0.";
+  } else if (height > 50) {
+    errors.height = "Chiều cao tối đa 50 cm.";
+  }
 
   if (!pkg.images.length) {
     errors.images = "Vui lòng tải ít nhất 1 ảnh sản phẩm.";
@@ -733,6 +763,24 @@ const validateConsignmentForm = ({ form, packages }) => {
     formErrors.note = "Vui lòng nhập ghi chú cho đơn ký gửi.";
   }
 
+  // Kiểm tra tổng cân nặng toàn bộ đơn hàng (tối đa 5 kg)
+  const totalOrderWeight = packages.reduce(
+    (sum, p) => sum + (Number(p.weight) || 0),
+    0
+  );
+  if (totalOrderWeight > 5) {
+    formErrors.packages = `Tổng cân nặng toàn bộ đơn hàng (${totalOrderWeight.toFixed(2)} kg) vượt quá giới hạn tối đa 5 kg.`;
+  }
+
+  // Kiểm tra tổng giá trị khai báo toàn bộ đơn hàng (tối đa 10.000.000 đ)
+  const totalOrderValue = packages.reduce(
+    (sum, p) => sum + (Number(p.declaredValue) || 0),
+    0
+  );
+  if (totalOrderValue > 10000000) {
+    formErrors.packages = `Tổng giá trị hàng hóa của đơn hàng (${totalOrderValue.toLocaleString("vi-VN")} đ) vượt quá giới hạn tối đa 10.000.000 đ.`;
+  }
+
   if (form?.optionalServices?.requiresWoodenCrate !== true) {
     formErrors.optionalServices =
       "Đóng thùng gỗ là dịch vụ bắt buộc. Vui lòng mở mục dịch vụ và chọn cấu hình thùng cho từng kiện.";
@@ -764,6 +812,7 @@ const validateConsignmentForm = ({ form, packages }) => {
       return [pkg.id, errors];
     }),
   );
+
 
   const isValid =
     !Object.values(formErrors).some(Boolean) &&
@@ -2328,7 +2377,12 @@ export default function ConsignmentOrder() {
               Boolean(errors?.packageConfigurationId)
           ).length;
 
-      if (form.optionalServices?.requiresWoodenCrate !== true) {
+      if (result.formErrors.packages) {
+        AuthNotify.warning(
+          "Vượt giới hạn quy định",
+          result.formErrors.packages,
+        );
+      } else if (form.optionalServices?.requiresWoodenCrate !== true) {
         AuthNotify.warning(
           "Đóng thùng gỗ là bắt buộc",
           result.formErrors.optionalServices,
@@ -2344,6 +2398,7 @@ export default function ConsignmentOrder() {
           "Vui lòng kiểm tra các trường được đánh dấu màu đỏ.",
         );
       }
+
 
       scrollToFirstError();
     }

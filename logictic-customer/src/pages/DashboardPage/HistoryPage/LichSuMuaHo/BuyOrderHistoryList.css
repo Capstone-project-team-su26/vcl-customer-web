@@ -64,7 +64,7 @@
 
 .buy-order-history-page .buy-order-history-eyebrow {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: #ffedd5;
   border: 1px solid #fed7aa;
@@ -72,7 +72,9 @@
   font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 0.5px;
+  line-height: 1.2;
 }
+
 
 .buy-order-history-page .buy-order-history-header h1 {
   margin: 4px 0 2px;

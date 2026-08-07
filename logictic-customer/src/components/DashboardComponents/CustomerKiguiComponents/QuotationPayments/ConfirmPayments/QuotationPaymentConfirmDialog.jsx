@@ -44,22 +44,15 @@ export const PAYMENT_METHODS =
 
 const PAYMENT_METHOD_OPTIONS = [
   {
-    value: PAYMENT_METHODS.OFFLINE,
-    title: "Xác nhận offline",
-    subtitle:
-      "Chấp nhận báo giá thủ công, không tạo giao dịch SePay và không chuyển sang trang VietQR.",
-    badge: "Thủ công",
-    icon: AccountBalanceRoundedIcon,
-  },
-  {
     value: PAYMENT_METHODS.ONLINE,
-    title: "Thanh toán online",
+    title: "Thanh toán online qua SePay",
     subtitle:
       "Thanh toán tiền cọc qua SePay bằng mã VietQR do hệ thống cung cấp.",
     badge: "SePay",
     icon: CreditCardRoundedIcon,
   },
 ];
+
 
 const normalizeApiError = (
   error,
@@ -254,10 +247,11 @@ const QuotationPaymentConfirmDialog = ({
     const controller =
       new AbortController();
 
-    setSelectedMethod("");
+    setSelectedMethod(PAYMENT_METHODS.ONLINE);
     setMethodError("");
     setDepositRateData(null);
     setDepositRateError("");
+
 
     loadDepositRate(
       controller.signal,
@@ -491,13 +485,11 @@ const QuotationPaymentConfirmDialog = ({
 
         <div className="quotation-dialog-title-content">
           <strong>
-            Chọn cách xác nhận báo giá
+            Xác nhận thanh toán báo giá
           </strong>
 
           <span>
-            Xác nhận thủ công
-            offline hoặc thanh toán
-            cọc{" "}
+            Thanh toán cọc{" "}
             {hasCustomDeposit
               ? (customDepositDescription || "100% tiền hàng + 50% phí dịch vụ")
               : depositRateLoading
@@ -506,9 +498,10 @@ const QuotationPaymentConfirmDialog = ({
                   null
                   ? `${depositPercent}%`
                   : "theo cấu hình hệ thống"}{" "}
-            qua SePay.
+            qua cổng thanh toán SePay.
           </span>
         </div>
+
       </DialogTitle>
 
       <DialogContent className="quotation-dialog-content quotation-payment-dialog-content">
@@ -852,29 +845,26 @@ const QuotationPaymentConfirmDialog = ({
 
           <div>
             <strong>
-              {isOffline
-                ? "Xác nhận báo giá theo hình thức thủ công"
-                : isOnline
-                  ? `Thanh toán cọc ${depositPercent}% qua SePay`
-                  : "Thông tin xử lý thanh toán"}
+              {isOnline
+                ? `Thanh toán cọc ${depositPercent}% qua SePay`
+                : "Thông tin xử lý thanh toán"}
             </strong>
 
             <p>
-              {isOffline
-                ? "Hệ thống chỉ ghi nhận việc bạn chấp nhận báo giá. Không tạo giao dịch SePay; bộ phận phụ trách sẽ liên hệ để xác nhận thanh toán thủ công."
-                : isOnline
-                  ? `Bạn sẽ thanh toán trước ${formatMoney(
-                    depositAmount,
-                  )} qua VietQR. Số tiền còn lại là ${formatMoney(
-                    remainingAmount,
-                  )}.`
-                  : depositRateLoading
-                    ? "Hệ thống đang tải tỷ lệ cọc. Bạn vẫn có thể chọn xác nhận offline."
-                    : depositRateError
-                      ? "Không tải được tỷ lệ cọc nên thanh toán online tạm thời chưa khả dụng. Bạn vẫn có thể xác nhận offline."
-                      : `Online sẽ thanh toán cọc ${depositPercent}% và chuyển sang trang SePay/VietQR. Offline chỉ xác nhận báo giá và chờ nhân viên xử lý thủ công.`}
+              {isOnline
+                ? `Bạn sẽ thanh toán trước ${formatMoney(
+                  depositAmount,
+                )} qua VietQR. Số tiền còn lại là ${formatMoney(
+                  remainingAmount,
+                )}.`
+                : depositRateLoading
+                  ? "Hệ thống đang tải tỷ lệ cọc..."
+                  : depositRateError
+                    ? "Không tải được tỷ lệ cọc nên thanh toán online tạm thời chưa khả dụng."
+                    : `Hệ thống sẽ chuyển sang trang SePay/VietQR để thanh toán cọc ${depositPercent}%.`}
             </p>
           </div>
+
         </div>
       </DialogContent>
 
