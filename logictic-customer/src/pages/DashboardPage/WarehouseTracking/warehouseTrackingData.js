@@ -27,7 +27,8 @@ const customer = {
   email: "phongpvse161146@fpt.edu.vn",
 };
 
-const createTimeline = ({
+export const createTimeline = ({
+
   createdAt,
   receivedAt,
   storedAt,

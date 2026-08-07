@@ -2142,3 +2142,40 @@
     box-shadow: none;
   }
 }
+
+.warehouse-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.warehouse-subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.warehouse-subtab-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.warehouse-subtab-btn.active {
+  background: linear-gradient(135deg, #145bd7 0%, #0b3fa4 100%);
+  color: #ffffff;
+  border-color: #145bd7;
+  box-shadow: 0 4px 12px rgba(20, 91, 215, 0.25);
+}
+

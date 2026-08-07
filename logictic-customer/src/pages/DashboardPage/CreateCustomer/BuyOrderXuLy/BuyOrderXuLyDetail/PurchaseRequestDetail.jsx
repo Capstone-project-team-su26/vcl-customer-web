@@ -272,6 +272,7 @@ const getItemProductTypeKey = (item) =>
       item?.productType?.id ??
       item?.productType?.value ??
       item?.productTypeCode ??
+      (typeof item?.productType === "string" ? item.productType : "") ??
       "",
   ).trim();
 
@@ -279,11 +280,10 @@ const getItemProductTypeLabel = (
   item,
   productTypeNameMap,
 ) => {
-  if (
-    typeof item?.productType === "string" &&
-    item.productType.trim()
-  ) {
-    return item.productType.trim();
+  const key = getItemProductTypeKey(item);
+
+  if (key && productTypeNameMap?.has(key)) {
+    return productTypeNameMap.get(key);
   }
 
   if (
@@ -293,7 +293,8 @@ const getItemProductTypeLabel = (
     const directName = safeText(
       item.productType?.productTypeName ??
         item.productType?.name ??
-        item.productType?.label,
+        item.productType?.label ??
+        item.productType?.categoryName,
       "",
     );
 
@@ -302,16 +303,26 @@ const getItemProductTypeLabel = (
     }
   }
 
-  const key = getItemProductTypeKey(item);
+  if (
+    typeof item?.productType === "string" &&
+    item.productType.trim()
+  ) {
+    const str = item.productType.trim();
+    if (productTypeNameMap?.has(str)) {
+      return productTypeNameMap.get(str);
+    }
+    return str;
+  }
 
-  return (
-    productTypeNameMap?.get(key) ||
-    safeText(
-      item?.productTypeName || key,
-      "Chưa cập nhật",
-    )
+  return safeText(
+    item?.productTypeName ||
+      item?.productTypeCategoryName ||
+      item?.categoryName ||
+      (key && !key.includes("-") ? key : ""),
+    "Chưa cập nhật",
   );
 };
+
 
 const normalizeImageUrl = (value) => {
   if (typeof value === "string") {
@@ -461,18 +472,20 @@ const PurchaseRequestDetail = () => {
   const [productTypesLoading, setProductTypesLoading] =
     useState(false);
 
-  const productTypeNameMap = useMemo(
-    () =>
-      new Map(
-        productTypes
-          .map((productType) => [
-            getProductTypeId(productType),
-            getProductTypeName(productType),
-          ])
-          .filter(([id]) => Boolean(id)),
-      ),
-    [productTypes],
-  );
+  const productTypeNameMap = useMemo(() => {
+    const map = new Map();
+    (productTypes || []).forEach((pt) => {
+      const name = getProductTypeName(pt);
+      const id = getProductTypeId(pt);
+      if (id) map.set(id, name);
+      if (pt?.productTypeId) map.set(String(pt.productTypeId).trim(), name);
+      if (pt?.id) map.set(String(pt.id).trim(), name);
+      if (pt?.code) map.set(String(pt.code).trim(), name);
+      if (pt?.value) map.set(String(pt.value).trim(), name);
+    });
+    return map;
+  }, [productTypes]);
+
 
   const statusClass = useMemo(
     () =>

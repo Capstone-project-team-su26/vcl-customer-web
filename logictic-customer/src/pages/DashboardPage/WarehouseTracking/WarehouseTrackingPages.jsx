@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Link,
   NavLink,
@@ -26,6 +26,7 @@ import {
   Search,
   ShieldCheck,
   ShieldEllipsis,
+  ShoppingCart,
   Truck,
   Warehouse,
   Weight,
@@ -33,14 +34,23 @@ import {
 
 import AuthNotify from "../../../utils/AuthNotify";
 import { formatVietnamDateTime } from "../../../utils/timeUtc";
+import { getConsignmentsApi } from "../../../api/OrderApi/consignmentApi";
+import { getPurchaseRequestsApi } from "../../../api/PurchaseAPI/purchaseRequestApi";
+import { WarehouseSummaryCards } from "./Shared/WarehouseSummaryCards";
+import { KiGuiTrackingList } from "./KiGui/KiGuiTrackingList";
+import { MuaHoTrackingList } from "./MuaHo/MuaHoTrackingList";
+
+
 import {
   WAREHOUSE_SHIPMENTS,
   WAREHOUSE_STATUS,
   WAREHOUSE_STATUS_META,
+  createTimeline,
   getWarehouseReceipt,
   getWarehouseShipment,
 } from "./warehouseTrackingData";
 import "./WarehouseTracking.css";
+
 
 const formatTime = (value) =>
   value
@@ -273,10 +283,11 @@ function ShipmentCard({ shipment }) {
             Khối lượng
             <strong>
               {formatNumber(
-                shipment.inbound.actualWeight ??
+                shipment.inbound?.actualWeight ??
                   shipment.totalWeight,
                 " kg"
               )}
+
             </strong>
           </span>
         </div>
@@ -329,23 +340,324 @@ function EmptyState({
 export function WarehouseInventoryPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [activeCategoryTab, setActiveCategoryTab] = useState("CONSIGNMENT");
+  const [apiConsignments, setApiConsignments] = useState([]);
+  const [apiPurchaseRequests, setApiPurchaseRequests] = useState([]);
+  const [apiLoading, setApiLoading] = useState(false);
   const normalizedSearch = search.trim().toLowerCase();
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchApiData = async () => {
+      try {
+        setApiLoading(true);
+        const [consignmentsRes, purchaseRes] = await Promise.allSettled([
+          getConsignmentsApi({ params: { pageNumber: 1, pageSize: 100 } }),
+          getPurchaseRequestsApi(1, 100),
+        ]);
+
+        if (!isMounted) return;
+
+        if (consignmentsRes.status === "fulfilled" && consignmentsRes.value) {
+          const response = consignmentsRes.value;
+          const allRawItems = Array.isArray(response?.data?.items)
+            ? response.data.items
+            : Array.isArray(response?.items)
+            ? response.items
+            : Array.isArray(response?.data)
+            ? response.data
+            : Array.isArray(response)
+            ? response
+            : [];
+
+          const warehouseStatuses = [
+            "CHECKED_IN",
+            "WAREHOUSE_RECEIVED",
+            "IN_STORAGE",
+            "CUSTOMS_REVIEW",
+            "CUSTOMS_CLEARED",
+            "OUTBOUND_READY",
+            "RELEASED",
+            "IN_TRANSIT",
+            "COMPLETED",
+            "DELIVERED",
+          ];
+
+          // Filter items that have entered warehouse starting from CHECKED_IN
+          const rawItems = allRawItems.filter((item) =>
+            warehouseStatuses.includes(String(item?.status || "").trim().toUpperCase())
+          );
+
+          if (rawItems.length > 0) {
+            const mapped = rawItems.map((item, index) => {
+
+              const code = item.consignmentCode || item.trackingCode || item.code || `VCL-${index + 1}`;
+              const itemNamesList = Array.isArray(item.itemNames) && item.itemNames.length > 0
+                ? item.itemNames.join(", ")
+                : "Kiện hàng ký gửi";
+
+              const pkgItems = Array.isArray(item.items) && item.items.length > 0
+                ? item.items.map((pkg, i) => ({
+                    id: pkg.packageId || pkg.id || `pkg-${index}-${i}`,
+                    packageCode: pkg.trackingCode || pkg.packageCode || `PKG-${index + 1}-${i + 1}`,
+                    productName: pkg.productName || itemNamesList,
+                    configuration: `${pkg.weight || item.totalWeight || 1} kg`,
+                    quantity: pkg.quantity || 1,
+                    actualQuantity: pkg.quantity || 1,
+                    weight: pkg.weight || item.totalWeight || 1,
+                    actualWeight: pkg.weight || item.totalWeight || 1,
+                    volume: item.totalVolume || 0.01,
+                    storageLocation: item.warehouseCode || "Zone A",
+                    status: item.status || "RECEIVED",
+                  }))
+                : [
+                    {
+                      id: `pkg-${index}-0`,
+                      packageCode: code,
+                      productName: itemNamesList,
+                      configuration: `${item.totalWeight || 1} kg`,
+                      quantity: 1,
+                      actualQuantity: 1,
+                      weight: item.totalWeight || 1,
+                      actualWeight: item.totalWeight || 1,
+                      volume: item.totalVolume || 0.01,
+                      storageLocation: item.warehouseCode || "Zone A",
+                      status: item.status || "RECEIVED",
+                    },
+                  ];
+
+              return {
+                id: item.orderId || item.consignmentId || `shipment-${index}`,
+                orderId: item.orderId || item.consignmentId,
+                consignmentCode: code,
+                consignmentType: item.consignmentType || "Standard",
+                orderStatus: item.status || "DEPOSIT_PAID",
+                orderType: "CONSIGNMENT",
+                serviceName: item.consignmentType === "Express" ? "Ký gửi hỏa tốc" : "Ký gửi tiêu chuẩn",
+                status: item.status || WAREHOUSE_STATUS.RECEIVED,
+                customer: {
+                  id: item.customerId || "cust-1",
+                  name: item.customerName || item.receiverName || "Khách hàng",
+                  fullName: item.customerName || item.receiverName || "Khách hàng",
+                  phone: item.receiverPhone || "",
+                },
+                route: item.route || "Trung quốc --> Việt Nam",
+                note: item.note || "",
+                receiverName: item.receiverName || "Khách hàng",
+                receiverPhone: item.receiverPhone || "",
+                receiverAddress: item.receiverAddress || "",
+                requiresInspection: item.requiresInspection ?? true,
+                createdAt: item.createdAt || new Date().toISOString(),
+                statusUpdatedAt: item.statusUpdatedAt || item.createdAt || new Date().toISOString(),
+                receiptPdfUrl: item.receiptPdfUrl || null,
+                internationalWarehouse: {
+                  name: item.warehouseName || "Kho Quảng Châu (Trung Quốc)",
+                  address: item.warehouseName || "Quảng Châu / Tokyo",
+                  zone: item.warehouseRegion || "Zone A",
+                  binCode: item.warehouseCode || "CN_GZ",
+                },
+                packageCount: pkgItems.length,
+                totalQuantity: pkgItems.length,
+                totalWeight: item.totalWeight || 1,
+                totalVolume: item.totalVolume || 1,
+                storageDays: 1,
+                lastUpdatedAt: item.statusUpdatedAt || item.createdAt || new Date().toISOString(),
+                items: pkgItems,
+                inbound: {
+                  receiptId: `RC-${code}`,
+                  receivedAt: item.createdAt || new Date().toISOString(),
+                  actualWeight: item.totalWeight || 1,
+                  actualVolume: item.totalVolume || 1,
+                  staffName: "Nhân viên kho",
+                  inspectionResult: item.requiresInspection ? "Kiểm hàng kỹ" : "Tự đóng gói",
+                },
+                timeline: createTimeline({
+                  createdAt: item.createdAt,
+                  receivedAt: item.createdAt,
+                  current: "received",
+                  location: item.warehouseName || "Kho VCL Quốc Tế",
+                }),
+              };
+            });
+            setApiConsignments(mapped);
+          }
+        }
+
+
+        if (purchaseRes.status === "fulfilled" && purchaseRes.value) {
+          const response = purchaseRes.value;
+          const allRawItems = Array.isArray(response?.items)
+            ? response.items
+            : Array.isArray(response?.data?.items)
+            ? response.data.items
+            : Array.isArray(response?.data)
+            ? response.data
+            : Array.isArray(response)
+            ? response
+            : [];
+
+          const warehouseStatuses = [
+            "CHECKED_IN",
+            "WAREHOUSE_RECEIVED",
+            "IN_STORAGE",
+            "CUSTOMS_REVIEW",
+            "CUSTOMS_CLEARED",
+            "OUTBOUND_READY",
+            "RELEASED",
+            "IN_TRANSIT",
+            "COMPLETED",
+            "DELIVERED",
+          ];
+
+          // Filter purchase requests starting from CHECKED_IN / physical warehouse arrival
+          const rawItems = allRawItems.filter((item) =>
+            warehouseStatuses.includes(String(item?.status || "").trim().toUpperCase())
+          );
+
+          if (rawItems.length > 0) {
+            const mapped = rawItems.map((item, index) => {
+
+              const code = item.requestCode || item.trackingCode || item.code || `PUR-${index + 1}`;
+              const pkgItems = Array.isArray(item.items) ? item.items.map((pkg, i) => ({
+                id: pkg.itemId || pkg.id || `pur-pkg-${index}-${i}`,
+                packageCode: pkg.trackingCode || `PUR-ITEM-${index + 1}-${i + 1}`,
+                productName: pkg.productName || "Sản phẩm mua hộ",
+                configuration: `${pkg.quantity || 1} SP`,
+                quantity: pkg.quantity || 1,
+                actualQuantity: pkg.quantity || 1,
+                weight: 1,
+                actualWeight: 1,
+                volume: 0.01,
+                storageLocation: "Zone B - Mua Hộ",
+                status: item.status || "IN_STORAGE",
+              })) : [];
+
+              return {
+                id: item.requestId || item.id || `pur-shipment-${index}`,
+                orderId: item.requestId || item.id,
+                consignmentCode: code,
+                consignmentType: "Mua hộ",
+                orderStatus: item.status || "APPROVED",
+                orderType: "PURCHASE",
+                serviceName: "Đơn mua hộ quốc tế",
+                status: item.status || WAREHOUSE_STATUS.IN_STORAGE,
+                customer: {
+                  id: item.customerId || "cust-1",
+                  name: item.receiverName || item.customerName || "Khách hàng",
+                  fullName: item.receiverName || item.customerName || "Khách hàng",
+                  phone: item.receiverPhone || "",
+                },
+                route: "Trung Quốc / Nhật Bản → Việt Nam",
+                note: item.note || item.description || "",
+                receiverName: item.receiverName || "Khách hàng",
+                receiverPhone: item.receiverPhone || "",
+                receiverAddress: item.deliveryAddress || item.receiverAddress || "",
+                createdAt: item.createdAt || new Date().toISOString(),
+                statusUpdatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+                internationalWarehouse: {
+                  name: "Kho VCL Mua Hộ",
+                  address: "Quảng Châu / Tokyo",
+                  zone: "Zone B",
+                  binCode: "B2-05",
+                },
+                packageCount: pkgItems.length || 1,
+                totalQuantity: pkgItems.reduce((s, p) => s + (Number(p.quantity) || 1), 0),
+                totalWeight: pkgItems.length || 1,
+                totalVolume: 0.02,
+                storageDays: 1,
+                lastUpdatedAt: item.updatedAt || new Date().toISOString(),
+                expectedVietnamAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+                items: pkgItems.length > 0 ? pkgItems : [
+                  {
+                    id: `pur-pkg-${index}-0`,
+                    packageCode: code,
+                    productName: item.productName || "Hàng mua hộ quốc tế",
+                    configuration: "1 kg",
+                    quantity: 1,
+                    actualQuantity: 1,
+                    weight: 1,
+                    actualWeight: 1,
+                    volume: 0.01,
+                    storageLocation: "Zone B - Bin 02",
+                    status: item.status || "IN_STORAGE",
+                  }
+                ],
+                inbound: {
+                  receiptId: `PUR-RC-${code}`,
+                  receivedAt: item.createdAt || new Date().toISOString(),
+                  actualWeight: pkgItems.length || 1,
+                  actualVolume: 0.02,
+                  staffName: "NV Mua Hộ Kho",
+                  inspectionResult: "Đã kiểm hàng mua hộ",
+                },
+                timeline: createTimeline({
+                  createdAt: item.createdAt,
+                  receivedAt: item.createdAt,
+                  current: "stored",
+                  location: "Kho VCL Mua Hộ",
+                }),
+              };
+            });
+            setApiPurchaseRequests(mapped);
+          } else {
+            setApiPurchaseRequests([]);
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi lấy dữ liệu kho:", err);
+      } finally {
+        if (isMounted) setApiLoading(false);
+      }
+    };
+
+    fetchApiData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const sourceShipments = useMemo(() => {
+    const warehouseStatuses = [
+      "CHECKED_IN",
+      "WAREHOUSE_RECEIVED",
+      "IN_STORAGE",
+      "CUSTOMS_REVIEW",
+      "CUSTOMS_CLEARED",
+      "OUTBOUND_READY",
+      "RELEASED",
+      "IN_TRANSIT",
+      "COMPLETED",
+      "DELIVERED",
+    ];
+
+    if (activeCategoryTab === "CONSIGNMENT") {
+      return apiConsignments.filter((item) =>
+        warehouseStatuses.includes(String(item.status || "").toUpperCase())
+      );
+    }
+    return apiPurchaseRequests.filter((item) =>
+      warehouseStatuses.includes(String(item.status || "").toUpperCase())
+    );
+  }, [activeCategoryTab, apiConsignments, apiPurchaseRequests]);
+
+
+
 
   const shipments = useMemo(
     () =>
-      WAREHOUSE_SHIPMENTS.filter((shipment) => {
+      sourceShipments.filter((shipment) => {
         const matchesStatus =
           status === "ALL" || shipment.status === status;
         const searchable = [
           shipment.consignmentCode,
-          shipment.customer.name,
-          shipment.inbound.receiptId,
-          shipment.internationalWarehouse.name,
+          shipment.customer?.name,
+          shipment.internationalWarehouse?.name,
           ...shipment.items.flatMap((item) => [
             item.packageCode,
             item.productName,
           ]),
         ]
+          .filter(Boolean)
           .join(" ")
           .toLowerCase();
 
@@ -355,21 +667,20 @@ export function WarehouseInventoryPage() {
             searchable.includes(normalizedSearch))
         );
       }),
-    [normalizedSearch, status]
+    [sourceShipments, normalizedSearch, status]
   );
 
-  const totalPackages = WAREHOUSE_SHIPMENTS.reduce(
+  const totalPackages = sourceShipments.reduce(
     (total, shipment) =>
       total + shipment.packageCount,
     0
   );
-  const totalWeight = WAREHOUSE_SHIPMENTS.reduce(
+  const totalWeight = sourceShipments.reduce(
     (total, shipment) =>
-      total +
-      (shipment.inbound.actualWeight ??
-        shipment.totalWeight),
+      total + (shipment.totalWeight || 0),
     0
   );
+
 
   return (
     <div className="warehouse-tracking">
@@ -386,104 +697,44 @@ export function WarehouseInventoryPage() {
         }
       />
 
-      <section className="warehouse-summary-grid">
-        <SummaryCard
-          icon={Box}
-          label="Tổng kiện đang theo dõi"
-          value={formatNumber(totalPackages)}
-          note="Thuộc 4 đơn hàng"
-          tone="blue"
-        />
-        <SummaryCard
-          icon={Warehouse}
-          label="Đang lưu kho quốc tế"
-          value="3 đơn"
-          note="Kho Quảng Châu & Thâm Quyến"
-          tone="cyan"
-        />
-        <SummaryCard
-          icon={ShieldEllipsis}
-          label="Đang thông quan"
-          value="1 đơn"
-          note="Không có hồ sơ cần bổ sung"
-          tone="amber"
-        />
-        <SummaryCard
-          icon={Weight}
-          label="Tổng khối lượng"
-          value={formatNumber(totalWeight, " kg")}
-          note="Khối lượng thực tế"
-          tone="violet"
-        />
-      </section>
+      <div className="warehouse-subtabs">
+        <button
+          type="button"
+          className={`warehouse-subtab-btn ${activeCategoryTab === "CONSIGNMENT" ? "active" : ""}`}
+          onClick={() => setActiveCategoryTab("CONSIGNMENT")}
+        >
+          <Box size={16} /> 📦 Hàng ký gửi ({apiConsignments.length || 4})
+        </button>
+        <button
+          type="button"
+          className={`warehouse-subtab-btn ${activeCategoryTab === "PURCHASE" ? "active" : ""}`}
+          onClick={() => setActiveCategoryTab("PURCHASE")}
+        >
+          <ShoppingCart size={16} /> 🛒 Hàng mua hộ ({apiPurchaseRequests.length || 3})
+        </button>
+      </div>
 
-      <section className="warehouse-panel">
-        <header className="warehouse-panel__header">
-          <div>
-            <h3>Danh sách hàng của bạn</h3>
-            <p>
-              {shipments.length} đơn phù hợp với bộ lọc
-              hiện tại
-            </p>
-          </div>
-          <div className="warehouse-filter">
-            <label>
-              <Search size={17} />
-              <input
-                value={search}
-                onChange={(event) =>
-                  setSearch(event.target.value)
-                }
-                placeholder="Tìm mã đơn, mã kiện, sản phẩm..."
-              />
-            </label>
-            <label className="warehouse-select">
-              <Filter size={16} />
-              <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value)
-                }
-              >
-                <option value="ALL">
-                  Tất cả trạng thái
-                </option>
-                <option value={WAREHOUSE_STATUS.IN_STORAGE}>
-                  Đang lưu kho
-                </option>
-                <option
-                  value={WAREHOUSE_STATUS.CUSTOMS_REVIEW}
-                >
-                  Đang thông quan
-                </option>
-                <option
-                  value={WAREHOUSE_STATUS.OUTBOUND_READY}
-                >
-                  Sẵn sàng xuất kho
-                </option>
-                <option value={WAREHOUSE_STATUS.IN_TRANSIT}>
-                  Đang về Việt Nam
-                </option>
-              </select>
-            </label>
-          </div>
-        </header>
-        <div className="warehouse-shipment-list">
-          {shipments.length ? (
-            shipments.map((shipment) => (
-              <ShipmentCard
-                key={shipment.id}
-                shipment={shipment}
-              />
-            ))
-          ) : (
-            <EmptyState />
-          )}
-        </div>
-      </section>
+
+      <WarehouseSummaryCards
+        shipments={sourceShipments}
+        isPurchase={activeCategoryTab === "PURCHASE"}
+      />
+
+      {activeCategoryTab === "CONSIGNMENT" ? (
+        <KiGuiTrackingList
+          consignments={sourceShipments}
+          loading={apiLoading}
+        />
+      ) : (
+        <MuaHoTrackingList
+          purchaseRequests={sourceShipments}
+          loading={apiLoading}
+        />
+      )}
     </div>
   );
 }
+
 
 function DetailRow({ label, value, accent = false }) {
   return (
