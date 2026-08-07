@@ -454,11 +454,13 @@ export const getConsignmentsApi = async (options = {}) => {
       "/api/orders/consignments",
       {
         signal: getSignal(options),
+        params: options?.params,
         headers: {
           Accept: "text/plain, application/json",
         },
       }
     );
+
 
     return response.data;
   } catch (error) {

@@ -41,7 +41,8 @@ import "./ConsignmentList.css";
 
 const { RangePicker } = DatePicker;
 
-const DEFAULT_PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 10;
+
 
 /* =========================================================
    HELPER FUNCTIONS
@@ -290,6 +291,10 @@ const ConsignmentList = () => {
   const fetchAllConsignments = useCallback(
     async (signal) => {
       const response = await getConsignmentsApi({
+        params: {
+          pageNumber: 1,
+          pageSize: 100,
+        },
         signal,
       });
 
@@ -297,6 +302,7 @@ const ConsignmentList = () => {
     },
     []
   );
+
 
   const fetchConsignments = useCallback(
     async (signal) => {

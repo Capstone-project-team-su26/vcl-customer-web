@@ -42,7 +42,8 @@ import "./ConsignmentListCheck.css";
 
 const { RangePicker } = DatePicker;
 
-const DEFAULT_PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 10;
+
 
 /* =========================================================
    HELPERS
@@ -568,6 +569,11 @@ const ConsignmentList = () => {
     useCallback(async (signal) => {
       const response =
         await getConsignmentsApi({
+          params: {
+            pageNumber: 1,
+            pageSize: 100,
+            status: "QUOTATION_SENT",
+          },
           signal,
         });
 
@@ -575,6 +581,7 @@ const ConsignmentList = () => {
         response
       );
     }, []);
+
 
   const fetchConsignments =
     useCallback(

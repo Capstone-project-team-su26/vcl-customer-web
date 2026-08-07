@@ -43,7 +43,8 @@ import "./PurchaseRequestPendingList.css";
 
 const { RangePicker } = DatePicker;
 
-const DEFAULT_PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 10;
+
 
 /* =========================================================
    HELPERS
@@ -323,9 +324,10 @@ const PurchaseRequestPendingList = () => {
         setLoading(true);
 
         const result =
-          await getPurchaseRequestsApi({
+          await getPurchaseRequestsApi(1, 100, {
             signal,
           });
+
 
         const items =
           getPurchaseRequestItems(result);
