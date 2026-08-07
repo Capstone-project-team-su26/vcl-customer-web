@@ -2,6 +2,43 @@
    BUY ORDER PAYMENT HISTORY - ULTRA PREMIUM STYLING (SCOPED)
    ========================================================= */
 
+.buy-order-payment-history-page,
+.buy-order-payment-history-page *,
+.buy-order-payment-history-page *::before,
+.buy-order-payment-history-page *::after,
+.buy-order-payment-history-page .ant-card,
+.buy-order-payment-history-page .ant-card-head,
+.buy-order-payment-history-page .ant-card-body,
+.buy-order-payment-history-page .ant-table,
+.buy-order-payment-history-page .ant-table-wrapper,
+.buy-order-payment-history-page .ant-table-container,
+.buy-order-payment-history-page .ant-table-thead,
+.buy-order-payment-history-page .ant-table-tbody,
+.buy-order-payment-history-page .ant-table-thead > tr > th,
+.buy-order-payment-history-page .ant-table-tbody > tr > td,
+.buy-order-payment-history-page .ant-table-cell,
+.buy-order-payment-history-page .ant-tag,
+.buy-order-payment-history-page .ant-breadcrumb,
+.buy-order-payment-history-page .ant-breadcrumb *,
+.buy-order-payment-history-page .ant-empty,
+.buy-order-payment-history-page .ant-empty *,
+.buy-order-payment-history-page .ant-progress,
+.buy-order-payment-history-page .ant-progress *,
+.buy-order-payment-history-page button,
+.buy-order-payment-history-page span,
+.buy-order-payment-history-page div,
+.buy-order-payment-history-page strong,
+.buy-order-payment-history-page a,
+.buy-order-payment-history-page p,
+.buy-order-payment-history-page h1,
+.buy-order-payment-history-page h2,
+.buy-order-payment-history-page h3 {
+  font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  box-sizing: border-box;
+}
+
 .buy-order-payment-history-page {
   --boph-primary: #ea580c;
   --boph-primary-dark: #c2410c;
@@ -12,15 +49,8 @@
   max-width: 1500px;
   margin: 0 auto;
   padding: 20px 24px 48px;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #1e293b;
-  box-sizing: border-box;
-}
-
-.buy-order-payment-history-page *,
-.buy-order-payment-history-page *::before,
-.buy-order-payment-history-page *::after {
-  box-sizing: border-box;
+  line-height: 1.5;
 }
 
 /* ================= 1. BREADCRUMB ================= */
@@ -49,20 +79,20 @@
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
-  padding: 20px 24px;
+  padding: 22px 28px;
   border-radius: 20px;
   background:
-    radial-gradient(circle at top right, rgba(253, 186, 116, 0.18), transparent 50%),
-    linear-gradient(135deg, #ffffff 0%, #fffbf5 100%);
+    radial-gradient(circle at top right, rgba(253, 186, 116, 0.22), transparent 55%),
+    linear-gradient(135deg, #ffffff 0%, #fffdfa 60%, #fff7ed 100%);
   border: 1px solid rgba(249, 115, 22, 0.25);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
-  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  margin-bottom: 22px;
 }
 
 .buy-order-payment-history-page .boph-header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
 }
 
 .buy-order-payment-history-page .boph-back-btn {
@@ -70,59 +100,63 @@
   height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   color: #475569;
   cursor: pointer;
-  transition: all 0.18s ease;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
 }
 
 .buy-order-payment-history-page .boph-back-btn:hover {
   background: #fff7ed;
   border-color: #f97316;
   color: #ea580c;
+  transform: translateX(-2px);
 }
 
 .buy-order-payment-history-page .boph-header-titles {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .buy-order-payment-history-page .boph-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: #ffedd5;
   border: 1px solid #fed7aa;
   color: #c2410c;
-  font-size: 10.5px;
-  font-weight: 900;
+  font-size: 11px;
+  font-weight: 800;
   letter-spacing: 0.5px;
   width: fit-content;
 }
 
 .buy-order-payment-history-page .boph-header-titles h1 {
-  margin: 4px 0 2px;
+  margin: 2px 0;
   color: #0f172a;
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: -0.3px;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: normal;
 }
 
 .buy-order-payment-history-page .boph-header-titles p {
   margin: 0;
   color: #64748b;
   font-size: 13.5px;
+  line-height: 1.4;
 }
 
 .buy-order-payment-history-page .boph-header-titles p strong {
   color: #ea580c;
   font-weight: 800;
+  letter-spacing: 0.3px;
 }
 
 .buy-order-payment-history-page .boph-header-right {
@@ -133,25 +167,61 @@
 }
 
 .buy-order-payment-history-page .boph-header-status-pill.ant-tag {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 16px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  border: none;
+}
+
+.buy-order-payment-history-page .boph-status-pill-paid {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.buy-order-payment-history-page .boph-status-pill-deposit {
+  background: #ecfeff !important;
+  color: #0891b2 !important;
+  border: 1px solid #a5f3fc !important;
+}
+
+.buy-order-payment-history-page .boph-status-pill-waiting {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+
+.buy-order-payment-history-page .boph-status-pill-review {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+.buy-order-payment-history-page .boph-status-pill-cancel {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
 }
 
 .buy-order-payment-history-page .boph-refresh-btn.MuiButton-root {
-  min-height: 40px;
-  padding: 0 16px !important;
+  min-height: 42px;
+  padding: 0 18px !important;
   border-radius: 12px !important;
   text-transform: none !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: #ea580c !important;
   border-color: #fed7aa !important;
-  background: #fff7ed !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .buy-order-payment-history-page .boph-refresh-btn.MuiButton-root:hover {
-  background: #ffedd5 !important;
+  background: #fff7ed !important;
   border-color: #f97316 !important;
 }
 
@@ -159,62 +229,75 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 10px 22px;
   border-radius: 12px;
   background: linear-gradient(135deg, #ea580c, #f97316);
   color: #ffffff;
   font-size: 13.5px;
-  font-weight: 900;
+  font-weight: 800;
   text-decoration: none;
   box-shadow: 0 6px 20px rgba(249, 115, 22, 0.28);
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
 }
 
 .buy-order-payment-history-page .boph-header-pay-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 10px 26px rgba(249, 115, 22, 0.38);
   color: #ffffff;
 }
 
-/* ================= 3. METRICS CARDS ================= */
+/* ================= 3. OVERVIEW & METRICS ================= */
+
+.buy-order-payment-history-page .boph-overview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 22px;
+}
 
 .buy-order-payment-history-page .boph-metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 18px;
 }
 
 .buy-order-payment-history-page .boph-metric-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 18px 22px;
-  border-radius: 16px;
+  gap: 18px;
+  padding: 20px 24px;
+  border-radius: 18px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.035);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.035);
+  transition: all 0.2s ease;
+}
+
+.buy-order-payment-history-page .boph-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
 }
 
 .buy-order-payment-history-page .boph-metric-card.total {
-  border-left: 4px solid #ea580c;
+  border-left: 5px solid #ea580c;
 }
 
 .buy-order-payment-history-page .boph-metric-card.paid {
-  border-left: 4px solid #10b981;
+  border-left: 5px solid #10b981;
 }
 
 .buy-order-payment-history-page .boph-metric-card.outstanding {
-  border-left: 4px solid #ef4444;
+  border-left: 5px solid #ef4444;
 }
 
 .buy-order-payment-history-page .boph-metric-icon {
-  width: 46px;
-  height: 46px;
+  width: 50px;
+  height: 50px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  font-size: 22px;
+  border-radius: 14px;
+  font-size: 24px;
+  flex-shrink: 0;
 }
 
 .buy-order-payment-history-page .boph-metric-card.total .boph-metric-icon {
@@ -235,60 +318,248 @@
 .buy-order-payment-history-page .boph-metric-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .buy-order-payment-history-page .boph-metric-info span {
   color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.buy-order-payment-history-page .boph-metric-card.total .boph-metric-info strong {
+  color: #ea580c;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.buy-order-payment-history-page .boph-metric-card.paid .boph-metric-info strong {
+  color: #059669;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.buy-order-payment-history-page .boph-metric-card.outstanding .boph-metric-info strong {
+  color: #dc2626;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+/* Progress Bar Card */
+.buy-order-payment-history-page .boph-progress-card {
+  padding: 16px 22px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+}
+
+.buy-order-payment-history-page .boph-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.buy-order-payment-history-page .boph-progress-title {
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.buy-order-payment-history-page .boph-progress-percent {
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.buy-order-payment-history-page .boph-progress-percent strong {
+  color: #059669;
+  font-weight: 800;
+}
+
+.buy-order-payment-history-page .boph-progress-bar .ant-progress-bg {
+  border-radius: 999px;
+}
+
+/* ================= 4. BREAKDOWN CARD ================= */
+
+.buy-order-payment-history-page .boph-breakdown-card.ant-card {
+  border-radius: 18px;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  background: linear-gradient(135deg, #ffffff 0%, #fffdfa 100%);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.05);
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.buy-order-payment-history-page .boph-breakdown-card .ant-card-body {
+  padding: 20px 24px;
+}
+
+.buy-order-payment-history-page .boph-breakdown-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c2410c;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #fed7aa;
+}
+
+.buy-order-payment-history-page .boph-breakdown-icon {
+  color: #ea580c;
+  font-size: 20px;
+}
+
+.buy-order-payment-history-page .boph-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.buy-order-payment-history-page .boph-breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.18s ease;
+}
+
+.buy-order-payment-history-page .boph-breakdown-item:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.buy-order-payment-history-page .boph-breakdown-item.deposit-highlight {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.buy-order-payment-history-page .boph-breakdown-item-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.buy-order-payment-history-page .boph-breakdown-item-label svg {
+  color: #ea580c;
+}
+
+.buy-order-payment-history-page .boph-breakdown-item strong {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.buy-order-payment-history-page .boph-breakdown-item.deposit-highlight strong {
+  color: #ea580c;
+}
+
+.buy-order-payment-history-page .boph-deposit-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.buy-order-payment-history-page .boph-deposit-note-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #ea580c;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
 
-.buy-order-payment-history-page .boph-metric-card.total .boph-metric-info strong {
-  color: #ea580c;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.buy-order-payment-history-page .boph-metric-card.paid .boph-metric-info strong {
-  color: #059669;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.buy-order-payment-history-page .boph-metric-card.outstanding .boph-metric-info strong {
-  color: #dc2626;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-/* ================= 4. TABLE CARD ================= */
+/* ================= 5. TABLE CARD ================= */
 
 .buy-order-payment-history-page .boph-table-card.ant-card {
-  border-radius: 18px;
+  border-radius: 20px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.04);
   overflow: hidden;
 }
 
 .buy-order-payment-history-page .boph-table-card-header {
-  font-size: 15px;
-  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 800;
   color: #0f172a;
 }
 
+.buy-order-payment-history-page .boph-table-title-icon {
+  color: #ea580c;
+}
+
+.buy-order-payment-history-page .ant-table-thead > tr > th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 14px 16px !important;
+}
+
+.buy-order-payment-history-page .ant-table-tbody > tr > td {
+  padding: 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+}
+
+.buy-order-payment-history-page .ant-table-tbody > tr:hover > td {
+  background: #fffcf8 !important;
+}
+
+/* Table Content Cells */
+
 .buy-order-payment-history-page .boph-code-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.buy-order-payment-history-page .boph-code-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .buy-order-payment-history-page .boph-order-code {
   color: #0f172a;
-  font-size: 13.5px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .buy-order-payment-history-page .boph-copy-btn {
@@ -301,7 +572,7 @@
   border: 1px solid #cbd5e1;
   color: #475569;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
 }
@@ -318,65 +589,331 @@
   color: #047857;
 }
 
-.buy-order-payment-history-page .boph-type-text,
-.buy-order-payment-history-page .boph-method-text {
-  color: #334155;
-  font-size: 13px;
+.buy-order-payment-history-page .boph-sub-code {
+  padding-top: 5px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.buy-order-payment-history-page .boph-code-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.buy-order-payment-history-page .boph-tx-code {
+  font-size: 12px;
   font-weight: 700;
+  color: #0284c7;
+  background: #f0f9ff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #bae6fd;
+  letter-spacing: 0.2px;
+}
+
+.buy-order-payment-history-page .boph-copy-btn.sm {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.buy-order-payment-history-page .boph-type-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+}
+
+.buy-order-payment-history-page .boph-method-chip {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 1px solid #fed7aa;
 }
 
 .buy-order-payment-history-page .boph-amount-text {
   color: #ea580c;
-  font-size: 14.5px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .buy-order-payment-history-page .boph-status-tag.ant-tag {
-  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
+}
+
+.buy-order-payment-history-page .boph-status-success {
+  background: #ecfdf5 !important;
+  color: #059669 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.buy-order-payment-history-page .boph-status-pending {
+  background: #fffbeb !important;
+  color: #d97706 !important;
+  border-color: #fde68a !important;
+}
+
+.buy-order-payment-history-page .boph-status-error {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
 }
 
 .buy-order-payment-history-page .boph-time-col {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   font-size: 12px;
   color: #64748b;
 }
 
-.buy-order-payment-history-page .boph-time-col small {
+.buy-order-payment-history-page .boph-time-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.buy-order-payment-history-page .boph-time-icon {
+  font-size: 14px !important;
+  color: #94a3b8;
+}
+
+.buy-order-payment-history-page .boph-time-row.paid {
   color: #059669;
   font-weight: 700;
+}
+
+.buy-order-payment-history-page .boph-time-icon.paid {
+  color: #10b981;
 }
 
 .buy-order-payment-history-page .boph-pay-now-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
+  padding: 7px 16px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #facc15 0%, #f97316 100%);
   color: #0f172a;
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 12.5px;
+  font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.22);
   transition: all 0.18s ease;
 }
 
 .buy-order-payment-history-page .boph-pay-now-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35);
   color: #0f172a;
 }
 
-.buy-order-payment-history-page .boph-muted-text {
-  color: #94a3b8;
+.buy-order-payment-history-page .boph-error-alert {
+  margin-bottom: 22px;
+  border-radius: 14px;
 }
 
-.buy-order-payment-history-page .boph-error-alert {
-  margin-bottom: 20px;
-  border-radius: 12px;
+/* ================= 6. CODE BOXES & ACTIONS ================= */
+
+.buy-order-payment-history-page .boph-code-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 250px;
 }
+
+.buy-order-payment-history-page .boph-code-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.18s ease;
+}
+
+.buy-order-payment-history-page .boph-code-box.bank {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.buy-order-payment-history-page .boph-code-box-header {
+  display: flex;
+  align-items: center;
+}
+
+.buy-order-payment-history-page .boph-code-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.4px;
+}
+
+.buy-order-payment-history-page .boph-code-tag.blue {
+  color: #0369a1;
+}
+
+.buy-order-payment-history-page .boph-code-box-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.buy-order-payment-history-page .boph-actions-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.buy-order-payment-history-page .boph-receipt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #ea580c;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.buy-order-payment-history-page .boph-receipt-btn:hover {
+  background: #ffedd5;
+  border-color: #f97316;
+  color: #c2410c;
+}
+
+.buy-order-payment-history-page .boph-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.buy-order-payment-history-page .boph-detail-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+/* ================= 7. DETAIL MODAL (GLOBAL & PORTAL) ================= */
+
+.boph-detail-modal,
+.boph-detail-modal *,
+.boph-detail-modal .ant-modal,
+.boph-detail-modal .ant-modal-content,
+.boph-detail-modal .ant-modal-header,
+.boph-detail-modal .ant-modal-title,
+.boph-detail-modal .ant-modal-body,
+.boph-detail-modal .ant-modal-footer,
+.boph-detail-modal .ant-descriptions,
+.boph-detail-modal .ant-descriptions-title,
+.boph-detail-modal .ant-descriptions-item-label,
+.boph-detail-modal .ant-descriptions-item-content,
+.boph-detail-modal .ant-btn {
+  font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.boph-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.4 !important;
+}
+
+.boph-detail-modal .ant-modal-content {
+  border-radius: 24px !important;
+  padding: 24px 28px !important;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16) !important;
+}
+
+.boph-modal-body {
+  padding-top: 14px;
+}
+
+.boph-modal-body .ant-descriptions-row > th.ant-descriptions-item-label {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  padding: 12px 16px !important;
+  width: 40%;
+  line-height: 1.4 !important;
+}
+
+.boph-modal-body .ant-descriptions-row > td.ant-descriptions-item-content {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  padding: 12px 16px !important;
+  line-height: 1.4 !important;
+}
+
+.boph-modal-body .ant-descriptions-bordered .ant-descriptions-view {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+
+.boph-detail-modal .ant-modal-footer {
+  margin-top: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+.boph-detail-modal .ant-modal-footer .ant-btn {
+  height: 40px !important;
+  padding: 0 20px !important;
+  border-radius: 10px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+}
+
+.boph-detail-modal .ant-modal-footer .ant-btn-primary {
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3) !important;
+}
+
+
+
+
+

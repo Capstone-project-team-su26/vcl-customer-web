@@ -12,21 +12,33 @@ import {
   Breadcrumb,
   Button as AntButton,
   Card,
+  Descriptions,
   Empty,
+  Modal,
+  Progress,
   Skeleton,
   Table,
   Tag,
+  Tooltip,
 } from "antd";
 
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import AutorenewIcon from "@mui/icons-material/Autorenew";
-import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
-import HistoryIcon from "@mui/icons-material/History";
-import LaunchIcon from "@mui/icons-material/Launch";
-import PaymentIcon from "@mui/icons-material/Payment";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import CreditCardRoundedIcon from "@mui/icons-material/CreditCardRounded";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
+import LaunchRoundedIcon from "@mui/icons-material/LaunchRounded";
+import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
+import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
+import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
+import MiscellaneousServicesRoundedIcon from "@mui/icons-material/MiscellaneousServicesRounded";
+import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
+import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
+import VerifiedRoundedIcon from "@mui/icons-material/VerifiedRounded";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 
 import { Button as MuiButton } from "@mui/material";
 
@@ -58,12 +70,12 @@ const formatPaymentType = (type) => {
   switch (normalized) {
     case "FULL_PAYMENT":
     case "FULL":
-      return "Thanh toán toàn bộ (100%)";
+      return "Thanh toán toàn bộ";
     case "DEPOSIT":
-      return "Đặt cọc (70%)";
+      return "Đặt cọc đơn hàng";
     case "REMAINING":
     case "REST":
-      return "Thanh toán còn lại (30%)";
+      return "Thanh toán còn lại";
     default:
       return type || "Thanh toán đơn hàng";
   }
@@ -72,14 +84,16 @@ const formatPaymentType = (type) => {
 const formatPaymentMethod = (method) => {
   const normalized = String(method || "").toUpperCase();
   switch (normalized) {
+    case "SEPAY":
+      return "Cổng SePay (VietQR)";
     case "PAYOS":
-      return "Cổng thanh toán PayOS";
+      return "Cổng PayOS";
     case "VNPAY":
       return "Cổng VNPAY";
     case "BANK_TRANSFER":
       return "Chuyển khoản ngân hàng";
     case "WALLET":
-      return "Ví dư tài khoản";
+      return "Ví số dư tài khoản";
     default:
       return method || "Thanh toán trực tuyến";
   }
@@ -93,15 +107,15 @@ const renderPaymentStatusTag = (status) => {
     case "COMPLETED":
     case "SUCCEEDED":
       return (
-        <Tag color="success" className="boph-status-tag">
-          Thành công
+        <Tag color="success" className="boph-status-tag boph-status-success">
+          <CheckRoundedIcon style={{ fontSize: 13 }} /> Thành công
         </Tag>
       );
     case "PENDING":
     case "WAITING":
     case "PROCESSING":
       return (
-        <Tag color="warning" className="boph-status-tag">
+        <Tag color="warning" className="boph-status-tag boph-status-pending">
           Chờ thanh toán
         </Tag>
       );
@@ -110,7 +124,7 @@ const renderPaymentStatusTag = (status) => {
     case "CANCELLED":
     case "CANCELED":
       return (
-        <Tag color="error" className="boph-status-tag">
+        <Tag color="error" className="boph-status-tag boph-status-error">
           Thất bại / Hủy
         </Tag>
       );
@@ -126,40 +140,49 @@ const renderPaymentStatusTag = (status) => {
 const renderRequestStatusTag = (status) => {
   const normalized = String(status || "").toUpperCase();
   switch (normalized) {
+    case "PAID":
+    case "COMPLETED":
+    case "APPROVED":
+    case "CONFIRMED":
+    case "ACCEPTED":
+      return (
+        <Tag className="boph-header-status-pill boph-status-pill-paid">
+          <VerifiedRoundedIcon style={{ fontSize: 14 }} /> Đã thanh toán
+        </Tag>
+      );
+    case "DEPOSIT_PAID":
+    case "PARTIALLY_PAID":
+      return (
+        <Tag className="boph-header-status-pill boph-status-pill-deposit">
+          Đã đặt cọc
+        </Tag>
+      );
     case "QUOTED":
     case "WAITING_PAYMENT":
     case "PENDING_CUSTOMER_CONFIRMATION":
       return (
-        <Tag color="gold" className="boph-header-status-pill">
+        <Tag className="boph-header-status-pill boph-status-pill-waiting">
           Chờ thanh toán / Đã báo giá
-        </Tag>
-      );
-    case "ACCEPTED":
-    case "PAID":
-    case "CONFIRMED":
-    case "APPROVED":
-      return (
-        <Tag color="green" className="boph-header-status-pill">
-          Đã xác nhận / Đã thanh toán
         </Tag>
       );
     case "PENDING_REVIEW":
     case "PENDING":
       return (
-        <Tag color="blue" className="boph-header-status-pill">
+        <Tag className="boph-header-status-pill boph-status-pill-review">
           Chờ duyệt báo giá
         </Tag>
       );
     case "REJECTED":
     case "CANCELLED":
+    case "CANCELED":
       return (
-        <Tag color="red" className="boph-header-status-pill">
+        <Tag className="boph-header-status-pill boph-status-pill-cancel">
           Đã từ chối / Hủy
         </Tag>
       );
     default:
       return (
-        <Tag color="default" className="boph-header-status-pill">
+        <Tag className="boph-header-status-pill">
           {status || "Đang xử lý"}
         </Tag>
       );
@@ -198,6 +221,9 @@ const BuyOrderPaymentHistory = () => {
   const [copiedCode, setCopiedCode] = useState("");
   const copyTimerRef = useRef(null);
 
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+
   useEffect(() => {
     return () => {
       if (copyTimerRef.current) {
@@ -222,7 +248,24 @@ const BuyOrderPaymentHistory = () => {
           signal,
         });
 
-        const historyObj = response?.data || response;
+        // Unwrap response data if wrapped in { message, data }
+        let historyObj = response;
+        if (
+          historyObj?.data &&
+          typeof historyObj.data === "object" &&
+          (historyObj.data.purchaseRequestId ||
+            historyObj.data.purchaseCode ||
+            Array.isArray(historyObj.data.payments))
+        ) {
+          historyObj = historyObj.data;
+        } else if (
+          historyObj?.data &&
+          typeof historyObj.data === "object" &&
+          historyObj.message
+        ) {
+          historyObj = historyObj.data;
+        }
+
         if (!historyObj || typeof historyObj !== "object") {
           throw new Error("Không nhận được dữ liệu lịch sử thanh toán.");
         }
@@ -292,6 +335,14 @@ const BuyOrderPaymentHistory = () => {
     fetchHistory(controller.signal, { showNotify: true });
   };
 
+  // Calculate percentage paid
+  const paymentProgressPercent = useMemo(() => {
+    const total = Number(data?.totalBillAmount || 0);
+    const paid = Number(data?.totalPaid || 0);
+    if (total <= 0) return 0;
+    return Math.min(100, Math.round((paid / total) * 1000) / 10);
+  }, [data]);
+
   // Find latest pending payment link if any
   const pendingPayment = useMemo(() => {
     if (!Array.isArray(data?.payments)) return null;
@@ -304,29 +355,71 @@ const BuyOrderPaymentHistory = () => {
   /* Table Columns */
   const columns = [
     {
-      title: "Mã giao dịch / Order Code",
-      dataIndex: "orderCode",
+      title: "Mã đơn hàng & Giao dịch",
       key: "orderCode",
-      render: (orderCode, record) => {
-        const isCopied = copiedCode === String(orderCode);
+      width: 290,
+      render: (_, record) => {
+        const orderCodeStr = record.orderCode ? String(record.orderCode) : "";
+        const isOrderCopied = copiedCode === orderCodeStr;
+        const transactionCodeStr = record.transactionCode
+          ? String(record.transactionCode)
+          : "";
+        const isTxCopied = copiedCode === transactionCodeStr;
+
         return (
           <div className="boph-code-col">
-            <strong className="boph-order-code">
-              {orderCode || record.paymentId || "-"}
-            </strong>
-            {orderCode && (
-              <button
-                type="button"
-                className={`boph-copy-btn ${isCopied ? "is-copied" : ""}`}
-                onClick={() => handleCopy(orderCode, "Mã giao dịch")}
-              >
-                {isCopied ? (
-                  <CheckCircleOutlinedIcon fontSize="inherit" />
-                ) : (
-                  <ContentCopyIcon fontSize="inherit" />
+            {/* Primary Order Code Card */}
+            <div className="boph-code-box">
+              <div className="boph-code-box-header">
+                <span className="boph-code-tag">MÃ THANH TOÁN</span>
+              </div>
+              <div className="boph-code-box-body">
+                <strong className="boph-order-code">
+                  {orderCodeStr || record.paymentId || "-"}
+                </strong>
+                {orderCodeStr && (
+                  <button
+                    type="button"
+                    className={`boph-copy-btn ${isOrderCopied ? "is-copied" : ""}`}
+                    onClick={() => handleCopy(orderCodeStr, "Mã thanh toán")}
+                    title="Sao chép mã thanh toán"
+                  >
+                    {isOrderCopied ? (
+                      <CheckCircleRoundedIcon fontSize="inherit" />
+                    ) : (
+                      <ContentCopyRoundedIcon fontSize="inherit" />
+                    )}
+                    <span>{isOrderCopied ? "Đã chép" : "Sao chép"}</span>
+                  </button>
                 )}
-                <span>{isCopied ? "Đã chép" : "Sao chép"}</span>
-              </button>
+              </div>
+            </div>
+
+            {/* Bank Transaction Code Box */}
+            {transactionCodeStr && (
+              <div className="boph-code-box bank">
+                <div className="boph-code-box-header">
+                  <span className="boph-code-tag blue">MÃ GIAO DỊCH NGÂN HÀNG (REF NH)</span>
+                </div>
+                <div className="boph-code-box-body">
+                  <span className="boph-tx-code">{transactionCodeStr}</span>
+                  <button
+                    type="button"
+                    className={`boph-copy-btn sm ${isTxCopied ? "is-copied" : ""}`}
+                    onClick={() =>
+                      handleCopy(transactionCodeStr, "Mã giao dịch ngân hàng")
+                    }
+                    title="Sao chép mã tham chiếu ngân hàng"
+                  >
+                    {isTxCopied ? (
+                      <CheckCircleRoundedIcon fontSize="inherit" />
+                    ) : (
+                      <ContentCopyRoundedIcon fontSize="inherit" />
+                    )}
+                    <span>{isTxCopied ? "Đã chép" : "Sao chép"}</span>
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         );
@@ -337,7 +430,7 @@ const BuyOrderPaymentHistory = () => {
       dataIndex: "paymentType",
       key: "paymentType",
       render: (type) => (
-        <span className="boph-type-text">{formatPaymentType(type)}</span>
+        <span className="boph-type-badge">{formatPaymentType(type)}</span>
       ),
     },
     {
@@ -345,7 +438,7 @@ const BuyOrderPaymentHistory = () => {
       dataIndex: "paymentMethod",
       key: "paymentMethod",
       render: (method) => (
-        <span className="boph-method-text">{formatPaymentMethod(method)}</span>
+        <span className="boph-method-chip">{formatPaymentMethod(method)}</span>
       ),
     },
     {
@@ -367,13 +460,19 @@ const BuyOrderPaymentHistory = () => {
       render: (status) => renderPaymentStatusTag(status),
     },
     {
-      title: "Thời gian tạo / Thanh toán",
+      title: "Thời gian",
       key: "timestamps",
       render: (_, record) => (
         <div className="boph-time-col">
-          <span>Tạo: {formatDateDisplay(record.createdAt)}</span>
+          <div className="boph-time-row">
+            <ScheduleRoundedIcon className="boph-time-icon" />
+            <span>Tạo: {formatDateDisplay(record.createdAt)}</span>
+          </div>
           {record.paidAt && (
-            <small>TT: {formatDateDisplay(record.paidAt)}</small>
+            <div className="boph-time-row paid">
+              <CheckCircleRoundedIcon className="boph-time-icon paid" />
+              <span>TT: {formatDateDisplay(record.paidAt)}</span>
+            </div>
           )}
         </div>
       ),
@@ -382,27 +481,54 @@ const BuyOrderPaymentHistory = () => {
       title: "Thao tác",
       key: "actions",
       align: "center",
+      width: 200,
       render: (_, record) => {
         const isPending =
-          String(record.status).toUpperCase() === "PENDING" &&
-          Boolean(record.checkoutUrl);
+          String(record.status).toUpperCase() === "PENDING";
+        const hasCheckoutUrl = Boolean(record.checkoutUrl);
 
-        if (isPending) {
-          return (
-            <a
-              href={record.checkoutUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="boph-pay-now-btn"
+        return (
+          <div className="boph-actions-group">
+            {isPending && hasCheckoutUrl && (
+              <a
+                href={record.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="boph-pay-now-btn"
+              >
+                <CreditCardRoundedIcon fontSize="small" />
+                <span>Thanh toán</span>
+                <LaunchRoundedIcon fontSize="inherit" />
+              </a>
+            )}
+
+            {!isPending && hasCheckoutUrl && (
+              <a
+                href={record.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="boph-receipt-btn"
+                title="Xem hóa đơn thanh toán SePay"
+              >
+                <LaunchRoundedIcon fontSize="small" />
+                <span>Hóa đơn</span>
+              </a>
+            )}
+
+            <button
+              type="button"
+              className="boph-detail-btn"
+              onClick={() => {
+                setSelectedPayment(record);
+                setDetailModalOpen(true);
+              }}
+              title="Xem chi tiết giao dịch"
             >
-              <CreditCardIcon fontSize="small" />
-              <span>Thanh toán ngay</span>
-              <LaunchIcon fontSize="inherit" />
-            </a>
-          );
-        }
-
-        return <span className="boph-muted-text">-</span>;
+              <VisibilityRoundedIcon fontSize="small" />
+              <span>Chi tiết</span>
+            </button>
+          </div>
+        );
       },
     },
   ];
@@ -449,13 +575,14 @@ const BuyOrderPaymentHistory = () => {
             type="button"
             className="boph-back-btn"
             onClick={() => navigate(-1)}
+            title="Quay lại"
           >
-            <ArrowBackIcon />
+            <ArrowBackRoundedIcon />
           </button>
 
           <div className="boph-header-titles">
             <div className="boph-eyebrow">
-              <HistoryIcon fontSize="inherit" />
+              <HistoryRoundedIcon fontSize="inherit" />
               <span>LỊCH SỬ GIAO DỊCH MUA HỘ</span>
             </div>
             <h1>Lịch Sử Thanh Toán Mua Hộ</h1>
@@ -471,7 +598,7 @@ const BuyOrderPaymentHistory = () => {
 
           <MuiButton
             variant="outlined"
-            startIcon={<AutorenewIcon />}
+            startIcon={<AutorenewRoundedIcon />}
             onClick={handleRefresh}
             disabled={loading}
             className="boph-refresh-btn"
@@ -486,8 +613,10 @@ const BuyOrderPaymentHistory = () => {
               rel="noopener noreferrer"
               className="boph-header-pay-btn"
             >
-              <CreditCardIcon />
-              <span>Thanh toán ngay (PayOS)</span>
+              <CreditCardRoundedIcon />
+              <span>
+                Thanh toán ngay ({formatPaymentMethod(pendingPayment.paymentMethod)})
+              </span>
             </a>
           )}
         </div>
@@ -516,44 +645,125 @@ const BuyOrderPaymentHistory = () => {
         </Card>
       ) : (
         <>
-          {/* Summary Metric Cards */}
-          <section className="boph-metrics-grid">
-            <div className="boph-metric-card total">
-              <div className="boph-metric-icon">
-                <ReceiptLongIcon />
+          {/* Top Overview Grid & Progress */}
+          <section className="boph-overview-section">
+            <div className="boph-metrics-grid">
+              <div className="boph-metric-card total">
+                <div className="boph-metric-icon">
+                  <ReceiptLongRoundedIcon />
+                </div>
+                <div className="boph-metric-info">
+                  <span>TỔNG TIỀN BÁO GIÁ</span>
+                  <strong>{formatVndCurrency(data?.totalBillAmount)}</strong>
+                </div>
               </div>
-              <div className="boph-metric-info">
-                <span>TỔNG TIỀN BÁO GIÁ</span>
-                <strong>{formatVndCurrency(data?.totalBillAmount)}</strong>
+
+              <div className="boph-metric-card paid">
+                <div className="boph-metric-icon">
+                  <CheckCircleRoundedIcon />
+                </div>
+                <div className="boph-metric-info">
+                  <span>ĐÃ THANH TOÁN</span>
+                  <strong>{formatVndCurrency(data?.totalPaid)}</strong>
+                </div>
+              </div>
+
+              <div className="boph-metric-card outstanding">
+                <div className="boph-metric-icon">
+                  <PaymentsRoundedIcon />
+                </div>
+                <div className="boph-metric-info">
+                  <span>CÒN CẦN THANH TOÁN</span>
+                  <strong>{formatVndCurrency(data?.outstanding)}</strong>
+                </div>
               </div>
             </div>
 
-            <div className="boph-metric-card paid">
-              <div className="boph-metric-icon">
-                <CheckCircleOutlinedIcon />
+            {/* Payment Completion Progress Bar */}
+            {data?.totalBillAmount > 0 && (
+              <div className="boph-progress-card">
+                <div className="boph-progress-header">
+                  <span className="boph-progress-title">
+                    Tiến độ thanh toán đơn hàng
+                  </span>
+                  <span className="boph-progress-percent">
+                    <strong>{paymentProgressPercent}%</strong> hoàn tất
+                  </span>
+                </div>
+                <Progress
+                  percent={paymentProgressPercent}
+                  showInfo={false}
+                  strokeColor={{
+                    "0%": "#f97316",
+                    "100%": "#10b981",
+                  }}
+                  trailColor="#e2e8f0"
+                  strokeWidth={10}
+                  className="boph-progress-bar"
+                />
               </div>
-              <div className="boph-metric-info">
-                <span>ĐÃ THANH TOÁN</span>
-                <strong>{formatVndCurrency(data?.totalPaid)}</strong>
-              </div>
-            </div>
-
-            <div className="boph-metric-card outstanding">
-              <div className="boph-metric-icon">
-                <PaymentIcon />
-              </div>
-              <div className="boph-metric-info">
-                <span>CÒN CẦN THANH TOÁN</span>
-                <strong>{formatVndCurrency(data?.outstanding)}</strong>
-              </div>
-            </div>
+            )}
           </section>
+
+          {/* Breakdown / Subtotal Details Card */}
+          {(data?.productsSubtotal !== undefined ||
+            data?.servicesSubtotal !== undefined ||
+            data?.depositAmount !== undefined) && (
+            <Card className="boph-breakdown-card">
+              <div className="boph-breakdown-header">
+                <InfoRoundedIcon className="boph-breakdown-icon" />
+                <span>Chi tiết cấu thành báo giá & Tiền cọc</span>
+              </div>
+
+              <div className="boph-breakdown-grid">
+                {data?.productsSubtotal !== undefined && (
+                  <div className="boph-breakdown-item">
+                    <div className="boph-breakdown-item-label">
+                      <ShoppingBagRoundedIcon fontSize="small" />
+                      <span>Tiền hàng sản phẩm</span>
+                    </div>
+                    <strong>{formatVndCurrency(data.productsSubtotal)}</strong>
+                  </div>
+                )}
+
+                {data?.servicesSubtotal !== undefined && (
+                  <div className="boph-breakdown-item">
+                    <div className="boph-breakdown-item-label">
+                      <MiscellaneousServicesRoundedIcon fontSize="small" />
+                      <span>Phí dịch vụ & Vận chuyển</span>
+                    </div>
+                    <strong>{formatVndCurrency(data.servicesSubtotal)}</strong>
+                  </div>
+                )}
+
+                {data?.depositAmount !== undefined && (
+                  <div className="boph-breakdown-item deposit-highlight">
+                    <div className="boph-breakdown-item-label">
+                      <AccountBalanceWalletRoundedIcon fontSize="small" />
+                      <span>Mức cọc yêu cầu</span>
+                    </div>
+                    <strong>{formatVndCurrency(data.depositAmount)}</strong>
+                  </div>
+                )}
+              </div>
+
+              {data?.depositDescription && (
+                <div className="boph-deposit-note">
+                  <div className="boph-deposit-note-badge">Quy định đặt cọc</div>
+                  <span>{data.depositDescription}</span>
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Payments Table Card */}
           <Card
             title={
               <div className="boph-table-card-header">
-                <span>Danh Sách Lịch Sử Giao Dịch ({data?.payments?.length || 0})</span>
+                <ReceiptLongRoundedIcon className="boph-table-title-icon" />
+                <span>
+                  Danh Sách Lịch Sử Giao Dịch ({data?.payments?.length || 0})
+                </span>
               </div>
             }
             className="boph-table-card"
@@ -562,7 +772,7 @@ const BuyOrderPaymentHistory = () => {
               <Table
                 dataSource={data.payments.map((p, idx) => ({
                   ...p,
-                  key: p.paymentId || idx,
+                  key: p.paymentId || p.orderCode || idx,
                 }))}
                 columns={columns}
                 pagination={false}
@@ -577,8 +787,96 @@ const BuyOrderPaymentHistory = () => {
           </Card>
         </>
       )}
+
+      {/* Payment Detail Modal */}
+      <Modal
+        open={detailModalOpen}
+        onCancel={() => {
+          setDetailModalOpen(false);
+          setSelectedPayment(null);
+        }}
+        footer={[
+          <AntButton
+            key="close"
+            onClick={() => {
+              setDetailModalOpen(false);
+              setSelectedPayment(null);
+            }}
+          >
+            Đóng
+          </AntButton>,
+          selectedPayment?.checkoutUrl && (
+            <AntButton
+              key="checkout"
+              type="primary"
+              href={selectedPayment.checkoutUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              icon={<LaunchRoundedIcon style={{ fontSize: 15 }} />}
+              style={{ background: "#ea580c", borderColor: "#ea580c" }}
+            >
+              Mở hóa đơn SePay
+            </AntButton>
+          ),
+        ]}
+        title={
+          <div className="boph-modal-title">
+            <ReceiptLongRoundedIcon style={{ color: "#ea580c" }} />
+            <span>Chi Tiết Giao Dịch Thanh Toán</span>
+          </div>
+        }
+        className="boph-detail-modal"
+        width={580}
+      >
+        {selectedPayment && (
+          <div className="boph-modal-body">
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="Mã yêu cầu mua hộ">
+                <strong>{data?.purchaseCode || requestId}</strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="Mã thanh toán">
+                <span className="boph-order-code">
+                  {selectedPayment.orderCode || selectedPayment.paymentId}
+                </span>
+              </Descriptions.Item>
+              {selectedPayment.transactionCode && (
+                <Descriptions.Item label="Mã giao dịch ngân hàng">
+                  <span className="boph-tx-code">
+                    {selectedPayment.transactionCode}
+                  </span>
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Loại thanh toán">
+                {formatPaymentType(selectedPayment.paymentType)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Phương thức">
+                {formatPaymentMethod(selectedPayment.paymentMethod)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Số tiền">
+                <strong className="boph-amount-text">
+                  {formatVndCurrency(selectedPayment.amount)}
+                </strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                {renderPaymentStatusTag(selectedPayment.status)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Thời gian tạo">
+                {formatDateDisplay(selectedPayment.createdAt)}
+              </Descriptions.Item>
+              {selectedPayment.paidAt && (
+                <Descriptions.Item label="Thời gian thanh toán">
+                  {formatDateDisplay(selectedPayment.paidAt)}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
 
 export default BuyOrderPaymentHistory;
+
+
+
