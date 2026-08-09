@@ -826,14 +826,48 @@ const getConfigurationDisplay = (
 
 const getConfigurationFee = (
   configuration,
-) =>
-  toFiniteNumberOrNull(
-    configuration?.estimatedFee,
-  ) ??
-  toFiniteNumberOrNull(
-    configuration?.packageFee,
-  ) ??
-  0;
+  pkg = {},
+) => {
+  if (!configuration) return 0;
+
+  const estimatedFee = toFiniteNumberOrNull(
+    configuration?.estimatedFee ?? configuration?.calculatedFee ?? configuration?.feeAmount,
+  );
+  if (estimatedFee !== null) return estimatedFee;
+
+  const baseFee = toFiniteNumberOrNull(
+    configuration?.packageFee ?? configuration?.fee ?? configuration?.price,
+  ) ?? 0;
+
+  const configCode = normalizeCode(configuration?.configCode) || "CUSTOM";
+
+  if (configCode === "CUSTOM") {
+    const itemLength = toFiniteNumberOrNull(pkg?.length) ?? 0;
+    const itemWidth = toFiniteNumberOrNull(pkg?.width) ?? 0;
+    const itemHeight = toFiniteNumberOrNull(pkg?.height) ?? 0;
+    const itemVolume = toFiniteNumberOrNull(pkg?.totalVolume) ?? (itemLength * itemWidth * itemHeight);
+
+    const configLength = toFiniteNumberOrNull(configuration?.length);
+    const configWidth = toFiniteNumberOrNull(configuration?.width);
+    const configHeight = toFiniteNumberOrNull(configuration?.height);
+
+    const hasConfigDimensions =
+      configLength && configWidth && configHeight &&
+      configLength < 9999 && configWidth < 9999 && configHeight < 9999;
+
+    const configVolume = hasConfigDimensions
+      ? configLength * configWidth * configHeight
+      : 1000;
+
+    const volumeUnits = itemVolume > 0 && configVolume > 0 ? itemVolume / configVolume : 0;
+
+    if (volumeUnits > 0 && baseFee > 0) {
+      return volumeUnits * baseFee;
+    }
+  }
+
+  return baseFee;
+};
 
 const normalizePackageImages = (
   pkg = {},
@@ -1054,9 +1088,7 @@ const calculateWoodCrateSummary = ({
                   ?.height,
               )} cm`,
         packageFee:
-          getConfigurationFee(
-            configuration,
-          ),
+          getConfigurationFee(configuration, pkg),
       };
     })
     .filter(Boolean);
@@ -1258,7 +1290,7 @@ function PackageConfigurationCard({
   }
 
   const { name, size } = getConfigurationDisplay(selectedConfiguration);
-  const packageFee = getConfigurationFee(selectedConfiguration);
+  const packageFee = getConfigurationFee(selectedConfiguration, pkg);
   const isCustomConfiguration = normalizeCode(selectedConfiguration?.configCode) === "CUSTOM";
   const boxLength = isCustomConfiguration ? pkg?.length : selectedConfiguration?.length;
   const boxWidth = isCustomConfiguration ? pkg?.width : selectedConfiguration?.width;
@@ -1278,13 +1310,17 @@ function PackageConfigurationCard({
             <p className="confirm-box-config__specs">
               Kích thước thùng: <strong>{formatNumber(boxLength)} × {formatNumber(boxWidth)} × {formatNumber(boxHeight)} cm</strong>
               <span className="dot-divider">•</span>
-              Tải trọng tối đa: <strong>{formatNumber(selectedConfiguration?.maxWeight)} kg</strong>
+              {isCustomConfiguration ? (
+                <span>Đơn giá: <strong>{formatVnd(selectedConfiguration?.packageFee)} / 1.000 cm³ (tính theo thể tích)</strong></span>
+              ) : (
+                <span>Tải trọng tối đa: <strong>{formatNumber(selectedConfiguration?.maxWeight)} kg</strong></span>
+              )}
             </p>
           </div>
         </div>
 
         <div className="confirm-box-config__price-pill">
-          <span className="price-pill-label">Giá thùng kiện này</span>
+          <span className="price-pill-label">{isCustomConfiguration ? "Tổng giá thùng (theo thể tích)" : "Giá thùng kiện này"}</span>
           <strong className="price-pill-value">{formatVnd(packageFee)}</strong>
         </div>
       </div>

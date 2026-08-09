@@ -1642,6 +1642,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 7px;
+  padding-right: 65px;
 }
 
 .package-config-option__top strong {
@@ -1732,14 +1733,22 @@
 
 .package-config-option__selected {
   position: absolute;
-  right: 9px;
-  bottom: 9px;
+  top: 8px;
+  right: 8px;
+  bottom: auto;
+  left: auto;
 
-  min-height: 22px;
-  padding: 4px 7px;
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  width: auto;
+  max-width: fit-content;
+
+  padding: 0 8px;
 
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 
   color: #ffffff;
@@ -1749,14 +1758,17 @@
   font-size: 8.5px;
   line-height: 1;
   font-weight: 850;
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
 
-  box-shadow: 0 5px 12px rgba(22, 119, 255, 0.22);
+  box-shadow: 0 4px 10px rgba(22, 119, 255, 0.22);
 }
 
 .package-config-option--custom
   .package-config-option__selected {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  box-shadow: 0 5px 12px rgba(217, 119, 6, 0.2);
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.2);
 }
 
 .package-config-package__footer {

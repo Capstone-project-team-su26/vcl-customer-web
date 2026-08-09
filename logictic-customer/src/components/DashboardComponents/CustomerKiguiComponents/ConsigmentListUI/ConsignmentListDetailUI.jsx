@@ -964,8 +964,7 @@ const CancelOrderSection = ({
     <div className="detail-cancel-bottom-content">
       <h3>Hủy yêu cầu ký gửi</h3>
       <p>
-        Nhấn Hủy đơn, nhập lý do và xác nhận. Hệ thống sẽ hiển thị thông báo
-        ngay sau khi Backend xử lý yêu cầu.
+        Nhấn Hủy đơn, nhập lý do và xác nhận. Hệ thống sẽ tiếp nhận và xử lý yêu cầu ngay lập tức.
       </p>
     </div>
 
@@ -1185,6 +1184,7 @@ const PackageConfigurationCell = ({
   record,
   hasWoodCrateService,
   formatMoney,
+  getPackageConfigurationFee,
 }) => {
   const configuration =
     record?.packageConfiguration;
@@ -1198,10 +1198,11 @@ const PackageConfigurationCell = ({
       configuration,
     );
 
-    const displayFee =
-      configuration.estimatedFee ??
-      configuration.packageFee ??
-      0;
+    const displayFee = getPackageConfigurationFee
+      ? getPackageConfigurationFee(configuration, record)
+      : (configuration.estimatedFee ??
+        configuration.packageFee ??
+        0);
 
     return (
       <div
@@ -1484,6 +1485,7 @@ const createProductColumns = ({
   formatWeight,
   formatMoney,
   hasWoodCrateService,
+  getPackageConfigurationFee,
 }) => [
   {
     title: "STT",
@@ -1588,6 +1590,9 @@ const createProductColumns = ({
           hasWoodCrateService
         }
         formatMoney={formatMoney}
+        getPackageConfigurationFee={
+          getPackageConfigurationFee
+        }
       />
     ),
   },
@@ -1738,6 +1743,7 @@ export default function ConsignmentListDetailUI({
   onCloseCancelModal,
   onConfirmCancel,
   onCancelReasonChange,
+  getPackageConfigurationFee,
   getProductTypeLabel,
   getRecordProductType,
   getRuleDisplayName,
@@ -1761,6 +1767,7 @@ export default function ConsignmentListDetailUI({
         formatWeight,
         formatMoney,
         hasWoodCrateService,
+        getPackageConfigurationFee,
       }),
     [
       volumetricDivisor,

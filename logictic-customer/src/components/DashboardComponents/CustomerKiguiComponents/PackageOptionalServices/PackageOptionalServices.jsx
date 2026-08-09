@@ -2148,17 +2148,15 @@ export default function PackageOptionalServices({
                                 <span className="package-config-option__meta">
                                   <span>
                                     {isCustom
-                                      ? "Theo thông số thực tế"
+                                      ? "Tính theo thể tích thực tế"
                                       : `Tối đa ${formatNumber(
                                           configuration.maxWeight,
                                         )} kg`}
                                   </span>
 
                                   <b>
-                                    {formatMoney(
-                                      configuration.packageFee,
-                                    )}
-                                  </b>
+                                     {isCustom ? `${formatMoney(configuration.packageFee)} / 1.000 cm³` : formatMoney(configuration.packageFee)}
+                                   </b>
                                 </span>
 
                                 {isSelected && (

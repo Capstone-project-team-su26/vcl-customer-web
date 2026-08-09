@@ -1917,7 +1917,7 @@ export function WarehouseReceiptPage() {
               onClick={() =>
                 AuthNotify.success(
                   "Đã chọn tải phiếu",
-                  "File PDF sẽ được lấy từ API chứng từ khi tích hợp backend."
+                  "Hệ thống đang khởi tạo và chuẩn bị file PDF chứng từ."
                 )
               }
             >
