@@ -164,6 +164,62 @@ const formatStatusCode = (status) => {
   return normalizedStatus.replaceAll("_", " ").replaceAll("-", " ");
 };
 
+
+const resolveItemConfigurationFee = (item, configuration) => {
+  if (item?.configurationFee !== undefined && item?.configurationFee !== null) {
+    const numericFee = Number(item.configurationFee);
+    if (Number.isFinite(numericFee)) return numericFee;
+  }
+
+  if (configuration?.estimatedFee !== undefined && configuration?.estimatedFee !== null) {
+    const numericEst = Number(configuration.estimatedFee);
+    if (Number.isFinite(numericEst)) return numericEst;
+  }
+
+  const baseFee = toFiniteNumberOrNull(
+    configuration?.packageFee ?? configuration?.fee ?? configuration?.price
+  ) ?? 0;
+
+  const configCode = String(
+    item?.configurationCode || configuration?.configCode || configuration?.code || ""
+  ).trim().toUpperCase();
+
+  if (configCode === "CUSTOM") {
+    const itemLength = toFiniteNumberOrNull(item?.length) ?? 0;
+    const itemWidth = toFiniteNumberOrNull(item?.width) ?? 0;
+    const itemHeight = toFiniteNumberOrNull(item?.height) ?? 0;
+    const itemVolume =
+      toFiniteNumberOrNull(item?.totalVolume) ??
+      toFiniteNumberOrNull(item?.volume) ??
+      (itemLength * itemWidth * itemHeight);
+
+    const configLength = toFiniteNumberOrNull(configuration?.length);
+    const configWidth = toFiniteNumberOrNull(configuration?.width);
+    const configHeight = toFiniteNumberOrNull(configuration?.height);
+
+    const hasConfigDimensions =
+      configLength &&
+      configWidth &&
+      configHeight &&
+      configLength < 9999 &&
+      configWidth < 9999 &&
+      configHeight < 9999;
+
+    const configVolume = hasConfigDimensions
+      ? configLength * configWidth * configHeight
+      : 1000;
+
+    const volumeUnits =
+      itemVolume > 0 && configVolume > 0 ? itemVolume / configVolume : 0;
+
+    if (volumeUnits > 0 && baseFee > 0) {
+      return volumeUnits * baseFee;
+    }
+  }
+
+  return baseFee;
+};
+
 const normalizeStatusOptions = (apiResult) => {
   const candidates = [
     apiResult,
@@ -2749,11 +2805,10 @@ const QuotationDetail = () => {
             configuration?.code ||
             "",
 
-          configurationFee:
-            item?.configurationFee ??
-            configuration?.packageFee ??
-            configuration?.fee ??
-            null,
+          configurationFee: resolveItemConfigurationFee(item, configuration),
+          isCustomConfig: String(
+            item?.configurationCode || configuration?.configCode || configuration?.code || ""
+          ).trim().toUpperCase() === "CUSTOM",
         };
       }),
     [rawQuotationOrderItems, productTypeLabelMap, packageConfigurationMap],
@@ -3481,6 +3536,11 @@ const QuotationDetail = () => {
                           {item.configurationFee !== null && (
                             <small>
                               +{formatMoney(item.configurationFee)}
+                              {item.isCustomConfig && (
+                                <span style={{ fontSize: "10px", display: "block", color: "#8c8c8c", fontWeight: 400 }}>
+                                  (tính theo thể tích)
+                                </span>
+                              )}
                             </small>
                           )}
                         </div>
