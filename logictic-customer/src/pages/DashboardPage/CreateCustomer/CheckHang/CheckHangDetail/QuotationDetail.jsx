@@ -1401,16 +1401,7 @@ const getVisibleProductFields = (item) => {
     },
   );
 
-  add(
-    "volumetricWeight",
-    "Khối lượng DIM",
-    hasNumberValue(item?.volumetricWeight)
-      ? `${formatNumber(item.volumetricWeight, 4)} kg`
-      : "",
-    {
-      visible: hasNumberValue(item?.volumetricWeight),
-    },
-  );
+  // Volumetric weight hidden as per request
 
   add(
     "chargeableWeight",
@@ -3437,7 +3428,6 @@ const QuotationDetail = () => {
                   <th style={{ width: "95px", textAlign: "center" }}>Số lượng</th>
                   <th style={{ width: "110px", textAlign: "right" }}>Trọng lượng</th>
                   <th style={{ width: "135px", textAlign: "center" }}>Kích thước</th>
-                  <th style={{ width: "115px", textAlign: "right" }}>Quy đổi DIM</th>
                   <th style={{ width: "135px", textAlign: "right" }}>Giá trị khai báo</th>
                   <th style={{ width: "160px", textAlign: "left", paddingLeft: "14px" }}>
                     Cấu hình đóng gói
@@ -3517,9 +3507,6 @@ const QuotationDetail = () => {
                           {item.volumeCbm} cm³
                         </small>
                       )}
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <span>{formatNumber(item.dimWeight)} kg</span>
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <strong className="product-table-price">

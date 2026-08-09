@@ -2682,13 +2682,7 @@ const ConsignmentListDetail = () => {
           value: totalPackageCount,
           suffix: "kiện",
         },
-        {
-          label: "Tổng khối lượng DIM kiện hàng",
-          value: Number.isFinite(totalDimWeight)
-            ? formatDimWeight(totalDimWeight)
-            : "-",
-          suffix: Number.isFinite(totalDimWeight) ? "kg" : "",
-        },
+
       ]
     : [];
 

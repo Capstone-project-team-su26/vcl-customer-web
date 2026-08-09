@@ -1596,41 +1596,7 @@ const createProductColumns = ({
       />
     ),
   },
-  {
-    title: volumetricDivisor
-      ? `DIM = (Dài × Rộng × Cao) / ${formatWeight(volumetricDivisor)}`
-      : "DIM (chưa có hệ số từ API)",
-    key: "dimensionalWeight",
-    width: 310,
-    render: (_, record) => {
-      if (!volumetricDivisor) {
-        return <span className="detail-pending-value">Chưa có hệ số DIM</span>;
-      }
 
-      const dimWeight = calculateDimWeight(
-        record.length,
-        record.width,
-        record.height,
-        volumetricDivisor,
-      );
-
-      if (dimWeight === null) {
-        return (
-          <span className="detail-pending-value">
-            Thiếu thông tin kích thước
-          </span>
-        );
-      }
-
-      return (
-        <span className="detail-dimension-text">
-          ({record.length} × {record.width} × {record.height}) /{" "}
-          {formatWeight(volumetricDivisor)} ={" "}
-          <strong>{formatDimWeight(dimWeight)} kg</strong>
-        </span>
-      );
-    },
-  },
   {
     title: "Giá trị kiện hàng",
     dataIndex: "declaredValue",
