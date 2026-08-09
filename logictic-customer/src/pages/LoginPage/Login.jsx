@@ -6,6 +6,7 @@ import { loginApi } from "../../api/Auth/authService";
 import AuthNotify from "../../utils/AuthNotify";
 import BackToHomeButton from "../../components/BackToHomeButton";
 import loginLogo from "../../assets/anhlogocap2.jpeg";
+import Login3DLoading from "../../utils/LoadingPro/LogisticsLoading";
 
 import "./Login.css";
 
@@ -124,7 +125,6 @@ export default function Login() {
         "Đăng nhập thất bại",
         errorMessage
       );
-    } finally {
       setLoading(false);
     }
   };
@@ -672,6 +672,9 @@ export default function Login() {
           </div>
         </div>
       </section>
+
+      {/* Popup Loading 3D */}
+      <Login3DLoading open={loading} />
     </main>
   );
 }

@@ -1,0 +1,497 @@
+/* =========================================================
+   LOGISTICS 3D LOADING – PREMIUM DARK GLASSMORPHISM
+   ========================================================= */
+
+.l3d-overlay {
+    --l3d-panel: rgba(5, 20, 42, 0.96);
+    --l3d-text: #ffffff;
+    --l3d-muted: #94a3b8;
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 35%, rgba(25, 118, 185, 0.22), transparent),
+        radial-gradient(ellipse 40% 40% at 30% 70%, rgba(56, 189, 248, 0.08), transparent),
+        radial-gradient(ellipse 35% 35% at 75% 60%, rgba(230, 168, 60, 0.06), transparent),
+        rgba(2, 8, 20, 0.82);
+    backdrop-filter: blur(20px) saturate(140%);
+    animation: l3d-overlay-in 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Floating ambient particles */
+.l3d-overlay::before,
+.l3d-overlay::after {
+    position: absolute;
+    border-radius: 50%;
+    content: "";
+    filter: blur(60px);
+    pointer-events: none;
+    animation: l3d-ambient 8s ease-in-out infinite alternate;
+}
+
+.l3d-overlay::before {
+    top: -15%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: rgba(25, 118, 185, 0.15);
+}
+
+.l3d-overlay::after {
+    bottom: -12%;
+    left: -8%;
+    width: 350px;
+    height: 350px;
+    background: rgba(230, 168, 60, 0.1);
+    animation-delay: -4s;
+}
+
+/* ---- PANEL ---- */
+
+.l3d-panel {
+    position: relative;
+    z-index: 1;
+    width: min(400px, 92%);
+    padding: 28px 28px 32px;
+    overflow: hidden;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 28px;
+    background:
+        linear-gradient(165deg, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+        linear-gradient(340deg, rgba(230, 168, 60, 0.04) 0%, transparent 35%),
+        var(--l3d-panel);
+    box-shadow:
+        0 40px 100px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 0 0 1px rgba(56, 189, 248, 0.06),
+        0 0 80px -20px rgba(25, 118, 185, 0.25);
+    color: var(--l3d-text);
+    text-align: center;
+    isolation: isolate;
+    animation: l3d-panel-in 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Scan line effect across panel */
+.l3d-panel::before {
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(56, 189, 248, 0.03) 50%,
+        transparent 100%
+    );
+    content: "";
+    pointer-events: none;
+    animation: l3d-scanline 4s ease-in-out infinite;
+}
+
+/* Top glow blob */
+.l3d-panel::after {
+    position: absolute;
+    z-index: -1;
+    top: -80px;
+    left: 50%;
+    width: 260px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(25, 118, 185, 0.35), transparent 70%);
+    content: "";
+    filter: blur(40px);
+    transform: translateX(-50%);
+}
+
+/* ---- 3D VISUAL AREA ---- */
+
+.l3d-visual {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: radial-gradient(circle at 50% 55%, rgba(25, 118, 185, 0.06), transparent 65%);
+    isolation: isolate;
+    touch-action: none;
+}
+
+/* Ground shadow */
+.l3d-visual::after {
+    position: absolute;
+    right: 70px;
+    bottom: 22px;
+    left: 70px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    content: "";
+    filter: blur(12px);
+    transform: perspective(150px) rotateX(62deg);
+    animation: l3d-shadow 2.5s ease-in-out infinite;
+}
+
+/* ---- AURA BLOBS ---- */
+
+.l3d-aura {
+    position: absolute;
+    z-index: -1;
+    border-radius: 50%;
+    filter: blur(30px);
+    animation: l3d-aura 3.4s ease-in-out infinite alternate;
+}
+
+.l3d-aura-one {
+    top: 30px;
+    left: 60px;
+    width: 200px;
+    height: 200px;
+    background: rgba(25, 118, 185, 0.25);
+}
+
+.l3d-aura-two {
+    top: 70px;
+    left: 120px;
+    width: 130px;
+    height: 130px;
+    background: rgba(56, 189, 248, 0.3);
+    animation-delay: -1.5s;
+}
+
+/* ---- CSS FALLBACK RINGS ---- */
+
+.l3d-css-ring {
+    position: absolute;
+    top: 104px;
+    left: 43px;
+    width: 255px;
+    height: 84px;
+    border: 1.5px solid rgba(25, 118, 185, 0.45);
+    border-radius: 50%;
+    transform-style: preserve-3d;
+    animation: l3d-ring 3.2s linear infinite;
+}
+
+.l3d-css-ring-two {
+    top: 87px;
+    left: 82px;
+    width: 180px;
+    height: 120px;
+    border-color: rgba(56, 189, 248, 0.2);
+    transform: rotate(68deg);
+    animation-direction: reverse;
+    animation-duration: 4.6s;
+}
+
+/* ---- CSS FALLBACK PACKAGE ---- */
+
+.l3d-css-package {
+    position: absolute;
+    z-index: 1;
+    top: 110px;
+    left: calc(50% - 31px);
+    width: 62px;
+    height: 62px;
+    transform: rotateX(-18deg) rotateY(35deg);
+    transform-style: preserve-3d;
+    animation: l3d-css-package 3.6s ease-in-out infinite;
+}
+
+.l3d-face {
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(135deg, #1976b9, #1565a0);
+    box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.15);
+}
+
+.l3d-face-front { transform: translateZ(31px); }
+.l3d-face-back { transform: rotateY(180deg) translateZ(31px); }
+.l3d-face-right { transform: rotateY(90deg) translateZ(31px); }
+.l3d-face-left { transform: rotateY(-90deg) translateZ(31px); }
+.l3d-face-top { transform: rotateX(90deg) translateZ(31px); }
+.l3d-face-bottom { transform: rotateX(-90deg) translateZ(31px); }
+
+.l3d-face-front::before,
+.l3d-face-top::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 22px;
+    width: 16px;
+    background: linear-gradient(180deg, #e6a83c, #d4952e);
+    content: "";
+}
+
+/* ---- WEBGL CANVAS ---- */
+
+.l3d-canvas {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.l3d-webgl-ready .l3d-canvas {
+    opacity: 1;
+}
+
+.l3d-webgl-ready .l3d-css-package,
+.l3d-webgl-ready .l3d-css-ring {
+    opacity: 0;
+    transition: opacity 400ms ease;
+}
+
+/* ---- BADGE ---- */
+
+.l3d-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid rgba(76, 225, 193, 0.3);
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(76, 225, 193, 0.12), rgba(56, 189, 248, 0.08));
+    color: #4ce1c1;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    backdrop-filter: blur(6px);
+    animation: l3d-badge-glow 3s ease-in-out infinite alternate;
+}
+
+.l3d-badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ce1c1;
+    box-shadow:
+        0 0 8px #4ce1c1,
+        0 0 20px rgba(76, 225, 193, 0.4);
+    animation: l3d-dot-pulse 1.4s ease-in-out infinite;
+}
+
+/* ---- TYPOGRAPHY ---- */
+
+.l3d-title {
+    margin: 18px 0 10px;
+    font-size: 23px;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.4px;
+    background: linear-gradient(135deg, #ffffff 20%, #93c5fd 55%, #38bdf8 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: l3d-title-shimmer 3s ease-in-out infinite alternate;
+    background-size: 200% 200%;
+}
+
+.l3d-message {
+    min-height: 24px;
+    margin: 0;
+    padding: 0 8px;
+    color: #94a3b8;
+    font-size: 13.5px;
+    font-weight: 450;
+    line-height: 1.6;
+    animation: l3d-message-fade 1.25s ease-in-out;
+}
+
+/* ---- PROGRESS BAR ---- */
+
+.l3d-progress {
+    width: 160px;
+    height: 3px;
+    margin: 24px auto 0;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.l3d-progress::after {
+    display: block;
+    width: 40%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #1976b9, #38bdf8, #4ce1c1, #e6a83c);
+    box-shadow:
+        0 0 12px rgba(56, 189, 248, 0.5),
+        0 0 30px rgba(56, 189, 248, 0.2);
+    content: "";
+    animation: l3d-progress 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* =========================================================
+   KEYFRAMES
+   ========================================================= */
+
+@keyframes l3d-overlay-in {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0);
+    }
+}
+
+@keyframes l3d-panel-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes l3d-scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(200%); }
+}
+
+@keyframes l3d-ambient {
+    to {
+        transform: translate(30px, -20px) scale(1.15);
+        opacity: 0.6;
+    }
+}
+
+@keyframes l3d-css-package {
+    0%, 100% {
+        transform: translateY(5px) rotateX(-18deg) rotateY(35deg);
+    }
+
+    50% {
+        transform: translateY(-10px) rotateX(-12deg) rotateY(215deg);
+    }
+}
+
+@keyframes l3d-ring {
+    to {
+        transform: rotate(360deg) rotateX(10deg);
+    }
+}
+
+@keyframes l3d-aura {
+    to {
+        transform: scale(1.2);
+        opacity: 0.5;
+    }
+}
+
+@keyframes l3d-shadow {
+    50% {
+        transform: perspective(150px) rotateX(62deg) scale(0.78);
+        opacity: 0.4;
+    }
+}
+
+@keyframes l3d-dot-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+}
+
+@keyframes l3d-badge-glow {
+    from {
+        box-shadow: 0 0 8px rgba(76, 225, 193, 0.1);
+    }
+
+    to {
+        box-shadow: 0 0 20px rgba(76, 225, 193, 0.2);
+    }
+}
+
+@keyframes l3d-title-shimmer {
+    from {
+        background-position: 0% 50%;
+    }
+
+    to {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes l3d-message-fade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes l3d-progress {
+    from {
+        transform: translateX(-120%);
+    }
+
+    to {
+        transform: translateX(280%);
+    }
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 420px) {
+    .l3d-panel {
+        padding: 20px 16px 26px;
+        border-radius: 22px;
+    }
+
+    .l3d-visual {
+        height: 220px;
+    }
+
+    .l3d-title {
+        font-size: 20px;
+    }
+
+    .l3d-progress {
+        width: 130px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .l3d-css-package,
+    .l3d-css-ring,
+    .l3d-aura,
+    .l3d-visual::after,
+    .l3d-badge-dot,
+    .l3d-progress::after,
+    .l3d-overlay::before,
+    .l3d-overlay::after,
+    .l3d-panel::before {
+        animation: none;
+    }
+
+    .l3d-panel {
+        animation: none;
+    }
+
+    .l3d-title {
+        background-size: 100% 100%;
+        animation: none;
+    }
+}
