@@ -297,9 +297,10 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     sessionStorage.clear();
-    localStorage.clear();
-
-    navigate("/login", {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    window.dispatchEvent(new Event("storage"));
+    navigate("/", {
       replace: true,
     });
   };
@@ -313,10 +314,10 @@ export default function Sidebar() {
 
         <div className="sidebar-header">
           <NavLink
-            to="/customer/dashboard"
+            to="/"
             className="sidebar-brand-logo"
             aria-label="Về trang chủ Việt Nam Logictic"
-            title="Việt Nam Logictic"
+            title="Về trang chủ Việt Nam Logictic"
           >
             <img
               src={logoImage}

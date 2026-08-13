@@ -16,6 +16,8 @@ import {
   SafetyCertificateOutlined,
   ReadOutlined,
   BookOutlined,
+  DashboardOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
 
 const services = [
@@ -225,12 +227,50 @@ const Header = () => {
   const [openDesktopMenu, setOpenDesktopMenu] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [openMobileMenu, setOpenMobileMenu] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const desktopNavRef = useRef(null);
   const headerRef = useRef(null);
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+    const userStr = sessionStorage.getItem("user") || localStorage.getItem("user");
+    if (token || userStr) {
+      try {
+        const userObj = userStr ? JSON.parse(userStr) : {};
+        const name =
+          userObj.fullName ||
+          userObj.name ||
+          userObj.userName ||
+          sessionStorage.getItem("fullName") ||
+          "Khách hàng";
+        setCurrentUser({ name, userObj });
+      } catch {
+        setCurrentUser({ name: "Khách hàng" });
+      }
+    } else {
+      setCurrentUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkAuthStatus();
+    window.addEventListener("storage", checkAuthStatus);
+    return () => window.removeEventListener("storage", checkAuthStatus);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    setCurrentUser(null);
+    closeAllMenus();
+    window.dispatchEvent(new Event("storage"));
+    navigate("/", { replace: true });
+  };
 
   const isActive = (path) => {
     if (path === "/") {
@@ -447,23 +487,51 @@ const Header = () => {
             <span>Tra cứu</span>
           </button>
 
-          <button
-            type="button"
-            className="action-link"
-            onClick={() => handleNavigate("/login")}
-          >
-            <LoginOutlined className="action-icon" />
-            <span>Đăng nhập</span>
-          </button>
+          {currentUser ? (
+            <div className="header-user-menu">
+              <button
+                type="button"
+                className="header-user-badge"
+                onClick={() => handleNavigate("/customer/dashboard")}
+                title="Vào lại trang Dashboard quản lý"
+              >
+                <span className="header-avatar-circle">
+                  {currentUser.name?.trim()?.charAt(0)?.toUpperCase() || "U"}
+                </span>
+                <span className="header-user-name">{currentUser.name}</span>
+              </button>
 
-          <button
-            type="button"
-            className="register-btn"
-            onClick={() => handleNavigate("/register")}
-          >
-            <UserAddOutlined className="action-icon" />
-            <span>Đăng ký</span>
-          </button>
+              <button
+                type="button"
+                className="header-logout-btn"
+                onClick={handleLogout}
+                title="Đăng xuất khỏi tài khoản"
+              >
+                <LogoutOutlined className="header-logout-icon" />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="action-link"
+                onClick={() => handleNavigate("/login")}
+              >
+                <LoginOutlined className="action-icon" />
+                <span>Đăng nhập</span>
+              </button>
+
+              <button
+                type="button"
+                className="register-btn"
+                onClick={() => handleNavigate("/register")}
+              >
+                <UserAddOutlined className="action-icon" />
+                <span>Đăng ký</span>
+              </button>
+            </>
+          )}
         </div>
 
         <button
@@ -553,38 +621,53 @@ const Header = () => {
               <button
                 type="button"
                 className="mobile-secondary-btn"
-                onClick={() => handleNavigate("/tra-cuu")}
+                onClick={() => handleNavigate("/order-lookup")}
               >
                 <SearchOutlined />
                 <span>Tra cứu</span>
               </button>
 
-              <button
-                type="button"
-                className="mobile-secondary-btn"
-                onClick={() => handleNavigate("/login")}
-              >
-                <LoginOutlined />
-                <span>Đăng nhập</span>
-              </button>
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    className="mobile-quote-btn"
+                    onClick={() => handleNavigate("/customer/dashboard")}
+                  >
+                    <DashboardOutlined />
+                    <span>Trang Dashboard ({currentUser.name})</span>
+                  </button>
 
-              <button
-                type="button"
-                className="mobile-quote-btn"
-                onClick={() => handleNavigate("/bao-gia")}
-              >
-                <FileTextOutlined />
-                <span>Báo giá</span>
-              </button>
+                  <button
+                    type="button"
+                    className="mobile-secondary-btn"
+                    onClick={handleLogout}
+                  >
+                    <LogoutOutlined />
+                    <span>Đăng xuất</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="mobile-secondary-btn"
+                    onClick={() => handleNavigate("/login")}
+                  >
+                    <LoginOutlined />
+                    <span>Đăng nhập</span>
+                  </button>
 
-              <button
-                type="button"
-                className="mobile-register-btn"
-                onClick={() => handleNavigate("/register")}
-              >
-                <UserAddOutlined />
-                <span>Đăng ký</span>
-              </button>
+                  <button
+                    type="button"
+                    className="mobile-register-btn"
+                    onClick={() => handleNavigate("/register")}
+                  >
+                    <UserAddOutlined />
+                    <span>Đăng ký</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

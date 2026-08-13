@@ -88,12 +88,17 @@ export default function Login() {
       );
 
       if (userData && typeof userData === "object") {
-        sessionStorage.setItem(
-          "user",
-          JSON.stringify(userData)
-        );
-
+        sessionStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(userData));
         sessionStorage.setItem("email", emailValue);
+
+        const tokenVal = userData.token || userData.accessToken;
+        if (tokenVal) {
+          localStorage.setItem("accessToken", tokenVal);
+          sessionStorage.setItem("accessToken", tokenVal);
+        }
+
+        window.dispatchEvent(new Event("storage"));
       }
 
       if (rememberMe) {
@@ -112,7 +117,7 @@ export default function Login() {
 
       setTimeout(() => {
         navigate("/customer/dashboard");
-      }, 1000);
+      }, 800);
     } catch (error) {
       console.error("Lỗi đăng nhập:", error);
 
