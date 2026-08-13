@@ -202,7 +202,7 @@ export default function Login() {
 
       setTimeout(() => {
         navigate("/customer/dashboard");
-      }, 800);
+      }, 300);
     } catch (error) {
       console.error("Lỗi đăng nhập Google:", error);
       const errorMessage =

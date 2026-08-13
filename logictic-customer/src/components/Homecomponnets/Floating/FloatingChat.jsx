@@ -20,6 +20,18 @@ import {
 import { BRAND } from "../../../utils/data/homeData";
 import { AI_CONFIG } from "../../../config/aiConfig";
 import { extractOrderIntentApi } from "../../../api/OrderApi/aiOrderIntentApi";
+import {
+  getConsignmentsApi,
+  getConsignmentRoutesApi,
+  getConsignmentShippingOptionsApi,
+} from "../../../api/OrderApi/consignmentApi";
+import { getPurchaseRequestsApi } from "../../../api/PurchaseAPI/purchaseRequestApi";
+import { getRestrictedItemListApi } from "../../../api/RestrictedItem/restrictedItemApi";
+import {
+  getServicePricings,
+  getDepositRate,
+} from "../../../api/ServiceApi/pricingRuleService";
+import AuthNotify from "../../../utils/AuthNotify";
 
 import "./FloatingChat.css";
 
@@ -155,24 +167,191 @@ const createUniqueId = () => {
     .slice(2)}`;
 };
 
+const isLogisticsKeyword = (text) => {
+  const lower = String(text || "").toLowerCase();
+  const keywords = [
+    "logistic", "logistics", "ký gửi", "ky gui", "mua hộ", "mua ho",
+    "tạo đơn", "tao don", "vận chuyển", "van chuyen", "đơn hàng", "don hang",
+    "gửi hàng", "gui hang", "order", "tracking", "nhập kho", "xuất kho",
+    "taobao", "1688", "tmall", "rakuten", "mercari", "amazon", "vận đơn",
+    "giao hàng", "giao hang"
+  ];
+  return keywords.some((kw) => lower.includes(kw));
+};
+
 const createChatMessage = ({
   sender,
   text,
   status = "success",
   skipApi = false,
+  intentData = null,
+  requireLogin = false,
 }) => ({
   id: createUniqueId(),
   sender,
   text,
   status,
   skipApi,
+  intentData,
+  requireLogin,
 });
 
-const buildDynamicSystemInstruction = () => {
+const fetchAllApiContextData = async () => {
+  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+
+  try {
+    const promises = [
+      getConsignmentRoutesApi().catch(() => null),
+      getConsignmentShippingOptionsApi().catch(() => null),
+      getRestrictedItemListApi().catch(() => null),
+      getServicePricings().catch(() => null),
+      getDepositRate().catch(() => null),
+    ];
+
+    if (token) {
+      promises.push(getConsignmentsApi(1, 30).catch(() => null));
+      promises.push(getPurchaseRequestsApi(1, 30).catch(() => null));
+    }
+
+    const results = await Promise.allSettled(promises);
+
+    const routesRes = results[0]?.status === "fulfilled" ? results[0].value : null;
+    const shippingOptsRes = results[1]?.status === "fulfilled" ? results[1].value : null;
+    const restrictedItemsRes = results[2]?.status === "fulfilled" ? results[2].value : null;
+    const servicePricingsRes = results[3]?.status === "fulfilled" ? results[3].value : null;
+    const depositRateRes = results[4]?.status === "fulfilled" ? results[4].value : null;
+    const consignRes = token && results[5]?.status === "fulfilled" ? results[5].value : null;
+    const purchaseRes = token && results[6]?.status === "fulfilled" ? results[6].value : null;
+
+    let apiContextText = "";
+
+    // 1. KHO BÃI & TUYẾN ĐƯỜNG TỪ API
+    if (routesRes || shippingOptsRes) {
+      apiContextText += "\n--- DỮ LIỆU KHO BÃI & TUYẾN ĐƯỜNG THỰC TẾ TỪ API ---\n";
+      if (Array.isArray(routesRes)) {
+        routesRes.forEach((r) => {
+          apiContextText += `- Tuyến vận chuyển: ${r.routeName || r.name || r.id} (${r.description || ""})\n`;
+        });
+      }
+      if (Array.isArray(shippingOptsRes)) {
+        shippingOptsRes.forEach((opt) => {
+          apiContextText += `- Tùy chọn giao hàng: ${opt.name || opt.shippingOptionName} - Mô tả: ${opt.description || ""}\n`;
+        });
+      }
+    }
+
+    // 2. BẢNG GIÁ & TỶ GIÁ TỪ API
+    if (servicePricingsRes || depositRateRes) {
+      apiContextText += "\n--- DỮ LIỆU BẢNG GIÁ CƯỚC VẬN CHUYỂN & TỶ GIÁ THỰC TẾ TỪ API ---\n";
+      if (depositRateRes) {
+        const rateVal = depositRateRes.value ?? depositRateRes;
+        apiContextText += `- Tỷ lệ cọc quy định mua hộ: ${rateVal}%\n`;
+      }
+      if (Array.isArray(servicePricingsRes)) {
+        servicePricingsRes.slice(0, 8).forEach((p) => {
+          const name = p.name || p.serviceName || "Gói dịch vụ";
+          const price = p.price || p.unitPrice || p.rate || "Xem chi tiết";
+          apiContextText += `- ${name}: Đơn giá ${price} (Áp dụng từ ${p.minWeight || 0}kg)\n`;
+        });
+      }
+    }
+
+    // 3. DANH MỤC HÀNG CẤM TỪ API
+    if (Array.isArray(restrictedItemsRes) && restrictedItemsRes.length > 0) {
+      apiContextText += "\n--- DANH MỤC HÀNG CẤM KÝ GỬI THỰC TẾ TỪ API ---\n";
+      restrictedItemsRes.slice(0, 15).forEach((item, idx) => {
+        const name = item.name || item.itemName || item.title || item;
+        apiContextText += `${idx + 1}. ${name}\n`;
+      });
+    }
+
+    // 4. DỮ LIỆU ĐƠN HÀNG THỰC TẾ KHÁCH HÀNG (KHI ĐÃ ĐĂNG NHẬP)
+    if (token) {
+      const extractArray = (val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        if (Array.isArray(val.items)) return val.items;
+        if (Array.isArray(val.consignments)) return val.consignments;
+        if (Array.isArray(val.purchaseRequests)) return val.purchaseRequests;
+        if (Array.isArray(val.data?.items)) return val.data.items;
+        if (Array.isArray(val.data)) return val.data;
+        return [];
+      };
+
+      const consignList = extractArray(consignRes);
+      const purchaseList = extractArray(purchaseRes);
+
+      const formatVnd = (num) => {
+        const n = Number(num);
+        if (!Number.isFinite(n) || n <= 0) return "Chưa có cước/báo giá";
+        return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+      };
+
+      apiContextText += "\n--- DỮ LIỆU ĐƠN HÀNG THỰC TẾ CỦA KHÁCH HÀNG TỪ API ---\n";
+
+      // Ký gửi
+      apiContextText += `1. ĐƠN KÝ GỬI (Tổng số: ${consignList.length} đơn):\n`;
+      if (consignList.length === 0) {
+        apiContextText += "   - Chưa có đơn ký gửi nào.\n";
+      } else {
+        const paidCount = consignList.filter(
+          (i) => i.isPaid === true || i.paymentStatus === "PAID" || i.paymentStatus === 1 || String(i.paymentStatus).toUpperCase() === "PAID"
+        ).length;
+        apiContextText += `   - Trạng thái thanh toán: ${paidCount} đơn đã thanh toán, ${consignList.length - paidCount} đơn chưa thanh toán.\n`;
+        apiContextText += "   - Chi tiết các đơn ký gửi:\n";
+
+        consignList.slice(0, 8).forEach((item, idx) => {
+          const code = item.orderCode || item.code || item.consignmentCode || item.id || `KG-${idx + 1}`;
+          const name = item.productName || item.notes || "Hàng ký gửi";
+          const tracking = item.chinaTrackingCode || item.trackingCode || "N/A";
+          const status = item.statusName || item.status || "Đang xử lý";
+          const isPaid = item.isPaid || item.paymentStatus === "PAID" || item.paymentStatus === 1 ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN";
+          const fee = item.totalFee || item.totalShippingFee || item.totalAmount || item.declaredValueCny;
+
+          apiContextText += `     + Mã [${code}]: ${name} (Tracking TQ: ${tracking}), Trạng thái: ${status}, Thanh toán: ${isPaid} (${formatVnd(fee)})\n`;
+        });
+      }
+
+      // Mua hộ
+      apiContextText += `2. ĐƠN MUA HỘ (Tổng số: ${purchaseList.length} đơn):\n`;
+      if (purchaseList.length === 0) {
+        apiContextText += "   - Chưa có đơn mua hộ nào.\n";
+      } else {
+        const paidCount = purchaseList.filter(
+          (i) => i.isPaid === true || i.paymentStatus === "PAID" || i.paymentStatus === "DEPOSITED" || i.paymentStatus === 1
+        ).length;
+        apiContextText += `   - Trạng thái thanh toán: ${paidCount} đơn đã cọc/thanh toán, ${purchaseList.length - paidCount} đơn chưa thanh toán/chờ báo giá.\n`;
+        apiContextText += "   - Chi tiết các đơn mua hộ:\n";
+
+        purchaseList.slice(0, 8).forEach((item, idx) => {
+          const code = item.orderCode || item.code || item.purchaseRequestCode || item.id || `MH-${idx + 1}`;
+          const name = item.productName || item.title || "Hàng mua hộ";
+          const qty = item.quantity || 1;
+          const status = item.statusName || item.status || "Mới tạo";
+          const isPaid = item.paymentStatusName || item.paymentStatus || (item.isPaid ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN");
+          const price = item.totalAmount || item.totalPriceVnd || item.depositAmount;
+
+          apiContextText += `     + Mã [${code}]: ${name} (SL: ${qty}), Trạng thái: ${status}, Thanh toán: ${isPaid} (${formatVnd(price)})\n`;
+        });
+      }
+    }
+
+    return apiContextText;
+  } catch (err) {
+    console.warn("Lỗi đồng bộ dữ liệu API cho AI context:", err);
+    return "";
+  }
+};
+
+const buildDynamicSystemInstruction = (apiContextData = "") => {
   const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
   const userStr = sessionStorage.getItem("user") || localStorage.getItem("user");
 
-  let authContext = "\nTRẠNG THÁI KHÁCH HÀNG: Chưa đăng nhập (Khách vãng lai). Hướng dẫn khách đăng nhập/đăng ký nếu cần quản lý đơn cá nhân.";
+  let authContext = `
+TRẠNG THÁI KHÁCH HÀNG: Chưa đăng nhập (Khách vãng lai).
+QUY TẮC PHẢN HỒI:
+1. Người dùng CHƯA ĐĂNG NHẬP VẪN ĐƯỢC CHAT HỎI ĐÁP BÌNH THƯỜNG tất cả thông tin công khai (địa chỉ kho, cước phí, danh mục hàng cấm, quy trình ký gửi/mua hộ...). Trả lời nhiệt tình, chính xác.
+2. NẾU người dùng yêu cầu tạo đơn Ký gửi hoặc Mua hộ cụ thể, hãy tư vấn quy trình VÀ nhắc người dùng ĐĂNG NHẬP TÀI KHOẢN để chính thức khởi tạo đơn hàng.`;
 
   if (token || userStr) {
     try {
@@ -188,13 +367,13 @@ TRẠNG THÁI KHÁCH HÀNG: ĐÃ ĐĂNG NHẬP & XÁC THỰC THÀNH CÔNG (Token
 - Họ và tên: ${fullName}
 - Số điện thoại: ${phone}
 - Email: ${email}
-CHỈ ĐỊNH PHẢN HỒI: Xưng hô thân thiện bằng tên khách hàng (ví dụ: 'Chào anh/chị ${fullName}...'). Khách hàng đã được xác thực token hệ thống. Hướng dẫn trực tiếp các dịch vụ mua hộ, ký gửi và quản lý đơn hàng.`;
+CHỈ ĐỊNH PHẢN HỒI: Xưng hô thân thiện bằng tên khách hàng (ví dụ: 'Chào anh/chị ${fullName}...'). Trả lời chính xác từ dữ liệu API bên dưới.`;
     } catch {
       authContext = "\nTRẠNG THÁI KHÁCH HÀNG: Đã đăng nhập hệ thống (Token JWT khả dụng).";
     }
   }
 
-  return `${SYSTEM_INSTRUCTION.trim()}\n${authContext}`.trim();
+  return `${SYSTEM_INSTRUCTION.trim()}\n${authContext}\n${apiContextData}`.trim();
 };
 
 const createInitialMessage = () => {
@@ -204,11 +383,11 @@ const createInitialMessage = () => {
     try {
       const u = JSON.parse(userStr);
       fullName = u.fullName || u.name || sessionStorage.getItem("fullName") || "";
-    } catch {}
+    } catch { }
   }
 
   const welcomeText = fullName
-    ? `Xin chào **${fullName}**! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể hỗ trợ bạn về tạo đơn ký gửi, mua hộ và thông tin kho bãi hôm nay.`
+    ? `Xin chào **${fullName}**! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể hỗ trợ bạn về tra cứu đơn hàng, cước phí, kho bãi và bảng giá hôm nay.`
     : `Xin chào! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể hỗ trợ bạn về mua hộ, ký gửi và theo dõi đơn hàng.`;
 
   return createChatMessage({
@@ -230,8 +409,8 @@ const parseJsonResponse = (responseText) => {
   }
 };
 
-const buildCodexMessages = (messages) => {
-  const dynamicSystemPrompt = buildDynamicSystemInstruction();
+const buildCodexMessages = (messages, apiContextData = "") => {
+  const dynamicSystemPrompt = buildDynamicSystemInstruction(apiContextData);
   const filtered = messages
     .filter(
       (item) =>
@@ -258,9 +437,10 @@ const buildCodexMessages = (messages) => {
 const requestCodexReply = async ({
   messages,
   signal,
+  apiContextData = "",
   retryCount = 0,
 }) => {
-  const apiMessages = buildCodexMessages(messages);
+  const apiMessages = buildCodexMessages(messages, apiContextData);
 
   if (apiMessages.length <= 1) {
     throw new Error("Không có nội dung để gửi đến trợ lý AI.");
@@ -366,8 +546,25 @@ export default function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [apiContextData, setApiContextData] = useState("");
+  const apiContextRef = useRef("");
 
   const [messages, setMessages] = useState(loadPersistedMessages);
+
+  useEffect(() => {
+    apiContextRef.current = apiContextData;
+  }, [apiContextData]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    fetchAllApiContextData()
+      .then((ctx) => {
+        setApiContextData(ctx);
+        apiContextRef.current = ctx;
+      })
+      .catch((err) => console.warn("Lỗi đồng bộ dữ liệu API:", err));
+  }, [isOpen]);
 
   /* =======================================================
      KEEP LATEST MESSAGES IN REF & SAVE TO LOCALSTORAGE
@@ -438,6 +635,7 @@ export default function FloatingChat() {
     text,
     status = "success",
     intentData = null,
+    requireLogin = false,
   }) => {
     setMessages((currentMessages) => [
       ...currentMessages,
@@ -446,6 +644,7 @@ export default function FloatingChat() {
         text,
         status,
         intentData,
+        requireLogin,
       }),
     ]);
   };
@@ -487,23 +686,19 @@ export default function FloatingChat() {
       const reply = await requestCodexReply({
         messages: nextMessages,
         signal: controller.signal,
+        apiContextData: apiContextRef.current || apiContextData,
       });
 
-      let capturedIntentData = null;
-      try {
-        const intentResult = await extractOrderIntentApi(normalizedMessage);
-        const intentData = intentResult?.data;
+      const isLoggedIn = Boolean(
+        localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken")
+      );
 
-        if (intentData && intentData.orderType) {
-          capturedIntentData = intentData;
-        }
-      } catch (intentErr) {
-        console.warn("Không bóc tách được intent từ BE API:", intentErr);
-      }
+      const isLogisticsTopic = isLogisticsKeyword(normalizedMessage);
 
       addBotMessage({
         text: reply,
-        intentData: capturedIntentData,
+        intentData: null,
+        requireLogin: !isLoggedIn && isLogisticsTopic,
       });
     } catch (error) {
       if (error?.name === "AbortError") {
@@ -638,7 +833,7 @@ export default function FloatingChat() {
                     "floating-ai-chat__message",
                     `floating-ai-chat__message--${chatMessage.sender}`,
                     chatMessage.status === "error" &&
-                      "floating-ai-chat__message--error",
+                    "floating-ai-chat__message--error",
                   ]
                     .filter(Boolean)
                     .join(" ")}
@@ -652,74 +847,28 @@ export default function FloatingChat() {
                   <div className="floating-ai-chat__bubble">
                     {renderFormattedMessage(chatMessage.text)}
 
-                    {chatMessage.intentData && (
-                      <div className="floating-ai-draft-card">
-                        <div className="floating-ai-draft-header">
-                          <span className="floating-ai-draft-badge">
-                            {chatMessage.intentData.orderType === "CONSIGNMENT"
-                              ? "📋 BẢN NHÁP PHIẾU KÝ GỬI"
-                              : "🛒 BẢN NHÁP YÊU CẦU MUA HỘ"}
-                          </span>
-                          <span className="floating-ai-draft-confidence">
-                            AI: {Math.round((chatMessage.intentData.confidenceScore || 0.95) * 100)}%
-                          </span>
+                    {chatMessage.sender === "bot" && chatMessage.requireLogin && (
+                      <div className="floating-ai-inline-login">
+                        <div className="inline-login-header">
+                          <span>🔒 Yêu cầu Đăng Nhập Tài Khoản</span>
                         </div>
-
-                        <div className="floating-ai-draft-body">
-                          {chatMessage.intentData.orderType === "CONSIGNMENT" ? (
-                            <>
-                              <p><strong>Sản phẩm:</strong> {chatMessage.intentData.productName || "Hàng ký gửi"}</p>
-                              <p><strong>Mã Tracking TQ:</strong> <code className="draft-code">{chatMessage.intentData.chinaTrackingCode || "Chưa nhập"}</code></p>
-                              <p><strong>Giá trị khai báo:</strong> {chatMessage.intentData.declaredValueCny ? `${chatMessage.intentData.declaredValueCny} Tệ` : "Chưa nhập"}</p>
-                              <p><strong>Phương thức:</strong> {chatMessage.intentData.shippingRoute === "CN-VN-AIR" ? "Đường hàng không" : "Đường bộ"}</p>
-                            </>
-                          ) : (
-                            <>
-                              <p><strong>Sản phẩm:</strong> {chatMessage.intentData.productName || "Hàng mua hộ"}</p>
-                              {chatMessage.intentData.productLink && (
-                                <p className="draft-link-row"><strong>Link sản phẩm:</strong> <a href={chatMessage.intentData.productLink} target="_blank" rel="noreferrer">{chatMessage.intentData.productLink}</a></p>
-                              )}
-                              <p><strong>Số lượng:</strong> {chatMessage.intentData.quantity || 1} | <strong>Đơn giá:</strong> {chatMessage.intentData.unitPriceCny ? `${chatMessage.intentData.unitPriceCny} Tệ` : "Chưa rõ"}</p>
-                              {chatMessage.intentData.variant && <p><strong>Phân loại:</strong> {chatMessage.intentData.variant}</p>}
-                            </>
-                          )}
-
-                          {chatMessage.intentData.receiverName && (
-                            <p><strong>Người nhận:</strong> {chatMessage.intentData.receiverName} {chatMessage.intentData.receiverPhone ? `(${chatMessage.intentData.receiverPhone})` : ""}</p>
-                          )}
-                        </div>
-
-                        {chatMessage.intentData.explanation && (
-                          <div className="floating-ai-draft-explanation">
-                            💡 {chatMessage.intentData.explanation}
-                          </div>
-                        )}
-
-                        <div className="floating-ai-draft-actions">
-                          {chatMessage.intentData.orderType === "CONSIGNMENT" ? (
-                            <button
-                              type="button"
-                              className="floating-ai-draft-btn floating-ai-draft-btn--primary"
-                              onClick={() => {
-                                navigate("/create-order/consignment", { state: { draftData: chatMessage.intentData } });
-                                setIsOpen(false);
-                              }}
-                            >
-                              🚀 Xác Nhận Tạo Phiếu Ký Gửi
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="floating-ai-draft-btn floating-ai-draft-btn--success"
-                              onClick={() => {
-                                navigate("/create-order/buy-orders", { state: { draftData: chatMessage.intentData } });
-                                setIsOpen(false);
-                              }}
-                            >
-                              🛒 Xác Nhận Gửi Yêu Cầu Mua Hộ
-                            </button>
-                          )}
-                        </div>
+                        <p className="inline-login-text">
+                          Để sử dụng đầy đủ dịch vụ <strong>Logistics, Ký gửi, Mua hộ & Tra cứu lộ trình</strong>, vui lòng đăng nhập tài khoản.
+                        </p>
+                        <button
+                          type="button"
+                          className="inline-login-action-btn"
+                          onClick={() => {
+                            AuthNotify.warning(
+                              "Yêu cầu đăng nhập",
+                              "Vui lòng đăng nhập để sử dụng dịch vụ Logistics!"
+                            );
+                            navigate("/login");
+                            setIsOpen(false);
+                          }}
+                        >
+                          🔑 Đăng Nhập Ngay
+                        </button>
                       </div>
                     )}
                   </div>
