@@ -1,0 +1,38 @@
+@import "../Shared/WarehouseShared.css";
+
+/* Specific XuatKhoKienHang styling */
+.xuat-kho-kien-hang {
+  width: 100%;
+}
+
+.warehouse-export-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.warehouse-export-card {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--wh-line);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 35, 65, 0.05);
+}
+
+.warehouse-export-card header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.warehouse-export-card__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #0284c7;
+  background: #e0f2fe;
+  border-radius: 12px;
+}

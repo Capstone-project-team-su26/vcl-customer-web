@@ -5,42 +5,34 @@ import {
   Box,
   ChevronRight,
   Clock,
+  FileText,
   MapPin,
+  PackageCheck,
+  Plane,
+  ShieldCheck,
+  Truck,
   Warehouse,
   Weight,
 } from "lucide-react";
-import { formatVietnamDateTime } from "../../../../utils/timeUtc";
-
-const formatTime = (value) =>
-  value ? formatVietnamDateTime(value, { fallback: "--" }) : "--";
-
-const formatNumber = (value, suffix = "") =>
-  Number(value || 0).toLocaleString("vi-VN") + suffix;
+import { formatNumber, formatTime, StatusPill } from "../Shared/WarehouseSharedComponents";
 
 export function KiGuiTrackingCard({ shipment }) {
   const normStatus = String(shipment.status || "").toUpperCase();
-  const statusLabel =
-    normStatus === "CHECKED_IN"
-      ? "Đã Check-in kho quốc tế"
-      : normStatus === "WAREHOUSE_RECEIVED" || normStatus === "RECEIVED"
-      ? "Kho quốc tế đã nhận hàng"
-      : normStatus === "IN_STORAGE"
-      ? "Đang lưu kho"
-      : normStatus === "CUSTOMS_REVIEW"
-      ? "Đang thông quan"
-      : normStatus === "IN_TRANSIT"
-      ? "Đang vận chuyển về VN"
-      : normStatus === "QUOTATION_SENT"
-      ? "Đã báo giá"
-      : shipment.status || "Đang lưu kho";
 
-  const statusTone = normStatus.includes("CHECKED") || normStatus.includes("RECEIVED")
-    ? "warehouse-status--blue"
-    : normStatus.includes("STORAGE")
-    ? "warehouse-status--cyan"
-    : normStatus.includes("CUSTOMS")
-    ? "warehouse-status--amber"
-    : "warehouse-status--green";
+  let stepLevel = 2; // Default checked-in
+  if (normStatus.includes("STORAGE")) stepLevel = 3;
+  else if (normStatus.includes("CUSTOMS")) stepLevel = 4;
+  else if (normStatus.includes("RELEASED") || normStatus.includes("OUTBOUND")) stepLevel = 5;
+  else if (normStatus.includes("TRANSIT") || normStatus.includes("DELIVERED") || normStatus.includes("COMPLETED")) stepLevel = 6;
+
+  const steps = [
+    { num: 1, label: "Tạo đơn hàng", icon: FileText },
+    { num: 2, label: "Nhập kho quốc tế", icon: PackageCheck },
+    { num: 3, label: "Lưu kho", icon: Warehouse },
+    { num: 4, label: "Thông quan", icon: ShieldCheck },
+    { num: 5, label: "Xuất kho", icon: Truck },
+    { num: 6, label: "Về Việt Nam", icon: Plane },
+  ];
 
   return (
     <article className="warehouse-shipment-card">
@@ -51,9 +43,7 @@ export function KiGuiTrackingCard({ shipment }) {
           </span>
           <h3>{shipment.consignmentCode}</h3>
         </div>
-        <span className={`warehouse-status ${statusTone}`}>
-          <i /> {statusLabel}
-        </span>
+        <StatusPill status={shipment.status} />
       </header>
 
       <div className="warehouse-shipment-card__route">
@@ -106,40 +96,35 @@ export function KiGuiTrackingCard({ shipment }) {
       </div>
 
       <div className="warehouse-progress">
-        <div className="warehouse-progress__step is-complete">
-          <div className="warehouse-progress__node">1</div>
-          <small>Tạo đơn hàng</small>
-        </div>
-        <div className="warehouse-progress__line is-complete" />
-        <div className="warehouse-progress__step is-complete">
-          <div className="warehouse-progress__node">2</div>
-          <small>Nhập kho quốc tế</small>
-        </div>
-        <div className="warehouse-progress__line is-current" />
-        <div className="warehouse-progress__step is-current">
-          <div className="warehouse-progress__node">3</div>
-          <small>Lưu kho</small>
-        </div>
-        <div className="warehouse-progress__line" />
-        <div className="warehouse-progress__step">
-          <div className="warehouse-progress__node">4</div>
-          <small>Thông quan</small>
-        </div>
-        <div className="warehouse-progress__line" />
-        <div className="warehouse-progress__step">
-          <div className="warehouse-progress__node">5</div>
-          <small>Xuất kho</small>
-        </div>
-        <div className="warehouse-progress__line" />
-        <div className="warehouse-progress__step">
-          <div className="warehouse-progress__node">6</div>
-          <small>Về Việt Nam</small>
-        </div>
+        {steps.map((st, idx) => {
+          const StepIcon = st.icon;
+          const isDone = st.num < stepLevel;
+          const isCurrent = st.num === stepLevel;
+          const stepClass = isCurrent
+            ? "is-current"
+            : isDone
+            ? "is-complete"
+            : "";
+
+          return (
+            <React.Fragment key={st.num}>
+              <div className={`warehouse-progress__step ${stepClass}`}>
+                <div className="warehouse-progress__node">
+                  <StepIcon size={14} />
+                </div>
+                <small>{st.label}</small>
+              </div>
+              {idx < steps.length - 1 && (
+                <div className={`warehouse-progress__line ${st.num < stepLevel ? "is-complete" : st.num === stepLevel - 1 ? "is-current" : ""}`} />
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
       <footer className="warehouse-shipment-card__footer">
         <span>Cập nhật {formatTime(shipment.statusUpdatedAt || shipment.createdAt)}</span>
-        <Link to={`/check-orders`} className="warehouse-card-action">
+        <Link to={"/warehouse/consignment-detail/" + (shipment.orderId || shipment.id)} className="warehouse-card-action">
           Xem chi tiết <ChevronRight size={14} />
         </Link>
       </footer>

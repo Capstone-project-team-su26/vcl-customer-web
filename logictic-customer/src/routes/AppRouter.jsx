@@ -74,13 +74,14 @@ import BuyOrderHistoryList from "../pages/DashboardPage/HistoryPage/LichSuMuaHo/
 import BuyOrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuMuaHo/BuyPaymentHistoryDetail/BuyOrderPaymentHistory"
 import OrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuKiGui/OrderPaymentHisstory/OrderPaymentHistory"
 import TransactionHistoryTabs from "../pages/DashboardPage/HistoryPage/HistoryGiaoDich/TransactionHistoryTabs"
-import {
-  CustomsTrackingPage,
-  WarehouseExportPage,
-  WarehouseInventoryPage,
-  WarehouseReceiptPage,
-  WarehouseShipmentDetailPage,
-} from "../pages/DashboardPage/WarehouseTracking/WarehouseTrackingPages";
+import { CheckinNhapKho } from "../pages/DashboardPage/WarehouseTracking/CheckinNhapKho/CheckinNhapKho";
+import { LuuKhoKienHang } from "../pages/DashboardPage/WarehouseTracking/LuuKhoKienHang/LuuKhoKienHang";
+import { XuatKhoKienHang } from "../pages/DashboardPage/WarehouseTracking/XuatKhoKienHang/XuatKhoKienHang";
+import { ThongQuanVn } from "../pages/DashboardPage/WarehouseTracking/ThongQuanVn/ThongQuanVn";
+import { WarehouseShipmentDetail } from "../pages/DashboardPage/WarehouseTracking/WarehouseShipmentDetail/WarehouseShipmentDetail";
+import { WarehouseReceiptPage } from "../pages/DashboardPage/WarehouseTracking/PhieuNhapKho/WarehouseReceiptPage";
+import { KiGuiDetail } from "../pages/DashboardPage/WarehouseTracking/KiGuiDetail/KiGuiDetail";
+import { MuaHoDetail } from "../pages/DashboardPage/WarehouseTracking/MuaHoDetail/MuaHoDetail";
 
 const AppRouter = () => {
   return (
@@ -233,20 +234,36 @@ const AppRouter = () => {
             element={<TransactionHistoryTabs />}
           />
           <Route
+            path="/warehouse/checkin"
+            element={<CheckinNhapKho />}
+          />
+          <Route
             path="/warehouse/inventory"
-            element={<WarehouseInventoryPage />}
+            element={<CheckinNhapKho />}
           />
           <Route
             path="/warehouse/inventory/:shipmentId"
-            element={<WarehouseShipmentDetailPage />}
+            element={<WarehouseShipmentDetail />}
+          />
+          <Route
+            path="/warehouse/consignment-detail/:id"
+            element={<KiGuiDetail />}
+          />
+          <Route
+            path="/warehouse/purchase-detail/:id"
+            element={<MuaHoDetail />}
+          />
+          <Route
+            path="/warehouse/storage"
+            element={<LuuKhoKienHang />}
           />
           <Route
             path="/warehouse/export"
-            element={<WarehouseExportPage />}
+            element={<XuatKhoKienHang />}
           />
           <Route
             path="/warehouse/customs"
-            element={<CustomsTrackingPage />}
+            element={<ThongQuanVn />}
           />
           <Route
             path="/warehouse/receipts"

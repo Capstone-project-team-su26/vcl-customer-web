@@ -1,0 +1,49 @@
+@import "../Shared/WarehouseShared.css";
+
+/* Dedicated MuaHoDetail CSS */
+.vcl-muaho-detail-page {
+  width: 100%;
+}
+
+.muaho-detail-hero {
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+  border: 1px solid #ffedd5;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(234, 88, 12, 0.05);
+}
+
+.muaho-detail-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.muaho-info-card {
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+}
+
+.muaho-info-card header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.muaho-info-card header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 700;
+}

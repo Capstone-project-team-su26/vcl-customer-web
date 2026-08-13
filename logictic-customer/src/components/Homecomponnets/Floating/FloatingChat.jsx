@@ -1,57 +1,97 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
-  CloseOutlined,
-  CustomerServiceOutlined,
-  MessageOutlined,
-  ReloadOutlined,
-  RobotOutlined,
-  SendOutlined,
-} from "@ant-design/icons";
+  AlertTriangle,
+  Bot,
+  Calculator,
+  MapPin,
+  Package,
+  PhoneCall,
+  RefreshCw,
+  Search,
+  SendHorizontal,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+  UserPlus,
+  X,
+} from "lucide-react";
 
-import {
-  BRAND,
-} from "../../../utils/data/homeData";
+import { BRAND } from "../../../utils/data/homeData";
+import { AI_CONFIG } from "../../../config/aiConfig";
 
 import "./FloatingChat.css";
 
 /* =========================================================
-   GEMINI CONFIG
+   CODEX AI CONFIG
    ========================================================= */
 
-   const GEMINI_PROXY_URL = "/api/gemini";
-
 const MAX_MESSAGE_LENGTH = 500;
-const MAX_HISTORY_MESSAGES = 12;
+const MAX_HISTORY_MESSAGES = 4;
 
 const SYSTEM_INSTRUCTION = `
-Bạn là trợ lý AI chăm sóc khách hàng của hệ thống logistics ${BRAND.name}.
+Bạn là Trợ lý AI Chăm sóc Khách hàng chuyên nghiệp của hệ thống logistics ${BRAND.name}.
 
-Nhiệm vụ hỗ trợ:
-- Tư vấn dịch vụ mua hộ hàng hóa quốc tế.
-- Tư vấn dịch vụ ký gửi hàng hóa.
-- Hướng dẫn khách hàng tạo đơn hàng.
-- Hướng dẫn theo dõi đơn hàng.
-- Giải thích quy trình vận chuyển quốc tế.
-- Giải thích chung về kho quốc tế và kho Việt Nam.
-- Hướng dẫn khách liên hệ nhân viên khi cần hỗ trợ chuyên sâu.
+THÔNG TIN DỮ LIỆU CÔNG KHAI HỆ THỐNG (Không cần đăng nhập):
+- Trụ sở chính & Kho Việt Nam: ${BRAND.address} (Hotline: ${BRAND.hotline}, Email: ${BRAND.email})
+- Kho tiếp nhận Quốc tế: Kho Trung Quốc (Quảng Châu/Bằng Tường), Kho Nhật Bản, Kho Hàn Quốc, Kho Mỹ, Kho Indonesia, Kho Philippines.
+- Danh mục HÀNG CẤM KÝ GỬI & VẬN CHUYỂN (/api/restricted-items):
+  1. Chất nổ, chất dễ cháy, chất độc hại, bình khí nén.
+  2. Vũ khí, đạn dược, công cụ hỗ trợ, chất ma túy, chất kích thích.
+  3. Tiền mặt, kim loại quý, đá quý, tài liệu mật.
+  4. Hàng giả, hàng nhái các thương hiệu được bảo hộ.
+  5. Thực phẩm tươi sống, động vật sống, chất lỏng không nhãn mác.
+- Dịch vụ công khai:
+  - Mua hộ hàng quốc tế: Taobao, 1688, Tmall, Mercari, Rakuten, Amazon... Thanh toán chuyển khoản VNĐ.
+  - Ký gửi hàng hóa: Cấp địa chỉ kho quốc tế, gom kiện tự động, quy trình 6 bước (Tạo đơn -> Nhập kho QT -> Lưu kho -> Thông quan -> Xuất kho -> Về VN).
+  - Tra cứu mã vận đơn công khai: Khách hàng có thể tra cứu mã vận đơn trực tiếp tại màn /order-lookup.
 
-Quy tắc:
-- Luôn trả lời bằng tiếng Việt.
-- Trả lời lịch sự, thân thiện và dễ hiểu.
-- Ưu tiên câu trả lời ngắn gọn nhưng đầy đủ.
-- Không tự tạo mã đơn hàng, mã vận đơn hoặc trạng thái đơn hàng.
-- Không tự đưa ra giá cước nếu không có dữ liệu chính thức.
-- Không yêu cầu khách cung cấp mật khẩu, mã OTP hoặc thông tin thẻ ngân hàng.
-- Khi cần kiểm tra đơn hàng cụ thể, hướng dẫn khách đăng nhập hoặc liên hệ nhân viên hỗ trợ.
-- Khi người dùng hỏi ngoài phạm vi logistics, hãy trả lời ngắn gọn và điều hướng về dịch vụ của ${BRAND.name}.
+QUY TẮC PHẢN HỒI:
+- Trả lời cực kỳ ngắn gọn, súc tích (1-3 câu ngắn, dưới 100 từ).
+- Luôn bằng tiếng Việt lịch sự, thân thiện và chính xác.
+- Khi người dùng hỏi thông tin công khai (địa chỉ kho, hàng cấm, quy trình ký gửi/mua hộ), cung cấp câu trả lời ngay lập tức.
 `.trim();
+
+const renderFormattedMessage = (text) => {
+  if (!text) return null;
+
+  const cleanText = String(text).replace(/#{1,6}\s?/g, "");
+  const lines = cleanText.split("\n");
+
+  return lines.map((line, lIdx) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      return <div key={lIdx} className="floating-ai-chat__spacer" />;
+    }
+
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    const parsedContent = parts.map((part, pIdx) => {
+      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+        return <strong key={pIdx}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("• ")) {
+      const bulletText = parsedContent.map((c) =>
+        typeof c === "string" ? c.replace(/^[-*•]\s+/, "") : c
+      );
+
+      return (
+        <div key={lIdx} className="floating-ai-chat__bullet-item">
+          <span className="floating-ai-chat__bullet-icon">•</span>
+          <span className="floating-ai-chat__bullet-text">{bulletText}</span>
+        </div>
+      );
+    }
+
+    return (
+      <p key={lIdx} className="floating-ai-chat__paragraph">
+        {parsedContent}
+      </p>
+    );
+  });
+};
 
 /* =========================================================
    QUICK MESSAGES
@@ -59,24 +99,43 @@ Quy tắc:
 
 const QUICK_MESSAGES = [
   {
-    id: "buy",
-    label: "Tư vấn mua hộ",
-    message:
-      "Hãy tư vấn cho tôi quy trình mua hộ hàng từ website nước ngoài.",
-  },
-  {
     id: "consignment",
     label: "Tư vấn ký gửi",
-    message:
-      "Hãy tư vấn cho tôi quy trình ký gửi hàng hóa về Việt Nam.",
+    icon: Package,
+    message: "Hướng dẫn quy trình ký gửi hàng hóa về Việt Nam.",
   },
   {
-    id: "tracking",
-    label: "Theo dõi đơn hàng",
-    message:
-      "Hướng dẫn tôi cách theo dõi trạng thái và hành trình đơn hàng.",
+    id: "buy",
+    label: "Tư vấn mua hộ",
+    icon: ShoppingCart,
+    message: "Hướng dẫn quy trình mua hộ hàng từ website nước ngoài.",
+  },
+  {
+    id: "restricted",
+    label: "Hàng cấm ký gửi",
+    icon: AlertTriangle,
+    message: "Cho tôi biết danh mục các loại hàng hóa bị CẤM vận chuyển và ký gửi.",
+  },
+  {
+    id: "warehouse",
+    label: "Địa chỉ kho công khai",
+    icon: MapPin,
+    message: "Cho tôi biết địa chỉ các kho hàng của Việt Nam Logistic.",
+  },
+  {
+    id: "cost",
+    label: "Chi phí vận chuyển",
+    icon: Calculator,
+    message: "Cách tính cước phí dịch vụ mua hộ và ký gửi.",
   },
 ];
+
+const INITIAL_BOT_MESSAGE = {
+  id: "welcome-msg",
+  sender: "bot",
+  text: `Xin chào! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể giúp gì cho bạn hôm nay?`,
+  time: "Vừa xong",
+};
 
 /* =========================================================
    HELPERS
@@ -116,7 +175,7 @@ const createInitialMessage = () =>
   });
 
 const parseJsonResponse = (responseText) => {
-  if (!responseText) {
+  if (!responseText || typeof responseText !== "string") {
     return null;
   }
 
@@ -127,44 +186,8 @@ const parseJsonResponse = (responseText) => {
   }
 };
 
-const getServerErrorMessage = ({
-  status,
-  responseData,
-  responseText,
-}) => {
-  const serverMessage = String(
-    responseData?.message ||
-      responseData?.error?.message ||
-      responseData?.error ||
-      responseText ||
-      ""
-  ).trim();
-
-  if (status === 400) {
-    return serverMessage || "Nội dung gửi lên không hợp lệ.";
-  }
-
-  if (status === 401 || status === 403) {
-    return serverMessage || "Máy chủ chưa được cấp quyền dùng Gemini.";
-  }
-
-  if (status === 404) {
-    return "Không tìm thấy API /api/gemini. Hãy kiểm tra file api/gemini.js đã đặt đúng thư mục chưa.";
-  }
-
-  if (status === 429) {
-    return serverMessage || "Gemini đã vượt giới hạn sử dụng. Vui lòng thử lại sau.";
-  }
-
-  if (status >= 500) {
-    return serverMessage || "Máy chủ AI đang gặp sự cố. Vui lòng thử lại sau.";
-  }
-
-  return serverMessage || `Máy chủ phản hồi lỗi ${status}.`;
-};
-
-const buildGeminiContents = (messages) =>
-  messages
+const buildCodexMessages = (messages) => {
+  const filtered = messages
     .filter(
       (item) =>
         !item.skipApi &&
@@ -173,69 +196,55 @@ const buildGeminiContents = (messages) =>
     )
     .slice(-MAX_HISTORY_MESSAGES)
     .map((item) => ({
-      role: item.sender === "bot" ? "model" : "user",
-      parts: [
-        {
-          text: item.text.trim(),
-        },
-      ],
+      role: item.sender === "bot" ? "assistant" : "user",
+      content: item.text.trim(),
     }));
 
+  return [
+    { role: "system", content: SYSTEM_INSTRUCTION },
+    ...filtered,
+  ];
+};
+
 /* =========================================================
-   GEMINI REQUEST
+   CODEX AI REQUEST (Direct Call)
    ========================================================= */
 
-const requestGeminiReply = async ({
+const requestCodexReply = async ({
   messages,
   signal,
 }) => {
-  const contents = buildGeminiContents(messages);
+  const apiMessages = buildCodexMessages(messages);
 
-  if (!contents.length) {
+  if (apiMessages.length <= 1) {
     throw new Error("Không có nội dung để gửi đến trợ lý AI.");
   }
 
-  const response = await fetch(GEMINI_PROXY_URL, {
+  const codexResponse = await fetch(AI_CONFIG.endpoint, {
     method: "POST",
-
     headers: {
-      Accept: "application/json",
       "Content-Type": "application/json",
+      Authorization: `Bearer ${AI_CONFIG.apiKey}`,
     },
-
     body: JSON.stringify({
-      systemInstruction: SYSTEM_INSTRUCTION,
-      contents,
+      model: AI_CONFIG.model,
+      messages: apiMessages,
+      temperature: AI_CONFIG.temperature || 0.7,
+      max_tokens: AI_CONFIG.maxTokens || 800,
     }),
-
     signal,
   });
 
-  const responseText = await response.text();
-  const responseData = parseJsonResponse(responseText);
+  const codexText = await codexResponse.text();
+  const codexData = parseJsonResponse(codexText);
 
-  if (!response.ok) {
-    console.error("AI proxy error:", {
-      status: response.status,
-      responseData,
-      responseText,
-    });
-
-    throw new Error(
-      getServerErrorMessage({
-        status: response.status,
-        responseData,
-        responseText,
-      })
-    );
+  if (!codexResponse.ok) {
+    throw new Error(codexData?.error?.message || `Lỗi AI (${codexResponse.status})`);
   }
 
-  const reply = String(responseData?.reply || "").trim();
-
+  const reply = codexData?.choices?.[0]?.message?.content;
   if (!reply) {
-    console.error("AI proxy không trả về reply:", responseData);
-
-    throw new Error("Trợ lý AI không trả về nội dung hợp lệ.");
+    throw new Error("AI không trả về phản hồi hợp lệ.");
   }
 
   return reply;
@@ -367,7 +376,7 @@ export default function FloatingChat() {
     requestControllerRef.current = controller;
 
     try {
-      const reply = await requestGeminiReply({
+      const reply = await requestCodexReply({
         messages: nextMessages,
         signal: controller.signal,
       });
@@ -449,17 +458,17 @@ export default function FloatingChat() {
           <header className="floating-ai-chat__header">
             <div className="floating-ai-chat__bot">
               <span className="floating-ai-chat__bot-avatar">
-                <RobotOutlined />
+                <Bot size={20} />
               </span>
 
               <div className="floating-ai-chat__bot-info">
                 <strong>
-                  Trợ lý AI {BRAND.name}
+                  Trợ lý AI {BRAND.name} <Sparkles size={14} className="floating-ai-chat__header-sparkle" />
                 </strong>
 
                 <span>
                   <i />
-                  {isTyping ? "Đang trả lời..." : "Đang trực tuyến"}
+                  {isTyping ? "Đang trả lời..." : "Đang trực tuyến 24/7"}
                 </span>
               </div>
             </div>
@@ -472,7 +481,7 @@ export default function FloatingChat() {
                 onClick={handleResetConversation}
                 aria-label="Làm mới cuộc trò chuyện"
               >
-                <ReloadOutlined />
+                <RefreshCw size={13} />
                 <span>Làm mới</span>
               </button>
 
@@ -482,7 +491,7 @@ export default function FloatingChat() {
                 onClick={handleCloseChat}
                 aria-label="Đóng cửa sổ trò chuyện"
               >
-                <CloseOutlined />
+                <X size={18} />
               </button>
             </div>
           </header>
@@ -507,18 +516,20 @@ export default function FloatingChat() {
                 >
                   {chatMessage.sender === "bot" && (
                     <span className="floating-ai-chat__message-avatar">
-                      <RobotOutlined />
+                      <Bot size={16} />
                     </span>
                   )}
 
-                  <p>{chatMessage.text}</p>
+                  <div className="floating-ai-chat__bubble">
+                    {renderFormattedMessage(chatMessage.text)}
+                  </div>
                 </div>
               ))}
 
               {isTyping && (
                 <div className="floating-ai-chat__message floating-ai-chat__message--bot">
                   <span className="floating-ai-chat__message-avatar">
-                    <RobotOutlined />
+                    <Bot size={16} />
                   </span>
 
                   <div className="floating-ai-chat__typing">
@@ -531,31 +542,35 @@ export default function FloatingChat() {
             </div>
 
             <div className="floating-ai-chat__quick-actions">
-              {QUICK_MESSAGES.map((quickMessage) => (
-                <button
-                  key={quickMessage.id}
-                  type="button"
-                  disabled={isTyping}
-                  onClick={() => handleQuickMessage(quickMessage)}
-                >
-                  {quickMessage.label}
-                </button>
-              ))}
+              {QUICK_MESSAGES.map((quickMessage) => {
+                const QuickIcon = quickMessage.icon;
+                return (
+                  <button
+                    key={quickMessage.id}
+                    type="button"
+                    disabled={isTyping}
+                    onClick={() => handleQuickMessage(quickMessage)}
+                  >
+                    {QuickIcon && <QuickIcon size={12} className="floating-ai-chat__quick-icon" />}
+                    <span>{quickMessage.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="floating-ai-chat__links">
               <button
                 type="button"
-                onClick={() => navigate("/tracking")}
+                onClick={() => navigate("/order-lookup")}
               >
-                Theo dõi đơn
+                <Search size={11} /> Theo dõi đơn
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate("/register")}
               >
-                Đăng ký tài khoản
+                <UserPlus size={11} /> Đăng ký
               </button>
 
               <a
@@ -564,7 +579,7 @@ export default function FloatingChat() {
                   ""
                 )}`}
               >
-                Gọi tư vấn
+                <PhoneCall size={11} /> Gọi tư vấn
               </a>
             </div>
           </div>
@@ -581,8 +596,8 @@ export default function FloatingChat() {
               onChange={(event) => setMessage(event.target.value)}
               placeholder={
                 isTyping
-                  ? "Trợ lý AI đang trả lời..."
-                  : "Nhập nội dung cần hỗ trợ..."
+                  ? "Trợ lý AI đang suy nghĩ..."
+                  : "Nhập câu hỏi cần tư vấn..."
               }
               maxLength={MAX_MESSAGE_LENGTH}
               autoComplete="off"
@@ -594,15 +609,15 @@ export default function FloatingChat() {
               disabled={!message.trim() || isTyping}
               aria-label="Gửi tin nhắn"
             >
-              <SendOutlined />
+              <SendHorizontal size={17} />
             </button>
           </form>
 
           <footer className="floating-ai-chat__footer">
-            <CustomerServiceOutlined />
+            <ShieldCheck size={14} color="#16a34a" />
 
             <span>
-              Hỗ trợ trực tuyến bằng Việt Nam Logictic AI
+              Bảo mật 100% bằng Trợ lý AI {BRAND.name}
             </span>
           </footer>
         </section>
@@ -627,7 +642,7 @@ export default function FloatingChat() {
         <span className="floating-ai-chat__launcher-ring" />
 
         <span className="floating-ai-chat__launcher-icon">
-          {isOpen ? <CloseOutlined /> : <MessageOutlined />}
+          {isOpen ? <X size={24} /> : <Sparkles size={24} />}
         </span>
 
         {!isOpen && (
@@ -635,7 +650,7 @@ export default function FloatingChat() {
             <span className="floating-ai-chat__online-dot" />
 
             <span className="floating-ai-chat__tooltip">
-              Xin chào! Bạn cần hỗ trợ?
+              ✨ Trợ lý AI sẵn sàng hỗ trợ bạn!
             </span>
           </>
         )}

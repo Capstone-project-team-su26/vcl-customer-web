@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Filter, Inbox, PackageX, Search, ShoppingCart } from "lucide-react";
 import { MuaHoTrackingCard } from "./MuaHoTrackingCard";
+import "../Shared/WarehouseShared.css";
 
 export function MuaHoTrackingList({ purchaseRequests = [], loading = false }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,8 +95,11 @@ export function MuaHoTrackingList({ purchaseRequests = [], loading = false }) {
             </p>
           </div>
         ) : (
-          filteredItems.map((request) => (
-            <MuaHoTrackingCard key={request.id} request={request} />
+          filteredItems.map((request, index) => (
+            <MuaHoTrackingCard
+              key={request.id || request.purchaseRequestId || request.consignmentCode || `muaho-${index}`}
+              request={request}
+            />
           ))
         )}
       </div>

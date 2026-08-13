@@ -1,0 +1,18 @@
+@import "../Shared/WarehouseShared.css";
+
+/* Specific CheckinNhapKho styling */
+.checkin-nhap-kho {
+  width: 100%;
+}
+
+.warehouse-section-divider {
+  margin: 28px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.warehouse-section-divider h3 {
+  color: #1e293b;
+  font-size: 17px;
+  font-weight: 700;
+}

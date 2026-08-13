@@ -1,0 +1,28 @@
+@import "../Shared/WarehouseShared.css";
+
+/* Specific WarehouseShipmentDetail styling */
+.warehouse-detail-hero {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid var(--wh-line);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 35, 65, 0.05);
+}
+
+.warehouse-detail-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.warehouse-info-card {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--wh-line);
+  border-radius: 16px;
+}

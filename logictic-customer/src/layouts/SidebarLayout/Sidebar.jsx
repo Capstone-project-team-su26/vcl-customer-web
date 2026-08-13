@@ -178,9 +178,15 @@ export default function Sidebar() {
       "/history/consignment/"
     );
 
-  const warehouseInventoryActive =
+  const warehouseCheckinActive =
+    pathname === "/warehouse/checkin" ||
+    pathname.startsWith("/warehouse/checkin/") ||
     pathname === "/warehouse/inventory" ||
     pathname.startsWith("/warehouse/inventory/");
+
+  const warehouseStorageActive =
+    pathname === "/warehouse/storage" ||
+    pathname.startsWith("/warehouse/storage/");
 
   const warehouseExportActive =
     pathname === "/warehouse/export" ||
@@ -189,10 +195,6 @@ export default function Sidebar() {
   const warehouseCustomsActive =
     pathname === "/warehouse/customs" ||
     pathname.startsWith("/warehouse/customs/");
-
-  const warehouseReceiptsActive =
-    pathname === "/warehouse/receipts" ||
-    pathname.startsWith("/warehouse/receipts/");
 
   const toggleSubMenu = (menuKey) => {
     setOpenSubMenus((previousState) => ({
@@ -554,10 +556,10 @@ export default function Sidebar() {
                 ? "submenu-parent-open"
                 : ""
             } ${
-              warehouseInventoryActive ||
+              warehouseCheckinActive ||
+              warehouseStorageActive ||
               warehouseExportActive ||
-              warehouseCustomsActive ||
-              warehouseReceiptsActive
+              warehouseCustomsActive
                 ? "submenu-parent-active"
                 : ""
             }`}
@@ -581,14 +583,25 @@ export default function Sidebar() {
           {openSubMenus.khoHang && (
             <div className="submenu-list timeline-style">
               <NavLink
-                to="/warehouse/inventory"
+                to="/warehouse/checkin"
                 className={`submenu-item ${
-                  warehouseInventoryActive
+                  warehouseCheckinActive
                     ? "active-sub"
                     : ""
                 }`}
               >
-                Tồn kho & nhập kho
+                Checkin & nhập kho
+              </NavLink>
+
+              <NavLink
+                to="/warehouse/storage"
+                className={`submenu-item ${
+                  warehouseStorageActive
+                    ? "active-sub"
+                    : ""
+                }`}
+              >
+                Lưu kho kiện hàng
               </NavLink>
 
               <NavLink
@@ -599,31 +612,18 @@ export default function Sidebar() {
                     : ""
                 }`}
               >
-                Xuất kho
+                Xuất kho kiện hàng
               </NavLink>
 
               <NavLink
                 to="/warehouse/customs"
-                className={
-                  "submenu-item " +
-                  (warehouseCustomsActive
+                className={`submenu-item ${
+                  warehouseCustomsActive
                     ? "active-sub"
-                    : "")
-                }
+                    : ""
+                }`}
               >
-                Thông quan
-              </NavLink>
-
-              <NavLink
-                to="/warehouse/receipts"
-                className={
-                  "submenu-item " +
-                  (warehouseReceiptsActive
-                    ? "active-sub"
-                    : "")
-                }
-              >
-                Phiếu nhập kho
+                Thông quan & kho VN
               </NavLink>
             </div>
           )}

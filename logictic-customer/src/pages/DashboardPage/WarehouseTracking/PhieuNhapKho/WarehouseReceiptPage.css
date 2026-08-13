@@ -1,0 +1,33 @@
+@import "../Shared/WarehouseShared.css";
+
+/* Specific WarehouseReceiptPage styling */
+.warehouse-receipt-page {
+  width: 100%;
+}
+
+.warehouse-receipt-toolbar {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.warehouse-receipt-toolbar button {
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.warehouse-receipt-document {
+  padding: 32px;
+  background: #fff;
+  border: 1px solid var(--wh-line);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(15, 35, 65, 0.06);
+}

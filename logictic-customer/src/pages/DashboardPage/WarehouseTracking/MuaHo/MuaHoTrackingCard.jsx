@@ -2,55 +2,43 @@ import React from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
-  Box,
   ChevronRight,
   Clock,
   MapPin,
   PackageCheck,
+  Plane,
+  ShieldCheck,
   ShoppingCart,
   Warehouse,
 } from "lucide-react";
-import { formatVietnamDateTime } from "../../../../utils/timeUtc";
-
-const formatTime = (value) =>
-  value ? formatVietnamDateTime(value, { fallback: "--" }) : "--";
+import { formatTime, StatusPill } from "../Shared/WarehouseSharedComponents";
 
 export function MuaHoTrackingCard({ request }) {
   const normStatus = String(request.status || "").toUpperCase();
 
-  const statusLabel =
-    normStatus === "CHECKED_IN"
-      ? "Đã Check-in kho quốc tế"
-      : normStatus === "WAREHOUSE_RECEIVED" || normStatus === "RECEIVED"
-      ? "Kho mua hộ đã nhận hàng"
-      : normStatus === "IN_STORAGE"
-      ? "Đang lưu kho mua hộ"
-      : normStatus === "CUSTOMS_REVIEW"
-      ? "Đang thông quan"
-      : normStatus === "IN_TRANSIT"
-      ? "Đang vận chuyển về VN"
-      : normStatus === "COMPLETED"
-      ? "Đã nhập kho hoàn tất"
-      : request.status || "Đang lưu kho";
+  let stepLevel = 2; // Default checked-in
+  if (normStatus.includes("STORAGE")) stepLevel = 3;
+  else if (normStatus.includes("CUSTOMS")) stepLevel = 4;
+  else if (normStatus.includes("TRANSIT") || normStatus.includes("DELIVERED") || normStatus.includes("COMPLETED")) stepLevel = 5;
 
-  const statusTone = normStatus.includes("CHECKED") || normStatus.includes("RECEIVED")
-    ? "warehouse-status--blue"
-    : normStatus.includes("STORAGE")
-    ? "warehouse-status--cyan"
-    : normStatus.includes("CUSTOMS")
-    ? "warehouse-status--amber"
-    : "warehouse-status--green";
+  const steps = [
+    { num: 1, label: "Tạo đơn mua hộ", icon: ShoppingCart },
+    { num: 2, label: "Đã Check-in kho", icon: PackageCheck },
+    { num: 3, label: "Lưu kho mua hộ", icon: Warehouse },
+    { num: 4, label: "Thông quan", icon: ShieldCheck },
+    { num: 5, label: "Về Việt Nam", icon: Plane },
+  ];
 
   return (
     <article className="warehouse-shipment-card">
       <header>
         <div>
-          <span className="warehouse-card-eyebrow">ĐƠN MUA HỘ QUỐC TẾ</span>
-          <h3>{request.consignmentCode}</h3>
+          <span className="warehouse-card-eyebrow">
+            ĐƠN MUA HỘ KHO QUỐC TẾ
+          </span>
+          <h3>{request.consignmentCode || request.id}</h3>
         </div>
-        <span className={`warehouse-status ${statusTone}`}>
-          <PackageCheck size={13} /> {statusLabel}
-        </span>
+        <StatusPill status={request.status} />
       </header>
 
       <div className="warehouse-shipment-card__route">
@@ -98,35 +86,35 @@ export function MuaHoTrackingCard({ request }) {
       </div>
 
       <div className="warehouse-progress">
-        <div className="warehouse-progress__step is-complete">
-          <div className="warehouse-progress__node">1</div>
-          <small>Tạo đơn mua hộ</small>
-        </div>
-        <div className="warehouse-progress__line is-complete" />
-        <div className="warehouse-progress__step is-complete">
-          <div className="warehouse-progress__node">2</div>
-          <small>Đã Check-in kho</small>
-        </div>
-        <div className="warehouse-progress__line is-current" />
-        <div className="warehouse-progress__step is-current">
-          <div className="warehouse-progress__node">3</div>
-          <small>Lưu kho mua hộ</small>
-        </div>
-        <div className="warehouse-progress__line" />
-        <div className="warehouse-progress__step">
-          <div className="warehouse-progress__node">4</div>
-          <small>Thông quan</small>
-        </div>
-        <div className="warehouse-progress__line" />
-        <div className="warehouse-progress__step">
-          <div className="warehouse-progress__node">5</div>
-          <small>Về Việt Nam</small>
-        </div>
+        {steps.map((st, idx) => {
+          const StepIcon = st.icon;
+          const isDone = st.num < stepLevel;
+          const isCurrent = st.num === stepLevel;
+          const stepClass = isCurrent
+            ? "is-current"
+            : isDone
+            ? "is-complete"
+            : "";
+
+          return (
+            <React.Fragment key={st.num}>
+              <div className={`warehouse-progress__step ${stepClass}`}>
+                <div className="warehouse-progress__node">
+                  <StepIcon size={14} />
+                </div>
+                <small>{st.label}</small>
+              </div>
+              {idx < steps.length - 1 && (
+                <div className={`warehouse-progress__line ${st.num < stepLevel ? "is-complete" : st.num === stepLevel - 1 ? "is-current" : ""}`} />
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
 
       <footer className="warehouse-shipment-card__footer">
         <span>Cập nhật {formatTime(request.statusUpdatedAt || request.createdAt)}</span>
-        <Link to={`/create-order/buy-orders`} className="warehouse-card-action">
+        <Link to={"/warehouse/purchase-detail/" + (request.id || request.purchaseRequestId)} className="warehouse-card-action">
           Xem chi tiết <ChevronRight size={14} />
         </Link>
       </footer>

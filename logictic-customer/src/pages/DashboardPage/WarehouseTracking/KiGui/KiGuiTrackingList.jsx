@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Filter, Search } from "lucide-react";
 import { KiGuiTrackingCard } from "./KiGuiTrackingCard";
+import "../Shared/WarehouseShared.css";
 
 export function KiGuiTrackingList({ consignments = [], loading = false }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,8 +74,11 @@ export function KiGuiTrackingList({ consignments = [], loading = false }) {
             <p>Hãy thử thay đổi từ khóa hoặc bộ lọc trạng thái ký gửi.</p>
           </div>
         ) : (
-          filteredItems.map((shipment) => (
-            <KiGuiTrackingCard key={shipment.id} shipment={shipment} />
+          filteredItems.map((shipment, index) => (
+            <KiGuiTrackingCard
+              key={shipment.orderId || shipment.id || shipment.consignmentCode || `kigui-${index}`}
+              shipment={shipment}
+            />
           ))
         )}
       </div>
