@@ -448,19 +448,55 @@ export const createConsignmentApi = async (
   }
 };
 
-export const getConsignmentsApi = async (options = {}) => {
+export const getConsignmentsApi = async (
+  pageNumberOrOptions = {},
+  pageSize,
+  options = {}
+) => {
   try {
+    let opts = options;
+    let page = 1;
+    let size = 10;
+    let extraParams = {};
+
+    if (
+      typeof pageNumberOrOptions === "number" ||
+      typeof pageNumberOrOptions === "string"
+    ) {
+      page = Number(pageNumberOrOptions) || 1;
+      size = Number(pageSize) || 10;
+      opts = options || {};
+      extraParams = opts.params || {};
+    } else if (
+      typeof pageNumberOrOptions === "object" &&
+      pageNumberOrOptions !== null
+    ) {
+      opts = pageNumberOrOptions;
+      extraParams = opts.params || {};
+      page =
+        Number(extraParams.pageNumber || opts.pageNumber) ||
+        1;
+      size =
+        Number(extraParams.pageSize || opts.pageSize) ||
+        10;
+    }
+
+    const mergedParams = {
+      pageNumber: page,
+      pageSize: size,
+      ...extraParams,
+    };
+
     const response = await axiosInstance.get(
       "/api/orders/consignments",
       {
-        signal: getSignal(options),
-        params: options?.params,
+        signal: getSignal(opts),
+        params: mergedParams,
         headers: {
           Accept: "text/plain, application/json",
         },
       }
     );
-
 
     return response.data;
   } catch (error) {
