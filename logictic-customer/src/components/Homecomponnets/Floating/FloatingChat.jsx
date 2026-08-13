@@ -220,17 +220,19 @@ const requestCodexReply = async ({
     throw new Error("Không có nội dung để gửi đến trợ lý AI.");
   }
 
+  const activeApiKey = AI_CONFIG.apiKey || "sk-bUiazPpchR5Bx8yFpk6MKfKNcE5KrGurGBdQ2kDud0KLPous";
+
   const codexResponse = await fetch(AI_CONFIG.endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${AI_CONFIG.apiKey}`,
+      Authorization: `Bearer ${activeApiKey}`,
     },
     body: JSON.stringify({
-      model: AI_CONFIG.model,
+      model: AI_CONFIG.model || "gpt-5.4-mini",
       messages: apiMessages,
-      temperature: AI_CONFIG.temperature || 0.7,
-      max_tokens: AI_CONFIG.maxTokens || 800,
+      temperature: AI_CONFIG.temperature || 0.3,
+      max_tokens: AI_CONFIG.maxTokens || 300,
     }),
     signal,
   });
@@ -239,7 +241,11 @@ const requestCodexReply = async ({
   const codexData = parseJsonResponse(codexText);
 
   if (!codexResponse.ok) {
-    throw new Error(codexData?.error?.message || `Lỗi AI (${codexResponse.status})`);
+    const rawErrMsg = codexData?.error?.message || "";
+    if (rawErrMsg.toLowerCase().includes("invalid token")) {
+      throw new Error("Khóa kết nối AI bị từ chối. Vui lòng kiểm tra VITE_CODEX_API_KEY trên môi trường Deploy.");
+    }
+    throw new Error(rawErrMsg || `Lỗi kết nối AI (${codexResponse.status})`);
   }
 
   const reply = codexData?.choices?.[0]?.message?.content;
