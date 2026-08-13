@@ -474,10 +474,14 @@ const splitItemNames = (value) => {
     return [];
   }
 
-  return text
-    .split(/\r?\n|;|\||,(?=\s*[^\d])/g)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  if (text.includes("\n")) {
+    return text
+      .split(/\r?\n+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [text];
 };
 
 const EMPTY_UI_TEXT_VALUES = new Set([

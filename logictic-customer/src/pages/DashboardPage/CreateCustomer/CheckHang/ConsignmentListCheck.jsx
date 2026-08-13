@@ -464,12 +464,14 @@ const extractProductNames = (value) => {
     }
   }
 
-  return text
-    .split(
-      /\s*(?:\r?\n+|;|\||,|\s+và\s+|\s+and\s+|\s*&\s*)\s*/giu
-    )
-    .map((name) => name.trim())
-    .filter(Boolean);
+  if (text.includes("\n")) {
+    return text
+      .split(/\r?\n+/)
+      .map((name) => name.trim())
+      .filter(Boolean);
+  }
+
+  return [text];
 };
 
 const getProductNames = (item) => {

@@ -57,10 +57,13 @@ const normalizeText = (value) => {
 };
 
 
-const PRODUCT_NAME_SEPARATOR =
-  /\r?\n|[,;|•]+|\s+(?:và|and)\s+/giu;
-
-
+/**
+ * Chuẩn hóa tên sản phẩm từ nhiều kiểu dữ liệu API:
+ * - "Sản phẩm 1\nSản phẩm 2"
+ * - ["Sản phẩm 1", "Sản phẩm 2"]
+ * - [{ productName: "Sản phẩm 1" }]
+ * Giữ nguyên tên sản phẩm đầy đủ (không tự ý tách theo dấu phẩy)
+ */
 const collectProductNames = (source) => {
   if (
     source === null ||
@@ -120,10 +123,14 @@ const collectProductNames = (source) => {
     }
   }
 
-  return text
-    .split(PRODUCT_NAME_SEPARATOR)
-    .map((name) => name.trim())
-    .filter(Boolean);
+  if (text.includes("\n")) {
+    return text
+      .split(/\r?\n+/)
+      .map((name) => name.trim())
+      .filter(Boolean);
+  }
+
+  return [text];
 };
 
 const getProductNames = (item) => {
