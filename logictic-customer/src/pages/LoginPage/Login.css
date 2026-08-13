@@ -1208,6 +1208,14 @@
      NÚT GOOGLE
      ========================================================= */
   
+  .login-container .google-login-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 48px;
+  }
+
   .login-container .google-btn {
     width: 100%;
     min-height: 48px;

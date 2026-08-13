@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, CircularProgress } from "@mui/material";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 
 import { loginApi, googleLoginApi } from "../../api/Auth/authService";
 import AuthNotify from "../../utils/AuthNotify";
@@ -217,45 +217,21 @@ export default function Login() {
     }
   };
 
-  /* Google OAuth via @react-oauth/google (luôn gọi hook để tránh vi phạm rules of hooks) */
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setLoading(true);
-        setGoogleLoading(true);
-
-        /* implicit flow trả về access_token, dùng nó gọi Google userinfo 
-           để lấy thông tin user, rồi gửi access_token lên backend */
-        await sendGoogleIdToken(tokenResponse.access_token);
-      } catch (err) {
-        console.error("Google OAuth Error:", err);
-        AuthNotify.error(
-          "Đăng nhập Google thất bại",
-          "Không thể xác thực với Google. Vui lòng thử lại."
-        );
-        setLoading(false);
-        setGoogleLoading(false);
-      }
-    },
-    onError: (error) => {
-      console.error("Google Login Error:", error);
-      AuthNotify.error(
-        "Đăng nhập Google thất bại",
-        "Không thể kết nối với Google. Vui lòng thử lại."
-      );
-    },
-    flow: "implicit",
-    scope: "openid email profile",
-  });
-
-  const handleGoogleLogin = () => {
-    if (hasGoogleClientId) {
-      /* Mở popup Google chọn tài khoản tự động */
-      googleLogin();
+  /* Callback khi GoogleLogin component trả về credential (id_token JWT) */
+  const handleGoogleSuccess = (credentialResponse) => {
+    const idToken = credentialResponse?.credential;
+    if (idToken) {
+      sendGoogleIdToken(idToken);
     } else {
-      /* Chưa cấu hình Client ID → hiện modal nhập idToken */
-      setShowGoogleTokenModal(true);
+      AuthNotify.error("Đăng nhập thất bại", "Không nhận được Google ID Token.");
     }
+  };
+
+  const handleGoogleError = () => {
+    AuthNotify.error(
+      "Đăng nhập Google thất bại",
+      "Không thể kết nối với Google. Vui lòng thử lại."
+    );
   };
 
   const handleManualGoogleSubmit = (e) => {
@@ -698,42 +674,54 @@ export default function Login() {
                 Hoặc tiếp tục với
               </div>
 
-              {/* Google */}
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="google-btn"
-                disabled={loading}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="19"
-                  height="19"
-                  viewBox="0 0 48 48"
+              {/* Google Login */}
+              {hasGoogleClientId ? (
+                <div className="google-login-wrapper">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    type="standard"
+                    theme="outline"
+                    size="large"
+                    text="signin_with"
+                    shape="pill"
+                    width="350"
+                    logo_alignment="left"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleTokenModal(true)}
+                  className="google-btn"
+                  disabled={loading}
                 >
-                  <path
-                    fill="#EA4335"
-                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                  />
-
-                  <path
-                    fill="#4285F4"
-                    d="M46.5 24c0-1.55-.15-3.24-.47-4.75H24v9h12.75c-.53 2.87-2.13 5.31-4.57 6.95l7.1 5.51C43.43 36.57 46.5 30.95 46.5 24z"
-                  />
-
-                  <path
-                    fill="#FBBC05"
-                    d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.98-6.19z"
-                  />
-
-                  <path
-                    fill="#34A853"
-                    d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.1-5.51C30.68 38.09 27.99 39 24 39c-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                  />
-                </svg>
-
-                <span>Đăng nhập bằng Google</span>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="19"
+                    height="19"
+                    viewBox="0 0 48 48"
+                  >
+                    <path
+                      fill="#EA4335"
+                      d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                    />
+                    <path
+                      fill="#4285F4"
+                      d="M46.5 24c0-1.55-.15-3.24-.47-4.75H24v9h12.75c-.53 2.87-2.13 5.31-4.57 6.95l7.1 5.51C43.43 36.57 46.5 30.95 46.5 24z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.98-6.19z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.1-5.51C30.68 38.09 27.99 39 24 39c-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                    />
+                  </svg>
+                  <span>Đăng nhập bằng Google</span>
+                </button>
+              )}
             </form>
 
             <div className="request-access-box">
