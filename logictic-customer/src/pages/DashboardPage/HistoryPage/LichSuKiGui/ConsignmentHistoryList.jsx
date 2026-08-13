@@ -46,6 +46,13 @@ const { RangePicker } = DatePicker;
 const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 450;
 
+const PAGE_SIZE_OPTIONS = [
+  { value: 10, label: "10 đơn/trang" },
+  { value: 20, label: "20 đơn/trang" },
+  { value: 50, label: "50 đơn/trang" },
+  { value: 100, label: "100 đơn/trang" },
+];
+
 /* =========================================================
    HELPER FUNCTIONS
    ========================================================= */
@@ -57,7 +64,6 @@ const normalizeText = (value) => {
     .toLowerCase()
     .trim();
 };
-
 
 /**
  * Chuẩn hóa tên sản phẩm từ nhiều kiểu dữ liệu API:
@@ -153,7 +159,7 @@ const getProductNames = (item) => {
   );
 };
 
-const extractConsignmentPage = (apiResult) => {
+const extractConsignmentPage = (apiResult, currentPageSize = 10) => {
   const candidates = [
     apiResult?.data?.data,
     apiResult?.data,
@@ -181,22 +187,30 @@ const extractConsignmentPage = (apiResult) => {
         ? pageData.results
         : [];
 
+    const totalCount =
+      Number(pageData.totalCount) ||
+      Number(pageData.total) ||
+      items.length;
+
+    const size =
+      Number(pageData.pageSize) ||
+      currentPageSize ||
+      DEFAULT_PAGE_SIZE;
+
+    const totalPages = Math.max(
+      1,
+      Number(pageData.totalPages) ||
+        Math.ceil(totalCount / (size || 1))
+    );
+
     return {
       items,
-      totalCount:
-        Number(pageData.totalCount) ||
-        items.length,
+      totalCount,
       pageNumber:
         Number(pageData.pageNumber) ||
         1,
-      pageSize:
-        Number(pageData.pageSize) ||
-        DEFAULT_PAGE_SIZE,
-      totalPages: Math.max(
-        1,
-        Number(pageData.totalPages) ||
-          1
-      ),
+      pageSize: size,
+      totalPages,
     };
   }
 
@@ -217,14 +231,15 @@ const extractConsignmentPage = (apiResult) => {
       Array.isArray
     ) || [];
 
+  const size = currentPageSize || DEFAULT_PAGE_SIZE;
+  const totalCount = items.length;
+
   return {
     items,
-    totalCount: items.length,
+    totalCount,
     pageNumber: 1,
-    pageSize:
-      items.length ||
-      DEFAULT_PAGE_SIZE,
-    totalPages: 1,
+    pageSize: size,
+    totalPages: Math.max(1, Math.ceil(totalCount / (size || 1))),
   };
 };
 
@@ -544,6 +559,7 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
     useState(false);
 
   const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [refreshKey, setRefreshKey] = useState(0);
   const [copiedTrackingCode, setCopiedTrackingCode] =
     useState("");
@@ -596,13 +612,12 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
         setLoading(true);
 
         /*
-         * Chỉ tải đúng một trang API.
-         * Không còn vòng Promise.all tải toàn bộ các trang.
+         * Truyền pageNumber & pageSize trực tiếp vào API call
          */
         const response =
           await getConsignmentsApi(
             pageNumber,
-            DEFAULT_PAGE_SIZE,
+            pageSize,
             {
               signal,
               params: requestFilters,
@@ -618,7 +633,7 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
         }
 
         const pageData =
-          extractConsignmentPage(response);
+          extractConsignmentPage(response, pageSize);
 
         setConsignments(
           pageData.items.map(
@@ -664,7 +679,7 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
         }
       }
     },
-    [pageNumber, requestFilters]
+    [pageNumber, pageSize, requestFilters]
   );
 
   useEffect(() => {
@@ -1293,6 +1308,18 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
               inputReadOnly
               className="filter-date-picker"
             />
+
+            <Select
+              value={pageSize}
+              options={PAGE_SIZE_OPTIONS}
+              onChange={(val) => {
+                setPageSize(val);
+                setPageNumber(1);
+              }}
+              className="filter-pagesize-select"
+              style={{ minWidth: 145 }}
+              title="Chọn số đơn hiển thị trên 1 trang"
+            />
           </Space>
         </div>
 
@@ -1656,36 +1683,49 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
       </div>
 
       {totalCount > 0 && (
-            <div className="pagination-section">
-              <span className="pagination-summary">
-                Hiển thị{" "}
-                <strong>
-                  {
-                    visibleConsignments.length
-                  }
-                </strong>{" "}
-                mục trên trang này, tổng cộng{" "}
-                <strong>
-                  {
-                    totalCount
-                  }
-                </strong>{" "}
-                mục
-              </span>
+        <div className="pagination-section">
+          <span className="pagination-summary">
+            Hiển thị{" "}
+            <strong>
+              {
+                visibleConsignments.length
+              }
+            </strong>{" "}
+            mục trên trang này, tổng cộng{" "}
+            <strong>
+              {
+                totalCount
+              }
+            </strong>{" "}
+            mục
+          </span>
 
-              <Pagination
-                count={totalPages}
-                page={pageNumber}
-                onChange={
-                  handlePageChange
-                }
-                disabled={loading}
-                color="primary"
-                shape="rounded"
-                showFirstButton
-                showLastButton
-              />
-            </div>
+          <div className="pagination-controls">
+            <Select
+              value={pageSize}
+              options={PAGE_SIZE_OPTIONS}
+              onChange={(val) => {
+                setPageSize(val);
+                setPageNumber(1);
+              }}
+              className="pagination-pagesize-select"
+              style={{ minWidth: 145 }}
+            />
+
+            <Pagination
+              count={totalPages}
+              page={pageNumber}
+              onChange={
+                handlePageChange
+              }
+              disabled={loading}
+              color="primary"
+              shape="rounded"
+              showFirstButton
+              showLastButton
+            />
+          </div>
+        </div>
       )}
     </div>
   );

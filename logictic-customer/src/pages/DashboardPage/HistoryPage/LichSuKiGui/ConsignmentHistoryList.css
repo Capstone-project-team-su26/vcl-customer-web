@@ -1008,6 +1008,13 @@
     color: #334155;
     font-weight: 700;
   }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
   
   .vcl-container .MuiPagination-ul {
     gap: 3px;
