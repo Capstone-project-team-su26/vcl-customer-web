@@ -19,6 +19,7 @@ import {
 
 import { BRAND } from "../../../utils/data/homeData";
 import { AI_CONFIG } from "../../../config/aiConfig";
+import { extractOrderIntentApi } from "../../../api/OrderApi/aiOrderIntentApi";
 
 import "./FloatingChat.css";
 
@@ -167,12 +168,55 @@ const createChatMessage = ({
   skipApi,
 });
 
-const createInitialMessage = () =>
-  createChatMessage({
+const buildDynamicSystemInstruction = () => {
+  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+  const userStr = sessionStorage.getItem("user") || localStorage.getItem("user");
+
+  let authContext = "\nTRẠNG THÁI KHÁCH HÀNG: Chưa đăng nhập (Khách vãng lai). Hướng dẫn khách đăng nhập/đăng ký nếu cần quản lý đơn cá nhân.";
+
+  if (token || userStr) {
+    try {
+      const u = userStr ? JSON.parse(userStr) : {};
+      const fullName = u.fullName || u.name || sessionStorage.getItem("fullName") || "Khách hàng";
+      const phone = u.phone || sessionStorage.getItem("phone") || "Chưa cập nhật";
+      const email = u.email || sessionStorage.getItem("email") || "Chưa cập nhật";
+      const id = u.userId || u.id || u.customerId || "N/A";
+
+      authContext = `
+TRẠNG THÁI KHÁCH HÀNG: ĐÃ ĐĂNG NHẬP & XÁC THỰC THÀNH CÔNG (Token JWT khả dụng)
+- Mã Khách hàng (ID): ${id}
+- Họ và tên: ${fullName}
+- Số điện thoại: ${phone}
+- Email: ${email}
+CHỈ ĐỊNH PHẢN HỒI: Xưng hô thân thiện bằng tên khách hàng (ví dụ: 'Chào anh/chị ${fullName}...'). Khách hàng đã được xác thực token hệ thống. Hướng dẫn trực tiếp các dịch vụ mua hộ, ký gửi và quản lý đơn hàng.`;
+    } catch {
+      authContext = "\nTRẠNG THÁI KHÁCH HÀNG: Đã đăng nhập hệ thống (Token JWT khả dụng).";
+    }
+  }
+
+  return `${SYSTEM_INSTRUCTION.trim()}\n${authContext}`.trim();
+};
+
+const createInitialMessage = () => {
+  const userStr = sessionStorage.getItem("user") || localStorage.getItem("user");
+  let fullName = "";
+  if (userStr) {
+    try {
+      const u = JSON.parse(userStr);
+      fullName = u.fullName || u.name || sessionStorage.getItem("fullName") || "";
+    } catch {}
+  }
+
+  const welcomeText = fullName
+    ? `Xin chào **${fullName}**! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể hỗ trợ bạn về tạo đơn ký gửi, mua hộ và thông tin kho bãi hôm nay.`
+    : `Xin chào! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể hỗ trợ bạn về mua hộ, ký gửi và theo dõi đơn hàng.`;
+
+  return createChatMessage({
     sender: "bot",
-    text: `Xin chào! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể hỗ trợ bạn về mua hộ, ký gửi và theo dõi đơn hàng.`,
+    text: welcomeText,
     skipApi: true,
   });
+};
 
 const parseJsonResponse = (responseText) => {
   if (!responseText || typeof responseText !== "string") {
@@ -187,6 +231,7 @@ const parseJsonResponse = (responseText) => {
 };
 
 const buildCodexMessages = (messages) => {
+  const dynamicSystemPrompt = buildDynamicSystemInstruction();
   const filtered = messages
     .filter(
       (item) =>
@@ -201,7 +246,7 @@ const buildCodexMessages = (messages) => {
     }));
 
   return [
-    { role: "system", content: SYSTEM_INSTRUCTION },
+    { role: "system", content: dynamicSystemPrompt },
     ...filtered,
   ];
 };
@@ -213,6 +258,7 @@ const buildCodexMessages = (messages) => {
 const requestCodexReply = async ({
   messages,
   signal,
+  retryCount = 0,
 }) => {
   const apiMessages = buildCodexMessages(messages);
 
@@ -220,14 +266,27 @@ const requestCodexReply = async ({
     throw new Error("Không có nội dung để gửi đến trợ lý AI.");
   }
 
-  const activeApiKey = AI_CONFIG.apiKey || "sk-bUiazPpchR5Bx8yFpk6MKfKNcE5KrGurGBdQ2kDud0KLPous";
+  const customerToken =
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken") ||
+    "";
+
+  const activeApiKey =
+    AI_CONFIG.apiKey || "sk-bUiazPpchR5Bx8yFpk6MKfKNcE5KrGurGBdQ2kDud0KLPous";
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${activeApiKey}`,
+  };
+
+  if (customerToken) {
+    headers["X-Customer-Token"] = customerToken;
+    headers["X-Access-Token"] = customerToken;
+  }
 
   const codexResponse = await fetch(AI_CONFIG.endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${activeApiKey}`,
-    },
+    headers,
     body: JSON.stringify({
       model: AI_CONFIG.model || "gpt-5.4-mini",
       messages: apiMessages,
@@ -242,9 +301,28 @@ const requestCodexReply = async ({
 
   if (!codexResponse.ok) {
     const rawErrMsg = codexData?.error?.message || "";
-    if (rawErrMsg.toLowerCase().includes("invalid token")) {
-      throw new Error("Khóa kết nối AI bị từ chối. Vui lòng kiểm tra VITE_CODEX_API_KEY trên môi trường Deploy.");
+    const lowerMsg = rawErrMsg.toLowerCase();
+
+    // Nếu bị giới hạn Concurrency (quá nhiều request song song), tự động chờ 1.2s rồi gửi lại 1 lần
+    if (
+      (lowerMsg.includes("concurrency limit") ||
+        lowerMsg.includes("retry later") ||
+        lowerMsg.includes("rate limit") ||
+        codexResponse.status === 429) &&
+      retryCount < 2
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      return requestCodexReply({ messages, signal, retryCount: retryCount + 1 });
     }
+
+    if (lowerMsg.includes("invalid token")) {
+      throw new Error("Khóa kết nối AI bị từ chối. Vui lòng kiểm tra VITE_CODEX_API_KEY.");
+    }
+
+    if (lowerMsg.includes("concurrency limit") || lowerMsg.includes("retry later")) {
+      throw new Error("Hệ thống AI đang quá tải lượt hỏi cùng lúc. Vui lòng thử lại sau 2 giây.");
+    }
+
     throw new Error(rawErrMsg || `Lỗi kết nối AI (${codexResponse.status})`);
   }
 
@@ -254,6 +332,23 @@ const requestCodexReply = async ({
   }
 
   return reply;
+};
+
+const CHAT_STORAGE_KEY = "vcl_ai_chat_history_v1";
+
+const loadPersistedMessages = () => {
+  try {
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore parse error
+  }
+  return [createInitialMessage()];
 };
 
 /* =========================================================
@@ -272,16 +367,21 @@ export default function FloatingChat() {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const [messages, setMessages] = useState([
-    createInitialMessage(),
-  ]);
+  const [messages, setMessages] = useState(loadPersistedMessages);
 
   /* =======================================================
-     KEEP LATEST MESSAGES IN REF
+     KEEP LATEST MESSAGES IN REF & SAVE TO LOCALSTORAGE
      ======================================================= */
 
   useEffect(() => {
     messagesRef.current = messages;
+    try {
+      if (messages.length > 0) {
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+      }
+    } catch {
+      // ignore storage error
+    }
   }, [messages]);
 
   /* =======================================================
@@ -337,6 +437,7 @@ export default function FloatingChat() {
   const addBotMessage = ({
     text,
     status = "success",
+    intentData = null,
   }) => {
     setMessages((currentMessages) => [
       ...currentMessages,
@@ -344,6 +445,7 @@ export default function FloatingChat() {
         sender: "bot",
         text,
         status,
+        intentData,
       }),
     ]);
   };
@@ -387,8 +489,21 @@ export default function FloatingChat() {
         signal: controller.signal,
       });
 
+      let capturedIntentData = null;
+      try {
+        const intentResult = await extractOrderIntentApi(normalizedMessage);
+        const intentData = intentResult?.data;
+
+        if (intentData && intentData.orderType) {
+          capturedIntentData = intentData;
+        }
+      } catch (intentErr) {
+        console.warn("Không bóc tách được intent từ BE API:", intentErr);
+      }
+
       addBotMessage({
         text: reply,
+        intentData: capturedIntentData,
       });
     } catch (error) {
       if (error?.name === "AbortError") {
@@ -429,13 +544,21 @@ export default function FloatingChat() {
     setIsTyping(false);
     setMessage("");
 
-    setMessages([
+    try {
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+    } catch {
+      // ignore storage error
+    }
+
+    const resetMsg = [
       createChatMessage({
         sender: "bot",
         text: `Cuộc trò chuyện đã được làm mới. Tôi có thể tiếp tục hỗ trợ bạn về các dịch vụ của ${BRAND.name}.`,
         skipApi: true,
       }),
-    ]);
+    ];
+
+    setMessages(resetMsg);
 
     window.setTimeout(() => {
       inputRef.current?.focus();
@@ -528,6 +651,77 @@ export default function FloatingChat() {
 
                   <div className="floating-ai-chat__bubble">
                     {renderFormattedMessage(chatMessage.text)}
+
+                    {chatMessage.intentData && (
+                      <div className="floating-ai-draft-card">
+                        <div className="floating-ai-draft-header">
+                          <span className="floating-ai-draft-badge">
+                            {chatMessage.intentData.orderType === "CONSIGNMENT"
+                              ? "📋 BẢN NHÁP PHIẾU KÝ GỬI"
+                              : "🛒 BẢN NHÁP YÊU CẦU MUA HỘ"}
+                          </span>
+                          <span className="floating-ai-draft-confidence">
+                            AI: {Math.round((chatMessage.intentData.confidenceScore || 0.95) * 100)}%
+                          </span>
+                        </div>
+
+                        <div className="floating-ai-draft-body">
+                          {chatMessage.intentData.orderType === "CONSIGNMENT" ? (
+                            <>
+                              <p><strong>Sản phẩm:</strong> {chatMessage.intentData.productName || "Hàng ký gửi"}</p>
+                              <p><strong>Mã Tracking TQ:</strong> <code className="draft-code">{chatMessage.intentData.chinaTrackingCode || "Chưa nhập"}</code></p>
+                              <p><strong>Giá trị khai báo:</strong> {chatMessage.intentData.declaredValueCny ? `${chatMessage.intentData.declaredValueCny} Tệ` : "Chưa nhập"}</p>
+                              <p><strong>Phương thức:</strong> {chatMessage.intentData.shippingRoute === "CN-VN-AIR" ? "Đường hàng không" : "Đường bộ"}</p>
+                            </>
+                          ) : (
+                            <>
+                              <p><strong>Sản phẩm:</strong> {chatMessage.intentData.productName || "Hàng mua hộ"}</p>
+                              {chatMessage.intentData.productLink && (
+                                <p className="draft-link-row"><strong>Link sản phẩm:</strong> <a href={chatMessage.intentData.productLink} target="_blank" rel="noreferrer">{chatMessage.intentData.productLink}</a></p>
+                              )}
+                              <p><strong>Số lượng:</strong> {chatMessage.intentData.quantity || 1} | <strong>Đơn giá:</strong> {chatMessage.intentData.unitPriceCny ? `${chatMessage.intentData.unitPriceCny} Tệ` : "Chưa rõ"}</p>
+                              {chatMessage.intentData.variant && <p><strong>Phân loại:</strong> {chatMessage.intentData.variant}</p>}
+                            </>
+                          )}
+
+                          {chatMessage.intentData.receiverName && (
+                            <p><strong>Người nhận:</strong> {chatMessage.intentData.receiverName} {chatMessage.intentData.receiverPhone ? `(${chatMessage.intentData.receiverPhone})` : ""}</p>
+                          )}
+                        </div>
+
+                        {chatMessage.intentData.explanation && (
+                          <div className="floating-ai-draft-explanation">
+                            💡 {chatMessage.intentData.explanation}
+                          </div>
+                        )}
+
+                        <div className="floating-ai-draft-actions">
+                          {chatMessage.intentData.orderType === "CONSIGNMENT" ? (
+                            <button
+                              type="button"
+                              className="floating-ai-draft-btn floating-ai-draft-btn--primary"
+                              onClick={() => {
+                                navigate("/create-order/consignment", { state: { draftData: chatMessage.intentData } });
+                                setIsOpen(false);
+                              }}
+                            >
+                              🚀 Xác Nhận Tạo Phiếu Ký Gửi
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="floating-ai-draft-btn floating-ai-draft-btn--success"
+                              onClick={() => {
+                                navigate("/create-order/buy-orders", { state: { draftData: chatMessage.intentData } });
+                                setIsOpen(false);
+                              }}
+                            >
+                              🛒 Xác Nhận Gửi Yêu Cầu Mua Hộ
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

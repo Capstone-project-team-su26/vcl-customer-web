@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, CircularProgress } from "@mui/material";
+import { useGoogleLogin } from "@react-oauth/google";
 
-import { loginApi } from "../../api/Auth/authService";
+import { loginApi, googleLoginApi } from "../../api/Auth/authService";
 import AuthNotify from "../../utils/AuthNotify";
 import BackToHomeButton from "../../components/BackToHomeButton";
 import loginLogo from "../../assets/anhlogocap2.jpeg";
@@ -156,11 +157,110 @@ export default function Login() {
     }
   };
 
+  /* ============ GOOGLE LOGIN STATE ============ */
+  const [showGoogleTokenModal, setShowGoogleTokenModal] = useState(false);
+  const [manualIdToken, setManualIdToken] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const hasGoogleClientId = (() => {
+    const cid = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    return cid && cid.trim() !== "" && cid !== "placeholder";
+  })();
+
+  /* Send idToken to backend POST /api/Auth/google */
+  const sendGoogleIdToken = async (idToken) => {
+    if (!idToken || !idToken.trim()) {
+      AuthNotify.error("Lỗi", "idToken không được để trống.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setGoogleLoading(true);
+      const userData = await googleLoginApi(idToken.trim());
+
+      if (userData && typeof userData === "object") {
+        sessionStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(userData));
+
+        const tokenVal = userData.token || userData.accessToken;
+        if (tokenVal) {
+          localStorage.setItem("accessToken", tokenVal);
+          sessionStorage.setItem("accessToken", tokenVal);
+        }
+
+        window.dispatchEvent(new Event("storage"));
+      }
+
+      AuthNotify.success(
+        "Đăng nhập thành công",
+        "Chào mừng bạn đăng nhập bằng tài khoản Google!"
+      );
+
+      setShowGoogleTokenModal(false);
+      setManualIdToken("");
+
+      setTimeout(() => {
+        navigate("/customer/dashboard");
+      }, 800);
+    } catch (error) {
+      console.error("Lỗi đăng nhập Google:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.title ||
+        "Đăng nhập Google thất bại. Vui lòng kiểm tra ID Token hoặc thử lại.";
+
+      AuthNotify.error("Đăng nhập Google thất bại", errorMessage);
+    } finally {
+      setLoading(false);
+      setGoogleLoading(false);
+    }
+  };
+
+  /* Google OAuth via @react-oauth/google (luôn gọi hook để tránh vi phạm rules of hooks) */
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        setGoogleLoading(true);
+
+        /* implicit flow trả về access_token, dùng nó gọi Google userinfo 
+           để lấy thông tin user, rồi gửi access_token lên backend */
+        await sendGoogleIdToken(tokenResponse.access_token);
+      } catch (err) {
+        console.error("Google OAuth Error:", err);
+        AuthNotify.error(
+          "Đăng nhập Google thất bại",
+          "Không thể xác thực với Google. Vui lòng thử lại."
+        );
+        setLoading(false);
+        setGoogleLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error("Google Login Error:", error);
+      AuthNotify.error(
+        "Đăng nhập Google thất bại",
+        "Không thể kết nối với Google. Vui lòng thử lại."
+      );
+    },
+    flow: "implicit",
+    scope: "openid email profile",
+  });
+
   const handleGoogleLogin = () => {
-    AuthNotify.warning(
-      "Thông báo",
-      "Chức năng đăng nhập bằng Google đang được phát triển."
-    );
+    if (hasGoogleClientId) {
+      /* Mở popup Google chọn tài khoản tự động */
+      googleLogin();
+    } else {
+      /* Chưa cấu hình Client ID → hiện modal nhập idToken */
+      setShowGoogleTokenModal(true);
+    }
+  };
+
+  const handleManualGoogleSubmit = (e) => {
+    e.preventDefault();
+    sendGoogleIdToken(manualIdToken);
   };
 
   return (
@@ -677,6 +777,101 @@ export default function Login() {
           </div>
         </div>
       </section>
+
+      {/* ============ MODAL NHẬP GOOGLE ID TOKEN ============ */}
+      {showGoogleTokenModal && (
+        <div
+          className="google-token-overlay"
+          onClick={() => setShowGoogleTokenModal(false)}
+        >
+          <div
+            className="google-token-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="google-token-close"
+              onClick={() => setShowGoogleTokenModal(false)}
+            >
+              ✕
+            </button>
+
+            <div className="google-token-header">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 48 48"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.5 24c0-1.55-.15-3.24-.47-4.75H24v9h12.75c-.53 2.87-2.13 5.31-4.57 6.95l7.1 5.51C43.43 36.57 46.5 30.95 46.5 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.98-6.19z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.1-5.51C30.68 38.09 27.99 39 24 39c-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                />
+              </svg>
+              <h3>Đăng nhập bằng Google</h3>
+              <p>Dán Google ID Token vào bên dưới để đăng nhập</p>
+            </div>
+
+            <form
+              className="google-token-form"
+              onSubmit={handleManualGoogleSubmit}
+            >
+              <label htmlFor="google-id-token-input">Google ID Token</label>
+              <textarea
+                id="google-id-token-input"
+                rows={4}
+                placeholder="eyJhbGciOiJSUzI1NiIs..."
+                value={manualIdToken}
+                onChange={(e) => setManualIdToken(e.target.value)}
+                autoFocus
+                disabled={googleLoading}
+              />
+
+              <button
+                type="submit"
+                className="google-token-submit"
+                disabled={!manualIdToken.trim() || googleLoading}
+              >
+                {googleLoading ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  "Xác nhận đăng nhập"
+                )}
+              </button>
+            </form>
+
+            <div className="google-token-hint">
+              <strong>💡 Cách lấy ID Token:</strong>
+              <ol>
+                <li>
+                  Truy cập{" "}
+                  <a
+                    href="https://developers.google.com/oauthplayground/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Google OAuth Playground
+                  </a>
+                </li>
+                <li>Chọn scope: <code>openid email profile</code></li>
+                <li>Authorize → Exchange → Copy <code>id_token</code></li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Popup Loading 3D */}
       <Login3DLoading open={loading} />

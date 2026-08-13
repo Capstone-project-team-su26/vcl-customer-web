@@ -144,3 +144,25 @@ export const updateUserProfileApi = async (profileData, token = getAccessToken()
     throw error;
   }
 };
+
+// ================= API ĐĂNG NHẬP BẰNG GOOGLE =================
+export const googleLoginApi = async (idToken) => {
+  try {
+    const response = await axiosInstance.post('/api/Auth/google', {
+      idToken: idToken,
+    });
+
+    const resData = getCleanData(response);
+
+    if (resData && (resData.token || resData.accessToken)) {
+      const tokenVal = resData.token || resData.accessToken;
+      localStorage.setItem('accessToken', tokenVal);
+      sessionStorage.setItem('accessToken', tokenVal);
+    }
+
+    return resData;
+  } catch (error) {
+    console.error('Đăng nhập Google thất bại:', error.response?.data || error.message);
+    throw error;
+  }
+};
