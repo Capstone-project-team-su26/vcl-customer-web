@@ -100,14 +100,14 @@ export function CheckinNhapKho() {
   return (
     <div className="vcl-checkin-page warehouse-tracking">
       <PageIntro
-        eyebrow="CHECKIN & NHẬP KHO QUỐC TẾ"
-        title="Checkin & Nhập kho nước ngoài"
+        eyebrow="NHẬP KHO QUỐC TẾ"
+        title="Nhập kho nước ngoài"
         description="Theo dõi chính xác thời gian kiện hàng cập bến kho nước ngoài, kết quả đối chiếu số cân thực tế và kích thước thể tích CBM từ API thực tế."
         icon={Warehouse}
         action={
           <div className="warehouse-live">
             <span className="warehouse-live__dot" />
-            <span>DỮ LIỆU THỰC TẾ HỆ THỐNG</span>
+            <span>Dữ liệu thực tế hệ thống</span>
           </div>
         }
       />
@@ -116,7 +116,7 @@ export function CheckinNhapKho() {
       <section className="warehouse-summary-grid">
         <SummaryCard
           icon={PackageCheck}
-          label="Tổng đơn checkin"
+          label="Tổng đơn nhập kho"
           value={(apiConsignments.length + apiPurchaseRequests.length) + " đơn"}
           note="Đã xác nhận nhập kho"
           tone="blue"

@@ -6,7 +6,7 @@ export function WarehouseTabs() {
   const tabs = [
     {
       to: "/warehouse/checkin",
-      label: "Checkin & nhập kho",
+      label: "Nhập kho quốc tế",
       icon: Warehouse,
     },
     {

@@ -82,7 +82,7 @@ export function ThongQuanVn() {
   return (
     <div className="vcl-customs-page warehouse-tracking">
       <PageIntro
-        eyebrow="CUSTOMS CLEARANCE & KHO VIỆT NAM"
+        eyebrow="THÔNG QUAN & KHO VIỆT NAM"
         title="Thông quan & kho Việt Nam"
         description="Theo dõi tiến trình kiểm hóa tờ khai hải quan, chứng từ xuất nhập khẩu và lịch trình xe/máy bay đưa hàng về kho trung tâm Việt Nam từ dữ liệu thực tế hệ thống."
         icon={ShieldCheck}

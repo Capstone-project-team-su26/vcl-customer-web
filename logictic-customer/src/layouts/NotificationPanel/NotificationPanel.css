@@ -140,10 +140,6 @@
   padding: 5px 11px;
   border-radius: 8px;
 
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-
   font-family: inherit;
   font-size: 11.5px;
   font-weight: 700;
@@ -151,13 +147,30 @@
   cursor: pointer;
   white-space: nowrap;
 
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: all 0.15s ease-in-out;
 }
 
-.notif-mark-all-btn:hover {
+.notif-mark-all-btn.is-active {
   background: #fff7ed;
-  border-color: #fed7aa;
+  border: 1px solid #fed7aa;
   color: #ea580c;
+  box-shadow: 0 1px 3px rgba(234, 88, 12, 0.08);
+}
+
+.notif-mark-all-btn.is-active:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+  transform: translateY(-0.5px);
+}
+
+.notif-mark-all-btn.is-disabled {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+  cursor: default;
+  opacity: 0.7;
 }
 
 .notif-close-btn {
