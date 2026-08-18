@@ -209,8 +209,8 @@ const fetchAllApiContextData = async () => {
     ];
 
     if (token) {
-      promises.push(getConsignmentsApi(1, 30).catch(() => null));
-      promises.push(getPurchaseRequestsApi(1, 30).catch(() => null));
+      promises.push(getConsignmentsApi(1, 10).catch(() => null));
+      promises.push(getPurchaseRequestsApi(1, 10).catch(() => null));
     }
 
     const results = await Promise.allSettled(promises);

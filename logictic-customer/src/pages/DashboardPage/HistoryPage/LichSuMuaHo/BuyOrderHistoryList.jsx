@@ -403,7 +403,7 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
   const fetchOrders = useCallback(async (signal) => {
     try {
       setLoading(true);
-      const response = await getPurchaseRequestsApi(1, 100, { signal });
+      const response = await getPurchaseRequestsApi(1, 10, { signal });
 
       const dataObj = response?.data || response;
       let dataArray = [];

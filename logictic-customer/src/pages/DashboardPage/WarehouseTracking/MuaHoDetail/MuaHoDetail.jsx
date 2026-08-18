@@ -41,7 +41,7 @@ export function MuaHoDetail() {
       }
       try {
         setLoading(true);
-        const response = await getPurchaseRequestsApi(1, 100);
+        const response = await getPurchaseRequestsApi(1, 10);
         const items = Array.isArray(response?.data?.items)
           ? response.data.items
           : Array.isArray(response?.items)

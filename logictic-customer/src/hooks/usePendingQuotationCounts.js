@@ -24,7 +24,7 @@ import { getPurchaseRequestsApi } from "../api/PurchaseAPI/purchaseRequestApi";
 /** Tự làm mới định kỳ để khách đang mở sẵn tab vẫn thấy báo giá mới. */
 const REFRESH_INTERVAL_MS = 3 * 60 * 1000;
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 10;
 
 const readItems = (response) => {
   const body = response?.data ?? response;

@@ -573,7 +573,7 @@ const ConsignmentList = () => {
         await getConsignmentsApi({
           params: {
             pageNumber: 1,
-            pageSize: 100,
+            pageSize: 10,
             status: "QUOTATION_SENT",
           },
           signal,

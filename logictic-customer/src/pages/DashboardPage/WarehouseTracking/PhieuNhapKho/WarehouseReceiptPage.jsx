@@ -31,7 +31,7 @@ export function WarehouseReceiptPage() {
           const detail = await getConsignmentDetailApi(receiptId);
           if (isMounted) setReceiptDetail(detail);
         } else {
-          const response = await getConsignmentsApi({ params: { pageNumber: 1, pageSize: 100 } });
+          const response = await getConsignmentsApi({ params: { pageNumber: 1, pageSize: 10 } });
           const items = Array.isArray(response?.data?.items)
             ? response.data.items
             : Array.isArray(response?.items)

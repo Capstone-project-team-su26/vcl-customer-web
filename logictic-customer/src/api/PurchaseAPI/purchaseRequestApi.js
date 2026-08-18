@@ -465,6 +465,9 @@ export const getPurchaseRequestsApi = async (
       params = { ...params, ...opts.params };
     }
 
+    if (!params.pageNumber) params.pageNumber = 1;
+    if (!params.pageSize) params.pageSize = 10;
+
     const response = await axiosInstance.get(
       "/api/purchase-requests",
       {

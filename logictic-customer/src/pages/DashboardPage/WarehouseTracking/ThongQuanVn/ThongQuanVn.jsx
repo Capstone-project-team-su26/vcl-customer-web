@@ -21,8 +21,8 @@ export function ThongQuanVn() {
       try {
         setApiLoading(true);
         const [consignmentsRes, purchaseRes] = await Promise.allSettled([
-          getConsignmentsApi({ params: { pageNumber: 1, pageSize: 100 } }),
-          getPurchaseRequestsApi(1, 100),
+          getConsignmentsApi({ params: { pageNumber: 1, pageSize: 10 } }),
+          getPurchaseRequestsApi(1, 10),
         ]);
 
         if (!isMounted) return;

@@ -333,7 +333,7 @@ const BuyForMeQuotationList = () => {
         setLoading(true);
 
         const result =
-          await getPurchaseRequestsApi(1, 100, {
+          await getPurchaseRequestsApi(1, 10, {
             signal,
           });
 

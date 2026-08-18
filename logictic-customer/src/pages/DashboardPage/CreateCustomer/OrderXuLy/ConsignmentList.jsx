@@ -300,7 +300,7 @@ const ConsignmentList = () => {
       const response = await getConsignmentsApi({
         params: {
           pageNumber: 1,
-          pageSize: 100,
+          pageSize: 10,
         },
         signal,
       });

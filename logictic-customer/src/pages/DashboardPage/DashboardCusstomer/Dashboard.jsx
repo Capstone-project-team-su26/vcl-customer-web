@@ -37,7 +37,7 @@ import {
 
 import "./Dashboard.css";
 
-const API_PAGE_SIZE = 100;
+const API_PAGE_SIZE = 10;
 const MAX_RECENT_ORDERS = 6;
 
 const DASHBOARD_CACHE_KEY = "customer-dashboard-snapshot-v2";

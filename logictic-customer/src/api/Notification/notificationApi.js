@@ -62,14 +62,14 @@ const getApiErrorMessage = (error, fallbackMessage) => {
 export const getNotificationsApi = async (params = {}, options = {}) => {
   const {
     pageNumber = 1,
-    pageSize = 20,
+    pageSize = 10,
     unreadOnly = false,
     ...restParams
   } = params;
 
   const queryParams = {
     pageNumber: Number(pageNumber) || 1,
-    pageSize: Number(pageSize) || 20,
+    pageSize: Number(pageSize) || 10,
     unreadOnly: Boolean(unreadOnly),
     ...restParams,
   };

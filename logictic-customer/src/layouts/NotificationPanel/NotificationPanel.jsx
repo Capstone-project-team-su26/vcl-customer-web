@@ -447,7 +447,7 @@ const NotificationPanel = ({
       setError("");
 
       const response = await getNotificationsApi(
-        { pageNumber: 1, pageSize: 50, unreadOnly: false },
+        { pageNumber: 1, pageSize: 10, unreadOnly: false },
         { signal }
       );
 
