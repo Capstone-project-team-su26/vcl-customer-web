@@ -73,6 +73,7 @@ import ConsignmentHistoryList from "../pages/DashboardPage/HistoryPage/LichSuKiG
 import BuyOrderHistoryList from "../pages/DashboardPage/HistoryPage/LichSuMuaHo/BuyOrderHistoryList"
 import BuyOrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuMuaHo/BuyPaymentHistoryDetail/BuyOrderPaymentHistory"
 import OrderPaymentHistory from "../pages/DashboardPage/HistoryPage/LichSuKiGui/OrderPaymentHisstory/OrderPaymentHistory"
+import SettlementList from "../pages/DashboardPage/SettlementPage/SettlementList"
 import TransactionHistoryTabs from "../pages/DashboardPage/HistoryPage/HistoryGiaoDich/TransactionHistoryTabs"
 import { CheckinNhapKho } from "../pages/DashboardPage/WarehouseTracking/CheckinNhapKho/CheckinNhapKho";
 import { LuuKhoKienHang } from "../pages/DashboardPage/WarehouseTracking/LuuKhoKienHang/LuuKhoKienHang";
@@ -82,6 +83,7 @@ import { WarehouseShipmentDetail } from "../pages/DashboardPage/WarehouseTrackin
 import { WarehouseReceiptPage } from "../pages/DashboardPage/WarehouseTracking/PhieuNhapKho/WarehouseReceiptPage";
 import { KiGuiDetail } from "../pages/DashboardPage/WarehouseTracking/KiGuiDetail/KiGuiDetail";
 import { MuaHoDetail } from "../pages/DashboardPage/WarehouseTracking/MuaHoDetail/MuaHoDetail";
+import { GiaoHangDetail } from "../pages/DashboardPage/WarehouseTracking/GiaoHang/GiaoHangDetail";
 
 const AppRouter = () => {
   return (
@@ -209,6 +211,11 @@ const AppRouter = () => {
             path="/history/buy-order"
             element={<BuyOrderHistoryList />}
           />
+          {/* Mục "Thanh toán vận chuyển" trên menu trỏ vào đây. */}
+          <Route
+            path="/payment"
+            element={<SettlementList />}
+          />
           <Route
             path="/orders/:orderId/payments/history"
             element={<OrderPaymentHistory />}
@@ -272,6 +279,10 @@ const AppRouter = () => {
           <Route
             path="/warehouse/receipts/:receiptId"
             element={<WarehouseReceiptPage />}
+          />
+          <Route
+            path="/warehouse/delivery/:orderId"
+            element={<GiaoHangDetail />}
           />
 
 

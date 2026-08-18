@@ -1,0 +1,388 @@
+/*
+ * Khối chọn hướng xử lý khi hàng về kho VN.
+ * Bám bảng màu và bo góc của PackageOptionalServices để nằm chung card không bị lạc.
+ */
+
+.destination-handling {
+  margin-top: 18px;
+  padding: 16px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f7fbff 100%
+  );
+  border: 1px solid #dbe5f0;
+  border-radius: 16px;
+}
+
+.destination-handling__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.destination-handling__eyebrow {
+  color: #0958d9;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.destination-handling__info-icon {
+  color: #7c93ad;
+  font-size: 13px;
+  cursor: help;
+}
+
+.destination-handling__description {
+  margin: 0;
+
+  color: #667085;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.destination-handling__options {
+  display: grid;
+  grid-template-columns: repeat(
+    2,
+    minmax(0, 1fr)
+  );
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .destination-handling__options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.destination-handling__option {
+  position: relative;
+  min-width: 0;
+  padding: 14px 40px 14px 14px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  color: #334155;
+  text-align: left;
+
+  background: #ffffff;
+  border: 1px solid #dbe5f0;
+  border-radius: 14px;
+  outline: 0;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.destination-handling__option:hover {
+  transform: translateY(-2px);
+
+  background: #fbfdff;
+  border-color: #91caff;
+
+  box-shadow: 0 10px 22px
+    rgba(22, 119, 255, 0.11);
+}
+
+.destination-handling__option:focus-visible {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 4px
+    rgba(22, 119, 255, 0.13);
+}
+
+.destination-handling__option--selected {
+  color: #0958d9;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(22, 119, 255, 0.1),
+      transparent 40%
+    ),
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #edf6ff 100%
+    );
+
+  border-color: #4096ff;
+
+  box-shadow:
+    0 12px 25px rgba(22, 119, 255, 0.14),
+    inset 0 0 0 1px rgba(22, 119, 255, 0.08);
+}
+
+.destination-handling__option--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.destination-handling__option--disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.destination-handling__option-icon {
+  flex-shrink: 0;
+
+  width: 34px;
+  height: 34px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #1677ff;
+
+  background: #eaf3ff;
+  border-radius: 10px;
+}
+
+.destination-handling__option-icon svg {
+  font-size: 19px;
+}
+
+.destination-handling__option--selected
+  .destination-handling__option-icon {
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    #1677ff,
+    #0958d9
+  );
+}
+
+.destination-handling__option-body {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.destination-handling__option-title {
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.destination-handling__option-desc {
+  color: #667085;
+
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.destination-handling__option--selected
+  .destination-handling__option-desc {
+  color: #48607a;
+}
+
+.destination-handling__option-hint {
+  color: #8a9bb0;
+
+  font-size: 10.5px;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+.destination-handling__radio {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  width: 18px;
+  height: 18px;
+
+  background: #ffffff;
+  border: 2px solid #cbd8e6;
+  border-radius: 50%;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.destination-handling__option--selected
+  .destination-handling__radio {
+  border-color: #1677ff;
+  box-shadow: inset 0 0 0 4px #1677ff;
+}
+
+/* ---------- Bảng phí ước tính ---------- */
+
+.destination-handling__fee {
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  background: #ffffff;
+  border: 1px dashed #b7d4f8;
+  border-radius: 14px;
+}
+
+.destination-handling__fee-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  color: #0f2b4c;
+
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.destination-handling__fee-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  color: #1677ff;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.destination-handling__fee-error {
+  margin: 0;
+
+  color: #b54708;
+
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.destination-handling__fee-formula {
+  padding: 10px 12px;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+
+  background: linear-gradient(
+    180deg,
+    #f7fbff 0%,
+    #eef6ff 100%
+  );
+  border-radius: 12px;
+}
+
+.destination-handling__fee-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.destination-handling__fee-step-label {
+  color: #7c93ad;
+
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.destination-handling__fee-step b {
+  color: #0f2b4c;
+
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.destination-handling__fee-step--total b,
+.destination-handling__fee-step--price b {
+  color: #0958d9;
+}
+
+.destination-handling__fee-plus {
+  padding-bottom: 2px;
+
+  color: #a8bcd2;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.destination-handling__fee-table {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid #e6eef7;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.destination-handling__fee-row {
+  padding: 8px 12px;
+
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) minmax(0, 1fr)
+    minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+
+  color: #48607a;
+
+  font-size: 11.5px;
+
+  border-top: 1px solid #f0f5fa;
+}
+
+.destination-handling__fee-row:first-child {
+  border-top: 0;
+}
+
+.destination-handling__fee-row b {
+  color: #0958d9;
+
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.destination-handling__fee-row--head {
+  color: #7c93ad;
+
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+
+  background: #f8fbfe;
+}
+
+.destination-handling__fee-row--head
+  span:last-child {
+  text-align: right;
+}
+
+.destination-handling__fee-note {
+  margin: 0;
+
+  color: #667085;
+
+  font-size: 11px;
+  line-height: 1.55;
+}

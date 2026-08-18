@@ -1,0 +1,249 @@
+/* Màn theo dõi giao hàng của khách. Dùng lại biến màu và nhịp bo góc của cụm
+   WarehouseTracking để không lệch với các màn kho đang có. */
+
+.giaohang-back {
+  border: 1px solid #dbe4f0;
+  background: #fff;
+  color: #1f3c66;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.giaohang-back:hover {
+  border-color: #1459c7;
+  color: #1459c7;
+}
+
+.giaohang-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.giaohang-banner--success {
+  background: #eafaf1;
+  color: #12794f;
+}
+
+.giaohang-banner--error {
+  background: #fdecee;
+  color: #c0293c;
+}
+
+/* Khối kêu gọi xác nhận: cố ý nổi hơn phần còn lại vì đây là hành động khách cần làm. */
+.giaohang-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: linear-gradient(120deg, #0b347a, #1459c7);
+  color: #fff;
+  border-radius: 18px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+
+.giaohang-confirm__copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.giaohang-confirm__copy strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.giaohang-confirm__copy p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #d6e4ff;
+  max-width: 520px;
+}
+
+.giaohang-confirm__btn {
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  color: #0b347a;
+  font-size: 13.5px;
+  font-weight: 800;
+  padding: 11px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+}
+
+.giaohang-confirm__btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.giaohang-confirm__btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.giaohang-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eafaf1;
+  color: #12794f;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.giaohang-section {
+  margin-bottom: 24px;
+}
+
+.giaohang-section h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #16294a;
+  margin: 0 0 12px;
+}
+
+.giaohang-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.giaohang-card {
+  background: #fff;
+  border: 1px solid #e3eaf4;
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+/*
+ * Kiện giao hỏng: viền trái màu hổ phách để khách lướt qua là nhận ra ngay thẻ này khác
+ * mấy thẻ phiếu giao bình thường bên dưới.
+ */
+.giaohang-card--return {
+  border-color: #fcd9a4;
+  border-left: 3px solid #e2891c;
+  background: linear-gradient(180deg, #fffdf8 0%, #ffffff 60%);
+}
+
+.giaohang-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.giaohang-card header strong {
+  font-size: 14.5px;
+  color: #16294a;
+}
+
+.giaohang-card__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #5b6b83;
+  margin-bottom: 7px;
+}
+
+.giaohang-card footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eef2f8;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #8b9ab1;
+}
+
+.giaohang-parcels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.giaohang-parcel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e3eaf4;
+  border-radius: 14px;
+  padding: 13px 16px;
+}
+
+.giaohang-parcel strong {
+  display: block;
+  font-size: 13.5px;
+  color: #16294a;
+}
+
+.giaohang-parcel small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: #8b9ab1;
+}
+
+.giaohang-pill {
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.giaohang-pill--blue {
+  background: #eaf2ff;
+  color: #1459c7;
+}
+
+.giaohang-pill--green {
+  background: #eafaf1;
+  color: #12794f;
+}
+
+.giaohang-pill--amber {
+  background: #fff4df;
+  color: #c56a00;
+}
+
+.giaohang-pill--red {
+  background: #fdecee;
+  color: #c0293c;
+}
+
+.giaohang-pill--purple {
+  background: #f1edff;
+  color: #7656d6;
+}
+
+@media (max-width: 640px) {
+  .giaohang-confirm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .giaohang-confirm__btn {
+    width: 100%;
+  }
+}

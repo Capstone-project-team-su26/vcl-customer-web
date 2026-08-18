@@ -445,6 +445,11 @@ const ShippingInformation = ({
           {consignment.route || "-"}
         </Descriptions.Item>
 
+        <Descriptions.Item label="Khi hàng về Việt Nam">
+          {consignment.defaultDestinationHandlingText ||
+            "Chưa chọn — mặc định giao ngay"}
+        </Descriptions.Item>
+
         <Descriptions.Item label="Dịch vụ bổ sung">
           {rules.length > 0 ? (
             <div
