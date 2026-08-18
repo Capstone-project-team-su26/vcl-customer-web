@@ -40,6 +40,7 @@ import {
 } from "../../../../utils/timeUtc";
 import { Tooltip } from "antd";
 import PackageOptionalServices from "../../../../components/DashboardComponents/CustomerKiguiComponents/PackageOptionalServices/PackageOptionalServices";
+import DestinationHandlingChoice from "../../../../components/DashboardComponents/CustomerKiguiComponents/DestinationHandling/DestinationHandlingChoice";
 import pricingRuleService from "../../../../api/ServiceApi/pricingRuleService";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -84,6 +85,13 @@ const INITIAL_FORM = {
   receiverPhone: "",
   selectedDeliveryAddress: "",
   note: "",
+
+  /*
+   * Khách muốn hàng về VN thì giao ngay hay gửi lại kho.
+   * Để rỗng là "chưa quyết định" — hợp lệ, lúc hàng về kho mặc định giao ngay.
+   */
+  defaultDestinationHandling: "",
+
   inspectPackage: true,
   optionalServices: {
     requiresPacking: false,
@@ -2527,6 +2535,10 @@ export default function ConsignmentOrder() {
             ?.requiresInsurance
         ),
 
+        // Nguyện vọng khi hàng về VN. Rỗng = khách chưa chọn, BE sẽ hiểu là giao ngay.
+        defaultDestinationHandling:
+          form.defaultDestinationHandling,
+
         note: form.note.trim(),
         items: requestItems,
       };
@@ -3466,7 +3478,15 @@ export default function ConsignmentOrder() {
 
               <FieldError message={formErrors.optionalServices} />
 
-              <div className="input-field-group">
+              <DestinationHandlingChoice
+                value={form.defaultDestinationHandling}
+                disabled={isSubmitting}
+                onChange={(next) =>
+                  updateForm("defaultDestinationHandling", next)
+                }
+              />
+
+              <div className="input-field-group" style={{ marginTop: "1.25rem" }}>
                 <FieldLabelTooltip
                   label="GHI CHÚ ĐƠN HÀNG"
                   required

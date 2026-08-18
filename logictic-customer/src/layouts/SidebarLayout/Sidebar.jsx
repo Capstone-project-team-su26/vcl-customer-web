@@ -29,9 +29,28 @@ import {
 } from "@ant-design/icons";
 
 import { getUserProfileApi } from "../../api/Auth/authService";
+import { usePendingQuotationCounts } from "../../hooks/usePendingQuotationCounts";
 import logoImage from "../../assets/anhlogocap2.jpeg";
 
 import "./Sidebar.css";
+
+/**
+ * Nhãn số việc đang chờ khách xử lý trên menu.
+ * Bằng 0 thì không vẽ gì — menu sạch hơn là gắn số 0 vô nghĩa lên mọi mục.
+ */
+const MenuBadge = ({ count, label }) => {
+  if (!count || count <= 0) return null;
+
+  return (
+    <span
+      className="menu-badge"
+      aria-label={`${count} ${label}`}
+      title={`${count} ${label}`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+};
 
 const SIDEBAR_PROFILE_SYNC_KEY = "sidebarProfileSynced";
 
@@ -138,6 +157,9 @@ export default function Sidebar() {
   const [userInfo, setUserInfo] = useState(
     parseSessionUser
   );
+
+  // Số kiện đang chờ khách xác nhận báo giá, hiện lên menu để khách biết mà bấm vào.
+  const pendingQuotations = usePendingQuotationCounts();
 
   const [openSubMenus, setOpenSubMenus] = useState(
     () => getSubMenuStateByPath(pathname)
@@ -492,6 +514,11 @@ export default function Sidebar() {
               Kiện chờ báo giá
             </span>
 
+            <MenuBadge
+              count={pendingQuotations.total}
+              label="kiện chờ bạn xác nhận báo giá"
+            />
+
             {openSubMenus.kienChoBaoGia ? (
               <UpOutlined className="arrow-icon" />
             ) : (
@@ -503,25 +530,33 @@ export default function Sidebar() {
             <div className="submenu-list timeline-style">
               <NavLink
                 to="/check-orders/buy-on-behalf"
-                className={`submenu-item ${
+                className={`submenu-item submenu-item--with-badge ${
                   quotationPurchaseActive
                     ? "active-sub"
                     : ""
                 }`}
               >
-                Báo giá mua hộ
+                <span>Báo giá mua hộ</span>
+                <MenuBadge
+                  count={pendingQuotations.purchase}
+                  label="báo giá mua hộ chờ xác nhận"
+                />
               </NavLink>
 
               <NavLink
                 to="/check-orders"
                 end
-                className={`submenu-item ${
+                className={`submenu-item submenu-item--with-badge ${
                   quotationConsignmentActive
                     ? "active-sub"
                     : ""
                 }`}
               >
-                Báo giá ký gửi
+                <span>Báo giá ký gửi</span>
+                <MenuBadge
+                  count={pendingQuotations.consignment}
+                  label="báo giá ký gửi chờ xác nhận"
+                />
               </NavLink>
             </div>
           )}

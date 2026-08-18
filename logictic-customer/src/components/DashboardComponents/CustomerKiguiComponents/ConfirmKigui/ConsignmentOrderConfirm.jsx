@@ -1965,6 +1965,20 @@ export default function ConsignmentOrderConfirm({
       "shipping",
     );
 
+  /*
+   * Khách bỏ trống ô này cũng gửi đơn được, nên nói rõ mặc định là gì thay vì để dấu "-"
+   * rồi khách tưởng hệ thống chưa ghi nhận.
+   */
+  const destinationHandlingLabel =
+    {
+      DIRECT_DELIVERY:
+        "Giao ngay khi về Việt Nam",
+      STORE_AT_VN:
+        "Gửi lại kho Việt Nam",
+    }[
+      form?.defaultDestinationHandling
+    ] || "Chưa chọn — mặc định giao ngay";
+
   const receiverAddress =
     normalizeFullAddress(
       form
@@ -2329,6 +2343,11 @@ export default function ConsignmentOrderConfirm({
                 <div className="sidebar-info-row is-address">
                   <span>Địa chỉ giao hàng</span>
                   <strong>{receiverAddress}</strong>
+                </div>
+
+                <div className="sidebar-info-row">
+                  <span>Khi hàng về Việt Nam</span>
+                  <strong>{destinationHandlingLabel}</strong>
                 </div>
               </div>
             </div>

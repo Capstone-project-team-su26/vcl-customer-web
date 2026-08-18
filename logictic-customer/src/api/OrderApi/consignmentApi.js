@@ -62,6 +62,29 @@ const normalizeNullableText = (value) => {
 };
 
 
+/**
+ * Nguyện vọng của khách khi hàng về tới kho VN.
+ *
+ * BE chỉ chấp nhận hai giá trị; thứ gì khác được hiểu là "khách chưa chọn" và lúc hàng về
+ * kho sẽ mặc định giao ngay. Gửi null thay vì đoán bừa để kho biết mà hỏi lại khách.
+ *
+ * @param {unknown} value
+ * @returns {"DIRECT_DELIVERY" | "STORE_AT_VN" | null}
+ */
+const normalizeDestinationHandling = (
+  value
+) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toUpperCase();
+
+  return normalized ===
+    "DIRECT_DELIVERY" ||
+    normalized === "STORE_AT_VN"
+    ? normalized
+    : null;
+};
+
 const normalizeBoolean = (value) => {
   if (typeof value === "boolean") {
     return value;
@@ -359,6 +382,10 @@ export const buildCreateConsignmentRequest = (
     );
 
   return {
+    defaultDestinationHandling:
+      normalizeDestinationHandling(
+        payload?.defaultDestinationHandling
+      ),
     route: getRequiredText(
       payload?.route,
       "tuyến hàng"
@@ -677,6 +704,36 @@ export const getOrderQuotationApi = async (
 };
 
 /* ==================== ORDER OPTIONS ==================== */
+
+/**
+ * Bảng phí lưu kho tại kho VN, để khách cân nhắc trước khi tick "gửi lại kho".
+ *
+ * Trả về số ngày miễn phí, số ngày ân hạn, đơn giá và vài mốc ngày mẫu. Đây là bảng giá
+ * chung chứ không gắn với đơn nào, nên gọi được ngay lúc đang tạo đơn.
+ */
+export const getStorageFeeEstimateApi = async (
+  options = {}
+) => {
+  try {
+    const response = await axiosInstance.get(
+      "/api/storage-fee/estimate",
+      {
+        signal: getSignal(options),
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (!isCanceledRequest(error)) {
+      console.error(
+        "Lỗi lấy bảng phí lưu kho:",
+        error?.response?.data || error?.message
+      );
+    }
+
+    throw error;
+  }
+};
 
 export const getConsignmentRoutesApi = async (
   options = {}

@@ -2,6 +2,11 @@
    TRANG ĐĂNG NHẬP
    ========================================================= */
 
+body:has(.login-container) {
+  margin: 0;
+  padding: 0;
+}
+
    .login-container {
     --login-navy: #062f57;
     --login-navy-dark: #031b33;
