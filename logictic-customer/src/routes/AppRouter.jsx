@@ -84,6 +84,7 @@ import { WarehouseReceiptPage } from "../pages/DashboardPage/WarehouseTracking/P
 import { KiGuiDetail } from "../pages/DashboardPage/WarehouseTracking/KiGuiDetail/KiGuiDetail";
 import { MuaHoDetail } from "../pages/DashboardPage/WarehouseTracking/MuaHoDetail/MuaHoDetail";
 import { GiaoHangDetail } from "../pages/DashboardPage/WarehouseTracking/GiaoHang/GiaoHangDetail";
+import ReceiveGoods from "../pages/DashboardPage/ReceiveGoods/ReceiveGoods";
 
 const AppRouter = () => {
   return (
@@ -210,6 +211,11 @@ const AppRouter = () => {
           <Route
             path="/history/buy-order"
             element={<BuyOrderHistoryList />}
+          />
+          {/* Mục "Nhận hàng" trên menu trỏ vào đây. */}
+          <Route
+            path="/receive-goods"
+            element={<ReceiveGoods />}
           />
           {/* Mục "Thanh toán vận chuyển" trên menu trỏ vào đây. */}
           <Route
