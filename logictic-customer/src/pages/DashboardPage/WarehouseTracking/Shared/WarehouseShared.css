@@ -1093,6 +1093,30 @@ button.warehouse-category-tab--active:hover,
   font-weight: 750;
 }
 
+.warehouse-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.warehouse-card-actions .warehouse-card-action {
+  margin-top: 0;
+  padding: 0 12px;
+}
+
+/* Hàng đã giao xong, việc còn lại là của khách — cho nổi hơn nút xem chi tiết. */
+.warehouse-card-action--confirm {
+  color: #fff;
+  background: #059669;
+  border-color: #059669;
+}
+
+.warehouse-card-action--confirm:hover {
+  background: #047857;
+  border-color: #047857;
+}
+
 .warehouse-card-action:hover {
   background: #eaf2ff;
 }

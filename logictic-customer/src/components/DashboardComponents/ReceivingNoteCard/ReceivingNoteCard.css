@@ -1,0 +1,283 @@
+/* Phiếu tiếp nhận kho — khối khách xem trong chi tiết đơn ký gửi. */
+
+.rnc-card {
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e4ecf5;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 42, 80, 0.05);
+}
+
+.rnc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rnc-head__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf2ff;
+  color: #1768e5;
+  flex: none;
+}
+
+.rnc-head__text {
+  flex: 1;
+  min-width: 180px;
+}
+
+.rnc-head__text h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0b1b2e;
+}
+
+.rnc-head__text p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #65798e;
+}
+
+.rnc-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rnc-pill--wait {
+  background: #eef4f9;
+  color: #65798e;
+}
+
+.rnc-pill--progress {
+  background: #fff5df;
+  color: #b45309;
+}
+
+.rnc-pill--done {
+  background: #e7faf3;
+  color: #047857;
+}
+
+.rnc-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.rnc-meta__item {
+  padding: 10px 12px;
+  background: #f7fafd;
+  border: 1px solid #e4ecf5;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rnc-meta__item span {
+  font-size: 11px;
+  color: #65798e;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.rnc-meta__item strong {
+  font-size: 14px;
+  color: #0b1b2e;
+}
+
+.rnc-desc {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: #45586d;
+  line-height: 1.6;
+}
+
+.rnc-warn,
+.rnc-pending {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.rnc-warn {
+  background: #ffecef;
+  color: #b42318;
+}
+
+.rnc-pending {
+  background: #f7fafd;
+  color: #45586d;
+}
+
+.rnc-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rnc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid #dde8f1;
+  background: #fff;
+  color: #0b1b2e;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rnc-btn:hover {
+  background: #f4f8fc;
+  border-color: #bcd3ea;
+}
+
+.rnc-btn--primary {
+  background: #1768e5;
+  border-color: #1768e5;
+  color: #fff;
+}
+
+.rnc-btn--primary:hover {
+  background: #0f56c4;
+  border-color: #0f56c4;
+}
+
+.rnc-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid #dde8f1;
+  background: #fff;
+  color: #45586d;
+  cursor: pointer;
+}
+
+.rnc-icon-btn:hover {
+  background: #f4f8fc;
+}
+
+/* ---------- Dialog phiếu ---------- */
+
+.rnc-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(7, 29, 53, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px;
+  overflow-y: auto;
+  animation: rnc-fade 0.16s ease-out;
+}
+
+.rnc-modal__box {
+  width: min(1040px, 100%);
+  background: #eef4f9;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(7, 29, 53, 0.32);
+  animation: rnc-rise 0.2s ease-out;
+}
+
+.rnc-modal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #fff;
+  border-bottom: 1px solid #e4ecf5;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.rnc-modal__bar strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0b1b2e;
+}
+
+.rnc-modal__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rnc-modal__body {
+  padding: 18px;
+}
+
+@keyframes rnc-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rnc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Khi in, thanh công cụ và lớp nền không được lên giấy. */
+@media print {
+  .rnc-card,
+  .rnc-modal__bar {
+    display: none !important;
+  }
+
+  .rnc-modal {
+    position: static;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    overflow: visible;
+  }
+
+  .rnc-modal__box {
+    width: 100%;
+    box-shadow: none;
+    background: none;
+  }
+
+  .rnc-modal__body {
+    padding: 0;
+  }
+}

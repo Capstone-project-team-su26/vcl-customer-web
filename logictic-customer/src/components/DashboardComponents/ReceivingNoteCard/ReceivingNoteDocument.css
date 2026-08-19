@@ -1,0 +1,338 @@
+/* Phiếu tiếp nhận kho dạng chứng từ — dùng chung cho dialog, trang phiếu và bản in. */
+
+.rnd-doc {
+  background: #fff;
+  border: 1px solid #e4ecf5;
+  border-radius: 18px;
+  padding: 28px 30px;
+  color: #0b1b2e;
+}
+
+/* ---------- Đầu phiếu ---------- */
+
+.rnd-doc__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid #0b347a;
+  flex-wrap: wrap;
+}
+
+.rnd-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rnd-brand__mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0b347a, #1674cc);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.rnd-brand strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.rnd-brand small {
+  display: block;
+  font-size: 11px;
+  color: #65798e;
+  margin-top: 2px;
+}
+
+.rnd-title {
+  text-align: right;
+}
+
+.rnd-title span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #65798e;
+  font-weight: 800;
+}
+
+.rnd-title h2 {
+  margin: 4px 0 2px;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #0b347a;
+}
+
+.rnd-title strong {
+  font-size: 14px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #1768e5;
+}
+
+/* ---------- Trạng thái ---------- */
+
+.rnd-statusbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.rnd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rnd-pill--wait {
+  background: #eef4f9;
+  color: #65798e;
+}
+
+.rnd-pill--progress {
+  background: #fff5df;
+  color: #b45309;
+}
+
+.rnd-pill--done {
+  background: #e7faf3;
+  color: #047857;
+}
+
+.rnd-pill--warn {
+  background: #ffecef;
+  color: #b42318;
+}
+
+/* ---------- Lưới thông tin ---------- */
+
+.rnd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  margin-top: 18px;
+  background: #e4ecf5;
+  border: 1px solid #e4ecf5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rnd-grid > div {
+  background: #fff;
+  padding: 11px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rnd-grid span {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #65798e;
+  font-weight: 700;
+}
+
+.rnd-grid strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ---------- Bảng ---------- */
+
+.rnd-section-title {
+  margin: 22px 0 10px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0b347a;
+}
+
+.rnd-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e4ecf5;
+  border-radius: 12px;
+}
+
+.rnd-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.rnd-table th,
+.rnd-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: top;
+}
+
+.rnd-table thead th {
+  background: #f4f8fc;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #45586d;
+  white-space: nowrap;
+}
+
+.rnd-table tbody tr:nth-child(even) td {
+  background: #fbfdff;
+}
+
+.rnd-table tfoot td {
+  background: #f4f8fc;
+  font-weight: 900;
+  font-size: 13px;
+  border-bottom: none;
+}
+
+.rnd-col-idx {
+  width: 40px;
+  color: #94a3b8;
+}
+
+.rnd-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rnd-strong {
+  font-weight: 800;
+}
+
+.rnd-note {
+  color: #45586d;
+  max-width: 220px;
+}
+
+.rnd-empty {
+  text-align: center;
+  color: #65798e;
+  padding: 22px;
+}
+
+.rnd-diff {
+  font-weight: 800;
+}
+
+.rnd-diff--short {
+  color: #cf1322;
+}
+
+.rnd-diff--over {
+  color: #d46b08;
+}
+
+.rnd-diff--none {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ---------- Ghi chú & chữ ký ---------- */
+
+.rnd-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: #f7fafd;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #45586d;
+  line-height: 1.55;
+}
+
+.rnd-sign {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-top: 28px;
+}
+
+.rnd-sign > div {
+  text-align: center;
+}
+
+.rnd-sign span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #45586d;
+}
+
+.rnd-sign em {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-style: normal;
+  color: #65798e;
+}
+
+.rnd-sign i {
+  display: block;
+  margin-top: 40px;
+  border-top: 1px dashed #b9c8d8;
+}
+
+.rnd-foot {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f7;
+  font-size: 11px;
+  color: #8496a8;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* ---------- Bản in ---------- */
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #receiving-note-document,
+  #receiving-note-document * {
+    visibility: visible !important;
+  }
+
+  #receiving-note-document {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .rnd-table {
+    min-width: 0;
+  }
+
+  .rnd-table-wrap {
+    overflow: visible;
+  }
+}

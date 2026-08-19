@@ -96,13 +96,20 @@ const isWroBelongsToUser = (wro, user) => {
    STATUS MAPPING HELPER
    ========================================================= */
 
+// Phiếu xuất kho nay kết thúc ở PICKED — chặng về Việt Nam đã chuyển sang LÔ vận chuyển, khách
+// theo dõi ở mục hành trình lô. Vẫn giữ nhãn của mốc cũ cho phiếu đã tạo trước khi đổi luồng.
 const WRO_STATUS_MAP = {
-  RELEASE_APPROVED: { label: "Đã duyệt xuất", tone: "blue", desc: "Phiếu xuất kho đã được phê duyệt" },
+  PENDING: { label: "Chờ xử lý", tone: "indigo", desc: "Đang chờ kho xử lý xuất kiện" },
+  RELEASE_PENDING: { label: "Chờ duyệt xuất", tone: "indigo", desc: "Phiếu chờ Operations Manager duyệt" },
+  RELEASE_APPROVED: { label: "Đã duyệt xuất", tone: "blue", desc: "Phiếu xuất kho đã được phê duyệt, kho chuẩn bị bốc hàng" },
+  PICKING: { label: "Đang bốc hàng", tone: "amber", desc: "Kho đang lấy kiện theo danh sách của phiếu" },
+  PICKED: { label: "Đã bốc xong", tone: "cyan", desc: "Kiện đã bốc đủ, chờ gom thành lô về Việt Nam" },
+  RELEASE_REJECTED: { label: "Từ chối xuất", tone: "red", desc: "Phiếu xuất bị từ chối hoặc có sự cố" },
+
+  // Mốc của phiếu cũ
   HANDED_OVER: { label: "Đã bàn giao xe", tone: "amber", desc: "Đã bàn giao hàng cho đơn vị vận chuyển" },
   IN_TRANSIT: { label: "Đang vận chuyển", tone: "cyan", desc: "Hàng đang trên đường vận chuyển về VN" },
   ARRIVED_IN_VN: { label: "Đã đến Việt Nam", tone: "emerald", desc: "Hàng đã nhập kho trung chuyển Việt Nam" },
-  RELEASE_REJECTED: { label: "Từ chối xuất", tone: "red", desc: "Phiếu xuất bị từ chối hoặc có sự cố" },
-  PENDING: { label: "Chờ xử lý", tone: "indigo", desc: "Đang chờ kho xử lý xuất kiện" },
 };
 
 /* =========================================================

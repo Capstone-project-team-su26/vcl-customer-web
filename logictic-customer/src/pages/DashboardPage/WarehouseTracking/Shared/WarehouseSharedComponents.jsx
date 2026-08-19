@@ -27,7 +27,17 @@ export const WAREHOUSE_STATUS_META = {
   CUSTOMS_CLEARED: { label: "Đã thông quan", tone: "green" },
   OUTBOUND_READY: { label: "Sẵn sàng xuất", tone: "indigo" },
   RELEASED: { label: "Đã xuất kho", tone: "orange" },
-  IN_TRANSIT: { label: "Đang vận chuyển", tone: "cyan" },
+  IN_TRANSIT: { label: "Đang chuyển về Việt Nam", tone: "cyan" },
+
+  // Mốc lô sau khi luồng được chuẩn hoá: khách theo dõi bằng đúng những chữ này.
+  READY_TO_SHIP: { label: "Sẵn sàng rời kho", tone: "indigo" },
+  ARRIVED_VN: { label: "Đã về Việt Nam", tone: "green" },
+  ARRIVED_DESTINATION: { label: "Đã về tới kho VN", tone: "green" },
+  RECEIVED_AT_DESTINATION: { label: "Kho VN đã kiểm đếm", tone: "green" },
+  AWAITING_PICKUP: { label: "Chờ đơn vị giao lấy hàng", tone: "orange" },
+  OUT_FOR_DELIVERY: { label: "Đang giao tới bạn", tone: "cyan" },
+  STORED: { label: "Đang gửi tại kho VN", tone: "purple" },
+
   COMPLETED: { label: "Hoàn tất", tone: "emerald" },
   DELIVERED: { label: "Đã giao hàng", tone: "emerald" },
 };
@@ -60,6 +70,13 @@ const statusIcons = {
   OUTBOUND_READY: Box,
   RELEASED: Truck,
   IN_TRANSIT: Plane,
+  READY_TO_SHIP: Box,
+  ARRIVED_VN: PackageCheck,
+  ARRIVED_DESTINATION: Warehouse,
+  RECEIVED_AT_DESTINATION: PackageCheck,
+  AWAITING_PICKUP: Truck,
+  OUT_FOR_DELIVERY: Truck,
+  STORED: Warehouse,
   COMPLETED: Check,
   DELIVERED: Check,
 };

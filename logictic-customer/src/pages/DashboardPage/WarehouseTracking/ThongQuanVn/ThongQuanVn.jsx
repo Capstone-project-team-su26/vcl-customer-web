@@ -39,7 +39,18 @@ export function ThongQuanVn() {
             ? response
             : [];
 
-          const customsStatuses = ["CUSTOMS_REVIEW", "CUSTOMS_CLEARED", "IN_TRANSIT", "COMPLETED", "DELIVERED"];
+          // Đơn đang ở chặng quốc tế trở đi. Hai mốc ARRIVED_* là của vòng đời lô sau khi
+          // luồng được chuẩn hoá; thiếu chúng thì đơn vừa về tới Việt Nam lại rơi khỏi màn này.
+          const customsStatuses = [
+            "CUSTOMS_REVIEW",
+            "CUSTOMS_CLEARED",
+            "IN_TRANSIT",
+            "ARRIVED_VN",
+            "ARRIVED_DESTINATION",
+            "AT_DESTINATION_WAREHOUSE",
+            "COMPLETED",
+            "DELIVERED",
+          ];
           const filtered = allRawItems.filter((item) =>
             customsStatuses.includes(String(item?.status || "").trim().toUpperCase())
           );

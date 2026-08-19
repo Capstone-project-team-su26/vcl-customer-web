@@ -2,15 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  ChevronRight,
   CircleAlert,
-  Download,
   FileCheck2,
   FileText,
   Printer,
 } from "lucide-react";
 
-import AuthNotify from "../../../../utils/AuthNotify";
-import { getConsignmentDetailApi, getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
+import { getConsignmentsApi } from "../../../../api/OrderApi/consignmentApi";
+import { getMyReceivingNoteApi } from "../../../../api/OrderApi/receivingNoteApi";
+import ReceivingNoteDocument from "../../../../components/DashboardComponents/ReceivingNoteCard/ReceivingNoteDocument";
 import { formatTime, PageIntro } from "../Shared/WarehouseSharedComponents";
 import "./WarehouseReceiptPage.css";
 
@@ -28,8 +29,10 @@ export function WarehouseReceiptPage() {
         setLoading(true);
 
         if (receiptId) {
-          const detail = await getConsignmentDetailApi(receiptId);
-          if (isMounted) setReceiptDetail(detail);
+          // Phiếu thật do kho lập, không phải dựng lại từ dữ liệu đơn — số liệu ở đây đúng
+          // bằng số kho cân đếm được.
+          const note = await getMyReceivingNoteApi(receiptId);
+          if (isMounted) setReceiptDetail(note);
         } else {
           const response = await getConsignmentsApi({ params: { pageNumber: 1, pageSize: 100 } });
           const items = Array.isArray(response?.data?.items)
@@ -90,78 +93,13 @@ export function WarehouseReceiptPage() {
             <ArrowLeft size={17} /> Danh sách phiếu nhập kho
           </Link>
           <div>
-            <button type="button" onClick={() => window.print()}>
+            <button type="button" className="is-primary" onClick={() => window.print()}>
               <Printer size={17} /> In phiếu
-            </button>
-            <button
-              type="button"
-              className="is-primary"
-              onClick={() =>
-                AuthNotify.success(
-                  "Đã chọn tải phiếu",
-                  "Hệ thống đang chuẩn bị bản in PDF."
-                )
-              }
-            >
-              <Download size={17} /> Tải PDF
             </button>
           </div>
         </div>
 
-        <article className="warehouse-receipt-document">
-          <header>
-            <div className="warehouse-receipt-brand">
-              <span>VCL</span>
-              <div>
-                <strong>VIETNAM LOGISTICS</strong>
-                <small>International Warehouse System</small>
-              </div>
-            </div>
-            <div className="warehouse-receipt-title">
-              <span>WAREHOUSE RECEIPT (WR)</span>
-              <h2>BIÊN BẢN NHẬP KHO</h2>
-              <strong>{receiptDetail.consignmentCode || receiptId}</strong>
-            </div>
-          </header>
-
-          <section className="warehouse-receipt-info-grid">
-            <div>
-              <span>Mã đơn ký gửi</span>
-              <strong>{receiptDetail.consignmentCode || receiptId}</strong>
-            </div>
-            <div>
-              <span>Thời gian nhập kho</span>
-              <strong>{formatTime(receiptDetail.statusUpdatedAt || receiptDetail.createdAt)}</strong>
-            </div>
-            <div>
-              <span>Người nhận</span>
-              <strong>
-                {receiptDetail.receiverName} ({receiptDetail.receiverPhone})
-              </strong>
-            </div>
-            <div>
-              <span>Địa chỉ</span>
-              <strong>{receiptDetail.receiverAddress || "Chưa có"}</strong>
-            </div>
-            <div>
-              <span>Loại đơn / Trạng thái</span>
-              <strong>
-                {receiptDetail.consignmentType || "Standard"} · {receiptDetail.status}
-              </strong>
-            </div>
-            <div>
-              <span>Tuyến vận chuyển</span>
-              <strong>{receiptDetail.route || "TQ -> VN"}</strong>
-            </div>
-          </section>
-
-          <div className="warehouse-receipt-official-note">
-            <CircleAlert size={16} />
-            <span>
-              Biên bản chính thức được sinh từ hệ thống khi xác nhận nhập kho hoàn tất.
-            </span>
-          </div>
-        </article>
+        <ReceivingNoteDocument note={receiptDetail} />
       </div>
     );
   }

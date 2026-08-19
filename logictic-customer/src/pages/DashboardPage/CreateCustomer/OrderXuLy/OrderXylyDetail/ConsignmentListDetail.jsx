@@ -26,6 +26,8 @@ import {
 } from "../../../../../utils/timeUtc";
 
 import ConsignmentListDetailUI from "../../../../../components/DashboardComponents/CustomerKiguiComponents/ConsigmentListUI/ConsignmentListDetailUI";
+import ReceivingNoteCard from "../../../../../components/DashboardComponents/ReceivingNoteCard/ReceivingNoteCard";
+import DeliveryTrackingCard from "../../../../../components/DashboardComponents/DeliveryTrackingCard/DeliveryTrackingCard";
 
 /* =========================================================
    LOẠI SẢN PHẨM
@@ -959,7 +961,9 @@ const ORDER_STATUS_LABELS = {
   PROCESSING: "ĐANG XỬ LÝ",
   RECEIVED: "ĐÃ TIẾP NHẬN",
   WAREHOUSE_RECEIVED: "ĐÃ NHẬP KHO",
-  IN_TRANSIT: "ĐANG VẬN CHUYỂN",
+  IN_TRANSIT: "ĐANG CHUYỂN VỀ VIỆT NAM",
+  ARRIVED_VN: "ĐÃ VỀ VIỆT NAM",
+  ARRIVED_DESTINATION: "ĐÃ VỀ TỚI KHO VN",
   SHIPPING: "ĐANG VẬN CHUYỂN",
   DELIVERING: "ĐANG GIAO HÀNG",
   DELIVERED: "ĐÃ GIAO HÀNG",
@@ -2687,6 +2691,7 @@ const ConsignmentListDetail = () => {
     : [];
 
   return (
+    <>
     <ConsignmentListDetailUI
       loading={loading}
       consignment={consignment}
@@ -2756,6 +2761,10 @@ const ConsignmentListDetail = () => {
       formatDateTime={formatDateTime}
       formatDateTimeTitle={formatDateTimeUtcTitle}
     />
+    {/* Phiếu tiếp nhận kho: tự ẩn khi đơn chưa có phiếu, nên đặt thẳng ở đây được. */}
+    <ReceivingNoteCard orderId={consignment?.orderId || consignment?.id || orderId} />
+    <DeliveryTrackingCard orderId={consignment?.orderId || consignment?.id || orderId} />
+    </>
   );
 };
 

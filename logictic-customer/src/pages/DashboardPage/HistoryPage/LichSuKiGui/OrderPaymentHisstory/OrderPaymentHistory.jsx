@@ -41,6 +41,8 @@ import {
 
 import AuthNotify from "../../../../../utils/AuthNotify";
 
+import ReceivingNoteCard from "../../../../../components/DashboardComponents/ReceivingNoteCard/ReceivingNoteCard";
+import DeliveryTrackingCard from "../../../../../components/DashboardComponents/DeliveryTrackingCard/DeliveryTrackingCard";
 import "./OrderPaymentHistory.css";
 
 /* =========================================================
@@ -65,7 +67,9 @@ const ORDER_STATUS_LABELS = {
   QUOTATION_SENT: "Đã gửi báo giá",
   APPROVED: "Đã duyệt",
   SHIPPING: "Đang vận chuyển",
-  IN_TRANSIT: "Đang vận chuyển",
+  IN_TRANSIT: "Đang chuyển về Việt Nam",
+  ARRIVED_VN: "Đã về Việt Nam",
+  ARRIVED_DESTINATION: "Đã về tới kho VN",
   DELIVERED: "Đã giao hàng",
   COMPLETED: "Hoàn thành",
   CANCELLED: "Đã hủy",
@@ -1216,6 +1220,12 @@ const OrderPaymentHistory = () => {
           </div>
         )}
       </section>
+
+      {/* Khách vừa thấy tiền đã vào là muốn biết ngay "kho nhận hàng chưa" — để phiếu tiếp nhận
+          ngay dưới lịch sử giao dịch, khỏi phải quay ra màn chi tiết đơn tìm. Khối tự ẩn nếu
+          đơn chưa có phiếu. */}
+      <ReceivingNoteCard orderId={orderId} />
+      <DeliveryTrackingCard orderId={orderId} />
 
       <section className="payment-history-note">
         <ScheduleRoundedIcon />

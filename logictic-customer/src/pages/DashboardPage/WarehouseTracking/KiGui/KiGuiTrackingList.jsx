@@ -54,7 +54,9 @@ export function KiGuiTrackingList({ consignments = [], loading = false }) {
               <option value="WAREHOUSE_RECEIVED">Kho quốc tế đã nhận hàng</option>
               <option value="IN_STORAGE">Đang lưu kho</option>
               <option value="CUSTOMS_REVIEW">Đang thông quan</option>
-              <option value="IN_TRANSIT">Đang về Việt Nam</option>
+              <option value="IN_TRANSIT">Đang chuyển về Việt Nam</option>
+              <option value="ARRIVED_VN">Đã về Việt Nam</option>
+              <option value="ARRIVED_DESTINATION">Đã về tới kho VN</option>
             </select>
 
           </label>

@@ -16,8 +16,25 @@ import {
 } from "lucide-react";
 import { formatNumber, formatTime, StatusPill } from "../Shared/WarehouseSharedComponents";
 
+/**
+ * Đơn đã bước sang chặng giao cuối — lúc này khách có phiếu giao để theo dõi, và khi hãng báo
+ * giao xong thì còn phải bấm xác nhận đã nhận đủ. Lọc bằng trạng thái đơn thay vì hỏi API cho
+ * từng thẻ, vì danh sách này có thể dài.
+ */
+const DELIVERY_STAGE_STATUSES = Object.freeze([
+  "ARRIVED_DESTINATION",
+  "AT_DESTINATION_WAREHOUSE",
+  "DELIVERING",
+  "DELIVERED",
+  "CUSTOMER_CONFIRMED",
+  "COMPLETED",
+]);
+
 export function KiGuiTrackingCard({ shipment }) {
   const normStatus = String(shipment.status || "").toUpperCase();
+  const orderId = shipment.orderId || shipment.id;
+  const inDeliveryStage = DELIVERY_STAGE_STATUSES.includes(normStatus);
+  const needsConfirm = normStatus === "DELIVERED";
 
   let stepLevel = 2; // Default checked-in
   if (normStatus.includes("STORAGE")) stepLevel = 3;
@@ -124,9 +141,29 @@ export function KiGuiTrackingCard({ shipment }) {
 
       <footer className="warehouse-shipment-card__footer">
         <span>Cập nhật {formatTime(shipment.statusUpdatedAt || shipment.createdAt)}</span>
-        <Link to={"/warehouse/consignment-detail/" + (shipment.orderId || shipment.id)} className="warehouse-card-action">
-          Xem chi tiết <ChevronRight size={14} />
-        </Link>
+        <div className="warehouse-card-actions">
+          {inDeliveryStage && (
+            <Link
+              to={"/warehouse/delivery/" + orderId}
+              className={`warehouse-card-action ${
+                needsConfirm ? "warehouse-card-action--confirm" : ""
+              }`}
+            >
+              {needsConfirm ? (
+                <>
+                  <PackageCheck size={14} /> Xác nhận đã nhận hàng
+                </>
+              ) : (
+                <>
+                  <Truck size={14} /> Theo dõi giao hàng
+                </>
+              )}
+            </Link>
+          )}
+          <Link to={"/warehouse/consignment-detail/" + orderId} className="warehouse-card-action">
+            Xem chi tiết <ChevronRight size={14} />
+          </Link>
+        </div>
       </footer>
     </article>
   );

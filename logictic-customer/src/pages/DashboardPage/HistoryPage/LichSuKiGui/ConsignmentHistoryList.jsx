@@ -350,7 +350,11 @@ const STATUS_FALLBACK_LABELS = Object.freeze({
   CUSTOMS_CLEARED: "Đã thông quan",
 
   SHIPPING: "Đang vận chuyển",
-  IN_TRANSIT: "Đang vận chuyển",
+  IN_TRANSIT: "Đang chuyển về Việt Nam",
+  ARRIVED_VN: "Đã về Việt Nam",
+  ARRIVED_DESTINATION: "Đã về tới kho VN",
+  RECEIVED_AT_DESTINATION: "Kho VN đã kiểm đếm",
+  AWAITING_PICKUP: "Chờ đơn vị giao lấy hàng",
   OUT_FOR_DELIVERY: "Đang giao hàng",
   DELIVERY_FAILED: "Giao hàng thất bại",
   DELIVERED: "Đã giao hàng",
@@ -1131,6 +1135,10 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
       [
         "SHIPPING",
         "IN_TRANSIT",
+        "ARRIVED_VN",
+        "ARRIVED_DESTINATION",
+        "RECEIVED_AT_DESTINATION",
+        "AWAITING_PICKUP",
         "OUT_FOR_DELIVERY",
         "RETURNING",
         "RETURNED",
