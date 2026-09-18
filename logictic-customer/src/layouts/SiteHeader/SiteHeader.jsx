@@ -1,0 +1,679 @@
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import "./SiteHeader.css";
+import logo from "@assets/anhlogocap2.jpeg";
+
+import {
+  SearchOutlined,
+  DownOutlined,
+  RightOutlined,
+  FileTextOutlined,
+  LoginOutlined,
+  UserAddOutlined,
+  MenuOutlined,
+  CloseOutlined,
+  DollarOutlined,
+  SafetyCertificateOutlined,
+  ReadOutlined,
+  BookOutlined,
+  DashboardOutlined,
+  LogoutOutlined,
+} from "@ant-design/icons";
+
+const services = [
+  {
+    label: "Dịch vụ mua hộ",
+    description: "Đặt mua hàng quốc tế nhanh chóng",
+    path: "/buy-for-me-service",
+  },
+  {
+    label: "Ký gửi hàng hóa",
+    description: "Vận chuyển hàng về Việt Nam an toàn",
+    path: "/consignment-service",
+  },
+];
+
+const pricingItems = [
+  {
+    label: "Bảng giá mua hộ",
+    description: "Chi phí mua hộ hàng hóa quốc tế",
+    path: "/buy-for-me-pricing",
+  },
+  {
+    label: "Bảng giá ký gửi",
+    description: "Chi phí ký gửi và vận chuyển hàng hóa",
+    path: "/consignment-pricing",
+  },
+  {
+    label: "Phí vận chuyển quốc tế",
+    description: "Tra cứu phí vận chuyển theo tuyến và cân nặng",
+    path: "/international-shipping-pricing",
+  },
+  {
+    label: "Phí dịch vụ & phụ phí",
+    description: "Thông tin các khoản phí phát sinh",
+    path: "/service-fees-pricing",
+  },
+  {
+    label: "Công cụ tính giá",
+    description: "Ước tính nhanh chi phí đơn hàng",
+    path: "/pricing-calculator",
+  },
+];
+
+const policyItems = [
+  {
+    label: "Quy định chung",
+    description: "Các quy định áp dụng khi sử dụng dịch vụ",
+    path: "/general-rules-policy",
+  },
+  {
+    label: "Chính sách Vận chuyển",
+    description: "Quy định về tiếp nhận và vận chuyển hàng hóa",
+    path: "/shipping-policy",
+  },
+  {
+    label: "Chính sách Thanh toán",
+    description: "Phương thức, thời hạn và quy trình thanh toán",
+    path: "/payment-policy",
+  },
+  {
+    label: "Chính sách Hủy đơn & Hoàn tiền",
+    description: "Điều kiện hủy đơn và xử lý hoàn tiền",
+    path: "/cancellation-refund-policy",
+  },
+  {
+    label: "Chính sách Bảo hiểm Hàng hóa",
+    description: "Quyền lợi và phạm vi bảo hiểm hàng hóa",
+    path: "/cargo-insurance-policy",
+  },
+  {
+    label: "Chính sách Miễn trừ Trách nhiệm",
+    description: "Các trường hợp được miễn trừ trách nhiệm",
+    path: "/liability-disclaimer-policy",
+  },
+  {
+    label: "Chính sách Bảo mật",
+    description: "Quy định thu thập và bảo vệ dữ liệu khách hàng",
+    path: "/privacy-policy",
+  },
+  {
+    label: "Chính sách Đặt hàng",
+    description: "Quy trình và điều kiện tạo đơn hàng",
+    path: "/ordering-policy",
+  },
+];
+
+const guideItems = [
+  {
+    label: "Hướng dẫn mua hộ",
+    description: "Các bước tạo yêu cầu mua hộ hàng hóa",
+    path: "/buy-for-me-guide",
+  },
+  {
+    label: "Hướng dẫn ký gửi",
+    description: "Cách tạo yêu cầu ký gửi hàng hóa",
+    path: "/consignment-guide",
+  },
+  {
+    label: "Hướng dẫn tạo đơn hàng",
+    description: "Quy trình tạo và xác nhận đơn hàng",
+    path: "/create-order-guide",
+  },
+  {
+    label: "Hướng dẫn thanh toán",
+    description: "Cách thanh toán và xác nhận giao dịch",
+    path: "/payment-guide",
+  },
+  {
+    label: "Hướng dẫn theo dõi đơn hàng",
+    description: "Kiểm tra trạng thái và hành trình đơn hàng",
+    path: "/order-tracking-guide",
+  },
+  {
+    label: "Hướng dẫn khiếu nại",
+    description: "Quy trình gửi và xử lý yêu cầu khiếu nại",
+    path: "/complaint-guide",
+  },
+];
+
+const blogItems = [
+  {
+    label: "Tin tức Logistics",
+    description: "Thông tin mới nhất về thị trường logistics",
+    path: "/logistics-news-blog",
+  },
+  {
+    label: "Kinh nghiệm mua hàng quốc tế",
+    description: "Mẹo mua hàng an toàn và tiết kiệm",
+    path: "/international-shopping-experience-blog",
+  },
+  {
+    label: "Hướng dẫn nhập hàng",
+    description: "Kiến thức nhập hàng dành cho cá nhân và doanh nghiệp",
+    path: "/import-guide-blog",
+  },
+  {
+    label: "Kiến thức vận chuyển",
+    description: "Giải đáp các vấn đề về vận chuyển hàng hóa",
+    path: "/shipping-knowledge-blog",
+  },
+  {
+    label: "Ưu đãi & Thông báo",
+    description: "Chương trình ưu đãi và thông báo hệ thống",
+    path: "/offers-announcements-blog",
+  },
+];
+
+const navItems = [
+  {
+    key: "about",
+    label: "Về chúng tôi",
+    path: "/about-us",
+  },
+  {
+    key: "services",
+    label: "Dịch vụ",
+    path: "/dich-vu",
+    title: "Dịch vụ của chúng tôi",
+    subtitle: "Giải pháp mua hộ và vận chuyển tối ưu",
+    items: services,
+    icon: FileTextOutlined,
+  },
+  {
+    key: "pricing",
+    label: "Bảng giá",
+    path: "/bang-gia",
+    title: "Bảng giá dịch vụ",
+    subtitle: "Thông tin chi phí rõ ràng và minh bạch",
+    items: pricingItems,
+    icon: DollarOutlined,
+  },
+  {
+    key: "policy",
+    label: "Chính sách",
+    path: "/chinh-sach",
+    title: "Chính sách & Quy định",
+    subtitle: "Các điều khoản áp dụng khi sử dụng dịch vụ",
+    items: policyItems,
+    icon: SafetyCertificateOutlined,
+  },
+  {
+    key: "guide",
+    label: "Hướng dẫn",
+    path: "/huong-dan",
+    title: "Trung tâm hướng dẫn",
+    subtitle: "Hướng dẫn sử dụng dịch vụ từng bước",
+    items: guideItems,
+    icon: BookOutlined,
+  },
+  {
+    key: "blog",
+    label: "Blog",
+    path: "/blog",
+    title: "Blog Logistics",
+    subtitle: "Kiến thức, kinh nghiệm và tin tức hữu ích",
+    items: blogItems,
+    icon: ReadOutlined,
+  },
+  {
+    key: "contact",
+    label: "Liên hệ",
+    path: "/contact-us",
+  },
+];
+
+const Header = () => {
+  const [openDesktopMenu, setOpenDesktopMenu] = useState(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [openMobileMenu, setOpenMobileMenu] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const desktopNavRef = useRef(null);
+  const headerRef = useRef(null);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+    const userStr = sessionStorage.getItem("user") || localStorage.getItem("user");
+    if (token || userStr) {
+      try {
+        const userObj = userStr ? JSON.parse(userStr) : {};
+        const name =
+          userObj.fullName ||
+          userObj.name ||
+          userObj.userName ||
+          sessionStorage.getItem("fullName") ||
+          "Khách hàng";
+        setCurrentUser({ name, userObj });
+      } catch {
+        setCurrentUser({ name: "Khách hàng" });
+      }
+    } else {
+      setCurrentUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkAuthStatus();
+    window.addEventListener("storage", checkAuthStatus);
+    return () => window.removeEventListener("storage", checkAuthStatus);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    sessionStorage.clear();
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    setCurrentUser(null);
+    closeAllMenus();
+    window.dispatchEvent(new Event("storage"));
+    navigate("/", { replace: true });
+  };
+
+  const isActive = (path) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+
+    return (
+      location.pathname === path ||
+      location.pathname.startsWith(`${path}/`)
+    );
+  };
+
+  const closeAllMenus = () => {
+    setOpenDesktopMenu(null);
+    setShowMobileMenu(false);
+    setOpenMobileMenu(null);
+  };
+
+  const handleNavigate = (path) => {
+    closeAllMenus();
+    navigate(path);
+  };
+
+  const handleDesktopMenuToggle = (key) => {
+    setOpenDesktopMenu((current) => (current === key ? null : key));
+  };
+
+  const handleMobileMenuToggle = () => {
+    setShowMobileMenu((current) => !current);
+    setOpenDesktopMenu(null);
+    setOpenMobileMenu(null);
+  };
+
+  const handleMobileDropdownToggle = (key) => {
+    setOpenMobileMenu((current) => (current === key ? null : key));
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        desktopNavRef.current &&
+        !desktopNavRef.current.contains(event.target)
+      ) {
+        setOpenDesktopMenu(null);
+      }
+
+      if (
+        headerRef.current &&
+        !headerRef.current.contains(event.target)
+      ) {
+        setShowMobileMenu(false);
+        setOpenMobileMenu(null);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        closeAllMenus();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1260) {
+        setShowMobileMenu(false);
+        setOpenMobileMenu(null);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    closeAllMenus();
+  }, [location.pathname]);
+
+  return (
+    <header className="header" ref={headerRef}>
+      <div className="header-decoration header-decoration-blue" />
+      <div className="header-decoration header-decoration-red" />
+
+      <div className="header-container">
+        <button
+          type="button"
+          className="logo-button"
+          onClick={() => handleNavigate("/")}
+          aria-label="Về trang chủ"
+        >
+          <span className="logo-frame">
+            <img
+              src={logo}
+              alt="Việt Nam Logistic"
+              className="logo-image"
+              draggable="false"
+            />
+          </span>
+        </button>
+
+        <nav
+          ref={desktopNavRef}
+          className="nav-menu"
+          aria-label="Điều hướng chính"
+        >
+          {navItems.map((item) => {
+            const hasDropdown = Array.isArray(item.items);
+            const isOpen = openDesktopMenu === item.key;
+            const ItemIcon = item.icon || FileTextOutlined;
+
+            if (!hasDropdown) {
+              return (
+                <button
+                  type="button"
+                  key={item.key}
+                  className={`nav-item ${isActive(item.path) ? "active" : ""}`}
+                  onClick={() => handleNavigate(item.path)}
+                  aria-current={isActive(item.path) ? "page" : undefined}
+                >
+                  {item.label}
+                </button>
+              );
+            }
+
+            return (
+              <div
+                key={item.key}
+                className={`menu-dropdown ${
+                  isOpen || isActive(item.path) ? "active" : ""
+                }`}
+              >
+                <button
+                  type="button"
+                  className="nav-item service-trigger"
+                  onClick={() => handleDesktopMenuToggle(item.key)}
+                  aria-haspopup="menu"
+                  aria-expanded={isOpen}
+                >
+                  <span>{item.label}</span>
+                  <DownOutlined
+                    className={`icon-down ${isOpen ? "rotate" : ""}`}
+                  />
+                </button>
+
+                {isOpen && (
+                  <div className="service-dropdown" role="menu">
+                    <div className="dropdown-header">
+                      <span className="dropdown-label">{item.title}</span>
+                      <span className="dropdown-description">
+                        {item.subtitle}
+                      </span>
+                    </div>
+
+                    <div className="service-list">
+                      {item.items.map((subItem) => (
+                        <button
+                          type="button"
+                          key={subItem.path}
+                          className={`service-item ${
+                            isActive(subItem.path) ? "active" : ""
+                          }`}
+                          onClick={() => handleNavigate(subItem.path)}
+                          role="menuitem"
+                        >
+                          <span className="service-icon">
+                            <ItemIcon />
+                          </span>
+
+                          <span className="service-content">
+                            <strong>{subItem.label}</strong>
+                            <small>{subItem.description}</small>
+                          </span>
+
+                          <span className="service-arrow">
+                            <RightOutlined />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div className="header-actions">
+          <button
+            type="button"
+            className="quote-btn"
+            onClick={() => handleNavigate("/quotation-page")}
+          >
+            <FileTextOutlined className="action-icon" />
+            <span>Báo giá</span>
+          </button>
+
+          <button
+            type="button"
+            className="action-link"
+            onClick={() => handleNavigate("/order-lookup")}
+          >
+            <SearchOutlined className="action-icon" />
+            <span>Tra cứu</span>
+          </button>
+
+          {currentUser ? (
+            <div className="header-user-menu">
+              <button
+                type="button"
+                className="header-user-badge"
+                onClick={() => handleNavigate("/customer/dashboard")}
+                title="Vào lại trang Dashboard quản lý"
+              >
+                <span className="header-avatar-circle">
+                  {currentUser.name?.trim()?.charAt(0)?.toUpperCase() || "U"}
+                </span>
+                <span className="header-user-name">{currentUser.name}</span>
+              </button>
+
+              <button
+                type="button"
+                className="header-logout-btn"
+                onClick={handleLogout}
+                title="Đăng xuất khỏi tài khoản"
+              >
+                <LogoutOutlined className="header-logout-icon" />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="action-link"
+                onClick={() => handleNavigate("/login")}
+              >
+                <LoginOutlined className="action-icon" />
+                <span>Đăng nhập</span>
+              </button>
+
+              <button
+                type="button"
+                className="register-btn"
+                onClick={() => handleNavigate("/register")}
+              >
+                <UserAddOutlined className="action-icon" />
+                <span>Đăng ký</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className={`mobile-menu-button ${showMobileMenu ? "is-open" : ""}`}
+          onClick={handleMobileMenuToggle}
+          aria-label={showMobileMenu ? "Đóng menu" : "Mở menu"}
+          aria-expanded={showMobileMenu}
+        >
+          {showMobileMenu ? <CloseOutlined /> : <MenuOutlined />}
+        </button>
+      </div>
+
+      {showMobileMenu && (
+        <div className="mobile-menu">
+          <div className="mobile-menu-inner">
+            {navItems.map((item) => {
+              const hasDropdown = Array.isArray(item.items);
+              const isOpen = openMobileMenu === item.key;
+              const ItemIcon = item.icon || FileTextOutlined;
+
+              if (!hasDropdown) {
+                return (
+                  <button
+                    type="button"
+                    key={item.key}
+                    className={`mobile-nav-item ${
+                      isActive(item.path) ? "active" : ""
+                    }`}
+                    onClick={() => handleNavigate(item.path)}
+                  >
+                    <span>{item.label}</span>
+                    <RightOutlined />
+                  </button>
+                );
+              }
+
+              return (
+                <div
+                  key={item.key}
+                  className={`mobile-service-block ${isOpen ? "active" : ""}`}
+                >
+                  <button
+                    type="button"
+                    className={`mobile-nav-item mobile-service-trigger ${
+                      isActive(item.path) ? "active" : ""
+                    }`}
+                    onClick={() => handleMobileDropdownToggle(item.key)}
+                    aria-expanded={isOpen}
+                  >
+                    <span>{item.label}</span>
+                    <DownOutlined
+                      className={`icon-down ${isOpen ? "rotate" : ""}`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div className="mobile-service-list">
+                      {item.items.map((subItem) => (
+                        <button
+                          type="button"
+                          key={subItem.path}
+                          className={`mobile-service-item ${
+                            isActive(subItem.path) ? "active" : ""
+                          }`}
+                          onClick={() => handleNavigate(subItem.path)}
+                        >
+                          <span className="mobile-service-icon">
+                            <ItemIcon />
+                          </span>
+
+                          <span className="mobile-service-content">
+                            <strong>{subItem.label}</strong>
+                            <small>{subItem.description}</small>
+                          </span>
+
+                          <RightOutlined />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="mobile-actions">
+              <button
+                type="button"
+                className="mobile-secondary-btn"
+                onClick={() => handleNavigate("/order-lookup")}
+              >
+                <SearchOutlined />
+                <span>Tra cứu</span>
+              </button>
+
+              {currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    className="mobile-quote-btn"
+                    onClick={() => handleNavigate("/customer/dashboard")}
+                  >
+                    <DashboardOutlined />
+                    <span>Trang Dashboard ({currentUser.name})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="mobile-secondary-btn"
+                    onClick={handleLogout}
+                  >
+                    <LogoutOutlined />
+                    <span>Đăng xuất</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="mobile-secondary-btn"
+                    onClick={() => handleNavigate("/login")}
+                  >
+                    <LoginOutlined />
+                    <span>Đăng nhập</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="mobile-register-btn"
+                    onClick={() => handleNavigate("/register")}
+                  >
+                    <UserAddOutlined />
+                    <span>Đăng ký</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Header;

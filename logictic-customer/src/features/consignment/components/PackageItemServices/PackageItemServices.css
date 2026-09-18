@@ -1,0 +1,77 @@
+.pis-root {
+  margin-bottom: 1.25rem;
+}
+
+.pis-optional {
+  font-weight: 400;
+  color: #64748b;
+}
+
+.pis-hint {
+  margin: 6px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.pis-hint.is-error {
+  color: #dc2626;
+}
+
+.pis-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pis-item {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pis-item.is-checked {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+.pis-item .ant-checkbox-wrapper {
+  width: 100%;
+  align-items: flex-start;
+}
+
+.pis-item .ant-checkbox + span {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pis-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.pis-fee {
+  font-size: 12.5px;
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.pis-desc {
+  margin: 4px 0 0 24px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pis-desc.is-warning {
+  color: #b45309;
+}

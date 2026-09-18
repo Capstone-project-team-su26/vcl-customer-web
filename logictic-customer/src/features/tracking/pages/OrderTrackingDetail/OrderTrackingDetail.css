@@ -1,0 +1,73 @@
+.order-tracking-detail {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 32px;
+}
+
+.order-tracking-detail__loading {
+  display: flex;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+.order-tracking-detail__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-tracking-detail__nav-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-tracking-detail__hero {
+  margin-top: 16px;
+  padding: 22px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f3f8ff 0%, #ffffff 70%);
+  border: 1px solid #dbe7f7;
+}
+
+.order-tracking-detail__hero-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.order-tracking-detail__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.order-tracking-detail__hero h1 {
+  margin: 4px 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0b1b2e;
+  word-break: break-all;
+}
+
+.order-tracking-detail__hero p {
+  margin: 0;
+  color: #5b6b80;
+}
+
+.order-tracking-detail__hero-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.order-tracking-detail__eta {
+  margin: 12px 0 0;
+  color: #334155;
+}

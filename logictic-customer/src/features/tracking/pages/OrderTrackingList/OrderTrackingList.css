@@ -1,0 +1,45 @@
+.order-tracking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-tracking-list__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.order-tracking-list__head h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0b1b2e;
+}
+
+.order-tracking-list__head p {
+  margin: 6px 0 0;
+  color: #5b6b80;
+  max-width: 720px;
+}
+
+.order-tracking-list__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.order-tracking-list__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.order-tracking-list__muted {
+  color: #5b6b80;
+}

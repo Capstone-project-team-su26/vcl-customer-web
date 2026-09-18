@@ -1,0 +1,25 @@
+.settlement-preview__block {
+  margin-bottom: 14px;
+}
+
+.settlement-preview__blockers {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.section-card__facts dd.is-down {
+  color: #059669;
+}
+
+.section-card__facts dd.is-up {
+  color: #c2410c;
+}
+
+.section-card__facts > .settlement-preview__total {
+  background: #eaf2ff;
+}
+
+.settlement-preview__total dd {
+  font-size: 18px;
+  color: #1d4ed8;
+}

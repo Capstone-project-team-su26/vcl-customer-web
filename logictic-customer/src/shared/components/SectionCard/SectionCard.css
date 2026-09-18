@@ -1,0 +1,126 @@
+/* Khung thẻ dùng chung cho các khối trong chi tiết đơn / hành trình đơn. */
+
+.section-card {
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e4ecf5;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 42, 80, 0.05);
+}
+
+.section-card--warning {
+  border-color: #fcd9a4;
+  background: #fffdf7;
+}
+
+.section-card--danger {
+  border-color: #f8c4c4;
+  background: #fffafa;
+}
+
+.section-card--success {
+  border-color: #bfe9d6;
+}
+
+.section-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf2ff;
+  color: #1d4ed8;
+  flex: none;
+  font-size: 18px;
+}
+
+.section-card--warning .section-card__icon {
+  background: #fff4e0;
+  color: #c2410c;
+}
+
+.section-card--danger .section-card__icon {
+  background: #fdeaea;
+  color: #b91c1c;
+}
+
+.section-card--success .section-card__icon {
+  background: #e7faf3;
+  color: #059669;
+}
+
+.section-card__title {
+  flex: 1;
+  min-width: 180px;
+}
+
+.section-card__title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0b1b2e;
+}
+
+.section-card__title p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #5b6b80;
+}
+
+.section-card__extra {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.section-card__body {
+  margin-top: 16px;
+}
+
+/* Bảng / lưới dữ kiện nhỏ dùng lại trong nhiều thẻ. */
+.section-card__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.section-card__facts > div {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f6f9fd;
+}
+
+.section-card__facts dt {
+  font-size: 12px;
+  color: #5b6b80;
+}
+
+.section-card__facts dd {
+  margin: 4px 0 0;
+  font-weight: 700;
+  color: #0b1b2e;
+  word-break: break-word;
+}
+
+.section-card__hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #5b6b80;
+}
+
+.section-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}

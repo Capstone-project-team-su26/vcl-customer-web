@@ -1,0 +1,331 @@
+{
+  "src/features/auth/api/authService.js": {
+    "named": [
+      "forgotPasswordApi",
+      "getUserProfileApi",
+      "googleLoginApi",
+      "loginApi",
+      "registerApi",
+      "resendOtpApi",
+      "resetPasswordApi",
+      "updateUserProfileApi",
+      "verifyOtpApi"
+    ],
+    "hasDefault": false,
+    "originalLines": 168,
+    "realApi": true
+  },
+  "src/features/chat/api/conversationApi.js": {
+    "named": [
+      "createConversationApi",
+      "getConversationDetailApi",
+      "getConversationsApi",
+      "markConversationAsReadApi",
+      "sendConversationMessageApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 301
+  },
+  "src/features/consignment/api/aiOrderIntentApi.js": {
+    "named": [
+      "extractOrderIntentApi"
+    ],
+    "hasDefault": false,
+    "originalLines": 42
+  },
+  "src/features/consignment/api/consignmentApi.js": {
+    "named": [
+      "CONSIGNMENT_PAYMENT_METHODS",
+      "buildCreateConsignmentRequest",
+      "cancelConsignmentApi",
+      "confirmAndPayConsignmentQuotationApi",
+      "createConsignmentApi",
+      "createDeliveryAddressApi",
+      "deleteDeliveryAddressApi",
+      "getConsignmentDetailApi",
+      "getConsignmentItemServicesApi",
+      "getConsignmentPaymentStatusApi",
+      "getConsignmentRoutesApi",
+      "getConsignmentShippingOptionsApi",
+      "getConsignmentTimelineApi",
+      "getConsignmentsApi",
+      "getDeliveryAddressesApi",
+      "getOrderQuotationApi",
+      "getProductTypesApi",
+      "getStorageFeeEstimateApi",
+      "rejectConsignmentQuotationApi",
+      "updateConsignmentStatusApi",
+      "validateConsignmentItemsApi"
+    ],
+    "hasDefault": false,
+    "originalLines": 1117,
+    "realApi": true
+  },
+  "src/features/consignment/api/consignmentApi.mock.js": {
+    "named": [
+      "buildCreateConsignmentRequest",
+      "cancelConsignmentApi",
+      "createConsignmentApi",
+      "createDeliveryAddressApi",
+      "deleteDeliveryAddressApi",
+      "getConsignmentDetailApi",
+      "getConsignmentRoutesApi",
+      "getConsignmentShippingOptionsApi",
+      "getConsignmentsApi",
+      "getDeliveryAddressesApi",
+      "getOrderQuotationApi",
+      "getProductTypesApi",
+      "getStorageFeeEstimateApi",
+      "updateConsignmentStatusApi",
+      "validateConsignmentItemsApi"
+    ],
+    "hasDefault": false,
+    "originalLines": 1117
+  },
+  "src/features/consignment/api/consignmentStatusApi.js": {
+    "named": [
+      "getConsignmentStatusesApi"
+    ],
+    "hasDefault": false,
+    "originalLines": 67,
+    "realApi": true
+  },
+  "src/features/delivery/api/deliveryRequestApi.js": {
+    "named": [
+      "DELIVERY_REQUEST_STATUS_LABELS",
+      "createDeliveryRequestApi",
+      "getDeliveryRequestByIdApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 79,
+    "realApi": true
+  },
+  "src/features/delivery/api/deliveryTrackingApi.js": {
+    "named": [
+      "confirmOrderReceivedApi",
+      "getOrderDeliveryTrackingApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 96,
+    "realApi": true
+  },
+  "src/features/notifications/api/notificationApi.js": {
+    "named": [
+      "deleteNotificationApi",
+      "getNotificationsApi",
+      "markAllNotificationsAsReadApi",
+      "markNotificationAsReadApi",
+      "readAllNotificationsApi",
+      "readNotificationApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 236,
+    "realApi": true
+  },
+  "src/features/payment/api/orderPaymentApi.js": {
+    "named": [
+      "PAYMENT_INSTALLMENT_LABELS",
+      "PAYMENT_INSTALLMENT_TYPES",
+      "findPayablePayment",
+      "getOrderPaymentHistoryApi",
+      "getOrderPaymentHistoryListApi",
+      "getOrderPaymentListApi",
+      "getOrderPaymentsApi",
+      "getOrderStorageFeeApi",
+      "isSepayCheckoutUrl",
+      "resolveCheckoutUrl"
+    ],
+    "hasDefault": true,
+    "originalLines": 244,
+    "realApi": true
+  },
+  "src/features/payment/utils/consignmentPaymentReturn.js": {
+    "named": [
+      "PAYMENT_POLL_INTERVAL_MS",
+      "PAYMENT_POLL_TIMEOUT_MS",
+      "PAYOS_RETURN_QUERY_KEYS",
+      "PENDING_CONSIGNMENT_PAYMENT_KEY",
+      "PENDING_PAYMENT_MAX_AGE_MS",
+      "classifyPaymentStatus",
+      "clearPendingConsignmentPayment",
+      "parsePayOsReturn",
+      "pollConsignmentPaymentStatus",
+      "readPendingConsignmentPayment",
+      "savePendingConsignmentPayment",
+      "stripPayOsReturnParams"
+    ],
+    "hasDefault": false,
+    "originalLines": 224
+  },
+  "src/features/pricing/api/pricingRuleService.js": {
+    "named": [],
+    "hasDefault": true,
+    "originalLines": 1052,
+    "realApi": true
+  },
+  "src/features/pricing/api/pricingRuleService.mock.js": {
+    "named": [],
+    "hasDefault": true,
+    "originalLines": 1052
+  },
+  "src/features/purchase/api/purchaseRequestApi.js": {
+    "named": [
+      "acceptQuotationApi",
+      "confirmAndPayQuotationApi",
+      "createPurchaseRequestApi",
+      "getPaymentCheckoutUrl",
+      "getPaymentStatusApi",
+      "getPurchaseRequestById",
+      "getPurchaseRequestByIdApi",
+      "getPurchaseRequestDetailApi",
+      "getPurchaseRequestPaymentHistoryApi",
+      "getPurchaseRequestsApi",
+      "getSepayCheckoutApi",
+      "getSepayCheckoutPageUrl",
+      "rejectQuotationApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 1009
+  },
+  "src/features/receiving/api/receivingNoteApi.js": {
+    "named": [
+      "getMyReceivingNoteApi",
+      "toPublicReceiptUrl"
+    ],
+    "hasDefault": true,
+    "originalLines": 33,
+    "realApi": true
+  },
+  "src/features/settlement/api/settlementApi.js": {
+    "named": [
+      "SETTLEMENT_BLOCKER_LABELS",
+      "getAwaitingSettlementApi",
+      "getSettlementPreviewApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 30,
+    "realApi": true
+  },
+  "src/features/tracking/api/publicParcelTrackingApi.js": {
+    "named": [
+      "getPublicParcelTrackingApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 171,
+    "realApi": true
+  },
+  "src/shared/api/addressApi.js": {
+    "named": [
+      "clearAddressCache",
+      "getDistrictByCode",
+      "getDistrictsByProvinceCode",
+      "getFullAddressByCodes",
+      "getProvinceByCode",
+      "getProvinces",
+      "getWardByCode",
+      "getWardsByDistrictCode",
+      "normalizeAddressOption",
+      "normalizeAddressOptions",
+      "searchDistricts",
+      "searchProvinces",
+      "searchWards"
+    ],
+    "hasDefault": true,
+    "originalLines": 452
+  },
+  "src/shared/api/restrictedItemApi.js": {
+    "named": [
+      "getRestrictedItemListApi",
+      "getRestrictedItemsApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 93,
+    "realApi": true
+  },
+  "src/shared/api/restrictedItemApi.mock.js": {
+    "named": [
+      "getRestrictedItemListApi",
+      "getRestrictedItemsApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 93
+  },
+  "src/shared/api/uploadImage.js": {
+    "named": [
+      "uploadAxios",
+      "uploadImage",
+      "uploadImages"
+    ],
+    "hasDefault": true,
+    "originalLines": 352,
+    "realApi": true
+  },
+  "src/shared/api/uploadImage.mock.js": {
+    "named": [
+      "uploadAxios",
+      "uploadImage",
+      "uploadImages"
+    ],
+    "hasDefault": true,
+    "originalLines": 352
+  },
+  "src/features/delivery/api/destinationHandlingApi.js": {
+    "named": [
+      "LOCKED_BY_DELIVERY_REASON",
+      "PARCEL_HANDLING",
+      "PARCEL_HANDLING_LABELS",
+      "getParcelHandlingApi",
+      "updateParcelHandlingApi"
+    ],
+    "hasDefault": true,
+    "realApi": true,
+    "originalLines": 133
+  },
+  "src/features/tracking/api/orderTrackingApi.js": {
+    "named": [
+      "getOrderTrackingApi",
+      "getTrackedOrdersApi",
+      "setExportHoldApi"
+    ],
+    "hasDefault": true,
+    "realApi": true,
+    "originalLines": 201
+  },
+  "src/features/incidents/api/parcelIncidentApi.js": {
+    "named": [
+      "COMPLAINT_WINDOW_DAYS",
+      "INCIDENT_CHOICES",
+      "INCIDENT_CHOICE_LABELS",
+      "INCIDENT_RESOLUTION_LABELS",
+      "INCIDENT_STATUSES",
+      "INCIDENT_STATUS_LABELS",
+      "INCIDENT_TYPE_LABELS",
+      "createOrderComplaintApi",
+      "getAllowedIncidentChoices",
+      "getParcelIncidentDetailApi",
+      "getParcelIncidentsApi",
+      "respondParcelIncidentApi"
+    ],
+    "hasDefault": true,
+    "realApi": true,
+    "originalLines": 243
+  },
+  "src/shared/api/attachmentApi.js": {
+    "named": [
+      "ATTACHMENT_ACCEPTED_MIME_TYPES",
+      "ATTACHMENT_ACCEPT_ATTRIBUTE",
+      "ATTACHMENT_DOCUMENT_TYPES",
+      "ATTACHMENT_DOCUMENT_TYPE_LABELS",
+      "ATTACHMENT_ENTITY_TYPES",
+      "ATTACHMENT_MAX_SIZE_BYTES",
+      "attachmentUploadClient",
+      "downloadAttachmentApi",
+      "getAttachmentsApi",
+      "uploadAttachmentApi",
+      "validateAttachmentFile"
+    ],
+    "hasDefault": true,
+    "realApi": true,
+    "originalLines": 317
+  }
+}

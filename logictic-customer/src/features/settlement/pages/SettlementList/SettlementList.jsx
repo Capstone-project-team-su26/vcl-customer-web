@@ -1,0 +1,206 @@
+/**
+ * Thanh toán vận chuyển — nơi khách trả nốt tiền cho hàng đã về kho Việt Nam.
+ *
+ * API thật GET /api/orders/awaiting-settlement (server tự lọc đơn của khách). Đơn ký gửi
+ * có thêm lối sang màn Theo dõi đơn để xem trước tất toán theo cân đo VN (bảng từng kiện,
+ * điều chỉnh cước, VAT, vướng mắc) trước khi trả.
+ */
+
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { Button, CircularProgress } from "@mui/material";
+import PaidRoundedIcon from "@mui/icons-material/PaidRounded";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
+import Inventory2RoundedIcon from "@mui/icons-material/Inventory2Rounded";
+import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
+
+import { getAwaitingSettlementApi } from "@features/settlement/api/settlementApi";
+/* Import sâu có chủ đích: barrel payment / tracking kéo theo trang khác (thứ tự CSS). */
+import { openCheckout } from "@features/payment/utils/openCheckout";
+import { orderTrackingDetailPath } from "@features/tracking/constants/trackingPaths";
+import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
+
+import "./SettlementList.css";
+
+const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("vi-VN");
+};
+
+export default function SettlementList() {
+  const navigate = useNavigate();
+
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    getAwaitingSettlementApi({ signal: controller.signal })
+      .then((items) => {
+        setOrders(items);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (isCanceledError(error)) return;
+
+        setLoading(false);
+        AuthNotify.error(
+          "Không tải được danh sách",
+          getApiErrorMessage(error, "Vui lòng thử lại."),
+        );
+      });
+
+    return () => controller.abort();
+  }, [reloadKey]);
+
+  /* Bật loading ngay trong handler (không trong effect) để nút Tải lại phản hồi tức thì. */
+  const load = useCallback(() => {
+    setLoading(true);
+    setReloadKey((key) => key + 1);
+  }, []);
+
+  return (
+    <div className="settlement-page">
+      <header className="settlement-page__head">
+        <div>
+          <h1>Thanh toán vận chuyển</h1>
+          <p>
+            Hàng đã về kho Việt Nam. Trả nốt phần còn lại để chúng tôi xuất kho và giao tới bạn.
+          </p>
+        </div>
+
+        <Button
+          variant="outlined"
+          startIcon={<AutorenewIcon />}
+          onClick={load}
+          disabled={loading}
+        >
+          Tải lại
+        </Button>
+      </header>
+
+      {loading ? (
+        <div className="settlement-page__loading">
+          <CircularProgress size={30} />
+          <span>Đang tải đơn của bạn…</span>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="settlement-page__empty">
+          <Inventory2RoundedIcon />
+          <strong>Bạn không có đơn nào cần tất toán</strong>
+          <span>Khi hàng về tới kho Việt Nam và nhân viên chốt phí, đơn sẽ hiện ở đây.</span>
+        </div>
+      ) : (
+        <div className="settlement-list">
+          {orders.map((order) => {
+            const due = order.pendingPaymentAmount;
+            const canPay = Number(due) > 0 && Boolean(order.pendingCheckoutUrl);
+
+            return (
+              <article key={order.orderId} className="settlement-card">
+                <div className="settlement-card__top">
+                  <div>
+                    <span className="settlement-card__kind">
+                      {order.orderType === "PURCHASE" ? "Đơn mua hộ" : "Đơn ký gửi"}
+                    </span>
+                    <strong>{order.orderCode}</strong>
+                  </div>
+
+                  {canPay ? (
+                    <span className="settlement-card__badge is-due">Chờ bạn thanh toán</span>
+                  ) : (
+                    <span className="settlement-card__badge">Chờ nhân viên chốt phí</span>
+                  )}
+                </div>
+
+                <dl className="settlement-card__facts">
+                  <div>
+                    <dt>Hàng đã về kho</dt>
+                    <dd>
+                      {order.parcelCount} kiện ·{" "}
+                      {Number(order.totalWeight || 0).toLocaleString("vi-VN")} kg
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Về kho lúc</dt>
+                    <dd>{formatDateTime(order.arrivedAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>Giao tới</dt>
+                    <dd>{order.receiverAddress || "—"}</dd>
+                  </div>
+                </dl>
+
+                {order.discrepancyParcelCount > 0 && (
+                  <p className="settlement-card__warning">
+                    <ReportProblemRoundedIcon />
+                    <span>
+                      Kho ghi nhận <strong>{order.discrepancyParcelCount} kiện</strong> có chênh
+                      lệch so với khai báo. Nhân viên sẽ liên hệ với bạn trước khi chốt tiền.
+                    </span>
+                  </p>
+                )}
+
+                <div className="settlement-card__foot">
+                  {canPay ? (
+                    <>
+                      <div className="settlement-card__amount">
+                        <span>Còn phải trả</span>
+                        <strong>{formatMoney(due)}</strong>
+                      </div>
+
+                      <Button
+                        variant="contained"
+                        startIcon={<PaidRoundedIcon />}
+                        onClick={() => {
+                          /* Link SePay là đường dẫn tương đối — openCheckout ghép base URL API. */
+                          if (!openCheckout(order.pendingCheckoutUrl)) {
+                            AuthNotify.error(
+                              "Không mở được trang thanh toán",
+                              "Link thanh toán không hợp lệ.",
+                            );
+                          }
+                        }}
+                      >
+                        Thanh toán ngay
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="settlement-card__hint">
+                        Nhân viên đang chốt phí cuối cho đơn này.
+                      </span>
+
+                      {order.orderType === "PURCHASE" ? (
+                        <Button
+                          variant="outlined"
+                          onClick={() => navigate(`/orders/${order.orderId}/payments/history`)}
+                        >
+                          Xem lịch sử thanh toán
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          onClick={() => navigate(orderTrackingDetailPath(order.orderId))}
+                        >
+                          Xem trước tất toán
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

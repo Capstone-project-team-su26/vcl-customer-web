@@ -1,4 +1,4 @@
-import React, {
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -24,8 +24,8 @@ import {
   getNotificationsApi,
   markNotificationAsReadApi,
   markAllNotificationsAsReadApi,
-} from "../../api/Notification/notificationApi";
-import { formatVietnamDateTime } from "../../utils/timeUtc";
+} from "@features/notifications/api/notificationApi";
+import { formatVietnamDateTime } from "@shared/utils/timeUtc";
 
 import "./NotificationPanel.css";
 
@@ -86,6 +86,31 @@ const formatRelative = (dateString) => {
   }
 };
 
+/* Từ khoá của các mốc hành trình / hàng về VN (ShipmentMilestones + VnArrival của backend). */
+const JOURNEY_KEYWORDS = [
+  "xuất kho",
+  "khởi hành",
+  "vận chuyển về",
+  "chậm",
+  "tạm giữ",
+  "thông quan",
+  "về việt nam",
+  "về kho",
+  "kho việt nam",
+  "sự cố",
+  "khiếu nại",
+  "bồi thường",
+  "tất toán",
+  "thanh toán cuối",
+  "đợt cuối",
+  "đặt giao",
+  "giao hàng chưa thành công",
+  "giao lại",
+  "đã giao",
+  "giữ hàng",
+  "hoàn thành",
+];
+
 /**
  * Suy đoán URL chuyển hướng từ dữ liệu thông báo đến đúng màn hình trong hệ thống
  */
@@ -100,16 +125,28 @@ const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
   const desc = String(item.content || item.message || item.description || "").toLowerCase();
   const fullText = `${title} ${desc}`;
   const code = extractedCode || "";
+  /* Không lấy item.id: đó là id của thông báo, không phải id đơn. */
   const relatedId =
     item.relatedId ||
     item.referenceId ||
     item.orderId ||
-    item.purchaseRequestId ||
-    item.id;
+    item.purchaseRequestId;
+
+  // 1b. Thông báo hành trình / hàng về VN của đơn ký gửi — "Đơn VCL-...: Hàng đã khởi hành",
+  //     kho VN đã nhận hàng, sự cố, tất toán, đặt giao, đã giao, giữ hàng... Backend không gửi
+  //     id đơn trong thông báo, nên mở màn Theo dõi đơn lọc sẵn theo mã đơn.
+  if (
+    code.toUpperCase().startsWith("VCL-") &&
+    !fullText.includes("báo giá") &&
+    JOURNEY_KEYWORDS.some((keyword) => fullText.includes(keyword))
+  ) {
+    return `/tracking?search=${encodeURIComponent(code)}&finished=1`;
+  }
 
   // 2. Thông báo Hàng nhập kho / Phiếu nhập kho
+  /* Phiếu nhập kho ký gửi nằm trong chi tiết đơn. */
   if (fullText.includes("phiếu nhập kho") || fullText.includes("nhập kho")) {
-    return "/warehouse/receipts";
+    return "/history/consignment";
   }
 
   // 3. Thông báo Báo giá (Quotation)
