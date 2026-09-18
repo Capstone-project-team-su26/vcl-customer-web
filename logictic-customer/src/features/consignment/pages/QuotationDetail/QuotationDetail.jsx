@@ -81,6 +81,7 @@ import {
   normalizeLookupKey,
   hasUiValue,
   isValidExternalUrl,
+  resolveSePayCheckoutUrl,
   hasNumberValue,
   normalizeProductTypeOptions,
   buildProductTypeLabelMap,
@@ -161,6 +162,20 @@ const formatPercent = (value) =>
   value === null || value === undefined ? "theo cấu hình" : `${value}%`;
 
 const CONSIGNMENT_PAYMENT_OPTIONS = [
+  {
+    value: CONSIGNMENT_PAYMENT_METHODS.SEPAY,
+    title: "Thanh toán online qua SePay",
+    subtitle: "Quét VietQR SePay bằng ứng dụng ngân hàng để thanh toán tiền cọc.",
+    badge: "SePay",
+    icon: CreditCardRoundedIcon,
+    requiresDepositRate: false,
+    selectedLabel: "Thanh toán online qua SePay",
+    confirmLabel: "Xác nhận và thanh toán qua SePay",
+    getNoteTitle: ({ depositPercent }) =>
+      `Thanh toán cọc ${formatPercent(depositPercent)} qua SePay`,
+    getNoteText: () =>
+      "Báo giá được xác nhận ngay khi bấm. Hệ thống sẽ mở trang quét VietQR SePay để bạn thanh toán tiền cọc.",
+  },
   {
     value: CONSIGNMENT_PAYMENT_METHODS.PAYOS,
     title: "Thanh toán online qua payOS",
@@ -746,13 +761,18 @@ const QuotationDetail = () => {
         return;
       }
 
-      const checkoutUrl = String(result?.checkoutUrl || "").trim();
+      const rawCheckoutUrl =
+        resolveSePayCheckoutUrl(result) ||
+        String(result?.checkoutUrl || "").trim();
+      const checkoutUrl = isValidExternalUrl(rawCheckoutUrl)
+        ? rawCheckoutUrl
+        : "";
 
-      if (!isValidExternalUrl(checkoutUrl)) {
+      if (!checkoutUrl) {
         /* Báo giá đã ACCEPTED ở backend: không ném lỗi "thất bại", chỉ hướng dẫn tiếp. */
         AuthNotify.warning(
           "Chưa mở được trang thanh toán",
-          "Báo giá đã được xác nhận nhưng hệ thống chưa trả link payOS. Vui lòng mở Lịch sử thanh toán của đơn để tiếp tục.",
+          "Báo giá đã được xác nhận nhưng hệ thống chưa trả link thanh toán. Vui lòng mở Lịch sử thanh toán của đơn để tiếp tục.",
         );
 
         await reloadQuotationAfterAction();
@@ -767,21 +787,29 @@ const QuotationDetail = () => {
         amount: result?.amount,
       });
 
+      const gatewayLabel =
+        paymentMethod === CONSIGNMENT_PAYMENT_METHODS.SEPAY
+          ? "SePay"
+          : "payOS";
+
       AuthNotify.success(
         "Đã tạo thanh toán cọc",
-        `Đang chuyển sang payOS để thanh toán ${formatMoney(result?.amount)}.`,
+        `Đang chuyển sang ${gatewayLabel} để thanh toán ${formatMoney(result?.amount)}.`,
       );
 
       window.location.assign(checkoutUrl);
     } catch (error) {
+      const isSepay = paymentMethod === CONSIGNMENT_PAYMENT_METHODS.SEPAY;
+      const gatewayName = isSepay ? "SePay" : "payOS";
+
       handleQuotationActionError(
         error,
         isOfflinePayment
           ? "Xác nhận báo giá thất bại"
-          : "Khởi tạo thanh toán payOS thất bại",
+          : `Khởi tạo thanh toán ${gatewayName} thất bại`,
         isOfflinePayment
           ? "Không thể xác nhận báo giá. Vui lòng thử lại."
-          : "Không thể mở trang thanh toán payOS. Vui lòng thử lại.",
+          : `Không thể mở trang thanh toán ${gatewayName}. Vui lòng thử lại.`,
       );
     } finally {
       setQuotationAction("");
@@ -2178,7 +2206,7 @@ const QuotationDetail = () => {
         onClose={handleClosePaymentDialog}
         onConfirm={handleConfirmAndPay}
         paymentMethodOptions={CONSIGNMENT_PAYMENT_OPTIONS}
-        defaultMethod={CONSIGNMENT_PAYMENT_METHODS.PAYOS}
+        defaultMethod={CONSIGNMENT_PAYMENT_METHODS.SEPAY}
         loadDepositRate={pricingRuleService.getDepositRate}
         gatewayText="(tạm tính; số tiền chính xác do hệ thống tính khi xác nhận)."
         depositLabel="Tiền cọc dự kiến"

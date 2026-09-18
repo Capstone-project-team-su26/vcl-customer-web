@@ -928,8 +928,9 @@ export const rejectConsignmentQuotationApi = async (
   }
 };
 
-/* Khách chỉ được chọn payOS hoặc chuyển khoản tay (SePay production chưa có khoá webhook). */
+/* Phương thức thanh toán cọc ký gửi: SePay (mặc định), payOS, hoặc chuyển khoản tay. */
 export const CONSIGNMENT_PAYMENT_METHODS = Object.freeze({
+  SEPAY: "SEPAY",
   PAYOS: "PAYOS",
   OFFLINE: "OFFLINE",
 });
