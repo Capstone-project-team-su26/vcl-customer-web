@@ -51,6 +51,14 @@ import pricingRuleService from "@features/pricing/api/pricingRuleService";
 import { getOrderPaymentHistoryApi } from "@features/payment/api/orderPaymentApi";
 import { savePendingConsignmentPayment } from "@features/payment/utils/consignmentPaymentReturn";
 import { isSessionExpiredError } from "@shared/api/httpClient";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import {
+  CONSIGNMENT_ORDERS_PATH,
+  ORDER_TABS,
+  PAYMENT_TABS,
+  orderDetailPath,
+  paymentTabPath,
+} from "@features/orders/constants/orderPaths";
 
 import QuotationCancelDialog from "@features/payment/components/QuotationCancelDialog/QuotationCancelDialog";
 import QuotationPaymentConfirmDialog from "@features/payment/components/QuotationPaymentConfirmDialog/QuotationPaymentConfirmDialog";
@@ -81,7 +89,6 @@ import {
   normalizeLookupKey,
   hasUiValue,
   isValidExternalUrl,
-  resolveSePayCheckoutUrl,
   hasNumberValue,
   normalizeProductTypeOptions,
   buildProductTypeLabelMap,
@@ -155,7 +162,7 @@ const FeeDetailGrid = ({ fee }) => {
 };
 
 /* =========================================================
-   CÁCH TRẢ CỌC — chỉ payOS và chuyển khoản tay (SePay production chưa có khoá webhook)
+   CÁCH TRẢ CỌC — SePay (QR chuyển khoản, tự xác nhận) hoặc chuyển khoản tay
    ========================================================= */
 
 const formatPercent = (value) =>
@@ -164,31 +171,17 @@ const formatPercent = (value) =>
 const CONSIGNMENT_PAYMENT_OPTIONS = [
   {
     value: CONSIGNMENT_PAYMENT_METHODS.SEPAY,
-    title: "Thanh toán online qua SePay",
-    subtitle: "Quét VietQR SePay bằng ứng dụng ngân hàng để thanh toán tiền cọc.",
+    title: "Chuyển khoản qua mã QR (SePay)",
+    subtitle: "Quét mã QR bằng ứng dụng ngân hàng, hệ thống tự xác nhận khi nhận được tiền.",
     badge: "SePay",
     icon: CreditCardRoundedIcon,
     requiresDepositRate: false,
-    selectedLabel: "Thanh toán online qua SePay",
+    selectedLabel: "Chuyển khoản qua mã QR (SePay)",
     confirmLabel: "Xác nhận và thanh toán qua SePay",
     getNoteTitle: ({ depositPercent }) =>
-      `Thanh toán cọc ${formatPercent(depositPercent)} qua SePay`,
+      `Thanh toán cọc ${formatPercent(depositPercent)} qua mã QR SePay`,
     getNoteText: () =>
-      "Báo giá được xác nhận ngay khi bấm. Hệ thống sẽ mở trang quét VietQR SePay để bạn thanh toán tiền cọc.",
-  },
-  {
-    value: CONSIGNMENT_PAYMENT_METHODS.PAYOS,
-    title: "Thanh toán online qua payOS",
-    subtitle: "Quét VietQR hoặc dùng ứng dụng ngân hàng trên cổng payOS.",
-    badge: "payOS",
-    icon: CreditCardRoundedIcon,
-    requiresDepositRate: false,
-    selectedLabel: "Thanh toán online qua payOS",
-    confirmLabel: "Xác nhận và thanh toán qua payOS",
-    getNoteTitle: ({ depositPercent }) =>
-      `Thanh toán cọc ${formatPercent(depositPercent)} qua payOS`,
-    getNoteText: () =>
-      "Báo giá được xác nhận ngay khi bấm. Hệ thống tính số tiền cọc chính xác rồi chuyển bạn sang payOS; sau khi thanh toán bạn được đưa về Lịch sử ký gửi.",
+      "Báo giá được xác nhận ngay khi bấm. Hệ thống tính số tiền cọc chính xác rồi mở trang mã QR; chuyển khoản đúng nội dung trên trang, trả xong bạn được đưa về Lịch sử ký gửi.",
   },
   {
     value: CONSIGNMENT_PAYMENT_METHODS.OFFLINE,
@@ -209,7 +202,11 @@ const CONSIGNMENT_PAYMENT_OPTIONS = [
    COMPONENT
    ========================================================= */
 
-const QuotationDetail = () => {
+/**
+ * `embedded`: trang đang nằm trong tab "Báo giá & chi phí" của /orders/:orderId, nên bỏ
+ * thanh "Quay lại danh sách" và khối tiêu đề — khung trang chi tiết đơn đã vẽ rồi.
+ */
+const QuotationDetail = ({ embedded = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { orderId } = useParams();
@@ -653,7 +650,7 @@ const QuotationDetail = () => {
         ),
       );
 
-      navigate("/history/consignment", {
+      navigate(CONSIGNMENT_ORDERS_PATH, {
         replace: true,
         state: {
           quotationRejected: true,
@@ -708,7 +705,7 @@ const QuotationDetail = () => {
     if (!Object.values(CONSIGNMENT_PAYMENT_METHODS).includes(paymentMethod)) {
       AuthNotify.warning(
         "Chưa chọn phương thức",
-        "Vui lòng chọn thanh toán qua payOS hoặc chuyển khoản ngân hàng.",
+        "Vui lòng chọn thanh toán qua mã QR SePay hoặc chuyển khoản ngân hàng.",
       );
       return;
     }
@@ -719,8 +716,12 @@ const QuotationDetail = () => {
     try {
       setQuotationAction("pay");
 
-      /* payOS quay về Lịch sử ký gửi; backend tự chọn domain theo returnUrl. */
-      const redirectUrl = `${window.location.origin}/history/consignment`;
+      /* Trang QR SePay quay về Lịch sử ký gửi của đúng web đang mở. */
+      /* payOS gắn query của nó vào URL này; tab "Lịch sử giao dịch" mở sẵn phần ký gửi
+         để vòng poll trạng thái cọc chạy ngay khi khách quay về. */
+      const redirectUrl = `${window.location.origin}${paymentTabPath(
+        PAYMENT_TABS.history,
+      )}`;
 
       const result = await confirmAndPayConsignmentQuotationApi(quotationId, {
         paymentMethod,
@@ -761,14 +762,9 @@ const QuotationDetail = () => {
         return;
       }
 
-      const rawCheckoutUrl =
-        resolveSePayCheckoutUrl(result) ||
-        String(result?.checkoutUrl || "").trim();
-      const checkoutUrl = isValidExternalUrl(rawCheckoutUrl)
-        ? rawCheckoutUrl
-        : "";
+      const checkoutUrl = String(result?.checkoutUrl || "").trim();
 
-      if (!checkoutUrl) {
+      if (!isValidExternalUrl(checkoutUrl)) {
         /* Báo giá đã ACCEPTED ở backend: không ném lỗi "thất bại", chỉ hướng dẫn tiếp. */
         AuthNotify.warning(
           "Chưa mở được trang thanh toán",
@@ -787,29 +783,21 @@ const QuotationDetail = () => {
         amount: result?.amount,
       });
 
-      const gatewayLabel =
-        paymentMethod === CONSIGNMENT_PAYMENT_METHODS.SEPAY
-          ? "SePay"
-          : "payOS";
-
       AuthNotify.success(
         "Đã tạo thanh toán cọc",
-        `Đang chuyển sang ${gatewayLabel} để thanh toán ${formatMoney(result?.amount)}.`,
+        `Đang mở trang mã QR để thanh toán ${formatMoney(result?.amount)}.`,
       );
 
       window.location.assign(checkoutUrl);
     } catch (error) {
-      const isSepay = paymentMethod === CONSIGNMENT_PAYMENT_METHODS.SEPAY;
-      const gatewayName = isSepay ? "SePay" : "payOS";
-
       handleQuotationActionError(
         error,
         isOfflinePayment
           ? "Xác nhận báo giá thất bại"
-          : `Khởi tạo thanh toán ${gatewayName} thất bại`,
+          : "Khởi tạo thanh toán SePay thất bại",
         isOfflinePayment
           ? "Không thể xác nhận báo giá. Vui lòng thử lại."
-          : `Không thể mở trang thanh toán ${gatewayName}. Vui lòng thử lại.`,
+          : "Không thể mở trang thanh toán SePay. Vui lòng thử lại.",
       );
     } finally {
       setQuotationAction("");
@@ -1037,14 +1025,16 @@ const QuotationDetail = () => {
           </p>
 
           <div className="quotation-error-actions">
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<ArrowBackIcon />}
-              onClick={handleBack}
-            >
-              Quay lại
-            </Button>
+            {!embedded && (
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={<ArrowBackIcon />}
+                onClick={handleBack}
+              >
+                Quay lại
+              </Button>
+            )}
 
             <Button
               variant="contained"
@@ -1073,14 +1063,16 @@ const QuotationDetail = () => {
           </p>
 
           <div className="quotation-error-actions">
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<ArrowBackIcon />}
-              onClick={handleBack}
-            >
-              Quay lại
-            </Button>
+            {!embedded && (
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={<ArrowBackIcon />}
+                onClick={handleBack}
+              >
+                Quay lại
+              </Button>
+            )}
 
             <Button
               variant="contained"
@@ -1415,19 +1407,21 @@ const QuotationDetail = () => {
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="quotation-navigation">
-        <Button
-          variant="outlined"
-          color="inherit"
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBack}
-          className="quotation-back-button"
-        >
-          Quay lại danh sách
-        </Button>
+      {!embedded && (
+        <div className="quotation-navigation">
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBack}
+            className="quotation-back-button"
+          >
+            Quay lại danh sách
+          </Button>
 
-        <span>Theo dõi báo giá / Chi tiết</span>
-      </div>
+          <span>Theo dõi báo giá / Chi tiết</span>
+        </div>
+      )}
 
       <section className="quotation-hero" aria-label="Tổng quan báo giá">
         <div className="quotation-hero-main">
@@ -1621,7 +1615,9 @@ const QuotationDetail = () => {
             <Button
               variant="outlined"
               size="small"
-              onClick={() => navigate(`/orders/${orderId}/payments/history`)}
+              onClick={() =>
+                navigate(orderDetailPath(orderId, ORDER_TABS.payment))
+              }
             >
               Lịch sử thanh toán
             </Button>

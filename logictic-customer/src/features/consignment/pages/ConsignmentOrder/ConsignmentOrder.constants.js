@@ -10,31 +10,39 @@ export const MAX_IMAGES_PER_PACKAGE = 5;
 
 export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+/*
+ * Bốn ô số nằm cùng một hàng nên ô rất hẹp: placeholder dài kiểu "Nhập chiều rộng (tối đa
+ * 200 cm)..." bị cắt giữa chừng, khách đọc được mỗi "Nhập chiều rộng (tối đ". Vì vậy
+ * placeholder chỉ còn ví dụ số, còn giới hạn đưa lên `hint` cạnh nhãn để luôn đọc được.
+ */
 export const PACKAGE_NUMBER_FIELDS = [
   {
     field: "weight",
-    label: "CÂN NẶNG KIỆN HÀNG (KG)",
+    label: "CÂN NẶNG (KG)",
+    hint: "tối đa 3",
     tooltip: "Nhập tổng cân nặng của kiện hàng (tối đa 3 kg/kiện).",
-    placeholder: "Nhập cân nặng (tối đa 3 kg)...",
-
+    placeholder: "VD: 1.5",
   },
   {
     field: "length",
     label: "DÀI (CM)",
+    hint: "tối đa 100",
     tooltip: "Nhập chiều dài của kiện hàng (tối đa 100 cm).",
-    placeholder: "Nhập chiều dài (tối đa 100 cm)...",
+    placeholder: "VD: 40",
   },
   {
     field: "width",
     label: "RỘNG (CM)",
+    hint: "tối đa 200",
     tooltip: "Nhập chiều rộng của kiện hàng (tối đa 200 cm).",
-    placeholder: "Nhập chiều rộng (tối đa 200 cm)...",
+    placeholder: "VD: 30",
   },
   {
     field: "height",
     label: "CAO (CM)",
+    hint: "tối đa 50",
     tooltip: "Nhập chiều cao của kiện hàng (tối đa 50 cm).",
-    placeholder: "Nhập chiều cao (tối đa 50 cm)...",
+    placeholder: "VD: 20",
   },
 ];
 

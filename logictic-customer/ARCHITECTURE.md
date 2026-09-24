@@ -13,7 +13,7 @@ Năm tầng, import chỉ được chảy **một chiều, từ trên xuống**:
         app/                (App.jsx, providers/, router/)
           │
           ▼
-      features/             (auth, consignment, purchase, warehouse, …)
+      features/             (auth, orders, consignment, purchase, …)
        ├─ pages/, components/   ← chỉ tầng này là giao diện
        └─ api/                  ← RANH GIỚI DỮ LIỆU
           │
@@ -69,7 +69,8 @@ Hai nhóm lệch đang tồn tại — code mới không được thêm vào dan
    Nhiều nhất là `@features/consignment/api/consignmentApi` (trước đợt A là 19 chỗ; nay 8 chỗ trỏ
    bản thật và 10 chỗ trỏ bản sao `consignmentApi.mock` — ngoại lệ có chủ đích, xem mục 5),
    `@features/purchase/api/purchaseRequestApi` (17) và
-   `@features/warehouse/components/shared/WarehouseSharedComponents` (11). Đây là việc dọn dần:
+   `@features/orders/constants/orderPaths` (bảng đường dẫn, cố ý import sâu để không kéo theo
+   trang của module orders). Đây là việc dọn dần:
    mỗi lần chạm vào một file, đổi import của nó sang barrel. **Code mới thì bắt buộc dùng barrel
    ngay.**
 
@@ -165,10 +166,11 @@ nội dung. Ví dụ thực tế trong cây:
 
 - `blog`, `guides`, `policies` — chỉ có `pages/` (trang nội dung tĩnh).
 - `notifications` — chỉ có `api/`, không có trang nào; layout gọi vào.
-- `delivery` — có `api/` và `components/`, không sở hữu route nào.
-- `warehouse` — module lớn nhất: `api/`, `components/` (có cả `components/shared/` dùng chung
-  giữa các trang kho), `constants/`, `pages/` và một barrel riêng ở `pages/index.js`, cộng thêm
-  `styles/WarehouseTracking.css` dùng chung cho nhiều trang kho.
+- `delivery`, `incidents`, `receiving`, `settlement`, `tracking` — có `api/` và `components/`,
+  các khối của chúng được lắp vào tab của `/orders/:orderId` chứ không sở hữu route dashboard.
+- `orders` — module điều hướng: `constants/orderPaths.js` (bảng URL cấp feature) và ba trang
+  `CreateOrder`, `OrderList`, `OrderDetail`. Không sở hữu nghiệp vụ nào, chỉ bố cục và điều hướng.
+- `warehouse` — **đã xoá** (khách không vận hành kho).
 
 Quy ước file bên trong `pages/` và `components/`: **một thư mục cho một component**, chứa
 `Component.jsx` và `Component.css` nằm cạnh nhau, JSX import CSS bằng `./Component.css`. CSS đi
@@ -194,12 +196,16 @@ paths.js  ──►  publicRoutes.jsx  ──┐
 Route tĩnh là chuỗi. Route có tham số là **hàm với giá trị mặc định là chính pattern**:
 
 ```js
-consignmentDetail: (orderId = ":orderId") => `/consignments/${orderId}`,
+orderDetail: (orderId = ":orderId", tab = DEFAULT_ORDER_DETAIL_TAB) =>
+  `/orders/${orderId}/${tab}`,
 ```
 
-Nhờ vậy một khai báo phục vụ được cả hai phía: `<Route path={D.consignmentDetail()} />` khi định
-nghĩa route, và `navigate(ROUTES.consignmentDetail(order.id))` khi điều hướng. Đổi URL ở
-`paths.js` là đổi cả hai cùng lúc.
+Nhờ vậy một khai báo phục vụ được cả hai phía: `<Route path={D.orderDetail(":orderId", ":tab")} />`
+khi định nghĩa route, và `navigate(ROUTES.orderDetail(order.id, ORDER_DETAIL_TABS.quotation))` khi
+điều hướng. Đổi URL ở `paths.js` là đổi cả hai cùng lúc.
+
+Ngoài `PUBLIC_ROUTES` / `DASHBOARD_ROUTES` còn `LEGACY_DASHBOARD_ROUTES`: bảng URL của IA cũ, chỉ
+dùng để khai báo route chuyển hướng. **Không thêm mục mới vào bảng đó.**
 
 **Bước 2 — hai file route.** Mỗi file export một React fragment chứa các `<Route>`, import trang
 bằng alias `@features/...` và lấy URL từ `paths.js` (đặt bí danh `P` cho public, `D` cho
@@ -229,8 +235,8 @@ tự dựng layout riêng (nhiều trang tự import `SiteHeader` + `HomeFooter`
 `useLocation().pathname` rồi tra bảng `PAGE_META` (khớp bằng `pathname.includes(match)`) để ra tiêu
 đề và mô tả. Nghĩa là **thêm route dashboard mới mà quên thêm mục vào `PAGE_META` thì header sẽ
 hiện tiêu đề mặc định "HỆ THỐNG VIETNAM LOGISTICS"** — không lỗi, chỉ sai chữ. `PAGE_META` được
-duyệt theo thứ tự và lấy mục khớp đầu tiên, nên đường dẫn cụ thể (`/create-order/consignment`)
-phải đứng **trước** đường dẫn bao hàm nó (`/create-order`).
+duyệt theo thứ tự và lấy mục khớp đầu tiên, nên đường dẫn cụ thể (`/orders/mua-ho`) phải đứng
+**trước** đường dẫn bao hàm nó (`/orders/`).
 
 **Không có route guard.** Không có `<ProtectedRoute>` nào trong cây. Việc chặn xảy ra ở tầng HTTP:
 API thật trả 401 body rỗng (JWT bị từ chối) thì interceptor của `httpClient` dọn phiên như nút
@@ -488,17 +494,16 @@ Lưu ý: `/` render `LogisticsIntro`, còn trang chủ đầy đủ nằm ở `/
 
 ### Route dashboard (bọc trong `MainLayout`)
 
+Menu chỉ còn **8 mục phẳng**, không nhóm gập: Bảng điều khiển · Tạo đơn · Đơn ký gửi ·
+Đơn mua hộ · Thanh toán · Trò chuyện với CSKH · Cấu hình tài khoản · Chính sách dịch vụ.
+
 | Feature | Route |
 | --- | --- |
-| `dashboard` | `/customer/dashboard` |
-| `orders` | `/create-order` (màn chọn loại dịch vụ) |
-| `consignment` | `/create-order/consignment`, `/processing-orders`, `/consignments/:orderId`, `/check-orders`, `/quotations/:orderId` |
-| `purchase` | `/create-order/buy-orders`, `/processing-orders/purchase-requests`, `/processing-orders/purchase-requests/:requestId`, `/check-orders/buy-on-behalf`, `/check-orders/buy-on-behalf/:requestId` |
-| `tracking` | `/tracking`, `/tracking/:orderId` (Theo dõi đơn: hành trình, giữ hàng, giấy phép, chọn hướng kiện, tất toán, phí lưu kho, đặt giao, sự cố/khiếu nại, đã nhận hàng) |
-| `settlement` | `/payment` |
-| `history` | `/history/consignment`, `/history/buy-on-behalf`, `/history/buy-order`, `/transaction-history` |
-| `payment` | `/orders/:orderId/payments/history`, `/history/buy-on-behalf/:requestId/payments`, `/history/buy-order/:requestId/payments`, `/purchase-requests/:requestId/payments/history`, `/purchase-requests/:requestId/payments` |
-| `warehouse` | `/warehouse/checkin`, `/warehouse/inventory`, `/warehouse/purchase-detail/:id`, `/warehouse/customs` (chỉ còn phần mua hộ) |
+| `dashboard` | `/customer/dashboard` — "việc cần làm": 3 thẻ đếm (báo giá chờ xác nhận · khoản chờ trả · đơn chờ xác nhận đã nhận), bấm vào mở danh sách đã lọc sẵn |
+| `orders` | `/create-order/:tab` (một trang, chuyển đổi `ky-gui` / `mua-ho`), `/orders/ky-gui`, `/orders/mua-ho` (cùng một component `OrderList`, khoá sẵn loại đơn), `/orders/:orderId/:tab` (chi tiết đơn ký gửi, 5 tab) |
+| `consignment` | không sở hữu route: `ConsignmentOrder` nhúng trong `/create-order/ky-gui`; `QuotationDetail` là tab `bao-gia`; `ConsignmentListDetail` là tab `kien-kho` |
+| `purchase` | `/orders/mua-ho/:requestId`, `/orders/mua-ho/:requestId/bao-gia`; `ConsignmentBuyOrder` nhúng trong `/create-order/mua-ho` |
+| `payment` | `/payment/:tab` — `can-thanh-toan` (nội dung từ `settlement`) và `lich-su` (nội dung từ `history`); `OrderPaymentHistory` là tab `thanh-toan` của một đơn |
 | `chat` | `/customer-service-chat` |
 | `profile` | `/settings/profile-config` |
 | `service-policy` | `/settings/chinh-sach-dich-vu` |
@@ -507,17 +512,51 @@ Lưu ý: `/` render `LogisticsIntro`, còn trang chủ đầy đủ nằm ở `/
 
 ### Feature không sở hữu route nào
 
-`delivery` (`api/` + `components/DeliveryTrackingCard`) và `notifications` (chỉ `api/`) tồn tại để
-feature khác và `layouts/` dùng lại. Đừng đi tìm route của chúng.
+`settlement`, `history`, `tracking`, `delivery`, `incidents`, `receiving` và `notifications` chỉ
+cung cấp trang/khối được lắp vào các tab ở trên. Đừng đi tìm route của chúng.
 
-### Vài route dùng chung một component
+### Năm tab của `/orders/:orderId`
 
-Có thật trong `dashboardRoutes.jsx`, không phải nhầm:
+| Tab | Nội dung lắp từ |
+| --- | --- |
+| `hanh-trinh` | `TrackingStageBar` + `ExportHoldCard` + `OrderDeliveryCard` + `DeliveryTrackingCard` + `TrackingJourney` + `OrderTimelineCard` |
+| `bao-gia` | `QuotationDetail` (prop `embedded`) — còn chờ khách duyệt thì nút xác nhận / từ chối nằm ngay đây |
+| `thanh-toan` | `SettlementPreviewCard` + `StorageFeeCard` + `OrderPaymentHistory` (prop `embedded`) |
+| `kien-kho` | `ConsignmentListDetail` (prop `embedded`, kèm `ReceivingNoteCard`) + `ParcelHandlingCard` |
+| `su-co` | `OrderIncidentsCard` + `OrderPermitCard` |
 
-- `/warehouse/checkin` và `/warehouse/inventory` cùng render `CheckinNhapKho`.
-- (đã xoá cùng các màn kho ký gửi mock: `/warehouse/receipts*`, `/warehouse/storage`, `/warehouse/export`, `/warehouse/inventory/:shipmentId`, `/warehouse/consignment-detail/:id`, `/warehouse/delivery/:orderId`, `/receive-goods`)
-  (trang tự đọc param để quyết định hiện danh sách hay chi tiết).
-- `/history/buy-on-behalf` và `/history/buy-order` cùng render `BuyOrderHistoryList`.
-- Bốn route thanh toán mua hộ (`buyOnBehalfPaymentHistory`, `buyOrderPaymentHistory`,
-  `purchaseRequestPaymentHistory`, `purchaseRequestPayments`) đều render `BuyOrderPaymentHistory`
-  — là các URL cũ được giữ lại để link cũ không chết.
+Tab `hanh-trinh` và `su-co` **tự ẩn** khi đơn chưa có hành trình (chưa vào kho nguồn); URL trỏ
+vào tab đang ẩn sẽ `Navigate` sang tab đầu tiên còn hiện.
+
+### Chuyển hướng URL cũ (`LEGACY_DASHBOARD_ROUTES`)
+
+Mọi URL của IA cũ đều còn sống dưới dạng `Navigate ... replace`, để link trong email, thông báo
+đẩy và bookmark của khách không chết. Bảng ở `paths.js`; các chuyển hướng cần đọc tham số nằm ở
+`src/app/router/redirects.jsx`.
+
+| URL cũ | Đi đâu |
+| --- | --- |
+| `/consignments/:orderId` | `/orders/:orderId/kien-kho` |
+| `/quotations/:orderId` | `/orders/:orderId/bao-gia` |
+| `/tracking/:orderId` | `/orders/:orderId/hanh-trinh` |
+| `/orders/:orderId/payments/history` | `/orders/:orderId/thanh-toan` |
+| `/processing-orders`, `/tracking` | `/orders/ky-gui` |
+| `/check-orders` | `/orders/ky-gui?stage=cho-bao-gia` |
+| `/history/consignment` | `/payment/lich-su` **giữ nguyên query** — payOS trả khách về URL này |
+| `/processing-orders/purchase-requests` | `/orders/mua-ho` |
+| `/check-orders/buy-on-behalf` | `/orders/mua-ho?stage=cho-bao-gia` |
+| `/history/buy-on-behalf`, `/history/buy-order` | `/orders/mua-ho?stage=hoan-tat` |
+| `/processing-orders/purchase-requests/:id`, `/warehouse/purchase-detail/:id` | `/orders/mua-ho/:id` |
+| `/check-orders/buy-on-behalf/:id` | `/orders/mua-ho/:id/bao-gia` |
+| `/transaction-history`, `/history/**/payments`, `/purchase-requests/:id/payments*` | `/payment/lich-su` |
+| `/create-order/consignment`, `/create-order/buy-orders` | `/create-order/ky-gui`, `/create-order/mua-ho` |
+| `/warehouse/checkin`, `/warehouse/inventory`, `/warehouse/customs` | `/orders/mua-ho` |
+
+### Màn đã xoá hẳn
+
+Feature `warehouse` phía khách (`CheckinNhapKho`, `ThongQuanVn`, `MuaHoDetail`, `MuaHoTracking*`,
+`WarehouseShared*`) — khách không vận hành kho, phần kiện/kho của đơn nằm ở tab `kien-kho`.
+Cùng với đó: `ConsignmentList`, `ConsignmentListCheck`, `PurchaseRequestPendingList`,
+`BuyForMeQuotationList` (bốn danh sách nhập vào `OrderList`), `OrderTrackingList`,
+`OrderTrackingDetail`, `OrderJourneyCard` (nhập vào `/orders/ky-gui` và tab `hanh-trinh`),
+`BuyOrderPaymentHistory` (nhập vào `/payment/lich-su`).

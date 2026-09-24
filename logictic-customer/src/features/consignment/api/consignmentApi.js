@@ -928,10 +928,9 @@ export const rejectConsignmentQuotationApi = async (
   }
 };
 
-/* Phương thức thanh toán cọc ký gửi: SePay (mặc định), payOS, hoặc chuyển khoản tay. */
+/* Khách trả cọc qua SePay (QR chuyển khoản, webhook tự xác nhận) hoặc chuyển khoản tay. */
 export const CONSIGNMENT_PAYMENT_METHODS = Object.freeze({
   SEPAY: "SEPAY",
-  PAYOS: "PAYOS",
   OFFLINE: "OFFLINE",
 });
 
@@ -939,8 +938,8 @@ export const CONSIGNMENT_PAYMENT_METHODS = Object.freeze({
  * PUT /api/quotations/{quotationId}/confirm-and-pay { paymentMethod, returnUrl, cancelUrl }
  * → { message, data: ConfirmQuotationPaymentResponse } — hàm trả `data`.
  *
- * - PAYOS: data.checkoutUrl là link payOS; payOS quay về /history/consignment
- *   (backend tự chọn domain, bỏ qua returnUrl/cancelUrl ngoài việc dò localhost).
+ * - SEPAY: data.checkoutUrl là trang QR SePay của backend; trả xong trang tự quay về
+ *   /payment/lich-su của đúng web đã mở nó.
  * - OFFLINE: checkoutUrl null, paymentStatus PENDING_RECONCILIATION (chờ Admin đối soát).
  * - Tỷ lệ cọc 0%: amount 0, orderCode 0, paymentStatus PAID.
  * Số tiền (amount, depositRate, totalBillAmount) luôn lấy từ đây, FE không tự tính.

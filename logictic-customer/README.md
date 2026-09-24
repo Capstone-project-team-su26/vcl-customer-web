@@ -22,6 +22,27 @@
 Ngoài phần đăng nhập còn có toàn bộ mặt tiền công khai: trang giới thiệu, bảng giá, chính sách,
 hướng dẫn, blog, tra cứu đơn và khung chat CSKH.
 
+### Điều hướng sau đăng nhập
+
+Menu **8 mục phẳng**, không nhóm gập:
+
+| Mục menu | URL | Nội dung |
+| --- | --- | --- |
+| Bảng điều khiển | `/customer/dashboard` | "Việc cần làm": 3 thẻ đếm (báo giá chờ xác nhận · khoản chờ trả · đơn chờ xác nhận đã nhận), bấm vào mở danh sách đã lọc sẵn |
+| Tạo đơn | `/create-order/ky-gui`, `/create-order/mua-ho` | Một trang, đổi loại đơn ngay tại chỗ |
+| Đơn ký gửi | `/orders/ky-gui` | Chip lọc giai đoạn + ô tìm mã đơn; mỗi dòng nêu rõ việc khách cần làm |
+| Đơn mua hộ | `/orders/mua-ho` | Cùng component danh sách, khoá sẵn loại đơn |
+| Thanh toán | `/payment/can-thanh-toan`, `/payment/lich-su` | Khoản đang chờ trả và lịch sử giao dịch |
+| Trò chuyện với CSKH | `/customer-service-chat` | |
+| Cấu hình tài khoản | `/settings/profile-config` | |
+| Chính sách dịch vụ | `/settings/chinh-sach-dich-vu` | |
+
+**Một đơn ký gửi = một trang, năm tab**: `/orders/:orderId/:tab` với `tab` ∈ `hanh-trinh` ·
+`bao-gia` · `thanh-toan` · `kien-kho` · `su-co` (mặc định `hanh-trinh`). Toàn bộ URL của IA cũ
+(`/processing-orders`, `/check-orders`, `/tracking`, `/consignments/:id`, `/quotations/:id`,
+`/history/*`, `/transaction-history`, `/warehouse/*`…) đều chuyển hướng sang chỗ mới — bảng đầy đủ
+ở [`ARCHITECTURE.md`](./ARCHITECTURE.md) mục 6.
+
 Stack: **React 19 + Vite 8, JavaScript thuần** (không TypeScript), `react-router-dom` v7,
 Ant Design + MUI, `axios` cho các module đã nối backend; phần chưa nối đọc `src/mocks/`.
 
@@ -73,7 +94,7 @@ nằm trong `.gitignore`; chỉ `.env.example` được commit. Sau khi sửa `.
 `npm run dev` — Vite chỉ đọc biến môi trường lúc khởi động.
 
 Deploy dạng SPA: `vercel.json` rewrite mọi đường dẫn về `/index.html`, nếu không thì
-truy cập thẳng vào một URL con (ví dụ `/check-orders`) sẽ ra 404 của hosting.
+truy cập thẳng vào một URL con (ví dụ `/orders/ky-gui`) sẽ ra 404 của hosting.
 
 ---
 
@@ -127,15 +148,18 @@ vcl-customer-ui/
 │  ├─ migrate.mjs             Script một lần đã chuyển cây cũ sang cây này; không chạy khi phát triển
 │  ├─ verify-mocks.mjs        Kiểm hợp đồng export + module còn mock không gọi mạng (npm run verify:mocks)
 │  ├─ verify-api.mjs          Kiểm offline module đã nối API thật, chặn mọi request mạng (npm run verify:api)
-│  └─ api-contract.json       Hợp đồng export của 23 module api/ (106 tên, cờ realApi) — đầu vào của verify-mocks
+│  └─ api-contract.json       Hợp đồng export của 26 module api/ (158 tên, cờ realApi) — đầu vào của verify-mocks
 └─ src/
    ├─ main.jsx                Mount React, nạp @shared/styles/fonts.css
    ├─ app/                    Tầng "ứng dụng": chỉ lắp ráp, không chứa logic nghiệp vụ
    │  ├─ App.jsx              AppProviders bọc AppRouter
    │  ├─ providers/           Provider cấp app (Google OAuth, antd ConfigProvider, MUI Theme)
-   │  ├─ router/              paths.js, publicRoutes.jsx, dashboardRoutes.jsx, AppRouter.jsx
+   │  ├─ router/              paths.js, publicRoutes.jsx, dashboardRoutes.jsx, redirects.jsx,
+   │  │                       AppRouter.jsx
    │  └─ pages/               Trang thuộc về khung app, không thuộc feature nào (NotFound)
-   ├─ features/               Mỗi thư mục con là một mảng nghiệp vụ (auth, consignment, purchase, …)
+   ├─ features/               Mỗi thư mục con là một mảng nghiệp vụ (auth, orders, consignment,
+   │                          purchase, …). `orders` là module điều hướng: tạo đơn, danh sách
+   │                          đơn và trang chi tiết đơn chia tab
    ├─ layouts/                Khung dùng chung: MainLayout, Sidebar, SiteHeader, HomeFooter,
    │                          HeroCarousel, NotificationPanel
    ├─ mocks/                  Dữ liệu mẫu cho phần chưa nối backend (xem src/mocks/README.md)
@@ -285,8 +309,9 @@ axios**. Lỗi HTTP thì ném **nguyên dạng axios** để component đọc `e
 ### Đợt C (18/09/2026) — xuất kho → hàng về Việt Nam (phía khách): ĐÃ NỐI
 
 Tài liệu: `vcl-migration/huong-dan-ghep-api/api-xuat-kho.md` (J, K, L) và `api-hang-ve-viet-nam.md`
-(B–H). Màn chính: **Theo dõi đơn hàng** `/tracking` (danh sách) và `/tracking/:orderId` (một cửa cho
-mọi việc của khách sau khi hàng tới kho).
+(B–H). Từ đợt gộp IA, các màn này không còn URL riêng: danh sách theo dõi nhập vào **Đơn ký gửi**
+`/orders/ky-gui`, còn mọi việc của khách sau khi hàng tới kho nằm trong năm tab của
+`/orders/:orderId` (`hanh-trinh` · `bao-gia` · `thanh-toan` · `kien-kho` · `su-co`).
 
 | Module | API thật |
 | --- | --- |
@@ -307,7 +332,9 @@ mọi việc của khách sau khi hàng tới kho).
 `/warehouse/delivery/:orderId`, `/warehouse/receipts*`, `/receive-goods` (dựng trên
 `GET /api/delivery-requests` chỉ dành cho nhân viên), `receivingNoteApi.mock.js` và fixture
 `inventories`, `warehouseReleases`, `deliveryRequests`, `deliveryTracking`, `parcelTracking`,
-`receivingNotes`, `payments`. `/warehouse/checkin` và `/warehouse/customs` chỉ còn phần mua hộ.
+`receivingNotes`, `payments`. Đợt gộp IA xoá nốt phần còn lại của feature `warehouse`
+(`/warehouse/checkin`, `/warehouse/inventory`, `/warehouse/customs`, `/warehouse/purchase-detail/:id`):
+khách không vận hành kho, thông tin kiện/kho của đơn nằm ở tab `kien-kho`.
 
 ### Đợt A (17/09/2026) — đăng nhập và đơn ký gửi: ĐÃ NỐI
 
@@ -454,12 +481,10 @@ grep -rn "@/mocks" src/ | grep -v "^src/mocks/"     # phải không còn kết q
 
 ### `src/shared/api/requestCancel.js`
 
-File này ra đời để thay `axios.isCancel`. Sáu file vẫn viết `axios.isCancel(err)` nhưng import từ
+File này ra đời để thay `axios.isCancel`. Bốn file vẫn viết `axios.isCancel(err)` nhưng import từ
 `@shared/api/requestCancel` (default export có hình dạng `{ isCancel }`):
 
 ```
-src/features/consignment/pages/ConsignmentList/ConsignmentList.jsx
-src/features/consignment/pages/ConsignmentListCheck/ConsignmentListCheck.helpers.js
 src/features/consignment/pages/ConsignmentListDetail/ConsignmentListDetail.jsx
 src/features/consignment/pages/QuotationDetail/QuotationDetail.helpers.js
 src/features/history/pages/ConsignmentHistoryList/ConsignmentHistoryList.jsx

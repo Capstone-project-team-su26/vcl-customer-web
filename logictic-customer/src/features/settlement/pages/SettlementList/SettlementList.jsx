@@ -18,7 +18,11 @@ import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
 import { getAwaitingSettlementApi } from "@features/settlement/api/settlementApi";
 /* Import sâu có chủ đích: barrel payment / tracking kéo theo trang khác (thứ tự CSS). */
 import { openCheckout } from "@features/payment/utils/openCheckout";
-import { orderTrackingDetailPath } from "@features/tracking/constants/trackingPaths";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import {
+  ORDER_TABS,
+  orderDetailPath,
+} from "@features/orders/constants/orderPaths";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 
@@ -181,14 +185,14 @@ export default function SettlementList() {
                       {order.orderType === "PURCHASE" ? (
                         <Button
                           variant="outlined"
-                          onClick={() => navigate(`/orders/${order.orderId}/payments/history`)}
+                          onClick={() => navigate(orderDetailPath(order.orderId, ORDER_TABS.payment))}
                         >
                           Xem lịch sử thanh toán
                         </Button>
                       ) : (
                         <Button
                           variant="outlined"
-                          onClick={() => navigate(orderTrackingDetailPath(order.orderId))}
+                          onClick={() => navigate(orderDetailPath(order.orderId, ORDER_TABS.payment))}
                         >
                           Xem trước tất toán
                         </Button>

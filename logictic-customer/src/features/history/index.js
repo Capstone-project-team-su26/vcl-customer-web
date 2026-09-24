@@ -4,9 +4,9 @@
 // thư mục api riêng. Gom về một cửa ngõ để router chỉ phụ thuộc tên trang,
 // còn cấu trúc thư mục bên trong vẫn tự do thay đổi.
 
-// Các trang gắn trực tiếp vào route, đặt tên theo tên component để tra cứu ở router cho nhanh.
-// Hai trang danh sách nhận prop defaultStatus nên vừa dùng làm route độc lập,
-// vừa nhúng lại được bên trong tab lịch sử giao dịch.
+// TransactionHistoryTabs nay là nội dung tab "Lịch sử giao dịch" của /payment chứ không
+// còn route riêng; hai trang danh sách bên dưới chỉ còn sống bên trong nó (khoá sẵn
+// defaultStatus="COMPLETED"). Các route /history/* cũ đã chuyển hướng về /orders.
 export { default as BuyOrderHistoryList } from "./pages/BuyOrderHistoryList/BuyOrderHistoryList";
 export { default as ConsignmentHistoryList } from "./pages/ConsignmentHistoryList/ConsignmentHistoryList";
 export { default as TransactionHistoryTabs } from "./pages/TransactionHistoryTabs/TransactionHistoryTabs";

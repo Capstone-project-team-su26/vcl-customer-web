@@ -19,15 +19,13 @@ import {
 import { getConsignmentStatusesApi } from "@features/consignment/api/consignmentStatusApi";
 import { getOrderStatusLabel } from "@features/consignment/constants/orderStatus";
 import pricingRuleService from "@features/pricing/api/pricingRuleService";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import { CONSIGNMENT_ORDERS_PATH } from "@features/orders/constants/orderPaths";
 
 import ConsignmentListDetailUI from "@features/consignment/components/ConsignmentListDetailUI/ConsignmentListDetailUI";
+/* Import sâu có chủ đích (không qua barrel): barrel receiving kéo theo bản dựng chứng từ,
+   làm đổi thứ tự nạp CSS toàn app (ARCHITECTURE mục 4). */
 import ReceivingNoteCard from "@features/receiving/components/ReceivingNoteCard/ReceivingNoteCard";
-import DeliveryTrackingCard from "@features/delivery/components/DeliveryTrackingCard/DeliveryTrackingCard";
-import OrderTimelineCard from "@features/consignment/components/OrderTimelineCard/OrderTimelineCard";
-/* Import sâu có chủ đích (không qua barrel): barrel tracking / delivery kéo theo trang của
-   module đó, làm đổi thứ tự nạp CSS toàn app (ARCHITECTURE mục 4). */
-import OrderJourneyCard from "@features/tracking/components/OrderJourneyCard/OrderJourneyCard";
-import ParcelHandlingCard from "@features/delivery/components/ParcelHandlingCard/ParcelHandlingCard";
 
 import {
   HIDDEN_ADDITIONAL_SERVICE_CODES,
@@ -118,7 +116,12 @@ const copyTextToClipboard = async (text) => {
   }
 };
 
-const ConsignmentListDetail = () => {
+/**
+ * Phần "kiện & kho" của một đơn ký gửi: dòng hàng, kiện, cấu hình đóng gói và phiếu tiếp
+ * nhận kho. Trang này luôn được nhúng trong tab "Kiện & kho" của /orders/:orderId, nên
+ * `embedded` mặc định bật: hành trình, dòng thời gian và chặng giao nằm ở tab khác.
+ */
+const ConsignmentListDetail = ({ embedded = true }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { orderId } = useParams();
@@ -680,7 +683,7 @@ const ConsignmentListDetail = () => {
         "Đơn ký gửi đã được hủy và chuyển vào lịch sử.",
       );
 
-      navigate("/history/consignment", {
+      navigate(CONSIGNMENT_ORDERS_PATH, {
         replace: true,
         state: {
           refresh: true,
@@ -1479,6 +1482,7 @@ const ConsignmentListDetail = () => {
   return (
     <>
     <ConsignmentListDetailUI
+      embedded={embedded}
       loading={loading}
       consignment={consignment}
       customer={customer}
@@ -1549,14 +1553,6 @@ const ConsignmentListDetail = () => {
     />
     {/* Phiếu tiếp nhận kho: tự ẩn khi đơn chưa có phiếu, nên đặt thẳng ở đây được. */}
     <ReceivingNoteCard orderId={consignment?.orderId || consignment?.id || orderId} />
-    {/* Hành trình thật (chặng, chuyến, ngày dự kiến) + lối vào màn Theo dõi đơn; tự ẩn khi
-        đơn chưa có hàng ở kho. */}
-    <OrderJourneyCard orderId={consignment?.orderId || consignment?.id || orderId} />
-    {/* Chọn giao ngay / gửi kho VN cho TỪNG kiện (lựa chọn lúc tạo đơn chỉ là mặc định cả
-        đơn); tự ẩn khi đơn chưa có kiện. */}
-    <ParcelHandlingCard orderId={consignment?.orderId || consignment?.id || orderId} />
-    <OrderTimelineCard orderId={consignment?.orderId || consignment?.id || orderId} />
-    <DeliveryTrackingCard orderId={consignment?.orderId || consignment?.id || orderId} />
     </>
   );
 };

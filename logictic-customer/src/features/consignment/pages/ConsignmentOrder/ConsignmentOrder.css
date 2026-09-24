@@ -3447,3 +3447,382 @@
 }
 
 
+
+/* =====================================================
+   GIỚI HẠN ĐƠN HÀNG + GỢI Ý TRÊN NHÃN
+   Mục đích: khách thấy trần TRƯỚC khi khai, và thấy sai NGAY khi gõ —
+   thay vì khai xong, bấm gửi rồi mới bị đẩy ngược lên sửa.
+===================================================== */
+
+.order-limit-bar {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1.1rem;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.order-limit-bar__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.order-limit-bar__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.order-limit-bar__item strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.order-limit-bar__track {
+  height: 5px;
+  border-radius: 999px;
+  background: #eef2f7;
+  overflow: hidden;
+}
+
+.order-limit-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #2563eb;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+/* Gần chạm trần: vàng. Vượt trần: đỏ và số cũng đổi màu để không cần đọc thanh. */
+.order-limit-bar__item--near .order-limit-bar__fill {
+  background: #f59e0b;
+}
+
+.order-limit-bar__item--near strong {
+  color: #b45309;
+}
+
+.order-limit-bar__item--over .order-limit-bar__fill {
+  background: #dc2626;
+}
+
+.order-limit-bar__item--over strong {
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .order-limit-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Nhãn + giới hạn nằm cùng một dòng, giới hạn đẩy sang phải và luôn đọc được. */
+.field-label-with-hint {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.field-label-with-hint > .field-label,
+.field-label-with-hint > .package-dimension-label,
+.field-label-with-hint > *:first-child {
+  min-width: 0;
+}
+
+.field-limit-hint {
+  flex: 0 0 auto;
+
+  padding: 1px 7px;
+  border-radius: 999px;
+
+  background: #f1f5f9;
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Ô đang sai thì viền đỏ — bảng giới hạn cạnh nhãn cũng chuyển đỏ theo cho khớp. */
+.input-field-group:has(.input-has-error) .field-limit-hint {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Bốn ô kích thước: giữ 4 cột nhưng không để ô nào hẹp dưới 96px (placeholder bị cắt). */
+@media (min-width: 769px) {
+  .form-row-4col {
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  }
+}
+
+/* =====================================================
+   THANG ĐO THỐNG NHẤT CHO MỌI Ô NHẬP  (đặt cuối file để thắng các rule cũ)
+
+   Trước đây mỗi khối khai một cỡ riêng: "Tên sản phẩm / Loại hàng hóa" cao 48px bo 12px,
+   "Số lượng / Giá trị / Kích thước" cao 40px bo 8px, form thêm địa chỉ cao 42px bo 11px.
+   Ba cỡ nằm cạnh nhau trong cùng một màn nên nhìn cao thấp so le. Ở đây khai MỘT thang đo
+   và ép mọi ô theo nó; muốn đổi cỡ toàn màn thì sửa đúng mấy biến dưới.
+===================================================== */
+
+.consignment-container {
+  --control-height: 44px;
+  --control-radius: 10px;
+  --control-padding-x: 14px;
+  --control-font-size: 13.5px;
+  --control-border: #e2e8f0;
+  --control-border-hover: #cbd5e1;
+  --control-border-focus: #2563eb;
+  --label-font-size: 11.5px;
+  --field-gap: 6px;
+  --grid-gap: 14px;
+}
+
+.consignment-container .custom-input,
+.consignment-container .custom-select,
+.consignment-container .custom-textarea,
+.consignment-container .consignment-package-card .product-main-control,
+.consignment-container .add-address-inline-form .custom-input,
+.consignment-container .add-address-inline-form .custom-select,
+.consignment-container .static-display-box {
+  border-radius: var(--control-radius);
+  border: 1px solid var(--control-border);
+  font-size: var(--control-font-size);
+  font-weight: 500;
+  line-height: 1.45;
+  box-shadow: none;
+}
+
+.consignment-container .custom-input,
+.consignment-container .custom-select,
+.consignment-container .consignment-package-card .product-main-control,
+.consignment-container .add-address-inline-form .custom-input,
+.consignment-container .add-address-inline-form .custom-select {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding-inline: var(--control-padding-x);
+}
+
+.consignment-container .consignment-package-card select.product-main-control,
+.consignment-container .custom-select {
+  padding-right: 38px;
+}
+
+.consignment-container .custom-textarea {
+  padding: 11px var(--control-padding-x);
+  min-height: 96px;
+}
+
+.consignment-container .static-display-box {
+  min-height: var(--control-height);
+  padding: 10px var(--control-padding-x);
+  background-color: #f8fafc;
+}
+
+/* Một kiểu hover / focus duy nhất, không còn ô thì viền cam ô thì viền xanh. */
+.consignment-container .custom-input:hover:not(:disabled),
+.consignment-container .custom-select:hover:not(:disabled),
+.consignment-container .custom-textarea:hover:not(:disabled),
+.consignment-container .consignment-package-card .product-main-control:hover:not(:disabled),
+.consignment-container .add-address-inline-form .custom-input:hover:not(:disabled),
+.consignment-container .add-address-inline-form .custom-select:hover:not(:disabled) {
+  border-color: var(--control-border-hover);
+  background-color: #ffffff;
+}
+
+.consignment-container .custom-input:focus,
+.consignment-container .custom-select:focus,
+.consignment-container .custom-textarea:focus,
+.consignment-container .consignment-package-card .product-main-control:focus,
+.consignment-container .add-address-inline-form .custom-input:focus,
+.consignment-container .add-address-inline-form .custom-select:focus {
+  border-color: var(--control-border-focus);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Ô sai: viền đỏ cùng độ dày, cùng vòng sáng — không dùng nền đỏ để đỡ rối mắt. */
+.consignment-container .custom-input.input-has-error,
+.consignment-container .custom-select.input-has-error,
+.consignment-container .custom-textarea.input-has-error,
+.consignment-container .consignment-package-card .product-main-control.input-has-error,
+.consignment-container .static-display-box.input-has-error {
+  color: inherit;
+  border-color: #ef4444 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.consignment-container .custom-input.input-has-error:focus,
+.consignment-container .custom-select.input-has-error:focus,
+.consignment-container .custom-textarea.input-has-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+
+/* Nhãn: một cỡ, một kiểu chữ, cho cả cột trái lẫn thẻ kiện hàng. */
+.consignment-container .field-label,
+.consignment-container .add-address-inline-form .field-label,
+.consignment-container .package-dimension-label,
+.consignment-container .product-main-label {
+  font-size: var(--label-font-size);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.consignment-container .small-input {
+  font-size: var(--control-font-size) !important;
+}
+
+.consignment-container .custom-input::placeholder,
+.consignment-container .custom-textarea::placeholder,
+.consignment-container .consignment-package-card input.product-main-control::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Khoảng cách đều giữa nhãn - ô - lỗi, và giữa các ô trong cùng một hàng. */
+.consignment-container .input-field-group {
+  gap: var(--field-gap);
+}
+
+.consignment-container .form-row-2col,
+.consignment-container .form-row-4col {
+  gap: var(--grid-gap);
+  margin-bottom: var(--grid-gap);
+}
+
+@media (max-width: 768px) {
+  .consignment-container {
+    --control-height: 42px;
+    --control-font-size: 13px;
+  }
+}
+
+/* =====================================================
+   THANG ĐO KHUNG  (đặt cuối file để thắng các rule cũ)
+
+   Các khung trước đây mỗi cái một cỡ: thẻ kiện hàng padding 32px, hộp cột trái 20px,
+   bo góc chỗ 20px chỗ 18px, khoảng cách giữa các thẻ lúc 24px lúc 20px do viết thẳng
+   style vào JSX. Gom hết về một bộ biến, sửa một chỗ là cả màn đổi theo.
+===================================================== */
+
+.consignment-container {
+  --card-padding: 22px;
+  --card-radius: 18px;
+  --card-border-width: 1.5px;
+  --card-border-color: #fde68a;
+  --section-gap: 16px;
+}
+
+.consignment-container .form-main-card,
+.consignment-container .left-unified-wrapper-box {
+  border: var(--card-border-width) solid var(--card-border-color);
+  border-radius: var(--card-radius);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.consignment-container .form-main-card {
+  padding: var(--card-padding);
+}
+
+/* Hộp cột trái không tự padding — mỗi mục con bên trong mới padding, nếu không sẽ lồng hai lớp. */
+.consignment-container .left-unified-wrapper-box {
+  padding: 0;
+}
+
+.consignment-container .left-inner-section {
+  padding: var(--card-padding);
+}
+
+.consignment-container .consignment-layout-grid,
+.consignment-container .layout-left-fixed-sidebar {
+  gap: var(--section-gap);
+}
+
+/* Khoảng cách giữa các thẻ: trước viết thẳng vào JSX nên mỗi thẻ một kiểu. */
+.consignment-container .consignment-package-card,
+.consignment-container .consignment-general-note-card {
+  margin-bottom: var(--section-gap);
+}
+
+.consignment-container .consignment-general-note-card {
+  margin-top: var(--section-gap);
+}
+
+.consignment-container .field-block-spaced {
+  margin-bottom: var(--section-gap);
+}
+
+.consignment-container .field-block-spaced-top {
+  margin-top: var(--section-gap);
+}
+
+/* Thanh giới hạn dùng chung bo góc và viền với các thẻ khác, khỏi lạc quẻ. */
+.consignment-container .order-limit-bar {
+  padding: 14px var(--card-padding);
+  border-radius: var(--card-radius);
+  margin-bottom: var(--section-gap);
+}
+
+@media (max-width: 920px) {
+  .consignment-container .form-main-card {
+    padding: var(--card-padding);
+  }
+}
+
+/* =====================================================
+   THẲNG HÀNG HAI CỘT
+
+   Hàng đầu mỗi cột cao khác nhau (tiêu đề "KÝ GỬI HÀNG HÓA" ~70px, thanh giới hạn ~76px)
+   nên khung trắng bên dưới của hai cột lệch nhau mấy chục pixel. Ép hai khối mở đầu cùng
+   một chiều cao thì mọi khung phía dưới tự thẳng hàng.
+===================================================== */
+
+.consignment-container {
+  /* 72px = chiều cao tự nhiên của thanh giới hạn sau khi giảm padding; tiêu đề cột trái
+     được kéo lên đúng bằng số này để hai khung dưới bắt đầu cùng một dòng. */
+  --column-head-height: 72px;
+}
+
+.consignment-container .page-header-title-box,
+.consignment-container .order-limit-bar {
+  min-height: var(--column-head-height);
+  margin-top: 0;
+}
+
+.consignment-container .page-header-title-box {
+  display: flex;
+  align-items: center;
+}
+
+/* Thanh giới hạn cách khung dưới đúng bằng khoảng cách của cột trái. */
+.consignment-container .order-limit-bar {
+  padding-block: 10px;
+  margin-bottom: var(--section-gap);
+  align-content: center;
+}
+
+@media (max-width: 920px) {
+  .consignment-container {
+    --column-head-height: auto;
+  }
+}

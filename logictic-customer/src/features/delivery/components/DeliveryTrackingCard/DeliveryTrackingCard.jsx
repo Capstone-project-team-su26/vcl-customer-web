@@ -3,18 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { BadgeCheck, CheckCircle2, Truck } from "lucide-react";
 
 import { getOrderDeliveryTrackingApi } from "@features/delivery/api/deliveryTrackingApi";
-/* Import sâu: barrel tracking kéo theo các trang (CSS toàn cục) — xem ARCHITECTURE mục 4. */
-import { orderTrackingDetailPath } from "@features/tracking/constants/trackingPaths";
+/* Import sâu: barrel orders kéo theo các trang (CSS toàn cục) — xem ARCHITECTURE mục 4. */
+import { orderDetailPath } from "@features/orders/constants/orderPaths";
 import { isCanceledError } from "@shared/utils/apiError";
 import "./DeliveryTrackingCard.css";
 
 /**
  * Khối tóm tắt chặng giao cuối (API thật GET /api/orders/{id}/delivery-tracking) + lối
- * vào màn "Theo dõi đơn" /tracking/:orderId — nơi đặt giao, trả phí giao lại, khiếu nại
- * và bấm "Đã nhận hàng" (màn cũ /warehouse/delivery/:orderId chạy dữ liệu mẫu đã bị xoá).
+ * vào tab "Hành trình" của đơn — nơi đặt giao, trả phí giao lại, khiếu nại và bấm
+ * "Đã nhận hàng".
  *
  * Tự ẩn khi đơn chưa có phiếu giao nào, nên nơi dùng chỉ cần một dòng
- * `<DeliveryTrackingCard orderId={...} />`.
+ * `<DeliveryTrackingCard orderId={...} />`. Khi nhúng vào chính tab hành trình thì
+ * truyền `showOpenButton={false}`: nút sẽ tự dẫn về trang đang đứng, vô nghĩa với khách.
  */
 
 const STATUS_HINT = {
@@ -29,7 +30,7 @@ const STATUS_HINT = {
   RETURNED: "Kiện đã chuyển hoàn về kho.",
 };
 
-export default function DeliveryTrackingCard({ orderId }) {
+export default function DeliveryTrackingCard({ orderId, showOpenButton = true }) {
   const navigate = useNavigate();
   const [tracking, setTracking] = useState(null);
 
@@ -95,13 +96,15 @@ export default function DeliveryTrackingCard({ orderId }) {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        className={`dtc-btn ${canConfirm ? "dtc-btn--primary" : ""}`}
-        onClick={() => navigate(orderTrackingDetailPath(orderId))}
-      >
-        {canConfirm ? "Xác nhận đã nhận đủ hàng" : "Xem tiến trình giao hàng"}
-      </button>
+      {showOpenButton ? (
+        <button
+          type="button"
+          className={`dtc-btn ${canConfirm ? "dtc-btn--primary" : ""}`}
+          onClick={() => navigate(orderDetailPath(orderId))}
+        >
+          {canConfirm ? "Xác nhận đã nhận đủ hàng" : "Xem tiến trình giao hàng"}
+        </button>
+      ) : null}
     </section>
   );
 }

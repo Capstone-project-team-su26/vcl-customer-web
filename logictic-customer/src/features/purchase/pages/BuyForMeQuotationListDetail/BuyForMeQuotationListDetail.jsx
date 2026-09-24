@@ -56,6 +56,11 @@ import QuotationPaymentConfirmDialog, {
 } from "@features/payment/components/QuotationPaymentConfirmDialog/QuotationPaymentConfirmDialog";
 
 import "./BuyForMeQuotationListDetail.css";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import {
+  PURCHASE_ORDERS_PATH,
+  purchaseRequestQuotationPath,
+} from "@features/orders/constants/orderPaths";
 
 /* =========================================================
    HELPERS & FORMATTERS
@@ -343,8 +348,12 @@ const BuyForMeQuotationListDetail = () => {
       }
 
       if (selectedMethod === PAYMENT_METHODS.ONLINE) {
-        const returnUrl = `${window.location.origin}/check-orders/buy-on-behalf/${requestId}?status=success`;
-        const cancelUrl = `${window.location.origin}/check-orders/buy-on-behalf/${requestId}?status=cancel`;
+        const returnUrl = `${window.location.origin}${purchaseRequestQuotationPath(
+          requestId,
+        )}?status=success`;
+        const cancelUrl = `${window.location.origin}${purchaseRequestQuotationPath(
+          requestId,
+        )}?status=cancel`;
 
         // confirmAndPayQuotationApi prefers purchaseRequestId, fallback to quotationId
         const targetPurchaseRequestId = purchaseRequestId || quotationId;
@@ -444,6 +453,17 @@ const BuyForMeQuotationListDetail = () => {
     return Number(quotation?.vat ?? 0);
   }, [quotation]);
 
+  /*
+   * LUỒNG CHUẨN: báo giá tách làm hai phần.
+   *   prepayAmount        — khách trả NGAY (tiền hàng + phí mua hộ + ship nội địa + VAT phần phí)
+   *   estimatedLaterAmount — cước quốc tế + VAT cước + thuế NK, chỉ TẠM TÍNH, thu ở VN theo cân thật
+   * Báo giá cũ không có hai trường này (isLegacy) — khi đó giữ nguyên cách hiện cũ để bản
+   * production chưa cập nhật vẫn đọc được.
+   */
+  const prepayAmount = Number(quotation?.prepayAmount ?? 0);
+  const estimatedLaterAmount = Number(quotation?.estimatedLaterAmount ?? 0);
+  const isSplitQuotation = prepayAmount > 0;
+
   const computedTotalAmount = useMemo(() => {
     if (additionalFees.length > 0) {
       return productsSubtotal + additionalFeesTotal;
@@ -496,7 +516,7 @@ const BuyForMeQuotationListDetail = () => {
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/check-orders/buy-on-behalf")}
+          onClick={() => navigate(PURCHASE_ORDERS_PATH)}
           className="quotation-back-button"
         >
           Quay lại danh sách
@@ -1091,6 +1111,27 @@ const BuyForMeQuotationListDetail = () => {
 
                   <div className="statement-divider" />
 
+                  {isSplitQuotation ? (
+                    <div className="quotation-split">
+                      <div className="quotation-split__part quotation-split__part--now">
+                        <span className="quotation-split__label">TRẢ TRƯỚC HÔM NAY</span>
+                        <strong>{formatVndCurrency(prepayAmount)}</strong>
+                        <small>
+                          Tiền hàng + phí mua hộ + ship nội địa của người bán (đã gồm VAT phần
+                          phí). Công ty ứng tiền mua hàng nên phần này thu đủ trước khi đặt.
+                        </small>
+                      </div>
+
+                      <div className="quotation-split__part quotation-split__part--later">
+                        <span className="quotation-split__label">TẠM TÍNH, THU KHI HÀNG VỀ VN</span>
+                        <strong>{formatVndCurrency(estimatedLaterAmount)}</strong>
+                        <small>
+                          Cước quốc tế, VAT cước và thuế nhập khẩu. Đây là <b>số tạm tính</b> —
+                          kho Việt Nam cân đo lại rồi mới chốt số thật, có thể cao hoặc thấp hơn.
+                        </small>
+                      </div>
+                    </div>
+                  ) : (
                   <div className="statement-line" style={{ background: "rgba(37, 99, 235, 0.07)", padding: "8px 10px", borderRadius: 8, margin: "8px 0", flexDirection: "column", alignItems: "stretch", gap: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontWeight: 700, color: "#1d4ed8", fontSize: "0.85rem" }}>
@@ -1111,11 +1152,16 @@ const BuyForMeQuotationListDetail = () => {
                       </div>
                     </div>
                   </div>
+                  )}
 
                   <div className="statement-total-banner">
                     <div>
                       <span>TỔNG BÁO GIÁ ĐƠN HÀNG</span>
-                      <small>Đã gồm tiền hàng, cước & thuế phí (Hệ thống tự động làm tròn giá tiền)</small>
+                      <small>
+                        {isSplitQuotation
+                          ? "Gồm phần trả trước và phần tạm tính thu ở Việt Nam — số cuối chốt theo cân đo thật"
+                          : "Đã gồm tiền hàng, cước & thuế phí (Hệ thống tự động làm tròn giá tiền)"}
+                      </small>
                     </div>
                     <strong className="grand-price">
                       {formatVndCurrency(computedTotalAmount)}

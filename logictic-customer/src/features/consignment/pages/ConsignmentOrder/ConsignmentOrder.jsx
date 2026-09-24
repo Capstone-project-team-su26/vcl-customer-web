@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckOutlined,
@@ -75,7 +75,16 @@ import {
   sanitizeInteger,
   uploadPackageImage,
   validateConsignmentForm,
+  validateFormField,
+  validatePackageField,
+  FORM_FIELD_VALIDATORS,
+  getOrderTotals,
+  getOrderTotalsError,
+  ORDER_LIMITS,
+  PACKAGE_LIMITS,
 } from "./ConsignmentOrder.helpers";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import { CONSIGNMENT_ORDERS_PATH } from "@features/orders/constants/orderPaths";
 
 const FieldError = ({ message }) => {
   if (!message) {
@@ -90,6 +99,31 @@ const FieldError = ({ message }) => {
   );
 };
 
+/**
+ * Thanh giới hạn: xanh khi còn thoải mái, vàng từ 80% trần, đỏ khi vượt. Mục đích là để
+ * khách biết TRƯỚC khi khai thêm kiện, chứ không phải bị chặn lúc bấm gửi.
+ */
+const LimitMeter = ({ label, value, max, text }) => {
+  const ratio = max > 0 ? value / max : 0;
+
+  const tone = ratio > 1 ? "over" : ratio >= 0.8 ? "near" : "ok";
+
+  return (
+    <div className={`order-limit-bar__item order-limit-bar__item--${tone}`}>
+      <span className="order-limit-bar__label">{label}</span>
+
+      <strong>{text}</strong>
+
+      <span className="order-limit-bar__track">
+        <span
+          className="order-limit-bar__fill"
+          style={{ width: `${Math.min(100, Math.max(0, ratio * 100))}%` }}
+        />
+      </span>
+    </div>
+  );
+};
+
 const SelectField = ({
   label,
   value,
@@ -99,6 +133,7 @@ const SelectField = ({
   disabled,
   placeholder,
   onChange,
+  onBlur,
 }) => (
   <div className="input-field-group">
     <label className="field-label required-label">
@@ -112,6 +147,7 @@ const SelectField = ({
       aria-invalid={Boolean(error)}
       className={getFieldClassName("custom-select", error)}
       onChange={(event) => onChange(event.target.value)}
+      onBlur={onBlur}
     >
       <option value="">{loading ? "Đang tải dữ liệu..." : placeholder}</option>
 
@@ -135,6 +171,14 @@ export default function ConsignmentOrder() {
   const [packages, setPackages] = useState([createEmptyPackage()]);
   const [formErrors, setFormErrors] = useState(createEmptyFormErrors());
   const [packageErrors, setPackageErrors] = useState({});
+
+  /*
+   * Ô nào khách đã rời con trỏ một lần. Trước lúc đó, ô trống thì im lặng — nhắc "vui lòng
+   * nhập" ngay khi khách mới đặt tay vào form thì chỉ làm phiền. Nhưng giá trị SAI (quá
+   * cân, quá kích thước, sai định dạng điện thoại) thì báo ngay từ lúc gõ, không đợi bấm gửi.
+   */
+  const [touchedFields, setTouchedFields] = useState({});
+  const [touchedPackageFields, setTouchedPackageFields] = useState({});
 
   const [routeOptions, setRouteOptions] = useState([]);
   const [shippingOptions, setShippingOptions] = useState([]);
@@ -422,13 +466,52 @@ export default function ConsignmentOrder() {
     }));
   };
 
+  /*
+   * Quy tắc hiện lỗi khi đang gõ: có nội dung thì kiểm ngay; còn trống thì chỉ nhắc khi ô
+   * đó từng được rời con trỏ. Rời ô (blur) thì luôn kiểm đầy đủ.
+   */
+  const resolveLiveError = (message, rawValue, isTouched, isBlur) => {
+    if (isBlur || isTouched) {
+      return message;
+    }
+
+    return String(rawValue ?? "").trim() === "" ? "" : message;
+  };
+
+  const runFormFieldValidation = (field, nextForm, { isBlur = false } = {}) => {
+    /* Ô không có luật kiểm (ví dụ lựa chọn dịch vụ) thì bỏ qua, khỏi ghi rác vào formErrors. */
+    if (!FORM_FIELD_VALIDATORS[field]) {
+      return;
+    }
+
+    const message = validateFormField(field, nextForm);
+
+    setFormErrors((previous) => ({
+      ...previous,
+      [field]: resolveLiveError(
+        message,
+        nextForm?.[field],
+        touchedFields[field],
+        isBlur,
+      ),
+    }));
+  };
+
   const updateForm = (field, value) => {
+    const nextForm = { ...form, [field]: value };
+
     setForm((previous) => ({
       ...previous,
       [field]: value,
     }));
 
-    clearFormError(field);
+    runFormFieldValidation(field, nextForm);
+  };
+
+  const handleFormFieldBlur = (field) => {
+    setTouchedFields((previous) => ({ ...previous, [field]: true }));
+
+    runFormFieldValidation(field, form, { isBlur: true });
   };
 
   const resetNewAddressForm = () => {
@@ -761,6 +844,9 @@ export default function ConsignmentOrder() {
     [],
   );
 
+  /* Số liệu cộng dồn để vẽ thanh giới hạn — cập nhật ngay theo từng phím gõ. */
+  const orderTotals = useMemo(() => getOrderTotals(packages), [packages]);
+
   const scrollToFirstError = () => {
     window.setTimeout(() => {
       document
@@ -1041,7 +1127,35 @@ export default function ConsignmentOrder() {
       ),
     );
 
-    clearPackageError(packageId, field);
+    /*
+     * Kiểm ngay trên từng phím gõ: quá 3 kg, quá kích thước, quá giá trị thì lỗi hiện liền
+     * dưới ô, không đợi bấm "Tiếp tục". Đồng thời cộng lại trần của cả đơn vì một kiện
+     * nặng thêm có thể làm cả đơn vượt 5 kg dù kiện đó vẫn hợp lệ.
+     */
+    const nextPackages = packages.map((pkg) =>
+      pkg.id === packageId ? { ...pkg, [field]: value } : pkg,
+    );
+
+    const changedPackage =
+      nextPackages.find((pkg) => pkg.id === packageId) || {};
+
+    setPackageErrors((previous) => ({
+      ...previous,
+      [packageId]: {
+        ...(previous[packageId] || {}),
+        [field]: resolveLiveError(
+          validatePackageField(field, changedPackage),
+          value,
+          touchedPackageFields[`${packageId}:${field}`],
+          false,
+        ),
+      },
+    }));
+
+    setFormErrors((previous) => ({
+      ...previous,
+      packages: getOrderTotalsError(nextPackages),
+    }));
 
     if (!shouldResetWoodCrateConfiguration) {
       return;
@@ -1297,8 +1411,37 @@ export default function ConsignmentOrder() {
     }));
   };
 
+  /**
+   * Rời ô thì kiểm đầy đủ (kể cả "chưa nhập"). `overrideValue` dành cho ô số: lúc rời ô,
+   * giá trị vừa được chuẩn hoá ("1." -> "1") chưa kịp vào state.
+   */
+  const handlePackageFieldBlur = (packageId, field, overrideValue) => {
+    setTouchedPackageFields((previous) => ({
+      ...previous,
+      [`${packageId}:${field}`]: true,
+    }));
+
+    const pkg = packages.find((item) => item.id === packageId);
+
+    if (!pkg) {
+      return;
+    }
+
+    const target =
+      overrideValue === undefined ? pkg : { ...pkg, [field]: overrideValue };
+
+    setPackageErrors((previous) => ({
+      ...previous,
+      [packageId]: {
+        ...(previous[packageId] || {}),
+        [field]: validatePackageField(field, target),
+      },
+    }));
+  };
+
   const handleDecimalBlur = (packageId, field, value) => {
     if (!value) {
+      handlePackageFieldBlur(packageId, field);
       return;
     }
 
@@ -1339,6 +1482,8 @@ export default function ConsignmentOrder() {
     }
 
     handleInputChange(packageId, field, normalizedValue);
+
+    handlePackageFieldBlur(packageId, field, normalizedValue);
   };
 
   const handleAddPackage = () => {
@@ -1353,6 +1498,12 @@ export default function ConsignmentOrder() {
       ...previous,
       newPackage,
     ]);
+
+    /* Kiện mới chưa có số liệu nên trần đơn không đổi, nhưng tính lại cho chắc. */
+    setFormErrors((previous) => ({
+      ...previous,
+      packages: getOrderTotalsError([...packages, newPackage]),
+    }));
 
     setForm((previous) => {
       if (
@@ -1473,6 +1624,14 @@ export default function ConsignmentOrder() {
         (pkg) => pkg.id !== packageId,
       ),
     );
+
+    /* Xoá đúng cái kiện làm đơn vượt trần thì lỗi phải mất theo, không được kẹt lại. */
+    setFormErrors((previous) => ({
+      ...previous,
+      packages: getOrderTotalsError(
+        packages.filter((pkg) => pkg.id !== packageId),
+      ),
+    }));
 
     setPackageErrors((previous) => {
       const nextErrors = {
@@ -1885,7 +2044,7 @@ export default function ConsignmentOrder() {
         AuthNotify.warning("Lưu ý về đơn hàng", warnings.join(" • "));
       }
 
-      navigate("/processing-orders");
+      navigate(CONSIGNMENT_ORDERS_PATH);
     } catch (error) {
       const backendErrors = error?.response?.data?.errors;
 
@@ -1994,6 +2153,7 @@ export default function ConsignmentOrder() {
                 disabled={isSubmitting}
                 placeholder="-- Chọn tuyến hàng --"
                 onChange={(value) => updateForm("route", value)}
+                onBlur={() => handleFormFieldBlur("route")}
               />
 
               <div className="route-select-helper">
@@ -2015,11 +2175,12 @@ export default function ConsignmentOrder() {
                 disabled={isSubmitting}
                 placeholder="-- Chọn hình thức vận chuyển --"
                 onChange={(value) => updateForm("shippingOption", value)}
+                onBlur={() => handleFormFieldBlur("shippingOption")}
               />
             </div>
 
             <div className="left-inner-section border-top-dash">
-              <div className="input-field-group" style={{ marginBottom: 12 }}>
+              <div className="input-field-group field-block-spaced">
                 <label className="field-label required-label">
                   TÊN NGƯỜI NHẬN
                 </label>
@@ -2036,6 +2197,7 @@ export default function ConsignmentOrder() {
                   onChange={(event) =>
                     updateForm("receiverName", event.target.value)
                   }
+                  onBlur={() => handleFormFieldBlur("receiverName")}
                 />
 
                 <FieldError message={formErrors.receiverName} />
@@ -2063,6 +2225,7 @@ export default function ConsignmentOrder() {
                       event.target.value.replace(/\D/g, "").slice(0, 10),
                     )
                   }
+                  onBlur={() => handleFormFieldBlur("receiverPhone")}
                 />
 
                 <FieldError message={formErrors.receiverPhone} />
@@ -2373,6 +2536,38 @@ export default function ConsignmentOrder() {
 
         <div className="layout-right-scrollable-form">
           <div className="scrollable-content-wrapper">
+            {/*
+              Trần của đơn hiện ngay trên đầu danh sách kiện: khách thấy mình còn bao nhiêu
+              cân, bao nhiêu tiền trước khi khai thêm kiện, thay vì khai xong mới bị chặn.
+            */}
+            <div className="order-limit-bar">
+              <div className="order-limit-bar__item">
+                <span className="order-limit-bar__label">Số kiện</span>
+                <strong>{orderTotals.packageCount}</strong>
+              </div>
+
+              <LimitMeter
+                label="Tổng cân nặng"
+                value={orderTotals.totalWeight}
+                max={ORDER_LIMITS.maxTotalWeight}
+                text={`${orderTotals.totalWeight.toFixed(2)} / ${
+                  ORDER_LIMITS.maxTotalWeight
+                } kg`}
+              />
+
+              <LimitMeter
+                label="Tổng giá trị"
+                value={orderTotals.totalValue}
+                max={ORDER_LIMITS.maxTotalValue}
+                text={`${orderTotals.totalValue.toLocaleString("vi-VN")} / ${
+                  ORDER_LIMITS.maxTotalValue.toLocaleString("vi-VN")
+                } đ`}
+              />
+            </div>
+
+            {/* Lỗi vượt trần cả đơn: trước đây chỉ hiện dưới dạng toast lúc bấm gửi. */}
+            <FieldError message={formErrors.packages} />
+
             {packages.map((pkg, index) => {
               const errors = packageErrors[pkg.id] || {};
 
@@ -2381,9 +2576,6 @@ export default function ConsignmentOrder() {
                   key={pkg.id}
                   id={`consignment-package-${pkg.id}`}
                   className="form-main-card consignment-package-card"
-                  style={{
-                    marginBottom: "1.5rem",
-                  }}
                 >
                   <div className="form-step-header">
                     <div className="step-header-left">
@@ -2454,6 +2646,9 @@ export default function ConsignmentOrder() {
                             event.target.value,
                           )
                         }
+                        onBlur={() =>
+                          handlePackageFieldBlur(pkg.id, "productName")
+                        }
                       />
 
                       <FieldError message={errors.productName} />
@@ -2488,6 +2683,9 @@ export default function ConsignmentOrder() {
                             event.target.value,
                           )
                         }
+                        onBlur={() =>
+                          handlePackageFieldBlur(pkg.id, "productType")
+                        }
                       >
                         <option value="">
                           {isLoadingOptions
@@ -2513,16 +2711,22 @@ export default function ConsignmentOrder() {
 
                   <div className="form-row-2col">
                     <div className="input-field-group">
-                      <label className="field-label required-label">
-                        SỐ LƯỢNG SẢN PHẨM
-                      </label>
+                      <div className="field-label-with-hint">
+                        <label className="field-label required-label">
+                          SỐ LƯỢNG SẢN PHẨM
+                        </label>
+
+                        <span className="field-limit-hint">
+                          tối đa {PACKAGE_LIMITS.maxQuantity}
+                        </span>
+                      </div>
 
                       <input
                         type="text"
                         inputMode="numeric"
                         value={pkg.quantity}
                         disabled={isSubmitting}
-                        placeholder="Nhập số lượng sản phẩm..."
+                        placeholder="VD: 2"
                         className={getFieldClassName(
                           "custom-input",
                           errors.quantity,
@@ -2535,15 +2739,22 @@ export default function ConsignmentOrder() {
                             sanitizeInteger(event.target.value),
                           )
                         }
+                        onBlur={() => handlePackageFieldBlur(pkg.id, "quantity")}
                       />
 
                       <FieldError message={errors.quantity} />
                     </div>
 
                     <div className="input-field-group">
-                      <label className="field-label required-label">
-                        GIÁ TRỊ KIỆN HÀNG (VND)
-                      </label>
+                      <div className="field-label-with-hint">
+                        <label className="field-label required-label">
+                          GIÁ TRỊ KIỆN HÀNG (VND)
+                        </label>
+
+                        <span className="field-limit-hint">
+                          tối đa {PACKAGE_LIMITS.maxDeclaredValue.toLocaleString("vi-VN")} đ
+                        </span>
+                      </div>
 
                       <input
                         type="text"
@@ -2563,6 +2774,9 @@ export default function ConsignmentOrder() {
                             sanitizeInteger(event.target.value),
                           )
                         }
+                        onBlur={() =>
+                          handlePackageFieldBlur(pkg.id, "declaredValue")
+                        }
                       />
 
                       <FieldError message={errors.declaredValue} />
@@ -2572,12 +2786,18 @@ export default function ConsignmentOrder() {
                   <div className="form-row-4col">
                     {PACKAGE_NUMBER_FIELDS.map((fieldItem) => (
                       <div key={fieldItem.field} className="input-field-group">
-                        <FieldLabelTooltip
-                          label={fieldItem.label}
-                          required
-                          tooltip={fieldItem.tooltip}
-                          className="package-dimension-label"
-                        />
+                        <div className="field-label-with-hint">
+                          <FieldLabelTooltip
+                            label={fieldItem.label}
+                            required
+                            tooltip={fieldItem.tooltip}
+                            className="package-dimension-label"
+                          />
+
+                          <span className="field-limit-hint">
+                            {fieldItem.hint}
+                          </span>
+                        </div>
 
                         <input
                           type="text"
@@ -2611,12 +2831,7 @@ export default function ConsignmentOrder() {
                     ))}
                   </div>
 
-                  <div
-                    className="input-field-group"
-                    style={{
-                      marginBottom: "1.25rem",
-                    }}
-                  >
+                  <div className="input-field-group field-block-spaced">
                     <label className="field-label">
                       MÃ VẬN ĐƠN NỘI ĐỊA (DOMESTIC TRACKING CODE)
                     </label>
@@ -2637,11 +2852,19 @@ export default function ConsignmentOrder() {
                     />
                   </div>
 
+                  {/*
+                    Cân nặng/kích thước đổi thì cấu hình thùng gỗ bị xoá — câu nhắc chọn lại
+                    trước đây chỉ nằm trong state, không ai render nên khách không hề biết.
+                  */}
+                  <FieldError message={errors.packageConfigurationId} />
+
                   <PackageItemServices
                     packageIndex={index + 1}
                     services={itemServiceOptions}
                     selectedIds={pkg.serviceIds || []}
                     declaredValue={pkg.declaredValue}
+                    /* Đủ đại lượng để tính thử phí: %, /kg, /m³ và /sản phẩm. */
+                    packageDraft={pkg}
                     loading={isLoadingItemServices}
                     error={itemServicesError}
                     needsRoute={!form.route || !form.shippingOption}
@@ -2715,7 +2938,7 @@ export default function ConsignmentOrder() {
 
                       <span className="upload-main-text">
                         {pkg.images.length >= MAX_IMAGES_PER_PACKAGE
-                          ? "Đã đủ 3 ảnh cho kiện hàng này"
+                          ? `Đã đủ ${MAX_IMAGES_PER_PACKAGE} ảnh cho kiện hàng này`
                           : "Bấm để chọn ảnh cho kiện hàng này"}
                       </span>
 
@@ -2790,10 +3013,7 @@ export default function ConsignmentOrder() {
               <span>THÊM KIỆN HÀNG MỚI</span>
             </button>
 
-            <div
-              className="form-main-card consignment-general-note-card"
-              style={{ marginTop: "1.25rem", marginBottom: "1.5rem" }}
-            >
+            <div className="form-main-card consignment-general-note-card">
               <div className="form-step-header">
                 <div className="step-header-left">
                   <div className="step-number-circle">
@@ -2831,7 +3051,7 @@ export default function ConsignmentOrder() {
                 }
               />
 
-              <div className="input-field-group" style={{ marginTop: "1.25rem" }}>
+              <div className="input-field-group field-block-spaced-top">
                 <FieldLabelTooltip
                   label="GHI CHÚ ĐƠN HÀNG"
                   required
@@ -2849,6 +3069,7 @@ export default function ConsignmentOrder() {
                     formErrors.note,
                   )}
                   onChange={(event) => updateForm("note", event.target.value)}
+                  onBlur={() => handleFormFieldBlur("note")}
                 />
 
                 <div className="textarea-character-count">

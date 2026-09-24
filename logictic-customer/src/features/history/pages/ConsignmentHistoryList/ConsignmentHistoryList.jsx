@@ -69,6 +69,8 @@ import {
 } from "./ConsignmentHistoryList.helpers";
 
 import "./ConsignmentHistoryList.css";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import { ORDER_TABS, orderDetailPath } from "@features/orders/constants/orderPaths";
 
 const { RangePicker } = DatePicker;
 
@@ -604,7 +606,7 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
     }
   
     navigate(
-      `/orders/${item.orderId}/payments/history`,
+      orderDetailPath(item.orderId, ORDER_TABS.payment),
       {
         state: {
           consignment: item,

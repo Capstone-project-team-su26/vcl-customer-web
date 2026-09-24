@@ -179,13 +179,15 @@
       "getPurchaseRequestByIdApi",
       "getPurchaseRequestDetailApi",
       "getPurchaseRequestPaymentHistoryApi",
+      "getPurchaseRequestQuotationApi",
       "getPurchaseRequestsApi",
       "getSepayCheckoutApi",
       "getSepayCheckoutPageUrl",
       "rejectQuotationApi"
     ],
     "hasDefault": true,
-    "originalLines": 1009
+    "originalLines": 1009,
+    "realApi": true
   },
   "src/features/receiving/api/receivingNoteApi.js": {
     "named": [
@@ -327,5 +329,35 @@
     "hasDefault": true,
     "realApi": true,
     "originalLines": 317
+  },
+  "src/features/purchase/api/purchaseRequestApi.mock.js": {
+    "named": [
+      "acceptQuotationApi",
+      "confirmAndPayQuotationApi",
+      "createPurchaseRequestApi",
+      "getPaymentCheckoutUrl",
+      "getPaymentStatusApi",
+      "getPurchaseRequestById",
+      "getPurchaseRequestByIdApi",
+      "getPurchaseRequestDetailApi",
+      "getPurchaseRequestPaymentHistoryApi",
+      "getPurchaseRequestsApi",
+      "getSepayCheckoutApi",
+      "getSepayCheckoutPageUrl",
+      "rejectQuotationApi"
+    ],
+    "hasDefault": true,
+    "originalLines": 1009
+  },
+  "src/features/purchase/api/purchaseOrderApi.js": {
+    "named": [
+      "SUPPLIER_ORDER_STEPS",
+      "SUPPLIER_TIMELINE",
+      "getSupplierOrderStep",
+      "getSupplierOrdersApi",
+      "decideSupplierOrderApi"
+    ],
+    "hasDefault": true,
+    "realApi": true
   }
 }

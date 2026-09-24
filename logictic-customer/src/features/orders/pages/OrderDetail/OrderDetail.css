@@ -1,29 +1,26 @@
-.order-tracking-detail {
+/* Khung trang chi tiết đơn: thanh điều hướng, tiêu đề, tab và vùng nội dung tab.
+   Nội dung bên trong từng tab do component cũ tự lo CSS của nó. */
+
+.order-detail {
   display: flex;
   flex-direction: column;
   padding-bottom: 32px;
 }
 
-.order-tracking-detail__loading {
+.order-detail__loading {
   display: flex;
   justify-content: center;
   padding: 80px 0;
 }
 
-.order-tracking-detail__nav {
+.order-detail__nav {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.order-tracking-detail__nav-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.order-tracking-detail__hero {
+.order-detail__hero {
   margin-top: 16px;
   padding: 22px;
   border-radius: 18px;
@@ -31,7 +28,7 @@
   border: 1px solid #dbe7f7;
 }
 
-.order-tracking-detail__hero-top {
+.order-detail__hero-top {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -39,7 +36,7 @@
   margin-bottom: 18px;
 }
 
-.order-tracking-detail__eyebrow {
+.order-detail__eyebrow {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -47,7 +44,7 @@
   color: #2563eb;
 }
 
-.order-tracking-detail__hero h1 {
+.order-detail__hero h1 {
   margin: 4px 0;
   font-size: 22px;
   font-weight: 800;
@@ -55,19 +52,35 @@
   word-break: break-all;
 }
 
-.order-tracking-detail__hero p {
+.order-detail__hero p {
   margin: 0;
   color: #5b6b80;
 }
 
-.order-tracking-detail__hero-tags {
+.order-detail__hero-tags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
-.order-tracking-detail__eta {
+.order-detail__eta {
   margin: 12px 0 0;
   color: #334155;
+}
+
+.order-detail__tabs {
+  margin-top: 8px;
+}
+
+.order-detail__tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.order-detail__panel {
+  display: flex;
+  flex-direction: column;
 }

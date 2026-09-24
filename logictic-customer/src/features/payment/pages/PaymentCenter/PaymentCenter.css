@@ -1,0 +1,20 @@
+/* Khung hai tab của trang Thanh toán; nội dung từng tab dùng CSS riêng của
+   SettlementList / TransactionHistoryTabs. */
+
+.payment-center {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 32px;
+}
+
+.payment-center__tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.payment-center__panel {
+  display: flex;
+  flex-direction: column;
+}

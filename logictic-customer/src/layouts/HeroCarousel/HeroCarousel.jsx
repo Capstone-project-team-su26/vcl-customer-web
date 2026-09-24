@@ -265,7 +265,7 @@ const slideData = [
     description:
       "Tra cứu hành trình, trạng thái xử lý, thông tin kiện hàng và lịch sử vận chuyển ngay trên hệ thống.",
     buttonText: "Theo dõi đơn hàng",
-    path: "/tracking",
+    path: "/order-lookup",
 
     image:
       "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1600&q=85",

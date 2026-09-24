@@ -8,7 +8,12 @@ import {
 } from "@ant-design/icons";
 import { Checkbox, Modal, Tooltip } from "antd";
 
-import pricingRuleService from "@features/pricing/api/pricingRuleService.mock";
+/*
+ * Bảng giá THẬT. Bản mock khai rule thùng gỗ với `calculationType: "BY_SIZE"` và `value: null`
+ * nên ô "Phí đóng thùng / kiện" in ra "Chưa có mức phí" và phép tính thành 1 kiện × 0 đ = 0 đ —
+ * khách tưởng miễn phí. Bảng thật có phí nền 35.000 đ/kiện cộng tiền theo cỡ thùng đã chọn.
+ */
+import pricingRuleService from "@features/pricing/api/pricingRuleService";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { EMPTY_PACKAGE_SERVICES } from "./PackageOptionalServicesS1.constants";
 import {
@@ -224,6 +229,9 @@ export default function PackageOptionalServices({
         // Không truyền ruleCodes, không dùng mảng dữ liệu mẫu.
         const result = await pricingRuleService.getPricingRules({
           signal: controller.signal,
+          /* Không lọc theo loại đơn: dịch vụ khách chọn (thùng gỗ, đóng lại carton, bảo hiểm,
+             kiểm hàng) không nằm trong nhóm rule PURCHASE. */
+          params: { orderType: null },
         });
 
         if (controller.signal.aborted) {

@@ -1,0 +1,106 @@
+.supplier-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.supplier-panel--loading {
+  align-items: center;
+  padding: 24px 0;
+}
+
+.supplier-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid #e5eaf1;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.supplier-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.supplier-card__head strong {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.supplier-card__hint {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.supplier-card__diff {
+  border-radius: 10px;
+}
+
+.supplier-card__diff-note {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.supplier-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Dòng thời gian: mốc đã qua tô đậm, mốc chưa tới để nhạt — khách nhìn là biết đang ở đâu. */
+.supplier-timeline {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.supplier-timeline__item {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.supplier-timeline__dot {
+  width: 9px;
+  height: 9px;
+  margin-left: 2px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+}
+
+.supplier-timeline__item.is-done {
+  color: #0f172a;
+}
+
+.supplier-timeline__item.is-done .supplier-timeline__dot {
+  border-color: #16a34a;
+  background: #16a34a;
+}
+
+.supplier-timeline__time {
+  font-variant-numeric: tabular-nums;
+  color: #64748b;
+}
+
+.supplier-card__tracking {
+  margin: 0;
+  padding-top: 6px;
+  border-top: 1px dashed #e5eaf1;
+  color: #475569;
+  font-size: 0.82rem;
+}

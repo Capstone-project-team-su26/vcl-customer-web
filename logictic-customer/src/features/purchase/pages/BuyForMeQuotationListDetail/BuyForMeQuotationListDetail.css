@@ -1182,3 +1182,65 @@ body .quotation-payment-summary .is-deposit {
   padding: 8px 12px !important;
   gap: 4px !important;
 }
+/* =====================================================
+   BÁO GIÁ TÁCH HAI PHẦN (luồng mua hộ chuẩn)
+
+   Khách phải phân biệt được ngay: số nào trả hôm nay, số nào chỉ là tạm tính. Hai thẻ
+   cạnh nhau, khác màu, mỗi thẻ nói rõ gồm những gì — thay cho một dòng "tiền cọc" gộp.
+===================================================== */
+
+.quotation-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.quotation-split__part {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.quotation-split__label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.quotation-split__part strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.quotation-split__part small {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #475569;
+}
+
+/* Phần phải trả ngay: nhấn mạnh, dùng màu chủ đạo. */
+.quotation-split__part--now {
+  border-color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.07);
+}
+
+.quotation-split__part--now .quotation-split__label,
+.quotation-split__part--now strong {
+  color: #1d4ed8;
+}
+
+/* Phần tạm tính: màu trung tính hơn để không bị hiểu là đang đòi tiền. */
+.quotation-split__part--later {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.quotation-split__part--later .quotation-split__label,
+.quotation-split__part--later strong {
+  color: #475569;
+}

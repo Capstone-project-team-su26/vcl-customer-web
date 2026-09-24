@@ -76,12 +76,12 @@ const SYSTEM_LINKS = [
     to: "/create-order",
   },
   {
-    label: "Đơn hàng đang xử lý",
-    to: "/processing-orders",
+    label: "Đơn hàng của tôi",
+    to: "/orders",
   },
   {
-    label: "Theo dõi đơn hàng",
-    to: "/tracking",
+    label: "Tra cứu đơn hàng",
+    to: "/order-lookup",
   },
 ];
 

@@ -34,6 +34,12 @@ import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestAp
 import { apiToTimestamp, formatVietnamDateTime } from "@shared/utils/timeUtc";
 
 import "./BuyOrderHistoryList.css";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import {
+  PAYMENT_TABS,
+  paymentTabPath,
+  purchaseRequestQuotationPath,
+} from "@features/orders/constants/orderPaths";
 
 const { RangePicker } = DatePicker;
 
@@ -888,7 +894,7 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
                     <Button
                       variant="outlined"
                       onClick={() =>
-                        navigate(`/check-orders/buy-on-behalf/${requestId}`)
+                        navigate(purchaseRequestQuotationPath(requestId))
                       }
                       className="card-quotation-button"
                     >
@@ -900,7 +906,7 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
                       endIcon={<ArrowForwardIcon />}
                       onClick={() =>
                         navigate(
-                          `/history/buy-on-behalf/${requestId}/payments`,
+                          paymentTabPath(PAYMENT_TABS.history),
                           {
                             state: { purchaseRequest: order },
                           }

@@ -4,9 +4,10 @@
    Luồng (spec đợt B):
    1. QuotationDetail gọi confirm-and-pay (PAYOS) → lưu khoản đang chờ vào
       sessionStorage rồi chuyển khách sang checkoutUrl.
-   2. payOS trả khách về /history/consignment?code=&id=&cancel=&status=&orderCode=.
-   3. ConsignmentHistoryList đọc query + sessionStorage, poll
-      GET /api/payments/status/{orderCode} mỗi 4 giây, tối đa 2 phút.
+   2. payOS trả khách về /payment/lich-su?code=&id=&cancel=&status=&orderCode=
+      (URL cũ /history/consignment vẫn sống, chuyển hướng sang đó và GIỮ NGUYÊN query).
+   3. Tab "Lịch sử giao dịch" mở sẵn phần ký gửi; ConsignmentHistoryList đọc query +
+      sessionStorage, poll GET /api/payments/status/{orderCode} mỗi 4 giây, tối đa 2 phút.
 
    Hàm thuần, không đụng window/storage ở top-level (tools/verify-api.mjs nạp qua SSR).
    ========================================================= */

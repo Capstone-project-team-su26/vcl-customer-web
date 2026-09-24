@@ -3,12 +3,12 @@
 // warehouse, purchase, history) đang phụ thuộc vào lớp API này, nên gom về một cửa ngõ
 // để đường dẫn nội bộ còn tự do thay đổi mà không phải sửa chỗ import bên ngoài.
 
-// Các trang gắn trực tiếp vào route, đặt tên theo tên thư mục để tra cứu ở router cho nhanh.
-// Riêng ConsignmentListCheck bên trong khai báo component trùng tên "ConsignmentList",
-// nên phải xuất theo tên thư mục để không đụng tên với trang ConsignmentList thật.
+// Ba màn còn lại của module. ConsignmentOrder là form tạo đơn (nhúng trong /create-order);
+// ConsignmentListDetail và QuotationDetail không còn route riêng mà là hai TAB của trang
+// chi tiết đơn /orders/:orderId, nên cả hai nhận prop `embedded`.
+// Hai màn danh sách cũ (ConsignmentList "đơn đang xử lý", ConsignmentListCheck "kiện chờ
+// báo giá") đã xoá — danh sách đơn duy nhất /orders thay cả hai.
 export { default as ConsignmentOrder } from "./pages/ConsignmentOrder/ConsignmentOrder";
-export { default as ConsignmentList } from "./pages/ConsignmentList/ConsignmentList";
-export { default as ConsignmentListCheck } from "./pages/ConsignmentListCheck/ConsignmentListCheck";
 export { default as ConsignmentListDetail } from "./pages/ConsignmentListDetail/ConsignmentListDetail";
 export { default as QuotationDetail } from "./pages/QuotationDetail/QuotationDetail";
 

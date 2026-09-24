@@ -86,7 +86,7 @@ export default function AIAutomationSection() {
               <button
                 type="button"
                 className="ai-automation-secondary-button"
-                onClick={() => navigate("/tracking")}
+                onClick={() => navigate("/order-lookup")}
               >
                 Theo dõi đơn hàng
               </button>

@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import {
+  Link,
   Outlet,
   useLocation,
 } from "react-router-dom";
@@ -19,77 +20,60 @@ import Sidebar from "@layouts/Sidebar/Sidebar";
 import NotificationPanel from "@layouts/NotificationPanel/NotificationPanel";
 import "./MainLayout.css";
 
+/* Tiêu đề thanh header theo trang. Khớp theo TIỀN TỐ đường dẫn nên phải xếp mục cụ thể
+   trước mục tổng quát (/orders/... trước /orders). */
 const PAGE_META = [
   {
-    match: "/create-order/buy-orders",
-    title: "TẠO ĐƠN HÀNG MUA HỘ",
-    subtitle:
-      "Tạo yêu cầu mua hàng từ các website nước ngoài.",
-  },
-  {
-    match: "/create-order/consignment",
-    title: "TẠO ĐƠN HÀNG KÝ GỬI",
-    subtitle:
-      "Khai báo hàng hóa và gửi về kho VCL.",
-  },
-  {
-    match: "/processing-orders",
-    title: "ĐƠN ĐANG XỬ LÝ",
-    subtitle:
-      "Theo dõi tiến độ xử lý và vận chuyển đơn hàng.",
-  },
-  {
-    match: "/check-orders",
-    title: "KIỆN CHỜ BÁO GIÁ",
-    subtitle:
-      "Kiểm tra các kiện hàng đang chờ xác nhận chi phí.",
-  },
-  {
-    match: "/quotations",
-    title: "CHI TIẾT BÁO GIÁ",
-    subtitle:
-      "Xem chi tiết chi phí và xác nhận báo giá.",
-  },
-  {
-    match: "/warehouse",
-    title: "KHO HÀNG MUA HỘ",
-    subtitle:
-      "Theo dõi nhập kho nước ngoài và thông quan của đơn mua hộ.",
-  },
-  {
-    match: "/tracking",
-    title: "THEO DÕI ĐƠN HÀNG",
-    subtitle:
-      "Hành trình đơn ký gửi, giữ hàng, tất toán, giao hàng và xử lý sự cố.",
-  },
-
-  {
-    match: "/settings/profile-config",
-    title: "CẤU HÌNH TÀI KHOẢN",
-    subtitle:
-      "Quản lý thông tin và thiết lập tài khoản.",
-  },
-  {
-    match:
-      "/settings/chinh-sach-dich-vu",
-    title: "CHÍNH SÁCH DỊCH VỤ",
-    subtitle:
-      "Thông tin điều khoản và chính sách sử dụng.",
+    match: "/create-order/mua-ho",
+    title: "TẠO ĐƠN MUA HỘ",
+    subtitle: "Tạo yêu cầu mua hàng từ các website nước ngoài.",
   },
   {
     match: "/create-order",
-    title: "TẠO ĐƠN HÀNG",
+    title: "TẠO ĐƠN KÝ GỬI",
+    subtitle: "Khai báo hàng hóa và gửi về kho VCL.",
+  },
+  {
+    match: "/orders/mua-ho",
+    title: "ĐƠN MUA HỘ",
+    subtitle: "Yêu cầu VCL mua hàng hộ và vận chuyển về Việt Nam.",
+  },
+  {
+    match: "/orders/ky-gui",
+    title: "ĐƠN KÝ GỬI",
+    subtitle: "Hàng bạn tự mua và gửi về kho VCL, lọc theo việc bạn cần làm.",
+  },
+  {
+    match: "/orders/",
+    title: "CHI TIẾT ĐƠN KÝ GỬI",
     subtitle:
-      "Lựa chọn dịch vụ phù hợp để bắt đầu.",
+      "Hành trình, báo giá, thanh toán, kiện & kho và sự cố của đơn — tất cả trong một trang.",
+  },
+  {
+    match: "/payment",
+    title: "THANH TOÁN",
+    subtitle: "Khoản đang chờ bạn trả và lịch sử giao dịch.",
+  },
+  {
+    match: "/customer-service-chat",
+    title: "HỖ TRỢ KHÁCH HÀNG",
+    subtitle: "Trò chuyện trực tiếp với nhân viên VCL.",
+  },
+  {
+    match: "/settings/profile-config",
+    title: "CẤU HÌNH TÀI KHOẢN",
+    subtitle: "Quản lý thông tin và thiết lập tài khoản.",
+  },
+  {
+    match: "/settings/chinh-sach-dich-vu",
+    title: "CHÍNH SÁCH DỊCH VỤ",
+    subtitle: "Thông tin điều khoản và chính sách sử dụng.",
   },
   {
     match: "/dashboard",
-    title: "BẢNG ĐIỀU KHIỂN",
-    subtitle:
-      "Tổng quan hoạt động và tình trạng đơn hàng.",
+    title: "VIỆC CẦN LÀM",
+    subtitle: "Những việc đang chờ bạn xử lý hôm nay.",
   },
-  
-
 ];
 
 const getPageMeta = (pathname) =>
@@ -200,31 +184,6 @@ const TimeSceneIcon = ({ type }) => {
   );
 };
 
-const WalletIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    aria-hidden="true"
-  >
-    <path
-      d="M4 6.5A2.5 2.5 0 0 1 6.5 4h10A2.5 2.5 0 0 1 19 6.5v11A2.5 2.5 0 0 1 16.5 20h-10A2.5 2.5 0 0 1 4 17.5v-11Z"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    />
-    <path
-      d="M15 10h5v5h-5a2.5 2.5 0 1 1 0-5Z"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    />
-    <circle
-      cx="15.5"
-      cy="12.5"
-      r="0.8"
-      fill="currentColor"
-    />
-  </svg>
-);
-
 export default function MainLayout() {
   const location = useLocation();
 
@@ -287,8 +246,6 @@ export default function MainLayout() {
     [currentTime]
   );
 
-  const balance = 0;
-
   return (
     <div className="main-layout-container">
       <Sidebar />
@@ -304,13 +261,21 @@ export default function MainLayout() {
 
           <div className="main-header-left">
             <div className="header-breadcrumb">
-              <span className="breadcrumb-home-box">
-                <HomeOutlined />
-              </span>
+              {/* "Việc cần làm" không còn là một dòng menu (menu chỉ còn 4 mục), nên đây
+                  là lối quay về nó từ mọi trang. */}
+              <Link
+                to="/customer/dashboard"
+                className="breadcrumb-home-link"
+                title="Về bảng Việc cần làm"
+              >
+                <span className="breadcrumb-home-box">
+                  <HomeOutlined />
+                </span>
 
-              <span className="breadcrumb-root">
-                HOME
-              </span>
+                <span className="breadcrumb-root">
+                  HOME
+                </span>
+              </Link>
 
               <span className="breadcrumb-separator">
                 /

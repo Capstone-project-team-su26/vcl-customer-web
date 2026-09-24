@@ -48,6 +48,8 @@ export const createEmptyFormErrors = () => ({
   selectedDeliveryAddress: "",
   optionalServices: "",
   note: "",
+  /* Lỗi cấp ĐƠN (tổng cân nặng / tổng giá trị vượt trần), không thuộc ô nào. */
+  packages: "",
 });
 
 export const createEmptyAddressForm = () => ({
@@ -536,130 +538,233 @@ export const validatePositiveNumber = (value, label) => {
   return "";
 };
 
-export const validatePackage = (pkg) => {
-  const errors = {};
+/*
+ * GIỚI HẠN NGHIỆP VỤ — một nguồn duy nhất cho cả câu báo lỗi lẫn dòng gợi ý trên nhãn.
+ * Sửa số ở đây là đổi cả hai, không còn cảnh nhãn ghi "tối đa 3 kg" mà lỗi báo 5 kg.
+ */
+export const PACKAGE_LIMITS = Object.freeze({
+  maxQuantity: 5,
+  maxDeclaredValue: 6000000,
+  maxWeight: 3,
+  maxLength: 100,
+  maxWidth: 200,
+  maxHeight: 50,
+});
 
-  if (!pkg.productName.trim()) {
-    errors.productName = "Vui lòng nhập tên sản phẩm.";
+/** Giới hạn tính trên cả đơn (cộng mọi kiện). */
+export const ORDER_LIMITS = Object.freeze({
+  maxTotalWeight: 5,
+  maxTotalValue: 10000000,
+});
+
+const toText = (value) => String(value ?? "").trim();
+
+const formatVndNumber = (value) => Number(value).toLocaleString("vi-VN");
+
+/*
+ * MỘT Ô = MỘT HÀM KIỂM.
+ *
+ * Màn hình gọi đúng những hàm này lúc khách đang gõ / vừa rời ô, còn lúc bấm gửi thì
+ * validatePackage / validateConsignmentForm chạy lại cũng chính chúng. Nhờ vậy không bao
+ * giờ có chuyện "gõ thì im, bấm gửi mới báo" hay hai nơi nói hai câu khác nhau.
+ */
+export const PACKAGE_FIELD_VALIDATORS = Object.freeze({
+  productName: (pkg) =>
+    toText(pkg?.productName) ? "" : "Vui lòng nhập tên sản phẩm.",
+
+  productType: (pkg) => (pkg?.productType ? "" : "Vui lòng chọn loại hàng hóa."),
+
+  quantity: (pkg) => {
+    if (toText(pkg?.quantity) === "") return "Vui lòng nhập số lượng.";
+
+    const quantity = Number(pkg.quantity);
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return "Số lượng phải là số nguyên từ 1 trở lên.";
+    }
+
+    if (quantity > PACKAGE_LIMITS.maxQuantity) {
+      return `Số lượng tối đa ${PACKAGE_LIMITS.maxQuantity} sản phẩm trên 1 kiện hàng.`;
+    }
+
+    return "";
+  },
+
+  declaredValue: (pkg) => {
+    if (toText(pkg?.declaredValue) === "") return "Vui lòng nhập giá trị khai báo.";
+
+    const declaredValue = Number(pkg.declaredValue);
+
+    if (!Number.isFinite(declaredValue) || declaredValue <= 0) {
+      return "Giá trị kiện hàng phải lớn hơn 0.";
+    }
+
+    if (declaredValue > PACKAGE_LIMITS.maxDeclaredValue) {
+      return `Giá trị 1 kiện hàng không được vượt quá ${formatVndNumber(
+        PACKAGE_LIMITS.maxDeclaredValue,
+      )} đ.`;
+    }
+
+    return "";
+  },
+
+  weight: (pkg) => {
+    if (toText(pkg?.weight) === "") return "Vui lòng nhập cân nặng.";
+
+    const weight = Number(pkg.weight);
+
+    if (!Number.isFinite(weight) || weight <= 0) return "Cân nặng phải lớn hơn 0.";
+
+    if (weight > PACKAGE_LIMITS.maxWeight) {
+      return `Cân nặng tối đa ${PACKAGE_LIMITS.maxWeight} kg cho mỗi kiện hàng.`;
+    }
+
+    return "";
+  },
+
+  length: (pkg) => {
+    if (toText(pkg?.length) === "") return "Vui lòng nhập chiều dài.";
+
+    const length = Number(pkg.length);
+
+    if (!Number.isFinite(length) || length <= 0) return "Chiều dài phải lớn hơn 0.";
+
+    if (length > PACKAGE_LIMITS.maxLength) {
+      return `Chiều dài tối đa ${PACKAGE_LIMITS.maxLength} cm.`;
+    }
+
+    return "";
+  },
+
+  width: (pkg) => {
+    if (toText(pkg?.width) === "") return "Vui lòng nhập chiều rộng.";
+
+    const width = Number(pkg.width);
+
+    if (!Number.isFinite(width) || width <= 0) return "Chiều rộng phải lớn hơn 0.";
+
+    if (width > PACKAGE_LIMITS.maxWidth) {
+      return `Chiều rộng tối đa ${PACKAGE_LIMITS.maxWidth} cm.`;
+    }
+
+    return "";
+  },
+
+  height: (pkg) => {
+    if (toText(pkg?.height) === "") return "Vui lòng nhập chiều cao.";
+
+    const height = Number(pkg.height);
+
+    if (!Number.isFinite(height) || height <= 0) return "Chiều cao phải lớn hơn 0.";
+
+    if (height > PACKAGE_LIMITS.maxHeight) {
+      return `Chiều cao tối đa ${PACKAGE_LIMITS.maxHeight} cm.`;
+    }
+
+    return "";
+  },
+
+  images: (pkg) =>
+    pkg?.images?.length ? "" : "Vui lòng tải ít nhất 1 ảnh sản phẩm.",
+});
+
+/** Kiểm MỘT ô của kiện hàng — dùng khi khách đang gõ hoặc vừa rời ô. */
+export const validatePackageField = (field, pkg) =>
+  PACKAGE_FIELD_VALIDATORS[field] ? PACKAGE_FIELD_VALIDATORS[field](pkg) : "";
+
+export const validatePackage = (pkg) =>
+  Object.fromEntries(
+    Object.entries(PACKAGE_FIELD_VALIDATORS)
+      .map(([field, validate]) => [field, validate(pkg)])
+      .filter(([, message]) => Boolean(message)),
+  );
+
+/** Các ô ở cột trái (tuyến, người nhận, địa chỉ, ghi chú). */
+export const FORM_FIELD_VALIDATORS = Object.freeze({
+  route: (form) => (form?.route ? "" : "Vui lòng chọn tuyến hàng."),
+
+  shippingOption: (form) =>
+    form?.shippingOption ? "" : "Vui lòng chọn phương thức vận chuyển.",
+
+  receiverName: (form) => {
+    const name = toText(form?.receiverName);
+
+    if (!name) return "Vui lòng nhập tên người nhận.";
+    if (name.length < 2) return "Tên người nhận phải có ít nhất 2 ký tự.";
+
+    return "";
+  },
+
+  receiverPhone: (form) => {
+    const phone = toText(form?.receiverPhone);
+
+    if (!phone) return "Vui lòng nhập số điện thoại.";
+    if (!/^0\d{9}$/.test(phone)) {
+      return "Số điện thoại phải có 10 số và bắt đầu bằng số 0.";
+    }
+
+    return "";
+  },
+
+  selectedDeliveryAddress: (form) =>
+    toText(form?.selectedDeliveryAddress)
+      ? ""
+      : "Vui lòng thêm và chọn địa chỉ nhận hàng.",
+
+  note: (form) =>
+    toText(form?.note) ? "" : "Vui lòng nhập ghi chú cho đơn ký gửi.",
+});
+
+/** Kiểm MỘT ô của phần thông tin chung. */
+export const validateFormField = (field, form) =>
+  FORM_FIELD_VALIDATORS[field] ? FORM_FIELD_VALIDATORS[field](form) : "";
+
+/** Số liệu cộng dồn của đơn — màn hình vừa dùng để báo lỗi, vừa để vẽ thanh giới hạn. */
+export const getOrderTotals = (packages = []) => ({
+  packageCount: packages.length,
+
+  totalWeight: packages.reduce(
+    (total, pkg) => total + (Number(pkg?.weight) || 0),
+    0,
+  ),
+
+  totalValue: packages.reduce(
+    (total, pkg) => total + (Number(pkg?.declaredValue) || 0),
+    0,
+  ),
+});
+
+/** Lỗi vượt trần của cả đơn; rỗng là chưa chạm trần. */
+export const getOrderTotalsError = (packages = []) => {
+  const { totalWeight, totalValue } = getOrderTotals(packages);
+
+  if (totalValue > ORDER_LIMITS.maxTotalValue) {
+    return `Tổng giá trị hàng hóa của đơn hàng (${formatVndNumber(
+      totalValue,
+    )} đ) vượt quá giới hạn tối đa ${formatVndNumber(
+      ORDER_LIMITS.maxTotalValue,
+    )} đ.`;
   }
 
-  if (!pkg.productType) {
-    errors.productType = "Vui lòng chọn loại hàng hóa.";
+  if (totalWeight > ORDER_LIMITS.maxTotalWeight) {
+    return `Tổng cân nặng toàn bộ đơn hàng (${totalWeight.toFixed(
+      2,
+    )} kg) vượt quá giới hạn tối đa ${ORDER_LIMITS.maxTotalWeight} kg.`;
   }
 
-  const quantity = Number(pkg.quantity);
-
-  if (pkg.quantity === "") {
-    errors.quantity = "Vui lòng nhập số lượng.";
-  } else if (!Number.isInteger(quantity) || quantity < 1) {
-    errors.quantity = "Số lượng phải là số nguyên từ 1 trở lên.";
-  } else if (quantity > 5) {
-    errors.quantity = "Số lượng tối đa 5 sản phẩm trên 1 kiện hàng.";
-  }
-
-  const declaredValue = Number(pkg.declaredValue);
-
-  if (pkg.declaredValue === "") {
-    errors.declaredValue = "Vui lòng nhập giá trị khai báo.";
-  } else if (!Number.isFinite(declaredValue) || declaredValue <= 0) {
-    errors.declaredValue = "Giá trị kiện hàng phải lớn hơn 0.";
-  } else if (declaredValue > 6000000) {
-    errors.declaredValue = "Giá trị 1 kiện hàng không được vượt quá 6.000.000 đ.";
-  }
-
-  const weight = Number(pkg.weight);
-  if (pkg.weight === "") {
-    errors.weight = "Vui lòng nhập cân nặng.";
-  } else if (!Number.isFinite(weight) || weight <= 0) {
-    errors.weight = "Cân nặng phải lớn hơn 0.";
-  } else if (weight > 3) {
-    errors.weight = "Cân nặng tối đa 3 kg cho mỗi kiện hàng.";
-  }
-
-  const length = Number(pkg.length);
-  if (pkg.length === "") {
-    errors.length = "Vui lòng nhập chiều dài.";
-  } else if (!Number.isFinite(length) || length <= 0) {
-    errors.length = "Chiều dài phải lớn hơn 0.";
-  } else if (length > 100) {
-    errors.length = "Chiều dài tối đa 100 cm.";
-  }
-
-  const width = Number(pkg.width);
-  if (pkg.width === "") {
-    errors.width = "Vui lòng nhập chiều rộng.";
-  } else if (!Number.isFinite(width) || width <= 0) {
-    errors.width = "Chiều rộng phải lớn hơn 0.";
-  } else if (width > 200) {
-    errors.width = "Chiều rộng tối đa 200 cm.";
-  }
-
-  const height = Number(pkg.height);
-  if (pkg.height === "") {
-    errors.height = "Vui lòng nhập chiều cao.";
-  } else if (!Number.isFinite(height) || height <= 0) {
-    errors.height = "Chiều cao phải lớn hơn 0.";
-  } else if (height > 50) {
-    errors.height = "Chiều cao tối đa 50 cm.";
-  }
-
-  if (!pkg.images.length) {
-    errors.images = "Vui lòng tải ít nhất 1 ảnh sản phẩm.";
-  }
-
-  return errors;
+  return "";
 };
 
 export const validateConsignmentForm = ({ form, packages }) => {
   const formErrors = createEmptyFormErrors();
 
-  if (!form.route) {
-    formErrors.route = "Vui lòng chọn tuyến hàng.";
-  }
+  /* Cùng bộ hàm mà màn hình gọi lúc khách đang gõ — xem FORM_FIELD_VALIDATORS. */
+  Object.keys(FORM_FIELD_VALIDATORS).forEach((field) => {
+    formErrors[field] = validateFormField(field, form);
+  });
 
-  if (!form.shippingOption) {
-    formErrors.shippingOption = "Vui lòng chọn phương thức vận chuyển.";
-  }
-
-  if (!form.receiverName.trim()) {
-    formErrors.receiverName = "Vui lòng nhập tên người nhận.";
-  } else if (form.receiverName.trim().length < 2) {
-    formErrors.receiverName = "Tên người nhận phải có ít nhất 2 ký tự.";
-  }
-
-  if (!form.receiverPhone.trim()) {
-    formErrors.receiverPhone = "Vui lòng nhập số điện thoại.";
-  } else if (!/^0\d{9}$/.test(form.receiverPhone.trim())) {
-    formErrors.receiverPhone =
-      "Số điện thoại phải có 10 số và bắt đầu bằng số 0.";
-  }
-
-  if (!form.selectedDeliveryAddress.trim()) {
-    formErrors.selectedDeliveryAddress =
-      "Vui lòng thêm và chọn địa chỉ nhận hàng.";
-  }
-
-  if (!form.note.trim()) {
-    formErrors.note = "Vui lòng nhập ghi chú cho đơn ký gửi.";
-  }
-
-  // Kiểm tra tổng cân nặng toàn bộ đơn hàng (tối đa 5 kg)
-  const totalOrderWeight = packages.reduce(
-    (sum, p) => sum + (Number(p.weight) || 0),
-    0
-  );
-  if (totalOrderWeight > 5) {
-    formErrors.packages = `Tổng cân nặng toàn bộ đơn hàng (${totalOrderWeight.toFixed(2)} kg) vượt quá giới hạn tối đa 5 kg.`;
-  }
-
-  // Kiểm tra tổng giá trị khai báo toàn bộ đơn hàng (tối đa 10.000.000 đ)
-  const totalOrderValue = packages.reduce(
-    (sum, p) => sum + (Number(p.declaredValue) || 0),
-    0
-  );
-  if (totalOrderValue > 10000000) {
-    formErrors.packages = `Tổng giá trị hàng hóa của đơn hàng (${totalOrderValue.toLocaleString("vi-VN")} đ) vượt quá giới hạn tối đa 10.000.000 đ.`;
-  }
+  /* Trần của cả đơn: tổng cân nặng và tổng giá trị mọi kiện. */
+  formErrors.packages = getOrderTotalsError(packages);
 
   if (form?.optionalServices?.requiresWoodenCrate !== true) {
     formErrors.optionalServices =

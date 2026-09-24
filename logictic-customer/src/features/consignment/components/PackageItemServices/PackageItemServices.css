@@ -75,3 +75,124 @@
 .pis-desc.is-warning {
   color: #b45309;
 }
+
+/* ===== Cách tính + thành tiền của từng dịch vụ ===== */
+
+.pis-estimate {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+
+  margin-top: 8px;
+  padding: 7px 10px;
+
+  border: 1px dashed #dbe3ee;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.pis-estimate__formula {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Khi phí bị chặn bởi mức sàn / trần thì phải nói ra, nếu không con số nhìn như tính sai. */
+.pis-estimate__note {
+  padding: 1px 7px;
+  border-radius: 999px;
+
+  background: #fef3c7;
+  color: #92400e;
+
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pis-estimate__amount {
+  margin-left: auto;
+
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pis-item.is-checked .pis-estimate {
+  border-style: solid;
+  border-color: #bfdbfe;
+  background: #f5f9ff;
+}
+
+.pis-desc.is-muted {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.pis-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin-top: 10px;
+  padding: 10px 12px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.pis-summary span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pis-summary strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pis-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+
+  margin: 8px 0 0;
+
+  color: #64748b;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.pis-footnote .anticon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* Điều kiện áp dụng của dịch vụ (ví dụ bảo hiểm chỉ cho kiện khai giá từ 5.000.000 đ). */
+.pis-condition {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 2px 9px;
+
+  border-radius: 999px;
+  background: #eef2f7;
+
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.pis-condition.is-unmet {
+  background: #fff7ed;
+  color: #c2410c;
+}

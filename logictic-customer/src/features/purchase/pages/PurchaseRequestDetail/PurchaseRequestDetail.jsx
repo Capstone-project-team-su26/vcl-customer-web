@@ -43,7 +43,9 @@ import {
 } from "@shared/utils/timeUtc";
 
 import { getPurchaseRequestDetailApi } from "@features/purchase/api/purchaseRequestApi";
-import { getProductTypesApi } from "@features/consignment/api/consignmentApi.mock";
+/* Loại hàng hoá lấy danh mục thật để nhãn khớp với dữ liệu đơn trả về từ server. */
+import { getProductTypesApi } from "@features/consignment/api/consignmentApi";
+import SupplierOrderPanel from "@features/purchase/components/SupplierOrderPanel/SupplierOrderPanel";
 
 import "./PurchaseRequestDetail.css";
 
@@ -451,7 +453,13 @@ const PurchaseRequestDetail = () => {
     location.state?.orderSummary ||
     null;
 
+  /*
+   * Route hiện tại là `/orders/mua-ho/:requestId` (khai ở app/router/paths.js). Hai tên cũ
+   * `purchaseRequestId` / `id` giữ lại cho đường dẫn cũ còn nằm trong lịch sử trình duyệt —
+   * thiếu `requestId` thì màn dừng ngay ở nhánh "không tìm thấy mã" mà chưa kịp gọi API.
+   */
   const requestId =
+    params.requestId ||
     params.purchaseRequestId ||
     params.id ||
     stateSummary?.purchaseRequestId ||
@@ -1087,6 +1095,26 @@ const PurchaseRequestDetail = () => {
             </p>
           </div>
         </div>
+      </section>
+
+      {/*
+        Đơn mua nhà cung cấp: nơi khách duyệt phần chênh giá và theo dõi người bán.
+        Khối tự ẩn phần thao tác khi chưa tới lượt khách, và tự rỗng nếu bản backend
+        đang chạy chưa có luồng mua hộ chuẩn.
+      */}
+      <section className="purchase-detail-products-section">
+        <div className="purchase-detail-section-header">
+          <div>
+            <h2>Đơn mua nhà cung cấp</h2>
+
+            <p>
+              VCL đặt hàng theo từng nhà cung cấp. Nếu giá mua thực cao hơn giá đã báo,
+              bạn sẽ thấy phần chênh và quyết định ở đây.
+            </p>
+          </div>
+        </div>
+
+        <SupplierOrderPanel purchaseRequestId={requestId} />
       </section>
 
       <section className="purchase-detail-products-section">

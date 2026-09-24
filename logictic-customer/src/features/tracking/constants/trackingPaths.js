@@ -1,12 +1,17 @@
 /**
- * Đường dẫn màn theo dõi đơn — BẢN SAO của khoá `orderTracking` / `orderTrackingDetail`
- * trong src/app/router/paths.js.
+ * Đường dẫn màn theo dõi đơn.
  *
- * Vì sao chép lại: feature không được import ngược lên tầng app (ARCHITECTURE mục 1),
- * nhưng thẻ tóm tắt ở chi tiết đơn / lịch sử thanh toán / thông báo cần dẫn khách sang
- * đây. Đổi URL ở paths.js thì đổi luôn ở đây.
+ * Từ đợt gộp IA, màn "Theo dõi đơn hàng" riêng không còn: hành trình là MỘT TAB của
+ * trang chi tiết đơn `/orders/:orderId/hanh-trinh`, và danh sách theo dõi nhập vào
+ * danh sách đơn ký gửi `/orders/ky-gui`.
+ *
+ * File này giữ lại vì các khối của settlement / delivery đang import theo đường dẫn cũ,
+ * nhưng KHÔNG còn định nghĩa gì của riêng nó — chỉ xuất lại bảng đường dẫn của feature
+ * "orders" để hai nơi không bao giờ lệch nhau. Code mới hãy import thẳng
+ * `@features/orders/constants/orderPaths`.
  */
-export const ORDER_TRACKING_LIST_PATH = "/tracking";
-
-export const orderTrackingDetailPath = (orderId) =>
-  `/tracking/${encodeURIComponent(String(orderId ?? ""))}`;
+export {
+  CONSIGNMENT_ORDERS_PATH,
+  ORDER_TABS,
+  orderDetailPath,
+} from "@features/orders/constants/orderPaths";

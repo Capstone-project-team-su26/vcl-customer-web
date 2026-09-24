@@ -31,7 +31,13 @@ import {
   getConsignmentShippingOptionsApi,
   getDeliveryAddressesApi,
   getProductTypesApi,
-} from "@features/consignment/api/consignmentApi.mock";
+/*
+ * API THẬT, không phải mock: danh sách tuyến và phương thức vận chuyển phải lấy từ bảng giá
+ * đang có hiệu lực. Bản mock liệt kê 4 phương thức (thêm "Tiết kiệm", "Đường biển") trong khi
+ * production chỉ bán Express và Standard — khách chọn phương thức không có dòng giá thì backend
+ * từ chối đơn, hoặc báo giá ra cước 0.
+ */
+} from "@features/consignment/api/consignmentApi";
 
 import { createPurchaseRequestApi } from "@features/purchase/api/purchaseRequestApi";
 
@@ -76,6 +82,8 @@ import {
 } from "./ConsignmentBuyOrder.helpers";
 
 import "./ConsignmentBuyOrder.css";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import { PURCHASE_ORDERS_PATH } from "@features/orders/constants/orderPaths";
 
 const FieldError = ({ message }) => {
   if (!message) {
@@ -1132,7 +1140,7 @@ export default function ConsignmentBuyOrder() {
         result?.message || "Yêu cầu mua hộ đã được tiếp nhận.",
       );
 
-      navigate("/processing-orders/purchase-requests");
+      navigate(PURCHASE_ORDERS_PATH);
     } catch (error) {
       AuthNotify.error(
         "Tạo yêu cầu thất bại",

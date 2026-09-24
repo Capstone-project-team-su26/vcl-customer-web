@@ -2,10 +2,14 @@ import React, {
   useState,
 } from "react";
 
+import { useLocation } from "react-router-dom";
+
 import {
   HistoryOutlined,
   ShoppingOutlined,
 } from "@ant-design/icons";
+
+import { parsePayOsReturn } from "@features/payment/utils/consignmentPaymentReturn";
 
 import BuyOrderHistoryContent from "@features/history/components/BuyOrderHistoryContent/BuyOrderHistoryContent";
 import ConsignmentHistoryContent from "@features/history/components/ConsignmentHistoryContent/ConsignmentHistoryContent";
@@ -56,11 +60,18 @@ const ConsignmentIcon = ({
 );
 
 export default function TransactionHistoryTabs() {
+  const location = useLocation();
+
+  /* payOS trả khách về /payment/lich-su kèm query của nó. Người xử lý query đó nằm trong
+     ConsignmentHistoryList (tab Ký gửi), nên phải mở sẵn đúng tab ấy — mở nhầm tab Mua hộ
+     là khoản cọc vừa trả không ai poll trạng thái. */
   const [
     activeTab,
     setActiveTab,
-  ] = useState(
-    TAB_KEYS.BUY_ORDER
+  ] = useState(() =>
+    parsePayOsReturn(location.search).hasPayOsParams
+      ? TAB_KEYS.CONSIGNMENT
+      : TAB_KEYS.BUY_ORDER
   );
 
   const isBuyOrder =

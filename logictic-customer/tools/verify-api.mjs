@@ -1285,18 +1285,20 @@ if (loadError) {
    * KHÔNG còn import module đã nối API thật — kể cả gián tiếp qua barrel.
    */
   const OUT_OF_WAVE_SCREENS = {
-    /* Đợt C: hai màn kho chỉ còn phần mua hộ (mock) — không được chạm module ký gửi thật.
-       ReceiveGoods, WarehouseReceiptPage, WarehouseShipmentDetail, KiGuiDetail đã xoá
-       (thay bằng màn Theo dõi đơn /tracking gọi API thật). */
-    "src/features/warehouse/pages/ThongQuanVn/ThongQuanVn.jsx": [],
-    "src/features/warehouse/pages/CheckinNhapKho/CheckinNhapKho.jsx": [],
+    /* Đợt gộp IA: toàn bộ feature "warehouse" phía khách đã xoá (CheckinNhapKho,
+       ThongQuanVn, MuaHoDetail) — khách không vận hành kho, phần kiện/kho của đơn nằm ở
+       tab "Kiện & kho" của /orders/:orderId. Hai màn danh sách mua hộ cũ
+       (PurchaseRequestPendingList, BuyForMeQuotationList) cũng đã xoá, thay bằng danh
+       sách đơn duy nhất /orders. Màn chi tiết mua hộ còn lại vẫn phải trỏ bản mock. */
     "src/features/marketing/components/FloatingChat/FloatingChat.jsx": ["consignment", "restricted", "pricing"],
     "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.constants.js": ["consignment"],
     "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.jsx": ["upload"],
-    "src/features/purchase/pages/ConsignmentBuyOrder/ConsignmentBuyOrder.jsx": ["consignment"],
+    /* Màn tạo yêu cầu mua hộ nay lấy tuyến / phương thức / loại hàng từ consignmentApi THẬT
+       — chỉ phần tạo yêu cầu (purchaseRequestApi) còn là mock. */
     "src/features/purchase/pages/ConsignmentBuyOrder/ConsignmentBuyOrder.helpers.js": ["upload"],
-    "src/features/purchase/pages/PurchaseRequestDetail/PurchaseRequestDetail.jsx": ["consignment"],
-    "src/features/purchase/components/PackageOptionalServicesS1/PackageOptionalServicesS1.jsx": ["pricing"],
+    /* Chi tiết mua hộ nay đọc yêu cầu + danh mục loại hàng từ API thật. */
+    /* Dịch vụ tuỳ chọn của mua hộ nay đọc BẢNG GIÁ THẬT: rule mock để value=null nên màn
+       in "1 kiện × 0 đ = 0 đ", khách tưởng miễn phí trong khi thật là 35.000 đ/kiện. */
     /* Đợt B: hộp thoại cọc dùng chung với mua hộ — mặc định phải là tỷ lệ cọc mock. */
     "src/features/payment/components/QuotationPaymentConfirmDialog/QuotationPaymentConfirmDialog.jsx": ["pricing"],
     /* Đợt B: màn báo giá mua hộ không được chạm vào module đã nối API thật. */
@@ -1592,7 +1594,7 @@ if (loadError) {
     { method: "PUT", url: `/api/quotations/${QUOTATION_ID}/confirm-and-pay`, reply },
   ];
 
-  await check("Xác nhận + cọc (payOS): body { paymentMethod, returnUrl, cancelUrl } → bóc data, có checkoutUrl và orderCode", async () => {
+  await check("Xác nhận + cọc (SePay): body { paymentMethod, returnUrl, cancelUrl } → bóc data, có checkoutUrl và orderCode", async () => {
     resetState({ localToken: "tok-local" });
     routes = confirmRoute(() =>
       ok({
@@ -1611,31 +1613,31 @@ if (loadError) {
           installmentType: "DEPOSIT",
           totalBillAmount: 1_650_000,
           depositRate: 50,
-          paymentMethod: "PAYOS",
+          paymentMethod: "SEPAY",
           paymentStatus: "PENDING",
-          checkoutUrl: "https://pay.payos.vn/web/abc123",
-          paymentLinkId: "abc123",
+          checkoutUrl: "https://vcl.henrytech.cloud/api/payments/sepay/checkout/1726561234",
+          paymentLinkId: "SEPAY-1726561234",
         },
       })
     );
     const result = await consignment.confirmAndPayConsignmentQuotationApi(QUOTATION_ID, {
-      paymentMethod: "payos",
+      paymentMethod: "sepay",
       returnUrl: "https://logictic.site/history/consignment",
       cancelUrl: "https://logictic.site/history/consignment",
     });
     const requestCount = requests.length;
     const badMethod = await rejection(
-      consignment.confirmAndPayConsignmentQuotationApi(QUOTATION_ID, { paymentMethod: "SEPAY" })
+      consignment.confirmAndPayConsignmentQuotationApi(QUOTATION_ID, { paymentMethod: "PAYOS" })
     );
     return all(
       expectEqual("PUT + body", [requests[0]?.method, requests[0]?.url, requests[0]?.body], [
         "PUT",
         `/api/quotations/${QUOTATION_ID}/confirm-and-pay`,
-        { paymentMethod: "PAYOS", returnUrl: "https://logictic.site/history/consignment", cancelUrl: "https://logictic.site/history/consignment" },
+        { paymentMethod: "SEPAY", returnUrl: "https://logictic.site/history/consignment", cancelUrl: "https://logictic.site/history/consignment" },
       ]),
       expectEqual("đã bóc data", [result?.quotationStatus, result?.orderStatus, result?.amount, result?.depositRate, result?.totalBillAmount], ["ACCEPTED", "WAITING_DEPOSIT", 825_000, 50, 1_650_000]),
-      expectEqual("link payOS + mã giao dịch", [result?.checkoutUrl, result?.orderCode, result?.paymentStatus], ["https://pay.payos.vn/web/abc123", 1726561234, "PENDING"]),
-      expectEqual("SePay bị chặn ở FE, 0 request", [badMethod.resolved, requests.length - requestCount], [false, 0])
+      expectEqual("link QR SePay + mã giao dịch", [result?.checkoutUrl, result?.orderCode, result?.paymentStatus], ["https://vcl.henrytech.cloud/api/payments/sepay/checkout/1726561234", 1726561234, "PENDING"]),
+      expectEqual("payOS bị chặn ở FE, 0 request", [badMethod.resolved, requests.length - requestCount], [false, 0])
     );
   });
 
@@ -1671,14 +1673,14 @@ if (loadError) {
                 amount: 0,
                 totalBillAmount: 1_650_000,
                 depositRate: 0,
-                paymentMethod: "PAYOS",
+                paymentMethod: "SEPAY",
                 paymentStatus: "PAID",
                 checkoutUrl: null,
               },
       })
     );
     const offline = await consignment.confirmAndPayConsignmentQuotationApi(QUOTATION_ID, { paymentMethod: "OFFLINE" });
-    const zeroDeposit = await consignment.confirmAndPayConsignmentQuotationApi(QUOTATION_ID, { paymentMethod: "PAYOS" });
+    const zeroDeposit = await consignment.confirmAndPayConsignmentQuotationApi(QUOTATION_ID, { paymentMethod: "SEPAY" });
     return all(
       expectEqual("body chỉ có paymentMethod khi không truyền URL", requests[0]?.body, { paymentMethod: "OFFLINE" }),
       expectEqual("chuyển khoản tay", [offline?.paymentStatus, offline?.checkoutUrl, offline?.amount], ["PENDING_RECONCILIATION", null, 825_000]),

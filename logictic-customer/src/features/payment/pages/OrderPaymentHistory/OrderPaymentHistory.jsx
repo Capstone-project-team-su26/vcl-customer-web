@@ -418,7 +418,11 @@ const PaymentSummaryCard = ({
    COMPONENT
    ========================================================= */
 
-const OrderPaymentHistory = () => {
+/**
+ * `embedded`: trang đang nằm trong tab "Thanh toán" của /orders/:orderId, nên bỏ thanh
+ * "Quay lại / Làm mới" — khung trang chi tiết đơn đã có nút tải lại chung.
+ */
+const OrderPaymentHistory = ({ embedded = false }) => {
   const navigate = useNavigate();
   const { orderId } = useParams();
 
@@ -674,18 +678,20 @@ const OrderPaymentHistory = () => {
           </p>
 
           <div className="payment-history-error__actions">
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={
-                <ArrowBackRoundedIcon />
-              }
-              onClick={() =>
-                navigate(-1)
-              }
-            >
-              Quay lại
-            </Button>
+            {!embedded && (
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={
+                  <ArrowBackRoundedIcon />
+                }
+                onClick={() =>
+                  navigate(-1)
+                }
+              >
+                Quay lại
+              </Button>
+            )}
 
             <Button
               variant="contained"
@@ -719,36 +725,38 @@ const OrderPaymentHistory = () => {
 
   return (
     <div className="payment-history-page">
-      <div className="payment-history-navigation">
-        <Button
-          variant="outlined"
-          color="inherit"
-          startIcon={
-            <ArrowBackRoundedIcon />
-          }
-          onClick={() =>
-            navigate(-1)
-          }
-        >
-          Quay lại
-        </Button>
+      {!embedded && (
+        <div className="payment-history-navigation">
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={
+              <ArrowBackRoundedIcon />
+            }
+            onClick={() =>
+              navigate(-1)
+            }
+          >
+            Quay lại
+          </Button>
 
-        <span>
-          Lịch sử thanh toán
-        </span>
+          <span>
+            Lịch sử thanh toán
+          </span>
 
-        <Button
-          variant="text"
-          startIcon={
-            <AutorenewRoundedIcon />
-          }
-          onClick={
-            handleReload
-          }
-        >
-          Làm mới
-        </Button>
-      </div>
+          <Button
+            variant="text"
+            startIcon={
+              <AutorenewRoundedIcon />
+            }
+            onClick={
+              handleReload
+            }
+          >
+            Làm mới
+          </Button>
+        </div>
+      )}
 
       <section className="payment-history-hero">
         <div className="payment-history-hero__main">
@@ -1207,9 +1215,14 @@ const OrderPaymentHistory = () => {
 
       {/* Khách vừa thấy tiền đã vào là muốn biết ngay "kho nhận hàng chưa" — để phiếu tiếp nhận
           ngay dưới lịch sử giao dịch, khỏi phải quay ra màn chi tiết đơn tìm. Khối tự ẩn nếu
-          đơn chưa có phiếu. */}
-      <ReceivingNoteCard orderId={orderId} />
-      <DeliveryTrackingCard orderId={orderId} />
+          đơn chưa có phiếu. Trong tab "Thanh toán" thì bỏ: phiếu kho nằm ở tab "Kiện & kho",
+          chặng giao nằm ở tab "Hành trình". */}
+      {!embedded && (
+        <>
+          <ReceivingNoteCard orderId={orderId} />
+          <DeliveryTrackingCard orderId={orderId} />
+        </>
+      )}
 
       <section className="payment-history-note">
         <ScheduleRoundedIcon />

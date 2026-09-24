@@ -270,6 +270,22 @@
     text-transform: uppercase;
   }
   
+  /* Chữ HOME + ô icon là lối quay về bảng "Việc cần làm" (mục này không còn trên menu). */
+  .breadcrumb-home-link {
+    flex: 0 0 auto;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .breadcrumb-home-link:hover .breadcrumb-root {
+    color: var(--amber-700);
+  }
+
   .breadcrumb-home-box {
     width: 30px;
     height: 30px;

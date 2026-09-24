@@ -5,10 +5,13 @@
 // và purchase chỉ phụ thuộc vào tên trang/tên component, còn cấu trúc thư mục
 // bên trong vẫn tự do thay đổi mà không kéo theo sửa import khắp dự án.
 
-// Các trang gắn thẳng vào route trong khu vực dashboard, đặt đúng tên component
-// để tra cứu ở router cho nhanh.
+// PaymentCenter là trang /payment (2 tab: cần thanh toán · lịch sử giao dịch).
+// OrderPaymentHistory không còn route riêng: nó là tab "Thanh toán" của một đơn
+// (/orders/:orderId/thanh-toan) nên nhận prop `embedded`.
+// BuyOrderPaymentHistory (lịch sử thanh toán một yêu cầu mua hộ) đã xoá — các URL cũ
+// /history/.../payments và /purchase-requests/:id/payments* nay chuyển về tab lịch sử.
+export { default as PaymentCenter } from "./pages/PaymentCenter/PaymentCenter";
 export { default as OrderPaymentHistory } from "./pages/OrderPaymentHistory/OrderPaymentHistory";
-export { default as BuyOrderPaymentHistory } from "./pages/BuyOrderPaymentHistory/BuyOrderPaymentHistory";
 
 // Hai hộp thoại này không thuộc riêng trang nào: consignment và purchase cùng mở
 // chúng ở bước chốt báo giá, nên phải nằm trong mặt tiền công khai của module.

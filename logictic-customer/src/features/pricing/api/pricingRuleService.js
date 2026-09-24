@@ -421,10 +421,17 @@ const pricingRuleService = {
       ruleCodes = [],
     } = options;
 
+    /*
+     * Mặc định lọc CONSIGNMENT. Truyền orderType: null để KHÔNG lọc — luồng mua hộ cần thế:
+     * rule WOOD_CRATE / CARTON_REPACK / bảo hiểm / kiểm hàng nằm ngoài nhóm PURCHASE
+     * (orderType=PURCHASE chỉ trả 4 rule hệ thống: phí mua, VAT, thuế NK), nên lọc theo
+     * PURCHASE thì khách không còn dịch vụ nào để chọn.
+     */
+    const requestedOrderType =
+      params?.orderType === null ? null : params?.orderType || CONSIGNMENT_ORDER_TYPE;
+
     const response = await httpClient.get("/api/pricing-rules", {
-      params: {
-        orderType: params?.orderType || CONSIGNMENT_ORDER_TYPE,
-      },
+      ...(requestedOrderType ? { params: { orderType: requestedOrderType } } : {}),
       signal,
     });
 

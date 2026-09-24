@@ -26,6 +26,17 @@ import {
   markAllNotificationsAsReadApi,
 } from "@features/notifications/api/notificationApi";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
+import {
+  CONSIGNMENT_ORDERS_PATH,
+  ORDER_KINDS,
+  ORDER_TABS,
+  PAYMENT_TABS,
+  orderDetailPath,
+  orderListPath,
+  paymentTabPath,
+  purchaseRequestDetailPath,
+  purchaseRequestQuotationPath,
+} from "@features/orders/constants/orderPaths";
 
 import "./NotificationPanel.css";
 
@@ -134,29 +145,37 @@ const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
 
   // 1b. Thông báo hành trình / hàng về VN của đơn ký gửi — "Đơn VCL-...: Hàng đã khởi hành",
   //     kho VN đã nhận hàng, sự cố, tất toán, đặt giao, đã giao, giữ hàng... Backend không gửi
-  //     id đơn trong thông báo, nên mở màn Theo dõi đơn lọc sẵn theo mã đơn.
+  //     id đơn trong thông báo, nên mở danh sách đơn lọc sẵn theo mã đơn; khách bấm một nhát
+  //     là vào đúng tab hành trình.
   if (
     code.toUpperCase().startsWith("VCL-") &&
     !fullText.includes("báo giá") &&
     JOURNEY_KEYWORDS.some((keyword) => fullText.includes(keyword))
   ) {
-    return `/tracking?search=${encodeURIComponent(code)}&finished=1`;
+    return relatedId
+      ? orderDetailPath(relatedId, ORDER_TABS.journey)
+      : orderListPath({ search: code });
   }
 
   // 2. Thông báo Hàng nhập kho / Phiếu nhập kho
-  /* Phiếu nhập kho ký gửi nằm trong chi tiết đơn. */
+  /* Phiếu nhập kho ký gửi nằm ở tab "Kiện & kho" của đơn. */
   if (fullText.includes("phiếu nhập kho") || fullText.includes("nhập kho")) {
-    return "/history/consignment";
+    if (relatedId) return orderDetailPath(relatedId, ORDER_TABS.parcels);
+
+    return code ? orderListPath({ search: code }) : CONSIGNMENT_ORDERS_PATH;
   }
 
   // 3. Thông báo Báo giá (Quotation)
   if (normalizedType === "quotation" || fullText.includes("báo giá")) {
     if (source === "buy" || fullText.includes("mua hộ") || code.startsWith("PUR-")) {
       return relatedId
-        ? `/check-orders/buy-on-behalf/${relatedId}`
-        : "/check-orders/buy-on-behalf";
+        ? purchaseRequestQuotationPath(relatedId)
+        : orderListPath({ kind: ORDER_KINDS.purchase, stage: "cho-bao-gia" });
     }
-    return relatedId ? `/quotations/${relatedId}` : "/check-orders";
+
+    return relatedId
+      ? orderDetailPath(relatedId, ORDER_TABS.quotation)
+      : orderListPath({ kind: ORDER_KINDS.consignment, stage: "cho-bao-gia" });
   }
 
   // 4. Thông báo Thanh toán / Đặt cọc (Payment)
@@ -166,13 +185,15 @@ const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
     fullText.includes("đặt cọc")
   ) {
     if (source === "buy" || fullText.includes("mua hộ") || code.startsWith("PUR-")) {
+      /* Mua hộ chưa có tab thanh toán riêng của đơn — về lịch sử giao dịch chung. */
       return relatedId
-        ? `/history/buy-on-behalf/${relatedId}/payments`
-        : "/history/buy-on-behalf";
+        ? purchaseRequestDetailPath(relatedId)
+        : paymentTabPath(PAYMENT_TABS.history);
     }
+
     return relatedId
-      ? `/orders/${relatedId}/payments/history`
-      : "/history/consignment";
+      ? orderDetailPath(relatedId, ORDER_TABS.payment)
+      : paymentTabPath(PAYMENT_TABS.due);
   }
 
   // 5. Thông báo Ký gửi (Consignment)
@@ -183,15 +204,9 @@ const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
     code.startsWith("VCL-") ||
     code.startsWith("KG-")
   ) {
-    // Nếu là yêu cầu vừa được duyệt hoặc đang xử lý
-    if (
-      fullText.includes("đã được duyệt") ||
-      fullText.includes("chờ xử lý") ||
-      fullText.includes("đang xử lý")
-    ) {
-      return "/processing-orders";
-    }
-    return "/history/consignment";
+    if (relatedId) return orderDetailPath(relatedId);
+
+    return orderListPath({ kind: ORDER_KINDS.consignment, search: code || undefined });
   }
 
   // 6. Thông báo Mua hộ (Purchase Request / Buy On Behalf)
@@ -203,15 +218,9 @@ const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
     code.startsWith("PUR-") ||
     code.startsWith("MH-")
   ) {
-    // Nếu là đơn mua hộ vừa được đặt hàng hoặc đang chờ duyệt
-    if (
-      fullText.includes("đã được đặt hàng") ||
-      fullText.includes("chờ duyệt") ||
-      fullText.includes("đang xử lý")
-    ) {
-      return "/processing-orders/purchase-requests";
-    }
-    return "/history/buy-on-behalf";
+    return relatedId
+      ? purchaseRequestDetailPath(relatedId)
+      : orderListPath({ kind: ORDER_KINDS.purchase });
   }
 
   // 7. Mặc định
@@ -807,7 +816,7 @@ const NotificationPanel = ({
           className="notif-view-all-btn buy"
           onClick={() => {
             onClose();
-            navigate("/history/buy-on-behalf");
+            navigate(orderListPath({ kind: ORDER_KINDS.purchase }));
           }}
         >
           <ShoppingBagOutlinedIcon style={{ fontSize: 14 }} />
@@ -820,7 +829,7 @@ const NotificationPanel = ({
           className="notif-view-all-btn consign"
           onClick={() => {
             onClose();
-            navigate("/history/consignment");
+            navigate(orderListPath({ kind: ORDER_KINDS.consignment }));
           }}
         >
           <Inventory2OutlinedIcon style={{ fontSize: 14 }} />

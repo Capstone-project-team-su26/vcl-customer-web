@@ -3,11 +3,12 @@
 // Barrel này là cửa duy nhất cho router và các feature khác, nhờ đó cấu trúc thư mục
 // bên trong còn tự do thay đổi mà không kéo theo hàng loạt chỗ import bên ngoài.
 
-// Các trang gắn thẳng vào route, đặt tên đúng tên component để tra ở router cho nhanh.
+// Ba màn còn lại. ConsignmentBuyOrder là form đặt mua hộ (nhúng trong /create-order);
+// hai màn chi tiết gắn vào /orders/mua-ho/:requestId và .../bao-gia.
+// Hai màn danh sách cũ (PurchaseRequestPendingList, BuyForMeQuotationList) đã xoá —
+// danh sách đơn duy nhất /orders?type=mua-ho thay cả hai.
 export { default as ConsignmentBuyOrder } from "./pages/ConsignmentBuyOrder/ConsignmentBuyOrder";
-export { default as PurchaseRequestPendingList } from "./pages/PurchaseRequestPendingList/PurchaseRequestPendingList";
 export { default as PurchaseRequestDetail } from "./pages/PurchaseRequestDetail/PurchaseRequestDetail";
-export { default as BuyForMeQuotationList } from "./pages/BuyForMeQuotationList/BuyForMeQuotationList";
 export { default as BuyForMeQuotationListDetail } from "./pages/BuyForMeQuotationListDetail/BuyForMeQuotationListDetail";
 
 // Hai khối dựng nên form đặt mua hộ. Chúng nằm ở components/ chứ không lồng trong

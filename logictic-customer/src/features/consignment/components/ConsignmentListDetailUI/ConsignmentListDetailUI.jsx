@@ -1640,6 +1640,8 @@ export default function ConsignmentListDetailUI({
   isCancelModalOpen,
   isCancelling,
   isAlreadyCancelled,
+  /* Nhúng trong tab "Kiện & kho" của /orders/:orderId: khung trang đã có nút quay lại. */
+  embedded = false,
   onBack,
   onReload,
   onCopyConsignmentCode,
@@ -1715,14 +1717,16 @@ export default function ConsignmentListDetailUI({
             <p>{errorMessage || "Lô hàng không tồn tại hoặc đã bị xóa."}</p>
 
             <div className="detail-error-actions">
-              <Button
-                variant="outlined"
-                color="inherit"
-                startIcon={<ArrowBackIcon />}
-                onClick={onBack}
-              >
-                Quay lại
-              </Button>
+              {!embedded && (
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<ArrowBackIcon />}
+                  onClick={onBack}
+                >
+                  Quay lại
+                </Button>
+              )}
 
               <Button
                 variant="contained"
@@ -1741,7 +1745,7 @@ export default function ConsignmentListDetailUI({
   return (
     <>
         <div className="consignment-detail-page">
-        <DetailNavigation onBack={onBack} />
+        {!embedded && <DetailNavigation onBack={onBack} />}
 
         <DetailWarnings
           errorMessage={errorMessage}
