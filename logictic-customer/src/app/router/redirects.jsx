@@ -37,12 +37,31 @@ export const RedirectToPurchaseRequest = ({ quotation = false }) => {
  * Chuyển hướng GIỮ NGUYÊN query của URL cũ.
  *
  * `<Navigate to="/x" />` vứt hết query đi. Với `/history/consignment` thì không được:
- * payOS trả khách về đúng URL đó kèm `?code=&id=&cancel=&status=&orderCode=`, mất query
- * là vòng poll trạng thái tiền cọc không có gì để chạy và khách tưởng mất tiền.
- * (Đơn tạo từ bản mới đã trả về thẳng `/payment/lich-su`; cái này lo cho khoản đang dở.)
+ * backend trả khách về đúng URL đó (returnUrl mặc định) kèm `?orderCode=&status=`, payOS nối
+ * thêm `&code=&id=&cancel=&status=&orderCode=`; mất query là banner không biết giao dịch nào
+ * vừa trả và khách tưởng mất tiền.
+ *
+ * Hai URL cũ /history/consignment (khoản của đơn kho) và /history/buy-on-behalf (khoản của
+ * yêu cầu mua hộ) về "Thanh toán → Lịch sử giao dịch" kèm `?loai=` để mở đúng phần.
+ * URLSearchParams giữ nguyên thứ tự và khoá trùng tên (`status`/`orderCode` của ta đứng
+ * trước của payOS), nên `get()` ở trang đích vẫn đọc đúng giá trị backend gắn.
  */
-export const RedirectKeepingQuery = ({ to }) => {
+export const RedirectKeepingQuery = ({ to, params }) => {
   const { search, hash } = useLocation();
 
-  return <Navigate to={{ pathname: to, search, hash }} replace />;
+  /* `params`: khoá thêm vào query (không đè khoá URL cũ đã có). */
+  const query = new URLSearchParams(search);
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (!query.has(key)) query.set(key, value);
+  });
+
+  const nextSearch = query.toString();
+
+  return (
+    <Navigate
+      to={{ pathname: to, search: nextSearch ? `?${nextSearch}` : "", hash }}
+      replace
+    />
+  );
 };

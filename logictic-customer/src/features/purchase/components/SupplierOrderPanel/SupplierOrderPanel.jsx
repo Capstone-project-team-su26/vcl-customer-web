@@ -16,10 +16,20 @@ import { Alert, Button, Empty, Input, Modal, Spin, Tag, Typography } from "antd"
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import {
   SUPPLIER_TIMELINE,
+  getRefundReasonText,
   decideSupplierOrderApi,
   getSupplierOrdersApi,
 } from "@features/purchase/api/purchaseOrderApi";
 import { getPaymentCheckoutUrl } from "@features/purchase/api/purchaseRequestApi";
+/* Import sâu: barrel payment kéo theo các trang (thứ tự CSS). */
+import { openCheckout } from "@features/payment/utils/openCheckout";
+import {
+  PAYMENT_PURPOSES,
+  PAYMENT_SUBJECTS,
+  buildPaymentReturnUrls,
+} from "@features/payment/utils/pendingPaymentReturn";
+/* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
+import { ORDER_KINDS } from "@features/orders/constants/orderPaths";
 
 import "./SupplierOrderPanel.css";
 
@@ -73,6 +83,22 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
     };
   }, [purchaseRequestId, reloadKey]);
 
+  /* Ghi lại khoản chênh giá trước khi mở trang thanh toán: trả xong SePay đưa khách về
+     "Thanh toán → Lịch sử giao dịch", nơi báo kết quả và dẫn về đúng yêu cầu này. */
+  const payPriceDifference = (order, checkoutUrl, payment = {}) => {
+    const opened = openCheckout(checkoutUrl, {
+      subject: PAYMENT_SUBJECTS.purchaseRequest,
+      targetId: purchaseRequestId,
+      purpose: PAYMENT_PURPOSES.purchasePriceDifference,
+      orderCode: payment?.orderCode,
+      amount: payment?.amount ?? order?.priceDifferenceAmount,
+    });
+
+    if (!opened) {
+      AuthNotify.error("Không mở được trang thanh toán", "Link thanh toán không hợp lệ.");
+    }
+  };
+
   const decide = async (order, accept, reason = "") => {
     setBusyId(order.purchaseOrderId);
 
@@ -80,11 +106,13 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
       const result = await decideSupplierOrderApi(order.purchaseOrderId, {
         accept,
         reason,
-        returnUrl: window.location.href,
+        /* Phần chênh là khoản của yêu cầu mua hộ → về Lịch sử giao dịch phần Mua hộ. */
+        ...buildPaymentReturnUrls(ORDER_KINDS.purchase),
       });
 
       if (accept) {
-        const checkoutUrl = getPaymentCheckoutUrl(result?.priceDifferencePayment || result || {});
+        const payment = result?.priceDifferencePayment || result || {};
+        const checkoutUrl = getPaymentCheckoutUrl(payment);
 
         AuthNotify.success(
           "Đã ghi nhận",
@@ -93,7 +121,7 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
             : "VCL sẽ tiếp tục xử lý đơn mua."
         );
 
-        if (checkoutUrl) window.open(checkoutUrl, "_blank", "noopener");
+        if (checkoutUrl) payPriceDifference(order, checkoutUrl, payment);
       } else {
         AuthNotify.success("Đã gửi", "VCL sẽ liên hệ lại với bạn về đơn mua này.");
       }
@@ -201,6 +229,50 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
               />
             )}
 
+            {/*
+              Tiền đi NGƯỢC. Khách trả trước 100% theo giá báo, nên khi giá mua thực
+              thấp hơn — hoặc đơn bị huỷ — phần thừa là tiền của khách. Hiện rõ cả khi
+              còn đang chờ chuyển lẫn khi đã chuyển xong, để khách không phải hỏi.
+            */}
+            {order.refundAmount > 0 && (
+              <Alert
+                type={order.refundStatus === "REFUNDED" ? "success" : "info"}
+                showIcon
+                className="supplier-card__refund"
+                message={
+                  order.refundStatus === "REFUNDED"
+                    ? `Đã hoàn lại bạn ${formatVnd(order.refundAmount)}`
+                    : `Sẽ hoàn lại bạn ${formatVnd(order.refundAmount)}`
+                }
+                description={
+                  <>
+                    <div>{getRefundReasonText(order.refundType)}.</div>
+
+                    {order.cancelFeeAmount > 0 && (
+                      <div className="supplier-card__diff-note">
+                        Đã trừ phí huỷ {formatVnd(order.cancelFeeAmount)} theo chính sách huỷ
+                        sau khi đã đặt nhà cung cấp.
+                      </div>
+                    )}
+
+                    <div className="supplier-card__diff-note">
+                      {order.refundStatus === "REFUNDED"
+                        ? "Khoản này đã được chuyển trả."
+                        : "Chúng tôi sẽ chuyển trả và báo lại cho bạn."}
+                    </div>
+
+                    {/* Đơn có thể có nhiều khoản (chênh giá + giao thiếu + huỷ) — chi tiết nằm ở khối riêng. */}
+                    {order.refunds.length > 1 && (
+                      <div className="supplier-card__diff-note">
+                        Đơn này có {order.refunds.length} khoản hoàn — xem từng khoản và cách tính ở
+                        mục Tiền hoàn bên dưới.
+                      </div>
+                    )}
+                  </>
+                }
+              />
+            )}
+
             {needsDecision && (
               <div className="supplier-card__actions">
                 <Button type="primary" loading={busy} onClick={() => decide(order, true)}>
@@ -217,7 +289,7 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
                 <Button
                   type="primary"
                   disabled={!checkoutUrl}
-                  onClick={() => window.open(checkoutUrl, "_blank", "noopener")}
+                  onClick={() => payPriceDifference(order, checkoutUrl)}
                 >
                   {checkoutUrl ? "Trả phần chênh giá" : "Đang tạo lần thu…"}
                 </Button>

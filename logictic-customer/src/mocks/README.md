@@ -89,7 +89,7 @@ Số bản ghi dưới đây đếm trực tiếp từ file (nạp module rồi 
 
 | File | Bản ghi | Dùng bởi |
 | --- | --- | --- |
-| `addresses.js` | **16** tỉnh/thành, **70** quận/huyện, **272** phường/xã | `shared/api/addressApi.js` |
+| `addresses.js` | **16** tỉnh/thành, **70** quận/huyện, **272** phường/xã | `shared/api/addressApi.mock.js` (bản cũ; `addressApi.js` nay gọi danh mục GoShip thật) |
 | `catalog.js` | **6** tuyến hàng, **4** phương án vận chuyển, **14** loại sản phẩm, **19** trạng thái đơn ký gửi (mã đích), **12** bảng giá dịch vụ, **26** quy tắc tính phí (một danh mục duy nhất: phụ phí, cọc, hệ số thể tích, phí tất toán), **7** cấu hình thùng (kiêm phí thùng gỗ theo cỡ), giới hạn khai báo trên từng tuyến, **18** mặt hàng cấm/hạn chế | `pricingRuleService`, `consignmentApi`, `consignmentStatusApi`, `purchaseRequestApi`, `restrictedItemApi`, `uploadImage`, `aiOrderIntentApi` |
 | `consignments.js` | **25** đơn ký gửi (trải 16 trạng thái, từ `PENDING_REVIEW` tới `COMPLETED` / `CANCELLED` / `REJECTED`) | `consignmentApi` và 5 module khác |
 | `purchaseRequests.js` | **20** yêu cầu mua hộ, kèm báo giá và danh sách sản phẩm | `purchaseRequestApi`, `uploadImage`, `aiOrderIntentApi` |

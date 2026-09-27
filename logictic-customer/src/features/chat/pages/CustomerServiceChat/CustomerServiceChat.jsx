@@ -43,7 +43,8 @@ import {
   sendConversationMessageApi,
 } from "@features/chat/api/conversationApi";
 
-import { uploadImages } from "@shared/api/uploadImage.mock";
+/* Upload ảnh THẬT (POST /api/uploads/images) — URL Cloudinary gắn vào attachmentUrl. */
+import { uploadImages } from "@shared/api/uploadImage";
 
 import {
   INITIAL_CREATE_FORM,

@@ -6,6 +6,7 @@ import React, {
 import {
   CheckCircleOutlined,
   CheckOutlined,
+  DollarOutlined,
   EnvironmentOutlined,
   InfoCircleOutlined,
   LeftOutlined,
@@ -51,6 +52,7 @@ import {
   translateSubmitMessage,
 } from "./ConsignmentOrderConfirm.helpers";
 
+import EstimateInvoice from "@features/consignment/components/EstimateInvoice/EstimateInvoice";
 import "./ConsignmentOrderConfirm.css";
 
 function PriceInfoLabel({
@@ -155,21 +157,27 @@ function WoodCrateSummary({ summary }) {
       </div>
 
       <div className="wood-cost-formula-bar">
-        {/* Phí thùng gỗ tính theo cỡ từng kiện; chỉ hiện phí toàn đơn khi catalog khai mức > 0. */}
-        {summary.orderServiceFee > 0 && (
+        {/*
+          Phí thùng gỗ CHỈ tính theo cỡ thùng của từng kiện, nên bình thường chỉ có một ô
+          tổng — viết "25.000 = 25.000" thì thừa và làm người đọc tưởng còn khoản nào nữa.
+          Nhánh cộng bên dưới chỉ dùng nếu sau này hệ thống thật sự thu thêm một khoản cho
+          cả đơn; hiện tại backend không thu khoản đó.
+        */}
+        {summary.orderServiceFee > 0 ? (
           <>
             <div className="wood-cost-step">
               <span className="cost-step-label">Phí dịch vụ đóng thùng toàn đơn</span>
               <strong className="cost-step-val">{formatVnd(summary.orderServiceFee)}</strong>
             </div>
             <span className="cost-formula-op">+</span>
+            <div className="wood-cost-step">
+              <span className="cost-step-label">Tổng giá thùng theo kiện</span>
+              <strong className="cost-step-val">{formatVnd(summary.configurationFee)}</strong>
+            </div>
+            <span className="cost-formula-op">=</span>
           </>
-        )}
-        <div className="wood-cost-step">
-          <span className="cost-step-label">Tổng giá thùng theo kiện</span>
-          <strong className="cost-step-val">{formatVnd(summary.configurationFee)}</strong>
-        </div>
-        <span className="cost-formula-op">=</span>
+        ) : null}
+
         <div className="wood-cost-step is-total-step">
           <span className="cost-step-label">Tổng phí đóng thùng gỗ</span>
           <strong className="cost-step-total">{formatVnd(summary.totalFee)}</strong>
@@ -275,6 +283,10 @@ export default function ConsignmentOrderConfirm({
   masterDataError = "",
   isSubmitting,
   submitMessage,
+  /* Ước tính do BACKEND tính — xem chú thích ở khối "Chi phí dự kiến" bên dưới. */
+  estimate = null,
+  estimateError = "",
+  isEstimating = false,
   onBack,
   onConfirm,
 }) {
@@ -1277,6 +1289,45 @@ export default function ConsignmentOrderConfirm({
                 </p>
               </div>
             )}
+
+            {/*
+              CHI PHÍ DỰ KIẾN — số do BACKEND tính, không phải màn hình tự cộng.
+
+              Endpoint ước tính chạy đúng phép tính sinh ra báo giá tạm tính lúc tạo đơn,
+              nên con số ở đây bằng đúng con số trên hoá đơn khách thấy ngay sau khi bấm
+              tạo. Trước đây màn này tự cộng phí nên báo lệch với hoá đơn.
+
+              Nằm ở CỘT RỘNG bên trái, không nhồi vào cột phải 380px nữa: mỗi dòng phí có
+              tên, cách tính và số tiền, cột hẹp làm "Cước vận chuyển quốc tế" vỡ thành ba
+              dòng và ghi chú dưới mỗi dòng phí tràn ra — một tờ hoá đơn đọc không nổi thì
+              khách bỏ qua, đúng cái ta đang cố tránh. Đặt cuối cột trái nên trên màn hẹp
+              khách vẫn đọc tiền TRƯỚC khi gặp nút xác nhận ở dưới.
+            */}
+            <div className="consignment-confirm-section is-estimate-section">
+              <div className="consignment-confirm-section-title">
+                <span><DollarOutlined /></span>
+                <div>
+                  <h2>Bảng kê chi phí dự kiến</h2>
+                  <p>Từng khoản một, hệ thống tính — không phải ước lượng của trình duyệt</p>
+                </div>
+              </div>
+
+              {isEstimating ? (
+                <div className="estimate-loading">
+                  <LoadingOutlined spin /> Đang tính chi phí…
+                </div>
+              ) : estimateError ? (
+                <div className="estimate-error">
+                  <InfoCircleOutlined />
+                  <span>
+                    {estimateError} Bạn vẫn tạo đơn được — báo giá tạm tính sẽ hiện ngay
+                    sau khi tạo.
+                  </span>
+                </div>
+              ) : estimate ? (
+                <EstimateInvoice estimate={estimate} />
+              ) : null}
+            </div>
           </div>
 
           {/* Right Column: Receiver Info, Order Cost Breakdown & Confirmation Action */}

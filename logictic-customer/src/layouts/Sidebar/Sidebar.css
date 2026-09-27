@@ -276,8 +276,57 @@
   box-shadow: 0 1px 4px rgba(225, 29, 72, 0.35);
 }
 
+/*
+ * Cụm hai số trên mục menu đơn hàng: số xám (VCL đang xử lý) đứng trước, số đỏ (chờ bạn)
+ * đứng sau. Cụm tự đẩy sang phải và không co lại, để chữ menu không đẩy số xuống dòng.
+ */
+.menu-badges {
+  margin-left: auto;
+  padding-left: 8px;
+
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.menu-badges .menu-badge {
+  margin-left: 0;
+}
+
+/*
+ * Số xám: nhỏ và nhạt hơn số đỏ — chỉ để khách biết đơn đang chạy, không phải việc cần làm.
+ * Chữ #475569 trên nền #f1f5f9 ≈ 6.9:1 (đạt WCAG AA cho chữ nhỏ).
+ */
+.menu-badge.menu-badge--progress {
+  min-width: 18px;
+  padding: 0 5px;
+
+  color: #475569;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+
+  background: #f1f5f9;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+/* Câu đầy đủ cho trình đọc màn hình ("2 đơn VCL đang xử lý, 1 đơn đang chờ bạn xử lý"), ẩn khỏi mắt. */
+.menu-badge__sr-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Có nhãn số rồi thì mũi tên bám sát ngay bên phải, khỏi giành khoảng trống với nó. */
-.menu-badge + .arrow-icon {
+.menu-badge + .arrow-icon,
+.menu-badges + .arrow-icon {
   margin-left: 6px;
 }
 

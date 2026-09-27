@@ -16,7 +16,8 @@
  * Giới hạn của backend (UploadsController) được kiểm TRƯỚC khi gửi, để ảnh HEIC
  * hay ảnh điện thoại > 5MB báo lỗi tiếng Việt ngay thay vì tải lên xong mới bị 400.
  *
- * Màn ngoài đợt A (chat CSKH, mua hộ) import bản sao uploadImage.mock.js.
+ * Cả ba màn (ký gửi, mua hộ, chat CSKH) đều dùng file này. Bản sao uploadImage.mock.js
+ * không còn ai import — chỉ giữ cho tools/verify-*.mjs.
  */
 
 import { createHttpClient } from "@shared/api/httpClient";

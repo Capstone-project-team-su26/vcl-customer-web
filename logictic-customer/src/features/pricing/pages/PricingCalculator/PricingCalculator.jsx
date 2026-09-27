@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightOutlined,
@@ -13,7 +13,8 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 
-import { getVolumetricDivisorRule } from "@features/pricing/api/pricingRuleService.mock";
+import useWeightPricingParams from "@features/pricing/hooks/useWeightPricingParams";
+import WeightParamsNotice from "@features/pricing/components/WeightParamsNotice/WeightParamsNotice";
 import Header from "@layouts/SiteHeader/SiteHeader";
 import "./PricingCalculator.css";
 
@@ -112,32 +113,12 @@ const PricingCalculator = () => {
   const navigate = useNavigate();
 
   /*
-   * Hệ số quy đổi thể tích đọc từ rule VOLUMETRIC_DIVISOR của danh mục
-   * pricingRules (qua api), không gõ số riêng ở trang công khai.
+   * Hệ số quy đổi thể tích (VOLUMETRIC_DIVISOR) và cân tối thiểu (MIN_WEIGHT) đọc
+   * THẬT từ GET /api/pricing-rules — cùng số backend dùng khi báo giá. Chưa tải được
+   * thì không tạm tính (không đoán số).
    */
-  const [volumetricDivisor, setVolumetricDivisor] = useState(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    getVolumetricDivisorRule({ signal: controller.signal })
-      .then((rule) => {
-        const divisor = Number(rule?.value);
-
-        if (!controller.signal.aborted && Number.isFinite(divisor) && divisor > 0) {
-          setVolumetricDivisor(divisor);
-        }
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          console.error("Không tải được hệ số quy đổi thể tích:", error);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
+  const weightParams = useWeightPricingParams();
+  const { volumetricDivisor, minimumWeight } = weightParams;
   const [form, setForm] = useState(INITIAL_FORM);
 
   const country = COUNTRIES[form.country];
@@ -164,10 +145,12 @@ const PricingCalculator = () => {
 
     const volumetricWeight = length && width && height && volumetricDivisor ? (length * width * height) / volumetricDivisor : 0;
     const chargeableWeightPerBox = Math.max(actualWeight, volumetricWeight);
-    const totalChargeableWeight = chargeableWeightPerBox * quantity;
-    const freight = totalChargeableWeight
-      ? Math.max(totalChargeableWeight * method.rate, method.rate * 0.5)
-      : 0;
+    /* Cân tối thiểu của cả đơn lấy từ rule MIN_WEIGHT của backend (không gõ cứng 0,5). */
+    const totalChargeableWeight =
+      chargeableWeightPerBox > 0
+        ? Math.max(chargeableWeightPerBox * quantity, minimumWeight || 0)
+        : 0;
+    const freight = totalChargeableWeight * method.rate;
 
     const protectionBase = form.serviceType === "buyForMe" ? goodsVnd : declaredValue;
     const insuranceFee = form.insurance && protectionBase ? protectionBase * 0.01 : 0;
@@ -186,7 +169,7 @@ const PricingCalculator = () => {
       insuranceFee,
       total: goodsVnd + buyForMeFee + freight + handlingFee + insuranceFee,
     };
-  }, [form, country, method, volumetricDivisor]);
+  }, [form, country, method, volumetricDivisor, minimumWeight]);
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -246,7 +229,7 @@ const PricingCalculator = () => {
             <div className="pricing-calculator-summary-card">
               <span><DollarOutlined /></span>
               <small>Tổng chi phí dự kiến</small>
-              <strong>{formatCurrency(calculation.total)}</strong>
+              <strong>{weightParams.isReady ? formatCurrency(calculation.total) : "—"}</strong>
               <p>{service.description}</p>
             </div>
           </div>
@@ -368,6 +351,9 @@ const PricingCalculator = () => {
                 </span>
               </label>
 
+              <WeightParamsNotice status={weightParams.status} onRetry={weightParams.retry} />
+
+              {weightParams.isReady && (
               <div className="pricing-calculator-result">
                 <div><span>Tuyến đang chọn</span><strong>{country.route}</strong></div>
                 {form.serviceType === "buyForMe" && <div><span>Tiền hàng quy đổi</span><strong>{formatCurrency(calculation.goodsVnd)}</strong></div>}
@@ -379,6 +365,7 @@ const PricingCalculator = () => {
                 <div><span>Phí bảo hiểm</span><strong>{formatCurrency(calculation.insuranceFee)}</strong></div>
                 <div className="pricing-calculator-result__total"><span>Tổng chi phí dự kiến</span><strong>{formatCurrency(calculation.total)}</strong></div>
               </div>
+              )}
 
               <button type="button" className="pricing-calculator-btn pricing-calculator-btn--primary pricing-calculator-btn--full" onClick={() => navigate(service.requestPath)}>
                 <SendOutlined /> Tạo yêu cầu {service.label.toLowerCase()} <ArrowRightOutlined />

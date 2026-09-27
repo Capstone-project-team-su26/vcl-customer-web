@@ -44,6 +44,22 @@ import {
 const { RangePicker } = DatePicker;
 
 const DEFAULT_PAGE_SIZE = 10;
+
+/* Tải danh sách theo lô 100, tối đa 50 lô — đủ cho mọi khách, chặn vòng lặp nếu backend
+   trả totalPages sai. */
+const FETCH_PAGE_SIZE = 100;
+const MAX_FETCH_PAGES = 50;
+
+const readPageItems = (response) => {
+  const dataObj = response?.data || response;
+
+  if (Array.isArray(dataObj?.items)) return dataObj.items;
+  if (Array.isArray(dataObj)) return dataObj;
+  if (Array.isArray(response?.items)) return response.items;
+  if (Array.isArray(response)) return response;
+
+  return [];
+};
 const SEARCH_DEBOUNCE_MS = 400;
 
 /* =========================================================
@@ -289,7 +305,7 @@ const writeTextToClipboard = async (text) => {
    MAIN COMPONENT: BuyOrderHistoryList
    ========================================================= */
 
-const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
+const BuyOrderHistoryList = ({ defaultStatus, highlightRequestId = "" } = {}) => {
   const navigate = useNavigate();
 
   const [rawOrders, setRawOrders] = useState([]);
@@ -409,19 +425,20 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
   const fetchOrders = useCallback(async (signal) => {
     try {
       setLoading(true);
-      const response = await getPurchaseRequestsApi(1, 100, { signal });
 
-      const dataObj = response?.data || response;
-      let dataArray = [];
+      /* Tải HẾT các trang (trước đây chỉ trang 1 × 100): lọc/phân trang làm ở client nên
+         thiếu trang nào là mất đơn trang đó. Dừng theo totalPages backend trả. */
+      const dataArray = [];
 
-      if (Array.isArray(dataObj?.items)) {
-        dataArray = dataObj.items;
-      } else if (Array.isArray(dataObj)) {
-        dataArray = dataObj;
-      } else if (Array.isArray(response?.items)) {
-        dataArray = response.items;
-      } else if (Array.isArray(response)) {
-        dataArray = response;
+      for (let page = 1; page <= MAX_FETCH_PAGES; page += 1) {
+        const response = await getPurchaseRequestsApi(page, FETCH_PAGE_SIZE, { signal });
+        const pageItems = readPageItems(response);
+
+        dataArray.push(...pageItems);
+
+        const totalPages = Number(response?.totalPages ?? response?.data?.totalPages) || 1;
+
+        if (pageItems.length === 0 || page >= totalPages) break;
       }
 
       setRawOrders(dataArray);
@@ -540,6 +557,25 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
     });
   }, [rawOrders, selectedStatus, dateRangeInput, debouncedSearch]);
 
+  /* Yêu cầu vừa thanh toán (khách từ trang thanh toán về): nhảy tới đúng trang có nó
+     — một lần, sau đó khách tự lọc/chuyển trang thoải mái. Chỉnh state ngay trong lúc
+     render (không qua effect) để không vẽ nhầm trang 1 trước. */
+  const isHighlighted = (order) =>
+    Boolean(highlightRequestId) &&
+    String(order.purchaseRequestId || order.id || order.requestId) ===
+      String(highlightRequestId);
+
+  const [highlightPaged, setHighlightPaged] = useState(false);
+
+  if (highlightRequestId && !highlightPaged) {
+    const index = filteredOrders.findIndex(isHighlighted);
+
+    if (index !== -1) {
+      setHighlightPaged(true);
+      setPageNumber(Math.floor(index / pageSize) + 1);
+    }
+  }
+
   // Paginated Data
   const totalCount = filteredOrders.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -548,6 +584,24 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
     const startIndex = (pageNumber - 1) * pageSize;
     return filteredOrders.slice(startIndex, startIndex + pageSize);
   }, [filteredOrders, pageNumber, pageSize]);
+
+  /* Trang chứa yêu cầu vừa thanh toán đã hiện → cuộn tới thẻ của nó, một lần. */
+  const highlightScrolledRef = useRef(false);
+
+  useEffect(() => {
+    if (!highlightRequestId || highlightScrolledRef.current) return;
+
+    const card = document.querySelector(
+      `.buy-order-history-card[data-request-id="${CSS.escape(
+        String(highlightRequestId)
+      )}"]`
+    );
+
+    if (!card) return;
+
+    highlightScrolledRef.current = true;
+    card.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }, [pageOrders, highlightRequestId]);
 
   /* =========================================================
      HANDLERS
@@ -736,8 +790,11 @@ const BuyOrderHistoryList = ({ defaultStatus } = {}) => {
 
             return (
               <article
-                className="buy-order-history-card"
+                className={`buy-order-history-card${
+                  isHighlighted(order) ? " is-just-paid" : ""
+                }`}
                 key={requestId || idx}
+                data-request-id={requestId || undefined}
               >
                 {/* Header Row */}
                 <div className="card-header">

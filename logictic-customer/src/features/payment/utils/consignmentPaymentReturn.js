@@ -2,12 +2,16 @@
    consignmentPaymentReturn — khoản cọc ký gửi đang chờ payOS báo về.
 
    Luồng (spec đợt B):
-   1. QuotationDetail gọi confirm-and-pay (PAYOS) → lưu khoản đang chờ vào
-      sessionStorage rồi chuyển khách sang checkoutUrl.
-   2. payOS trả khách về /payment/lich-su?code=&id=&cancel=&status=&orderCode=
+   1. QuotationDetail gọi confirm-and-pay kèm returnUrl/cancelUrl → lưu khoản đang chờ rồi
+      chuyển khách sang checkoutUrl.
+   2. Trang thanh toán trả khách về /payment/lich-su?loai=..&orderCode=&status=success|cancelled
+      (backend gắn); payOS còn nối thêm ?code=&id=&cancel=&status=&orderCode= phía sau
       (URL cũ /history/consignment vẫn sống, chuyển hướng sang đó và GIỮ NGUYÊN query).
-   3. Tab "Lịch sử giao dịch" mở sẵn phần ký gửi; ConsignmentHistoryList đọc query +
-      sessionStorage, poll GET /api/payments/status/{orderCode} mỗi 4 giây, tối đa 2 phút.
+   3. Tab "Lịch sử giao dịch" mở sẵn đúng phần; PaymentReturnBanner đọc query +
+      khoản đang chờ, poll GET /api/payments/status/{orderCode} mỗi 4 giây, tối đa 2 phút.
+   Nay khoản đang chờ ghi bằng pendingPaymentReturn.js (localStorage, mọi loại khoản) và
+   orderCode/status trên URL đọc ở đó (parsePaymentReturnParams); hàm save/read ở đây giữ
+   lại để đọc khoản ghi theo cách cũ, parse/strip dùng chung cho query payOS.
 
    Hàm thuần, không đụng window/storage ở top-level (tools/verify-api.mjs nạp qua SSR).
    ========================================================= */
@@ -20,7 +24,8 @@ export const PAYMENT_POLL_TIMEOUT_MS = 120_000;
 /* Khoản chờ quá lâu (khách bỏ dở) thì bỏ, không poll lại mỗi lần mở danh sách. */
 export const PENDING_PAYMENT_MAX_AGE_MS = 60 * 60 * 1000;
 
-/* Query payOS gắn vào returnUrl/cancelUrl. */
+/* Query payOS gắn vào returnUrl/cancelUrl. `status` + `orderCode` trùng tên với query
+   backend gắn (xem pendingPaymentReturn.js) nên stripPayOsReturnParams dọn luôn cả hai. */
 export const PAYOS_RETURN_QUERY_KEYS = ["code", "id", "cancel", "status", "orderCode"];
 
 const getSessionStorage = () => {
@@ -153,6 +158,8 @@ export const classifyPaymentStatus = (status) => {
  * Poll trạng thái thanh toán cho tới khi PAID / thất bại / 404 / hết giờ.
  *
  * onDone nhận { outcome: "paid" | "failed" | "not_found" | "timeout", orderCode, payment }.
+ * onTick (tuỳ chọn) nhận mỗi lần hỏi được trạng thái — để màn hình hiện "đang chờ ngân
+ * hàng xác nhận" ngay từ lượt đầu thay vì im lặng tới lúc hết giờ.
  * Lỗi khác 404 (mất mạng, 5xx) thì thử lại ở lượt sau.
  *
  * @returns {() => void} hàm dừng poll (gọi khi unmount).
@@ -161,6 +168,7 @@ export const pollConsignmentPaymentStatus = ({
   orderCode,
   fetchStatus,
   onDone,
+  onTick,
   intervalMs = PAYMENT_POLL_INTERVAL_MS,
   timeoutMs = PAYMENT_POLL_TIMEOUT_MS,
   now = () => Date.now(),
@@ -193,6 +201,8 @@ export const pollConsignmentPaymentStatus = ({
       lastPayment = payment;
 
       const result = classifyPaymentStatus(payment?.status);
+
+      onTick?.({ outcome: result, orderCode, payment });
 
       if (result !== "pending") {
         finish(result, payment);

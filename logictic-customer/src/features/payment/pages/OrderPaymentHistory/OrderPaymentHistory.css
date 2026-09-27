@@ -1082,3 +1082,9 @@
     animation-iteration-count: 1 !important;
   }
 }
+/* Giao dịch vừa trả — mở từ "Xem đơn" ở Thanh toán → Lịch sử giao dịch (?giao-dich=). */
+.payment-transaction-card.is-just-paid {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
+}

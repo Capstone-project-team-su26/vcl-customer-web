@@ -172,7 +172,6 @@ vcl-customer-ui/
    │  ├─ components/          AuthNotify, BackToHomeButton, FieldLabelTooltip, LogisticsLoading
    │  ├─ config/              aiConfig.js
    │  ├─ constants/           homeData.js
-   │  ├─ hooks/               usePendingQuotationCounts.js
    │  ├─ styles/              fonts.css (đang dùng) + legacy/ (KHÔNG được import — xem "Lưu ý")
    │  └─ utils/               timeUtc.js (chuẩn hóa thời gian UTC giữa API và trình duyệt)
    └─ assets/                 Ảnh/logo được import trực tiếp từ code

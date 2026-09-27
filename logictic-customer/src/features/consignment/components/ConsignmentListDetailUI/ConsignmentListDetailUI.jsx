@@ -15,6 +15,7 @@ import {
   Tooltip,
 } from "antd";
 import { Button, CircularProgress } from "@mui/material";
+import { Link } from "react-router-dom";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
@@ -34,6 +35,10 @@ import {
   isWoodCrateDisplayRule,
 } from "./ConsignmentListDetailUI.helpers";
 import { formatItemServiceFee } from "@features/consignment/components/PackageItemServices/PackageItemServices.helpers";
+import {
+  CONSIGNMENT_CANCEL_MODE,
+  CUSTOMER_SERVICE_CHAT_PATH,
+} from "@features/consignment/utils/consignmentCancel";
 import "./ConsignmentListDetailUI.css";
 
 
@@ -954,39 +959,54 @@ const QuotationInformation = ({
   </section>
 );
 
+/* cancelMode lấy từ getConsignmentCancelMode (utils/consignmentCancel.js):
+   allowed → khối huỷ đơn; paid → một dòng giải thích + lối sang CSKH; hidden → không hiện. */
 const CancelOrderSection = ({
+  cancelMode,
   isCancelling,
-  isAlreadyCancelled,
   onOpen,
-}) => (
-  <section className="detail-cancel-bottom-section">
-    <div className="detail-cancel-bottom-content">
-      <h3>Hủy yêu cầu ký gửi</h3>
-      <p>
-        Nhấn Hủy đơn, nhập lý do và xác nhận. Hệ thống sẽ tiếp nhận và xử lý yêu cầu ngay lập tức.
+}) => {
+  if (cancelMode === CONSIGNMENT_CANCEL_MODE.paid) {
+    return (
+      <p className="detail-cancel-paid-note">
+        Đơn đã thanh toán nên không tự hủy được — liên hệ CSKH nếu cần hỗ trợ.{" "}
+        <Link to={CUSTOMER_SERVICE_CHAT_PATH}>Trò chuyện với CSKH</Link>
       </p>
-    </div>
+    );
+  }
 
-    <button
-      type="button"
-      className="detail-cancel-order-button"
-      disabled={isCancelling || isAlreadyCancelled}
-      onClick={onOpen}
-    >
-      {isCancelling ? (
-        <>
-          <CircularProgress size={16} color="inherit" />
-          Đang hủy...
-        </>
-      ) : (
-        <>
-          <CancelOutlinedIcon fontSize="small" />
-          {isAlreadyCancelled ? "Đã hủy" : "Hủy đơn"}
-        </>
-      )}
-    </button>
-  </section>
-);
+  if (cancelMode !== CONSIGNMENT_CANCEL_MODE.allowed) return null;
+
+  return (
+    <section className="detail-cancel-bottom-section">
+      <div className="detail-cancel-bottom-content">
+        <h3>Hủy yêu cầu ký gửi</h3>
+        <p>
+          Nhấn Hủy đơn, nhập lý do và xác nhận. Hệ thống sẽ tiếp nhận và xử lý yêu cầu ngay lập tức.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        className="detail-cancel-order-button"
+        disabled={isCancelling}
+        onClick={onOpen}
+      >
+        {isCancelling ? (
+          <>
+            <CircularProgress size={16} color="inherit" />
+            Đang hủy...
+          </>
+        ) : (
+          <>
+            <CancelOutlinedIcon fontSize="small" />
+            Hủy đơn
+          </>
+        )}
+      </button>
+    </section>
+  );
+};
 
 const CancelOrderModal = ({
   open,
@@ -1639,7 +1659,7 @@ export default function ConsignmentListDetailUI({
   cancelReasonError,
   isCancelModalOpen,
   isCancelling,
-  isAlreadyCancelled,
+  cancelMode,
   /* Nhúng trong tab "Kiện & kho" của /orders/:orderId: khung trang đã có nút quay lại. */
   embedded = false,
   onBack,
@@ -1811,8 +1831,8 @@ export default function ConsignmentListDetailUI({
         </div>
 
         <CancelOrderSection
+          cancelMode={cancelMode}
           isCancelling={isCancelling}
-          isAlreadyCancelled={isAlreadyCancelled}
           onOpen={onOpenCancelModal}
         />
 

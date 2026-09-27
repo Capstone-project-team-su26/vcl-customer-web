@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightOutlined,
@@ -13,7 +13,8 @@ import {
   SendOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import { getVolumetricDivisorRule } from "@features/pricing/api/pricingRuleService.mock";
+import useWeightPricingParams from "@features/pricing/hooks/useWeightPricingParams";
+import WeightParamsNotice from "@features/pricing/components/WeightParamsNotice/WeightParamsNotice";
 import Header from "@layouts/SiteHeader/SiteHeader";
 import "./InternationalShippingPricing.css";
 
@@ -89,32 +90,12 @@ const InternationalShippingPricing = () => {
   const navigate = useNavigate();
 
   /*
-   * Hệ số quy đổi thể tích đọc từ rule VOLUMETRIC_DIVISOR của danh mục
-   * pricingRules (qua api), không gõ số riêng ở trang công khai.
+   * Hệ số quy đổi thể tích (VOLUMETRIC_DIVISOR) và cân tối thiểu (MIN_WEIGHT) đọc
+   * THẬT từ GET /api/pricing-rules — cùng số backend dùng khi báo giá. Chưa tải được
+   * thì không tạm tính (không đoán số).
    */
-  const [volumetricDivisor, setVolumetricDivisor] = useState(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    getVolumetricDivisorRule({ signal: controller.signal })
-      .then((rule) => {
-        const divisor = Number(rule?.value);
-
-        if (!controller.signal.aborted && Number.isFinite(divisor) && divisor > 0) {
-          setVolumetricDivisor(divisor);
-        }
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          console.error("Không tải được hệ số quy đổi thể tích:", error);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
+  const weightParams = useWeightPricingParams();
+  const { volumetricDivisor, minimumWeight } = weightParams;
   const [form, setForm] = useState(INITIAL_FORM);
 
   const selectedRoute = ROUTES.find((item) => item.id === form.route) || ROUTES[0];
@@ -128,8 +109,9 @@ const InternationalShippingPricing = () => {
     const quantity = Math.max(1, Math.floor(safeNumber(form.quantity) || 1));
     const volumetricWeight = length && width && height && volumetricDivisor ? (length * width * height) / volumetricDivisor : 0;
     const chargeableWeightPerBox = Math.max(weight, volumetricWeight);
-    const totalChargeableWeight = chargeableWeightPerBox * quantity;
-    const freight = totalChargeableWeight ? Math.max(totalChargeableWeight * selectedMethod.rate, selectedMethod.rate * 0.5) : 0;
+    /* Cân tối thiểu của cả đơn lấy từ rule MIN_WEIGHT của backend (không gõ cứng 0,5). */
+    const totalChargeableWeight = chargeableWeightPerBox > 0 ? Math.max(chargeableWeightPerBox * quantity, minimumWeight || 0) : 0;
+    const freight = totalChargeableWeight * selectedMethod.rate;
 
     return {
       quantity,
@@ -138,7 +120,7 @@ const InternationalShippingPricing = () => {
       totalChargeableWeight,
       freight,
     };
-  }, [form, selectedMethod, volumetricDivisor]);
+  }, [form, selectedMethod, volumetricDivisor, minimumWeight]);
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -305,6 +287,9 @@ const InternationalShippingPricing = () => {
                 </label>
               </div>
 
+              <WeightParamsNotice status={weightParams.status} onRetry={weightParams.retry} />
+
+              {weightParams.isReady && (
               <div className="international-shipping-result">
                 <div><span>Tuyến đang chọn</span><strong>{selectedRoute.name}</strong></div>
                 <div><span>Phương thức</span><strong>{selectedMethod.label}</strong></div>
@@ -313,6 +298,7 @@ const InternationalShippingPricing = () => {
                 <div><span>Tổng khối lượng tính cước</span><strong>{calculation.totalChargeableWeight.toFixed(2)} kg</strong></div>
                 <div className="international-shipping-result__total"><span>Cước vận chuyển dự kiến</span><strong>{formatCurrency(calculation.freight)}</strong></div>
               </div>
+              )}
 
               <button type="button" className="international-shipping-btn international-shipping-btn--primary international-shipping-btn--full" onClick={() => navigate("/dich-vu/ky-gui")}>
                 <SendOutlined /> Tạo yêu cầu vận chuyển <ArrowRightOutlined />

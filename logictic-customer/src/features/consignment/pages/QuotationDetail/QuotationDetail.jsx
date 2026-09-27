@@ -48,20 +48,36 @@ import {
 } from "@features/consignment/api/consignmentApi";
 
 import pricingRuleService from "@features/pricing/api/pricingRuleService";
-import { getOrderPaymentHistoryApi } from "@features/payment/api/orderPaymentApi";
-import { savePendingConsignmentPayment } from "@features/payment/utils/consignmentPaymentReturn";
+import {
+  getOrderPaymentHistoryApi,
+  resolveCheckoutUrl,
+} from "@features/payment/api/orderPaymentApi";
+import {
+  PAYMENT_PURPOSES,
+  PAYMENT_SUBJECTS,
+  buildPaymentReturnUrls,
+  savePendingPayment,
+  withPaymentReturnUrls,
+} from "@features/payment/utils/pendingPaymentReturn";
 import { isSessionExpiredError } from "@shared/api/httpClient";
 /* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
 import {
   CONSIGNMENT_ORDERS_PATH,
+  ORDER_KINDS,
   ORDER_TABS,
-  PAYMENT_TABS,
   orderDetailPath,
-  paymentTabPath,
 } from "@features/orders/constants/orderPaths";
 
 import QuotationCancelDialog from "@features/payment/components/QuotationCancelDialog/QuotationCancelDialog";
 import QuotationPaymentConfirmDialog from "@features/payment/components/QuotationPaymentConfirmDialog/QuotationPaymentConfirmDialog";
+
+/*
+ * ĐÚNG component bảng kê của màn xác nhận trước khi tạo đơn. Dùng lại chứ không vẽ lại:
+ * khách vừa xem bảng kê chi tiết tới từng dòng phí ở bước xác nhận, tạo đơn xong mở báo
+ * giá ra mà thấy ít thông tin hơn thì họ tưởng hệ thống đổi giá. Một component thì hai màn
+ * không thể lệch nhau.
+ */
+import EstimateInvoice from "@features/consignment/components/EstimateInvoice/EstimateInvoice";
 
 /*
  * Nhãn tĩnh và hàm thuần nằm ở file cùng thư mục để phần
@@ -716,17 +732,15 @@ const QuotationDetail = ({ embedded = false }) => {
     try {
       setQuotationAction("pay");
 
-      /* Trang QR SePay quay về Lịch sử ký gửi của đúng web đang mở. */
-      /* payOS gắn query của nó vào URL này; tab "Lịch sử giao dịch" mở sẵn phần ký gửi
-         để vòng poll trạng thái cọc chạy ngay khi khách quay về. */
-      const redirectUrl = `${window.location.origin}${paymentTabPath(
-        PAYMENT_TABS.history,
-      )}`;
+      /* Trả xong / bấm Huỷ đều về "Thanh toán → Lịch sử giao dịch" phần Ký gửi; backend
+         gắn `orderCode` + `status` (payOS nối thêm query của nó). Banner đầu Lịch sử giao
+         dịch đọc mã + khoản đang chờ, theo dõi trạng thái cọc hoặc đưa khách về lại báo giá. */
+      const { returnUrl, cancelUrl } = buildPaymentReturnUrls(ORDER_KINDS.consignment);
 
       const result = await confirmAndPayConsignmentQuotationApi(quotationId, {
         paymentMethod,
-        returnUrl: redirectUrl,
-        cancelUrl: redirectUrl,
+        returnUrl,
+        cancelUrl,
       });
 
       setPaymentDialogOpen(false);
@@ -762,7 +776,12 @@ const QuotationDetail = ({ embedded = false }) => {
         return;
       }
 
-      const checkoutUrl = String(result?.checkoutUrl || "").trim();
+      /* Link SePay có thể là đường dẫn tương đối của API: ghép base URL API, và gắn
+         returnUrl/cancelUrl nếu backend chưa gắn sẵn trên link trang QR. */
+      const checkoutUrl = withPaymentReturnUrls(
+        resolveCheckoutUrl(result?.checkoutUrl) || "",
+        ORDER_KINDS.consignment,
+      );
 
       if (!isValidExternalUrl(checkoutUrl)) {
         /* Báo giá đã ACCEPTED ở backend: không ném lỗi "thất bại", chỉ hướng dẫn tiếp. */
@@ -775,11 +794,13 @@ const QuotationDetail = ({ embedded = false }) => {
         return;
       }
 
-      savePendingConsignmentPayment({
+      savePendingPayment({
+        subject: PAYMENT_SUBJECTS.order,
+        targetId: result?.orderId || orderId,
+        purpose: PAYMENT_PURPOSES.deposit,
         orderCode: result?.orderCode,
-        orderId: result?.orderId || orderId,
-        consignmentCode:
-          result?.consignmentCode || realConsignmentCodeForAction,
+        checkoutUrl,
+        code: result?.consignmentCode || realConsignmentCodeForAction,
         amount: result?.amount,
       });
 
@@ -833,6 +854,18 @@ const QuotationDetail = ({ embedded = false }) => {
     () => getQuotationCostSummary(quotation, costItems),
     [quotation, costItems],
   );
+
+  /*
+   * Báo giá có kèm bảng kê từng dòng tiền hay không.
+   *
+   * `invoiceLines` là danh sách MỌI dòng tiền của báo giá (cước quốc tế, phí nội địa, phụ
+   * phí theo kiện, thuế), đã bỏ dòng 0đ và xếp sẵn thứ tự — cùng một trường mà endpoint
+   * ước tính trả cho màn xác nhận. Có nó thì in đúng tờ hoá đơn khách đã xem; chưa có thì
+   * giữ khối "Chi tiết chi phí" cũ, KHÔNG dựng dòng phí từ dữ liệu khác để lấp chỗ trống
+   * (bịa dòng ra là quay lại đúng cái bug báo 60.000đ trong khi hoá đơn thu 25.000đ).
+   */
+  const hasInvoiceLines =
+    Array.isArray(quotation?.invoiceLines) && quotation.invoiceLines.length > 0;
 
   /*
    * additionalFees là chi tiết của serviceFee.
@@ -1831,11 +1864,28 @@ const QuotationDetail = ({ embedded = false }) => {
             <div>
               <h2>Chi tiết chi phí</h2>
 
-              <p>Các khoản chi phí được trình bày rõ ràng và đồng nhất</p>
+              <p>
+                {hasInvoiceLines
+                  ? "Đúng bảng kê bạn đã xem ở bước xác nhận, từng dòng phí một"
+                  : "Các khoản chi phí được trình bày rõ ràng và đồng nhất"}
+              </p>
             </div>
           </div>
 
-          {costOverviewItems.length > 0 && (
+          {/*
+            CÓ bảng kê từng dòng thì in nguyên tờ hoá đơn của bước xác nhận: bốn ô tổng có
+            màu, cân tính cước, ba nhóm dòng phí kèm dòng cộng từng nhóm, rồi tổng cộng.
+
+            Không hiện song song với khối cũ bên dưới: cùng một con số in hai chỗ với hai
+            cách gom nhóm khác nhau là khách bắt đầu đi tìm xem chỗ nào mới đúng.
+          */}
+          {hasInvoiceLines && (
+            <div className="quotation-invoice-wrap">
+              <EstimateInvoice estimate={quotation} />
+            </div>
+          )}
+
+          {!hasInvoiceLines && costOverviewItems.length > 0 && (
             <div className="quotation-base-cost-grid is-complete-api">
               {costOverviewItems.map((item) => (
                 <div key={item.key} className={item.className}>
@@ -1847,7 +1897,7 @@ const QuotationDetail = ({ embedded = false }) => {
             </div>
           )}
 
-          {taxBreakdownItems.length > 0 && (
+          {!hasInvoiceLines && taxBreakdownItems.length > 0 && (
             <div className="quotation-tax-breakdown">
               {taxBreakdownItems.map((item) => (
                 <div key={item.key} className={item.className || undefined}>
@@ -1859,6 +1909,11 @@ const QuotationDetail = ({ embedded = false }) => {
             </div>
           )}
 
+          {/*
+            Dự phòng cho báo giá chưa kèm `invoiceLines`: vẫn là khối cũ, gom theo
+            additionalFees. Ít chi tiết hơn nhưng mọi con số vẫn của backend.
+          */}
+          {!hasInvoiceLines && (
           <div className="quotation-cost-list">
             <div className="quotation-cost-list-heading">
               <div>
@@ -1938,6 +1993,7 @@ const QuotationDetail = ({ embedded = false }) => {
               <strong>{formatMoney(displayTotalCost)}</strong>
             </div>
           </div>
+          )}
         </section>
 
         <section className="quotation-card">

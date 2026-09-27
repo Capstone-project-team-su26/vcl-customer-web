@@ -86,7 +86,13 @@ const CONSIGNMENT_STAGE_BY_STATUS = {
   CANCELLED: ORDER_STAGES.cancelled,
 };
 
-/* Yêu cầu mua hộ có máy trạng thái riêng, không dùng bảng của đơn ký gửi. */
+/*
+ * Yêu cầu mua hộ có máy trạng thái riêng, không dùng bảng của đơn ký gửi. Mã backend
+ * (VCL_BLL PurchasePaymentService / PurchaseFlow): QUOTED → khách xác nhận → WAITING_PAYMENT
+ * (đã tạo khoản trả trước, chờ tiền) → PAID (đã trả trước, chờ VCL mua) → PURCHASING …
+ * STORED → COMPLETED (mọi đơn kho sinh ra đã đóng). Đơn VỪA TRẢ TRƯỚC là PAID = "Đang xử
+ * lý", KHÔNG phải "Hoàn tất" — chip Hoàn tất chỉ nhận COMPLETED.
+ */
 const PURCHASE_STAGE_BY_STATUS = {
   PENDING_REVIEW: ORDER_STAGES.awaitingQuotation,
   QUOTED: ORDER_STAGES.awaitingQuotation,
@@ -94,14 +100,22 @@ const PURCHASE_STAGE_BY_STATUS = {
   PENDING_CUSTOMER_CONFIRMATION: ORDER_STAGES.awaitingQuotation,
 
   ACCEPTED: ORDER_STAGES.awaitingPayment,
+  WAITING_PAYMENT: ORDER_STAGES.awaitingPayment,
 
   APPROVED: ORDER_STAGES.processing,
   PROCESSING: ORDER_STAGES.processing,
   PAID: ORDER_STAGES.processing,
+  PURCHASING: ORDER_STAGES.processing,
+  PURCHASED: ORDER_STAGES.processing,
+  SELLER_SHIPPED: ORDER_STAGES.processing,
+  ARRIVED_ORIGIN_WAREHOUSE: ORDER_STAGES.processing,
+  WAITING_STORED: ORDER_STAGES.processing,
+  STORED: ORDER_STAGES.processing,
 
   COMPLETED: ORDER_STAGES.completed,
 
   REJECTED: ORDER_STAGES.cancelled,
+  QUOTATION_REJECTED: ORDER_STAGES.cancelled,
   CANCELLED: ORDER_STAGES.cancelled,
   CANCELED: ORDER_STAGES.cancelled,
 };
@@ -112,11 +126,19 @@ const PURCHASE_STATUS_LABELS = {
   QUOTATION_SENT: "Đã gửi báo giá",
   PENDING_CUSTOMER_CONFIRMATION: "Chờ bạn xác nhận",
   ACCEPTED: "Đã chấp nhận báo giá",
+  WAITING_PAYMENT: "Chờ thanh toán",
   APPROVED: "Đã duyệt",
   PROCESSING: "Đang xử lý",
-  PAID: "Đã thanh toán",
+  PAID: "Đã thanh toán, chờ VCL mua hàng",
+  PURCHASING: "VCL đang mua hàng",
+  PURCHASED: "Đã mua hàng",
+  SELLER_SHIPPED: "Người bán đã gửi hàng",
+  ARRIVED_ORIGIN_WAREHOUSE: "Hàng đã tới kho nguồn",
+  WAITING_STORED: "Chờ nhập kho",
+  STORED: "Đã nhập kho",
   COMPLETED: "Hoàn tất",
   REJECTED: "Đã từ chối",
+  QUOTATION_REJECTED: "Đã từ chối báo giá",
   CANCELLED: "Đã huỷ",
   CANCELED: "Đã huỷ",
 };
@@ -190,12 +212,14 @@ const resolvePurchaseTodo = (status) => {
     case "PENDING_CUSTOMER_CONFIRMATION":
       return todo("action", "Cần xác nhận thông tin đơn", "detail");
     case "ACCEPTED":
+    case "WAITING_PAYMENT":
       return todo("action", "Cần thanh toán", "quotation");
     case "PENDING_REVIEW":
       return todo("wait", "VCL đang kiểm và lên báo giá", "detail");
     case "COMPLETED":
       return todo("done", "Đơn đã hoàn tất", "detail");
     case "REJECTED":
+    case "QUOTATION_REJECTED":
     case "CANCELLED":
     case "CANCELED":
       return todo("done", "Đơn đã dừng", "detail");

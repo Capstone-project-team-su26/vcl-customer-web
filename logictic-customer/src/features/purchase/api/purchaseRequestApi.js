@@ -224,6 +224,10 @@ export const rejectQuotationApi = async (
  * Luồng chuẩn: khách trả 100% PHẦN TRẢ TRƯỚC (tiền hàng + phí mua + ship nội địa + VAT phí).
  * Cước quốc tế, VAT cước và thuế nhập khẩu KHÔNG nằm ở đây — thu lại ở Việt Nam theo cân
  * đo thật, nên đừng cộng `estimatedLaterAmount` vào số tiền hiển thị ở bước này.
+ *
+ * payload.returnUrl / cancelUrl: nơi trang thanh toán trả khách về (backend gắn thêm
+ * `?orderCode=&status=success|cancelled`; không hợp lệ thì dùng /history/buy-on-behalf).
+ * Nơi gọi dựng bằng buildPaymentReturnUrls.
  */
 export const confirmAndPayQuotationApi = async (
   purchaseRequestIdOrQuotationId,

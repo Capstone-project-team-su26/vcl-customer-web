@@ -8,7 +8,7 @@ import React, {
 
 import axios from "@shared/api/requestCancel";
 import dayjs from "dayjs";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import {
   DatePicker,
@@ -29,20 +29,9 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import SearchIcon from "@mui/icons-material/Search";
 
-import {
-  getConsignmentPaymentStatusApi,
-  getConsignmentsApi,
-} from "@features/consignment/api/consignmentApi";
+import { getConsignmentsApi } from "@features/consignment/api/consignmentApi";
 import { getConsignmentStatusesApi } from "@features/consignment/api/consignmentStatusApi";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
-
-import {
-  clearPendingConsignmentPayment,
-  parsePayOsReturn,
-  pollConsignmentPaymentStatus,
-  readPendingConsignmentPayment,
-  stripPayOsReturnParams,
-} from "@features/payment/utils/consignmentPaymentReturn";
 
 import {
   ORDER_STATUS,
@@ -74,17 +63,20 @@ import { ORDER_TABS, orderDetailPath } from "@features/orders/constants/orderPat
 
 const { RangePicker } = DatePicker;
 
-const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
+const ConsignmentHistoryList = ({
+  defaultStatus,
+  defaultSearch = "",
+  highlightOrderId = "",
+} = {}) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [consignments, setConsignments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(defaultSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(defaultSearch);
 
   const [statusInput, setStatusInput] =
     useState(defaultStatus || "");
@@ -229,102 +221,8 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
     return () => controller.abort();
   }, [fetchConsignments, refreshKey]);
 
-  /* =========================================================
-     KHOẢN CỌC ĐANG CHỜ (payOS trả khách về đây)
-
-     Chạy một lần lúc mở trang: đọc query payOS + khoản đang chờ trong
-     sessionStorage rồi poll GET /api/payments/status/{orderCode} mỗi 4 giây,
-     tối đa 2 phút (webhook payOS mới là nơi đổi trạng thái đơn, FE chỉ chờ).
-     ========================================================= */
-
-  useEffect(() => {
-    const payOsReturn = parsePayOsReturn(location.search);
-    const pending = readPendingConsignmentPayment();
-
-    /* Bỏ query payOS khỏi URL để F5 không xử lý lại. */
-    if (payOsReturn.hasPayOsParams) {
-      navigate(
-        {
-          pathname: location.pathname,
-          search: stripPayOsReturnParams(location.search),
-          hash: location.hash,
-        },
-        { replace: true, state: location.state },
-      );
-    }
-
-    const matchesPending =
-      Boolean(pending) &&
-      (!payOsReturn.orderCode ||
-        pending.orderCode === payOsReturn.orderCode);
-
-    const orderLabel =
-      matchesPending && pending?.consignmentCode
-        ? ` đơn ${pending.consignmentCode}`
-        : "";
-
-    const forgetPending = () => {
-      if (matchesPending) {
-        clearPendingConsignmentPayment();
-      }
-    };
-
-    if (payOsReturn.cancelled) {
-      forgetPending();
-
-      AuthNotify.info(
-        "Đã hủy thanh toán",
-        `Bạn đã hủy thanh toán tiền cọc${orderLabel}. Có thể thanh toán lại trong lịch sử thanh toán của đơn.`,
-      );
-
-      return undefined;
-    }
-
-    const orderCode = payOsReturn.orderCode || pending?.orderCode || "";
-
-    if (!orderCode) {
-      return undefined;
-    }
-
-    return pollConsignmentPaymentStatus({
-      orderCode,
-      fetchStatus: getConsignmentPaymentStatusApi,
-      onDone: ({ outcome }) => {
-        if (outcome === "paid") {
-          forgetPending();
-
-          AuthNotify.success(
-            "Thanh toán tiền cọc thành công",
-            `Hệ thống đã nhận tiền cọc${orderLabel}. Trạng thái đơn đang được cập nhật.`,
-          );
-
-          setRefreshKey((value) => value + 1);
-          return;
-        }
-
-        if (outcome === "failed") {
-          forgetPending();
-
-          AuthNotify.warning(
-            "Thanh toán chưa thành công",
-            `Giao dịch tiền cọc${orderLabel} chưa hoàn tất. Vui lòng thử lại trong lịch sử thanh toán của đơn.`,
-          );
-          return;
-        }
-
-        if (outcome === "not_found") {
-          forgetPending();
-          return;
-        }
-
-        AuthNotify.info(
-          "Đang chờ xác nhận thanh toán",
-          `Hệ thống chưa nhận được xác nhận cho khoản cọc${orderLabel}. Trạng thái đơn sẽ tự cập nhật, vui lòng tải lại sau ít phút.`,
-        );
-      },
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ xử lý một lần lúc mở trang
-  }, []);
+  /* Khoản vừa thanh toán (payOS/SePay trả khách về Lịch sử giao dịch) do
+     PaymentReturnBanner ở TransactionHistoryTabs theo dõi — danh sách này chỉ tô đơn. */
 
   useEffect(() => {
     const controller = new AbortController();
@@ -498,6 +396,31 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
 
   const visibleConsignments = consignments;
 
+  /* Đơn vừa thanh toán: cuộn tới một lần khi nó xuất hiện trong trang đang xem. */
+  const scrolledHighlightRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !highlightOrderId ||
+      scrolledHighlightRef.current ||
+      !consignments.some(
+        (item) => String(item.orderId) === String(highlightOrderId)
+      )
+    ) {
+      return;
+    }
+
+    scrolledHighlightRef.current = true;
+
+    document
+      .querySelector(
+        `.consignment-card[data-order-id="${CSS.escape(
+          String(highlightOrderId)
+        )}"]`
+      )
+      ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }, [consignments, highlightOrderId]);
+
   useEffect(() => {
     if (pageNumber > totalPages) {
       setPageNumber(totalPages);
@@ -516,6 +439,15 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
     setStatusInput(normalizeStatusKey(value));
 
     setPageNumber(1);
+  };
+
+  /* "LÀM MỚI" chỉ tải lại dữ liệu, giữ nguyên bộ lọc khách đang chọn. Trước đây nút này
+     gọi handleResetClick (xoá bộ lọc) — mà trang lại mở sẵn lọc "Hoàn thành", nên khách
+     phải bấm nó mới thấy đủ đơn. */
+  const handleRefreshClick = () => {
+    setRefreshKey(
+      (previous) => previous + 1
+    );
   };
 
   const handleResetClick = () => {
@@ -848,7 +780,7 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
             variant="outlined"
             color="inherit"
             startIcon={<AutorenewIcon />}
-            onClick={handleResetClick}
+            onClick={handleRefreshClick}
             disabled={
               loading || loadingStatuses
             }
@@ -919,7 +851,14 @@ const ConsignmentHistoryList = ({ defaultStatus } = {}) => {
                   return (
                     <div
                       key={item.orderId || item.consignmentCode}
-                      className="consignment-card"
+                      className={
+                        highlightOrderId &&
+                        String(item.orderId) ===
+                          String(highlightOrderId)
+                          ? "consignment-card is-just-paid"
+                          : "consignment-card"
+                      }
+                      data-order-id={item.orderId || undefined}
                       role="button"
                       tabIndex={0}
                       onClick={() =>

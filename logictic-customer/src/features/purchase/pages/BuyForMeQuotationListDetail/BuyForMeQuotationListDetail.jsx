@@ -43,6 +43,7 @@ import {
   confirmAndPayQuotationApi,
   getPaymentCheckoutUrl,
   getPurchaseRequestDetailApi,
+  getPurchaseRequestQuotationApi,
   rejectQuotationApi,
 } from "@features/purchase/api/purchaseRequestApi";
 import {
@@ -58,9 +59,16 @@ import QuotationPaymentConfirmDialog, {
 import "./BuyForMeQuotationListDetail.css";
 /* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
 import {
+  ORDER_KINDS,
   PURCHASE_ORDERS_PATH,
-  purchaseRequestQuotationPath,
 } from "@features/orders/constants/orderPaths";
+import {
+  PAYMENT_PURPOSES,
+  PAYMENT_SUBJECTS,
+  buildPaymentReturnUrls,
+  savePendingPayment,
+  withPaymentReturnUrls,
+} from "@features/payment/utils/pendingPaymentReturn";
 
 /* =========================================================
    HELPERS & FORMATTERS
@@ -100,6 +108,84 @@ const getApiErrorMessage = (error, fallbackMessage) => {
 const formatVndCurrency = (value) => {
   const number = Number(value || 0);
   return `${Math.round(number).toLocaleString("vi-VN")} đ`;
+};
+
+/* =========================================================
+   SỐ TIỀN KHÁCH TRẢ KHI XÁC NHẬN — CHỈ LẤY TỪ BACKEND
+   confirm-and-pay tạo khoản thu đúng quotation.prepayAmount (backend mới trả sẵn
+   depositAmount / remainingAmount / depositDescription / canPayOnline). FE không tự tính
+   cọc nữa: công thức cũ "100% tiền hàng + 50% phí" lệch với số SePay thật.
+   ========================================================= */
+
+const PREPAY_FIELDS = [
+  "isLegacy",
+  "prepayAmount",
+  "estimatedLaterAmount",
+  "depositAmount",
+  "remainingAmount",
+  "depositDescription",
+  "canPayOnline",
+  "domesticShippingFee",
+  "freightRatePerKg",
+  "estimatedWeight",
+  "vatRate",
+];
+
+const DEFAULT_PREPAY_DESCRIPTION =
+  "Trả trước 100% tiền hàng + phí mua hộ + ship nội địa + phụ phí (+ VAT phần phí). Cước quốc tế, VAT cước và thuế nhập khẩu là tạm tính, thu khi hàng về VN theo cân đo thật.";
+
+const LEGACY_QUOTATION_MESSAGE =
+  "Báo giá này lập theo cách tính cũ. Vui lòng liên hệ Sale để lập lại báo giá.";
+
+const toMoneyOrNull = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+
+/*
+ * Chi tiết yêu cầu trên backend cũ chưa trả phần trả trước; GET .../quotation thì có.
+ * Chỉ bổ sung các trường tiền còn thiếu, giữ nguyên danh sách phí của chi tiết.
+ */
+const hasPrepayFields = (quotation) =>
+  quotation?.isLegacy !== undefined || quotation?.depositAmount !== undefined;
+
+const mergePrepayFields = (quotation, source) => {
+  if (!quotation || !source) return quotation;
+  const merged = { ...quotation };
+  PREPAY_FIELDS.forEach((key) => {
+    if (merged[key] === undefined && source[key] !== undefined) {
+      merged[key] = source[key];
+    }
+  });
+  return merged;
+};
+
+const resolvePurchasePayable = (quotation) => {
+  if (!quotation || !hasPrepayFields(quotation)) {
+    return { known: false, canPayOnline: false, isLegacy: false, depositAmount: null, remainingAmount: null, description: "" };
+  }
+
+  const depositAmount =
+    toMoneyOrNull(quotation.depositAmount) ?? toMoneyOrNull(quotation.prepayAmount) ?? 0;
+  const remainingAmount =
+    toMoneyOrNull(quotation.remainingAmount) ?? toMoneyOrNull(quotation.estimatedLaterAmount) ?? 0;
+  const isLegacy = quotation.isLegacy === true;
+  const canPayOnline =
+    typeof quotation.canPayOnline === "boolean"
+      ? quotation.canPayOnline
+      : !isLegacy && depositAmount > 0;
+
+  return {
+    known: true,
+    canPayOnline,
+    isLegacy,
+    depositAmount,
+    remainingAmount,
+    description:
+      quotation.depositDescription ||
+      (isLegacy ? LEGACY_QUOTATION_MESSAGE : DEFAULT_PREPAY_DESCRIPTION),
+  };
 };
 
 const formatDateDisplay = (value) => {
@@ -201,7 +287,26 @@ const BuyForMeQuotationListDetail = () => {
       try {
         setLoading(true);
         const result = await getPurchaseRequestDetailApi(requestId, { signal });
-        const dataPayload = result?.data ?? result;
+        let dataPayload = result?.data ?? result;
+
+        if (dataPayload?.quotation && !hasPrepayFields(dataPayload.quotation)) {
+          try {
+            const quotationResult = await getPurchaseRequestQuotationApi(requestId, { signal });
+            dataPayload = {
+              ...dataPayload,
+              quotation: mergePrepayFields(
+                dataPayload.quotation,
+                quotationResult?.data ?? quotationResult,
+              ),
+            };
+          } catch (quotationError) {
+            if (isCanceledRequest(quotationError)) return;
+            /* Không lấy được số trả trước → màn chặn thanh toán online thay vì tự đoán số. */
+            console.error("Lỗi tải phần trả trước của báo giá mua hộ:", quotationError);
+          }
+        }
+
+        if (signal?.aborted) return;
         setDetailData(dataPayload);
       } catch (error) {
         if (isCanceledRequest(error)) return;
@@ -348,12 +453,10 @@ const BuyForMeQuotationListDetail = () => {
       }
 
       if (selectedMethod === PAYMENT_METHODS.ONLINE) {
-        const returnUrl = `${window.location.origin}${purchaseRequestQuotationPath(
-          requestId,
-        )}?status=success`;
-        const cancelUrl = `${window.location.origin}${purchaseRequestQuotationPath(
-          requestId,
-        )}?status=cancel`;
+        /* Trả xong / bấm Huỷ đều về "Thanh toán → Lịch sử giao dịch" phần Mua hộ; backend
+           gắn `orderCode` + `status`, banner ở đó báo kết quả hoặc đưa khách về lại màn báo
+           giá này khi huỷ (theo bản ghi savePendingPayment bên dưới). */
+        const { returnUrl, cancelUrl } = buildPaymentReturnUrls(ORDER_KINDS.purchase);
 
         // confirmAndPayQuotationApi prefers purchaseRequestId, fallback to quotationId
         const targetPurchaseRequestId = purchaseRequestId || quotationId;
@@ -363,7 +466,11 @@ const BuyForMeQuotationListDetail = () => {
           paymentMethod: "SEPAY",
         });
 
-        const checkoutUrl = getPaymentCheckoutUrl(response);
+        /* Gắn returnUrl/cancelUrl nếu backend chưa gắn sẵn trên link trang QR SePay. */
+        const checkoutUrl = withPaymentReturnUrls(
+          getPaymentCheckoutUrl(response),
+          ORDER_KINDS.purchase,
+        );
 
         AuthNotify.success(
           "Khởi tạo thanh toán thành công",
@@ -373,6 +480,18 @@ const BuyForMeQuotationListDetail = () => {
         handleClosePaymentDialog();
 
         if (checkoutUrl) {
+          /* Ghi khoản vừa tạo: khi SePay trả khách về Lịch sử giao dịch, trang đó biết
+             giao dịch nào vừa trả để báo kết quả và dẫn về đúng yêu cầu này. */
+          savePendingPayment({
+            subject: PAYMENT_SUBJECTS.purchaseRequest,
+            targetId: response?.purchaseRequestId || targetPurchaseRequestId,
+            purpose: PAYMENT_PURPOSES.purchasePrepay,
+            orderCode: response?.orderCode,
+            checkoutUrl,
+            code: response?.purchaseCode || detailData?.purchaseCode,
+            amount: response?.amount,
+          });
+
           window.location.href = checkoutUrl;
         } else {
           fetchDetail();
@@ -454,15 +573,13 @@ const BuyForMeQuotationListDetail = () => {
   }, [quotation]);
 
   /*
-   * LUỒNG CHUẨN: báo giá tách làm hai phần.
-   *   prepayAmount        — khách trả NGAY (tiền hàng + phí mua hộ + ship nội địa + VAT phần phí)
-   *   estimatedLaterAmount — cước quốc tế + VAT cước + thuế NK, chỉ TẠM TÍNH, thu ở VN theo cân thật
-   * Báo giá cũ không có hai trường này (isLegacy) — khi đó giữ nguyên cách hiện cũ để bản
-   * production chưa cập nhật vẫn đọc được.
+   * LUỒNG CHUẨN: báo giá tách làm hai phần, số do backend trả.
+   *   depositAmount (= prepayAmount)          — khách trả NGAY, đúng số confirm-and-pay tạo khoản thu
+   *   remainingAmount (= estimatedLaterAmount) — cước quốc tế + VAT cước + thuế NK, TẠM TÍNH, thu ở VN
+   * Báo giá đời cũ (isLegacy): backend không cho thanh toán online → chỉ báo liên hệ Sale.
    */
-  const prepayAmount = Number(quotation?.prepayAmount ?? 0);
-  const estimatedLaterAmount = Number(quotation?.estimatedLaterAmount ?? 0);
-  const isSplitQuotation = prepayAmount > 0;
+  const payable = useMemo(() => resolvePurchasePayable(quotation), [quotation]);
+  const isSplitQuotation = payable.known && !payable.isLegacy;
 
   const computedTotalAmount = useMemo(() => {
     if (additionalFees.length > 0) {
@@ -476,21 +593,6 @@ const BuyForMeQuotationListDetail = () => {
     }
     return productsSubtotal + serviceFee + shippingFee + importTax + vat;
   }, [additionalFees.length, productsSubtotal, additionalFeesTotal, quotation, serviceFee, shippingFee, importTax, vat]);
-
-  const servicesSubtotal = useMemo(() => {
-    const pSub = Math.max(Number(productsSubtotal || 0), 0);
-    const total = Math.max(Number(computedTotalAmount || 0), 0);
-    return Math.max(total - pSub, 0);
-  }, [productsSubtotal, computedTotalAmount]);
-
-  const servicesDeposit = useMemo(() => {
-    return Math.round(servicesSubtotal * 0.5);
-  }, [servicesSubtotal]);
-
-  const buyForMeDepositAmount = useMemo(() => {
-    const pSub = Math.max(Number(productsSubtotal || 0), 0);
-    return pSub + servicesDeposit;
-  }, [productsSubtotal, servicesDeposit]);
 
   const statusNormalized = String(requestInfo.status || "")
     .trim()
@@ -614,15 +716,19 @@ const BuyForMeQuotationListDetail = () => {
               <strong>
                 {formatVndCurrency(computedTotalAmount)}
               </strong>
-              {quotation && buyForMeDepositAmount > 0 && (
+              {isSplitQuotation && (
                 <div style={{ margin: "6px 0 2px", fontSize: "0.92rem", fontWeight: 700, color: "#38bdf8" }}>
-                  Tiền cọc online: {formatVndCurrency(buyForMeDepositAmount)}
+                  Trả trước khi xác nhận: {formatVndCurrency(payable.depositAmount)}
                 </div>
               )}
               <small>
-                {quotation
-                  ? "100% tiền hàng + 50% phí dịch vụ & cước (Tự động làm tròn)"
-                  : "Chờ nhân viên cập nhật báo giá"}
+                {!quotation
+                  ? "Chờ nhân viên cập nhật báo giá"
+                  : isSplitQuotation
+                    ? `Phần còn lại tạm tính ${formatVndCurrency(payable.remainingAmount)}, thu khi hàng về VN`
+                    : payable.isLegacy
+                      ? LEGACY_QUOTATION_MESSAGE
+                      : "Đang cập nhật phần trả trước"}
               </small>
             </div>
           </section>
@@ -1115,7 +1221,7 @@ const BuyForMeQuotationListDetail = () => {
                     <div className="quotation-split">
                       <div className="quotation-split__part quotation-split__part--now">
                         <span className="quotation-split__label">TRẢ TRƯỚC HÔM NAY</span>
-                        <strong>{formatVndCurrency(prepayAmount)}</strong>
+                        <strong>{formatVndCurrency(payable.depositAmount)}</strong>
                         <small>
                           Tiền hàng + phí mua hộ + ship nội địa của người bán (đã gồm VAT phần
                           phí). Công ty ứng tiền mua hàng nên phần này thu đủ trước khi đặt.
@@ -1124,7 +1230,7 @@ const BuyForMeQuotationListDetail = () => {
 
                       <div className="quotation-split__part quotation-split__part--later">
                         <span className="quotation-split__label">TẠM TÍNH, THU KHI HÀNG VỀ VN</span>
-                        <strong>{formatVndCurrency(estimatedLaterAmount)}</strong>
+                        <strong>{formatVndCurrency(payable.remainingAmount)}</strong>
                         <small>
                           Cước quốc tế, VAT cước và thuế nhập khẩu. Đây là <b>số tạm tính</b> —
                           kho Việt Nam cân đo lại rồi mới chốt số thật, có thể cao hoặc thấp hơn.
@@ -1132,26 +1238,13 @@ const BuyForMeQuotationListDetail = () => {
                       </div>
                     </div>
                   ) : (
-                  <div className="statement-line" style={{ background: "rgba(37, 99, 235, 0.07)", padding: "8px 10px", borderRadius: 8, margin: "8px 0", flexDirection: "column", alignItems: "stretch", gap: 4 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, color: "#1d4ed8", fontSize: "0.85rem" }}>
-                        Tiền cọc khi thanh toán online
+                    <div className="statement-line" style={{ background: "rgba(245, 158, 11, 0.10)", padding: "8px 10px", borderRadius: 8, margin: "8px 0" }}>
+                      <span style={{ fontSize: "0.82rem", color: "#92400e" }}>
+                        {payable.isLegacy
+                          ? LEGACY_QUOTATION_MESSAGE
+                          : "Chưa tải được phần trả trước của báo giá. Vui lòng tải lại trang."}
                       </span>
-                      <strong style={{ fontSize: "1rem", color: "#1d4ed8", fontWeight: 800 }}>
-                        {formatVndCurrency(buyForMeDepositAmount)}
-                      </strong>
                     </div>
-                    <div style={{ fontSize: "0.78rem", color: "#475569", background: "rgba(255, 255, 255, 0.8)", padding: "4px 8px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 2 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>• Tiền hàng (100%):</span>
-                        <strong style={{ color: "#0f172a" }}>{formatVndCurrency(productsSubtotal)}</strong>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>• Phí dịch vụ & cước (50%):</span>
-                        <strong style={{ color: "#0f172a" }}>{formatVndCurrency(servicesDeposit)}</strong>
-                      </div>
-                    </div>
-                  </div>
                   )}
 
                   <div className="statement-total-banner">
@@ -1185,12 +1278,22 @@ const BuyForMeQuotationListDetail = () => {
                 <span>BÁO GIÁ CHÍNH THỨC MUA HỘ</span>
                 <strong>Xác nhận đơn hàng & Chọn phương thức thanh toán</strong>
                 <small>
-                  Tổng: <b>{formatVndCurrency(computedTotalAmount)}</b>
+                  Tổng dự kiến: <b>{formatVndCurrency(computedTotalAmount)}</b>
                   <span style={{ margin: "0 6px", opacity: 0.5 }}>|</span>
-                  Cọc online: <b style={{ color: "#38bdf8" }}>{formatVndCurrency(buyForMeDepositAmount)}</b>
-                  <span style={{ marginLeft: 6, opacity: 0.85 }}>
-                    (100% tiền hàng + 50% phí dịch vụ & cước)
-                  </span>
+                  {payable.canPayOnline ? (
+                    <>
+                      Trả trước: <b style={{ color: "#38bdf8" }}>{formatVndCurrency(payable.depositAmount)}</b>
+                      <span style={{ marginLeft: 6, opacity: 0.85 }}>
+                        (còn lại tạm tính {formatVndCurrency(payable.remainingAmount)} thu khi hàng về VN)
+                      </span>
+                    </>
+                  ) : (
+                    <span style={{ opacity: 0.85 }}>
+                      {payable.isLegacy
+                        ? LEGACY_QUOTATION_MESSAGE
+                        : "Chưa tải được phần trả trước — chưa thể thanh toán online."}
+                    </span>
+                  )}
                 </small>
               </div>
 
@@ -1223,7 +1326,7 @@ const BuyForMeQuotationListDetail = () => {
                     )
                   }
                   onClick={handleOpenPaymentDialog}
-                  disabled={isActionLoading}
+                  disabled={isActionLoading || !payable.canPayOnline}
                   className="quotation-payment-button"
                 >
                   {quotationAction === "pay" || quotationAction === "accept"
@@ -1251,11 +1354,16 @@ const BuyForMeQuotationListDetail = () => {
             loading={quotationAction === "pay" || quotationAction === "accept"}
             consignmentCode={requestInfo.purchaseCode || requestId}
             totalAmount={computedTotalAmount}
-            customDepositAmount={buyForMeDepositAmount}
-            customDepositDescription="100% tiền hàng + 50% phí dịch vụ & cước"
-            productsSubtotal={productsSubtotal}
-            servicesSubtotal={servicesSubtotal}
-            servicesDeposit={servicesDeposit}
+            customDepositAmount={payable.canPayOnline ? payable.depositAmount : null}
+            customDepositDescription={payable.description}
+            customRemainingAmount={payable.remainingAmount}
+            remainingLabel="Phần tạm tính thu khi hàng về VN (theo cân đo thật)"
+            depositBreakdown={[
+              { label: "Trả trước hôm nay", amount: payable.depositAmount },
+              { label: "Tạm tính, thu khi hàng về VN", amount: payable.remainingAmount },
+            ]}
+            depositLabel="Trả trước khi xác nhận"
+            gatewayText="qua SePay (VietQR)."
             formatMoney={formatVndCurrency}
             onClose={handleClosePaymentDialog}
             onConfirm={handleConfirmAndPay}

@@ -103,8 +103,8 @@ const ruleValueOf = (ruleCode, fallback) => {
   return Number.isFinite(value) ? value : fallback;
 };
 
-/* cm³ / 6000 = kg quy đổi. */
-const VOLUMETRIC_DIVISOR = ruleValueOf("VOLUMETRIC_DIVISOR", 6000);
+/* cm³ / hệ số (rule VOLUMETRIC_DIVISOR, backend mặc định 5000) = kg quy đổi. */
+const VOLUMETRIC_DIVISOR = ruleValueOf("VOLUMETRIC_DIVISOR", 5000);
 
 /* VAT dịch vụ logistics = (cước + phí dịch vụ) × 8%, đúng như tooltip trên UI. */
 const VAT_RATE = ruleValueOf("VAT", 8) / 100;

@@ -156,7 +156,8 @@ const normalizeNullableGuid = (
  */
 const normalizeReferenceUrls = (
   value,
-  itemIndex
+  itemIndex,
+  requireImages = true
 ) => {
   let rawUrls = value;
 
@@ -203,7 +204,12 @@ const normalizeReferenceUrls = (
     )
   );
 
-  if (!uniqueUrls.length) {
+  /*
+   * Ảnh là BẰNG CHỨNG của đơn đã tạo, không phải đầu vào để tính tiền. Bản ƯỚC TÍNH
+   * tắt ràng buộc này (requireImages = false) để khách xem được giá ngay, khỏi phải
+   * chờ upload xong mới biết hết bao nhiêu. Đường tạo đơn thật vẫn bắt buộc có ảnh.
+   */
+  if (requireImages && !uniqueUrls.length) {
     throw new Error(
       `Kiện hàng ${itemIndex + 1}: Vui lòng tải ít nhất một ảnh sản phẩm.`
     );
@@ -259,7 +265,8 @@ const normalizePricingRuleIds = (
 
 const normalizeConsignmentItem = (
   item,
-  index
+  index,
+  requireImages = true
 ) => {
   const quantity = Number(item?.quantity);
 
@@ -276,7 +283,8 @@ const normalizeConsignmentItem = (
   const referenceUrls =
     normalizeReferenceUrls(
       item?.referenceUrls,
-      index
+      index,
+      requireImages
     );
 
   const packageConfigurationId =
@@ -370,7 +378,8 @@ const normalizeConsignmentItem = (
  * POST /api/orders/consignments
  */
 export const buildCreateConsignmentRequest = (
-  payload = {}
+  payload = {},
+  { requireImages = true } = {}
 ) => {
   if (
     !Array.isArray(payload?.items) ||
@@ -421,7 +430,8 @@ export const buildCreateConsignmentRequest = (
       (item, index) =>
         normalizeConsignmentItem(
           item,
-          index
+          index,
+          requireImages
         )
     ),
   };
@@ -675,6 +685,41 @@ export const createConsignmentApi = async (
     return toConsignmentRecord(unwrapData(response.data));
   } catch (error) {
     logApiError("Lỗi tạo đơn ký gửi:", error);
+
+    throw error;
+  }
+};
+
+/**
+ * POST /api/orders/consignments/preview → { message, data: EstimateQuotationResponse }.
+ *
+ * ƯỚC TÍNH TRƯỚC KHI TẠO ĐƠN — backend chạy ĐÚNG phép tính sinh ra báo giá tạm tính lúc
+ * tạo đơn thật, chỉ khác là không ghi gì xuống DB. Nhờ vậy con số ở màn xác nhận bằng
+ * đúng con số trên hoá đơn khách thấy ngay sau khi bấm tạo.
+ *
+ * Dùng CHUNG `buildCreateConsignmentRequest` với hàm tạo đơn: sai lệch giữa hai màn trước
+ * đây bắt nguồn từ việc mỗi bên tự dựng số liệu một kiểu, nên ở đây chỉ để một đường.
+ */
+export const previewConsignmentApi = async (
+  payload,
+  options = {}
+) => {
+  /* Ảnh không đổi giá — xem chú thích ở normalizeReferenceUrls. */
+  const requestPayload =
+    buildCreateConsignmentRequest(payload, {
+      requireImages: false,
+    });
+
+  try {
+    const response = await httpClient.post(
+      "/api/orders/consignments/preview",
+      requestPayload,
+      { signal: getSignal(options) }
+    );
+
+    return unwrapData(response.data);
+  } catch (error) {
+    logApiError("Lỗi ước tính chi phí đơn ký gửi:", error);
 
     throw error;
   }
@@ -939,7 +984,9 @@ export const CONSIGNMENT_PAYMENT_METHODS = Object.freeze({
  * → { message, data: ConfirmQuotationPaymentResponse } — hàm trả `data`.
  *
  * - SEPAY: data.checkoutUrl là trang QR SePay của backend; trả xong trang tự quay về
- *   /payment/lich-su của đúng web đã mở nó.
+ *   returnUrl (+ `?orderCode=&status=success`), bấm Huỷ về cancelUrl (+ `status=cancelled`).
+ *   returnUrl/cancelUrl phải là URL tuyệt đối có origin trong whitelist của backend, sai thì
+ *   backend dùng /history/consignment. Nơi gọi dựng bằng buildPaymentReturnUrls.
  * - OFFLINE: checkoutUrl null, paymentStatus PENDING_RECONCILIATION (chờ Admin đối soát).
  * - Tỷ lệ cọc 0%: amount 0, orderCode 0, paymentStatus PAID.
  * Số tiền (amount, depositRate, totalBillAmount) luôn lấy từ đây, FE không tự tính.

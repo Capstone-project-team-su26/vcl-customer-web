@@ -781,6 +781,20 @@ const getQuotationTotals = (request) => {
 };
 
 /**
+ * Như backend: gắn `orderCode` + `status` vào URL trả về, nối `&` nếu URL đã có query
+ * (giữ nguyên query sẵn có như `?loai=mua-ho`).
+ */
+const appendPaymentReturnQuery = (url, orderCode, status) => {
+  const text = String(url ?? "");
+  const query = new URLSearchParams({
+    orderCode: String(orderCode ?? ""),
+    status,
+  }).toString();
+
+  return `${text}${text.includes("?") ? "&" : "?"}${query}`;
+};
+
+/**
  * Link "Thanh toán" / "Hóa đơn" trong bảng lịch sử mở ở tab mới.
  *
  * Bản UI-only không có cổng SePay nên link trỏ về chính màn chi tiết mua hộ,
@@ -1024,7 +1038,7 @@ export const getPurchaseRequestsApi = async (
     await delay(260, getSignal(opts));
 
     /*
-     * Bộ lọc có thể nằm trong params (usePendingQuotationCounts) hoặc đặt
+     * Bộ lọc có thể nằm trong params (kiểu gọi { params: {...} }) hoặc đặt
      * thẳng trên đối tượng options (ReceiveGoods truyền
      * { pageNumber, pageSize, keyword, status } làm tham số đầu tiên).
      */
@@ -1365,15 +1379,17 @@ export const confirmAndPayQuotationApi = async (
     const paidAt = nowIso();
 
     /*
-     * checkoutUrl = returnUrl của chính app.
+     * checkoutUrl = returnUrl của chính app, gắn `orderCode` + `status=success` như
+     * backend làm khi trang thanh toán trả khách về (hợp đồng returnUrl/cancelUrl).
      *
      * Bản UI-only không có cổng SePay; hai màn gọi hàm này đều chuyển trang
      * ngay sang checkoutUrl (một màn còn ném lỗi nếu thiếu), nên trả về
-     * returnUrl để khách quay lại đúng màn chi tiết với trạng thái thành công
+     * returnUrl để khách quay lại Lịch sử giao dịch với trạng thái thành công
      * thay vì rơi ra một domain chết. Cắm API thật thì lấy checkoutUrl trong
      * response của backend.
      */
-    const checkoutUrl = requestPayload.returnUrl;
+    const toCheckoutUrl = (orderCode) =>
+      appendPaymentReturnQuery(requestPayload.returnUrl, orderCode, "success");
 
     const request = findPurchaseRequestByAnyKey(id);
 
@@ -1425,6 +1441,8 @@ export const confirmAndPayQuotationApi = async (
 
       payment.paymentMethod = requestPayload.paymentMethod;
 
+      const checkoutUrl = toCheckoutUrl(payment.orderCode);
+
       return {
         success: true,
         message: "Đã khởi tạo giao dịch thanh toán.",
@@ -1453,6 +1471,7 @@ export const confirmAndPayQuotationApi = async (
       consignment.statusUpdatedAt = paidAt;
 
       const orderCode = makeOrderCode("PAY", paidAt);
+      const checkoutUrl = toCheckoutUrl(orderCode);
 
       return {
         success: true,

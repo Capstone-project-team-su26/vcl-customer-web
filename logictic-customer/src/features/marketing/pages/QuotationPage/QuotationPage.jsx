@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -22,7 +22,8 @@ import {
   TruckOutlined,
 } from "@ant-design/icons";
 
-import { getVolumetricDivisorRule } from "@features/pricing/api/pricingRuleService.mock";
+import useWeightPricingParams from "@features/pricing/hooks/useWeightPricingParams";
+import WeightParamsNotice from "@features/pricing/components/WeightParamsNotice/WeightParamsNotice";
 import Header from "@layouts/SiteHeader/SiteHeader";
 import "./QuotationPage.css";
 
@@ -153,32 +154,12 @@ const QuotationPage = () => {
   const navigate = useNavigate();
 
   /*
-   * Hệ số quy đổi thể tích đọc từ rule VOLUMETRIC_DIVISOR của danh mục
-   * pricingRules (qua api), không gõ số riêng ở trang công khai.
+   * Hệ số quy đổi thể tích (VOLUMETRIC_DIVISOR) và cân tối thiểu (MIN_WEIGHT) đọc
+   * THẬT từ GET /api/pricing-rules — cùng số backend dùng khi báo giá. Chưa tải được
+   * thì không tạm tính (không đoán số).
    */
-  const [volumetricDivisor, setVolumetricDivisor] = useState(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    getVolumetricDivisorRule({ signal: controller.signal })
-      .then((rule) => {
-        const divisor = Number(rule?.value);
-
-        if (!controller.signal.aborted && Number.isFinite(divisor) && divisor > 0) {
-          setVolumetricDivisor(divisor);
-        }
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          console.error("Không tải được hệ số quy đổi thể tích:", error);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
+  const weightParams = useWeightPricingParams();
+  const { volumetricDivisor, minimumWeight } = weightParams;
 
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
@@ -213,7 +194,8 @@ const QuotationPage = () => {
         ? (length * width * height) / volumetricDivisor
         : 0;
 
-    const chargeableWeight = Math.max(weight, volumetricWeight, 0.5);
+    /* Cân tối thiểu lấy từ rule MIN_WEIGHT của backend (backend mặc định 1,0 kg), không gõ cứng. */
+    const chargeableWeight = Math.max(weight, volumetricWeight, minimumWeight || 0);
 
     const freightRate =
       formData.shippingMethod === "road"
@@ -263,7 +245,7 @@ const QuotationPage = () => {
       handlingFee,
       total,
     };
-  }, [formData, currentCountry, volumetricDivisor]);
+  }, [formData, currentCountry, volumetricDivisor, minimumWeight]);
 
   const updateField = (name, value) => {
     setFormData((prev) => ({
@@ -870,7 +852,14 @@ const QuotationPage = () => {
                     </span>
 
                     <small>Chi phí tạm tính</small>
-                    <strong>{formatCurrency(quoteResult.total)}</strong>
+                    <strong>
+                      {weightParams.isReady ? formatCurrency(quoteResult.total) : "—"}
+                    </strong>
+
+                    <WeightParamsNotice
+                      status={weightParams.status}
+                      onRetry={weightParams.retry}
+                    />
 
                     <p>
                       Đây là giá ước tính. Báo giá chính thức có thể thay đổi
@@ -878,6 +867,8 @@ const QuotationPage = () => {
                     </p>
                   </div>
 
+                  {weightParams.isReady && (
+                  <>
                   <div className="quotation-summary-card">
                     <h3>Chi tiết chi phí</h3>
 
@@ -961,6 +952,8 @@ const QuotationPage = () => {
                       </div>
                     </div>
                   </div>
+                  </>
+                  )}
 
                   {submitted && (
                     <motion.div

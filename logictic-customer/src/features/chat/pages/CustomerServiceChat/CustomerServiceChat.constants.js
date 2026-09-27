@@ -3,7 +3,8 @@
  * luồng xử lý, tránh phải cuộn qua hàng trăm dòng bảng tra khi sửa UI.
  */
 
-import { getConsignmentsApi } from "@features/consignment/api/consignmentApi.mock";
+/* Mã liên kết phải là id THẬT: backend tra RelatedId trong bảng Order / PurchaseRequest. */
+import { getConsignmentsApi } from "@features/consignment/api/consignmentApi";
 import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestApi";
 
 export const RELATED_TYPE_OPTIONS = [
@@ -34,6 +35,9 @@ export const RELATED_TYPE_LABELS = {
 };
 
 export const STATUS_LABELS = {
+  /* Trạng thái phòng chat của backend (ConversationService). */
+  OPEN: "Đang mở",
+  CLOSED: "Đã đóng",
   PENDING: "Đang chờ xử lý",
   PENDING_REVIEW: "Đang chờ duyệt",
   PROCESSING: "Đang xử lý",
@@ -50,7 +54,8 @@ export const STATUS_LABELS = {
 
 export const RELATED_TYPE_LOADERS = {
   PURCHASE_REQUEST: getPurchaseRequestsApi,
-  CONSIGNMENT: getConsignmentsApi,
+  /* 50 đơn ký gửi gần nhất (API thật tự lọc orderType=CONSIGNMENT); mặc định chỉ 10. */
+  CONSIGNMENT: () => getConsignmentsApi(1, 50),
 };
 
 export const INITIAL_CREATE_FORM = {
@@ -63,13 +68,16 @@ export const INITIAL_MESSAGE_FORM = {
   content: "",
 };
 
+/*
+ * Ảnh chat upload qua POST /api/uploads/images (UploadsController): JPG/PNG/WEBP,
+ * mỗi ảnh ≤ 5MB. Mỗi tin nhắn backend chỉ lưu MỘT attachmentUrl (≤ 500 ký tự).
+ */
 export const MAX_IMAGE_COUNT = 1;
-export const MAX_IMAGE_SIZE_MB = 6;
+export const MAX_IMAGE_SIZE_MB = 5;
 export const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 export const ACCEPTED_CHAT_IMAGE_TYPES = new Set([
   "image/jpeg",
-  "image/jpg",
   "image/png",
   "image/webp",
 ]);

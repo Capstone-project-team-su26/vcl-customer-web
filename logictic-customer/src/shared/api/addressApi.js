@@ -1,205 +1,148 @@
 /* =========================================================
-   addressApi (MOCK — bản build UI-only)
+   addressApi — API thật: danh mục hành chính GoShip qua backend VCL.
 
-   Bản gốc gọi thẳng provinces.open-api.vn bằng fetch (có timeout, retry,
-   cache theo URL). Tầng HTTP đó đã được gỡ; file này trả dữ liệu mẫu ngay
-   tại chỗ để 3 màn hình chọn địa chỉ vẫn chạy đủ chuỗi
-   tỉnh -> quận/huyện -> phường/xã.
+   Endpoint (cần đăng nhập, backend tự gắn GoshipSettings:Token):
+   - GET /api/Goship/cities                          → { message, items: [{ id, name }] }
+   - GET /api/Goship/cities/{cityId}/districts        → { message, items: [{ id, name }] }
+   - GET /api/Goship/districts/{districtId}/wards     → { message, items: [{ id, name }] }
+   (GoshipController.GetCities / GetDistricts / GetWards; lỗi GoShip → 500 { message }.)
 
-   CẮM API THẬT TRỞ LẠI:
-   - Bỏ import từ @/mocks, dựng lại requestJson(path, params, options) gọi
-     `${VITE_API_ADDRESS_URL}` (mặc định https://provinces.open-api.vn/api/v1).
-   - Map lại đúng endpoint: "/p/", "/p/{code}?depth=", "/d/{code}?depth=",
-     "/w/{code}", "/p/search/", "/d/search/", "/w/search/".
-   - normalizeAddressOption / normalizeAddressOptions giữ nguyên, dùng lại được.
+   VÌ SAO PHẢI LÀ DANH MỤC GOSHIP (không phải provinces.open-api.vn hay dữ liệu mẫu):
+   Backend KHÔNG lưu mã tỉnh/huyện/xã. Sổ địa chỉ (/api/delivery-addresses) chỉ lưu MỘT
+   chuỗi "chi tiết, phường/xã, quận/huyện, tỉnh/thành"; yêu cầu giao
+   (/api/delivery-requests) lưu 3 TÊN province / district / ward. Lúc tạo vận đơn,
+   DeliveryRequestService gọi GoshipService.ResolveAddressCodesAsync(tên tỉnh, tên huyện,
+   tên xã) để dò lại mã GoShip bằng cách so TÊN (bỏ dấu, bỏ tiền tố "Tỉnh/Quận/Phường...").
+   Vì vậy FE phải ghép địa chỉ bằng ĐÚNG TÊN GoShip trả về → so khớp tuyệt đối, vận đơn
+   đúng địa chỉ. Mã (id GoShip) chỉ dùng trong FE để nạp cấp con.
 
-   GIỮ NGUYÊN HỢP ĐỒNG (component không được sửa một dòng nào):
-   - getProvinces / getDistrictsByProvinceCode / getWardsByDistrictCode và 3 hàm
-     search* trả về MẢNG ĐÃ NORMALIZE ({ value, label, code, name, ... }) —
-     SelectField và thẻ <option> đọc option.value + option.label.
-   - getProvinceByCode / getDistrictByCode / getWardByCode trả về OBJECT THÔ của
-     API (name, code, division_type, districts/wards...) vì getFullAddressByCodes
-     đọc province.name / district.name / ward.name.
-   - getFullAddressByCodes trả object gộp, ConsignmentOrder và ConsignmentBuyOrder
-     đọc result?.province?.name, result?.district?.name, result?.ward?.name và
-     result?.fullAddress.
-   - Mọi hàm nhận options có { signal } và phải ném lỗi huỷ đúng chữ ký
-     (CanceledError / ERR_CANCELED) để isCanceledRequest nuốt lỗi, không bắn toast.
+   Cache: tỉnh/thành cache cả phiên (bộ nhớ + sessionStorage); quận/huyện, phường/xã
+   cache theo mã cha, chỉ tải khi người dùng chọn. Lỗi KHÔNG được cache và KHÔNG rơi về
+   danh sách giả — ném lỗi để màn hình hiện câu báo + nút "Thử lại".
+
+   GIỮ NGUYÊN HỢP ĐỒNG với bản mock (addressApi.mock.js):
+   - getProvinces / getDistrictsByProvinceCode / getWardsByDistrictCode và 3 hàm search*
+     trả MẢNG ĐÃ NORMALIZE ({ value, label, code, name, ... }).
+   - getProvinceByCode / getDistrictByCode / getWardByCode trả OBJECT THÔ ({ id, code, name }).
+   - getFullAddressByCodes trả { province, district, ward, ...Name, ...Code, fullAddress }.
+   - Mọi hàm nhận options { signal }; bị huỷ thì ném lỗi CanceledError để
+     isCanceledRequest nuốt, không bắn toast.
    ========================================================= */
 
-import { deepClone, delay } from "@/mocks/mockUtils";
-import { provinces as provinceTree } from "@/mocks/data/addresses";
+import httpClient, { hasAccessToken } from "@shared/api/httpClient";
 
-/*
- * Dropdown địa chỉ nằm ngay trong form nhập liệu, nên để trễ ngắn hơn mặc định:
- * đủ để spinner "Đang tải dữ liệu..." của SelectField nhấp một nhịp,
- * nhưng không làm người dùng thấy khựng khi đổi tỉnh liên tục.
- */
-const ADDRESS_DELAY_MS = 160;
+/** Dropdown nằm trong form: đợi tối đa 15 giây rồi báo lỗi + cho thử lại. */
+export const ADDRESS_REQUEST_TIMEOUT_MS = 15_000;
 
-/*
- * Cache giữ đúng vai trò của bản gốc: tránh dựng lại danh sách nhiều lần trong
- * một phiên. clearAddressCache() vẫn xoá sạch được như trước.
- */
-const cache = new Map();
+const CITIES_PATH = "/api/Goship/cities";
+const districtsPath = (cityId) =>
+  `/api/Goship/cities/${encodeURIComponent(cityId)}/districts`;
+const wardsPath = (districtId) =>
+  `/api/Goship/districts/${encodeURIComponent(districtId)}/wards`;
 
-const readCache = (key, factory) => {
-  if (cache.has(key)) {
-    return cache.get(key);
-  }
-
-  const value = factory();
-
-  cache.set(key, value);
-
-  return value;
-};
+const PROVINCE_STORAGE_KEY = "vcl.goship.cities.v1";
 
 /* =========================================================
-   TRUY VẤN TRÊN FIXTURE
+   CHUẨN HOÁ TÊN — bỏ dấu, dùng cho ô tìm kiếm và so khớp địa chỉ cũ
    ========================================================= */
 
-const sameCode = (a, b) => String(a) === String(b);
-
-/*
- * API thật ở endpoint danh sách KHÔNG trả kèm cấp con, nên phải cắt
- * districts/wards trước khi normalize.
- *
- * Viết thành hàm thay vì destructuring bỏ biến ({ districts, ...rest }) vì
- * biến bỏ đi đó bị eslint no-unused-vars báo lỗi trong cấu hình của dự án.
+/**
+ * Bỏ dấu + lowercase + gộp khoảng trắng để tìm được khi gõ không dấu.
+ * Cờ "i" ở /đ/gi là bắt buộc: "Đ" hoa không tách dấu được bằng NFD.
  */
-const omitChild = (item, childKey) => {
-  const copy = { ...item };
-
-  delete copy[childKey];
-
-  return copy;
-};
-
-/* Chỉ nhận 1 tham số để dùng thẳng trong .map() (index không lọt vào childKey). */
-const stripDistricts = (province) => omitChild(province, "districts");
-
-const stripWards = (district) => omitChild(district, "wards");
-
-const findProvince = (provinceCode) =>
-  provinceTree.find((province) =>
-    sameCode(province.code, provinceCode)
-  ) || null;
-
-const findDistrict = (districtCode) => {
-  for (const province of provinceTree) {
-    const district = province.districts.find((item) =>
-      sameCode(item.code, districtCode)
-    );
-
-    if (district) {
-      return district;
-    }
-  }
-
-  return null;
-};
-
-const findWard = (wardCode) => {
-  for (const province of provinceTree) {
-    for (const district of province.districts) {
-      const ward = district.wards.find((item) =>
-        sameCode(item.code, wardCode)
-      );
-
-      if (ward) {
-        return ward;
-      }
-    }
-  }
-
-  return null;
-};
-
-/*
- * API thật cắt bớt dữ liệu lồng theo tham số depth:
- * depth 1 = chỉ bản thân đơn vị, 2 = kèm cấp con, 3 = kèm cả hai cấp con.
- * Giữ đúng hành vi này để getDistrictsByProvinceCode (depth 2) vẫn có districts
- * còn getProvinceByCode() mặc định (depth 1) trả object gọn như trước.
- */
-const shapeProvinceByDepth = (province, depth) => {
-  if (!province) return null;
-
-  const { districts, ...rest } = province;
-
-  const level = Number(depth) || 1;
-
-  if (level <= 1) {
-    return deepClone(rest);
-  }
-
-  return deepClone({
-    ...rest,
-    districts: districts.map((district) => {
-      const { wards, ...districtRest } = district;
-
-      return level >= 3
-        ? { ...districtRest, wards }
-        : districtRest;
-    }),
-  });
-};
-
-const shapeDistrictByDepth = (district, depth) => {
-  if (!district) return null;
-
-  const { wards, ...rest } = district;
-
-  const level = Number(depth) || 1;
-
-  if (level <= 1) {
-    return deepClone(rest);
-  }
-
-  return deepClone({ ...rest, wards });
-};
-
-/*
- * Bỏ dấu + lowercase để search khớp cả khi người dùng gõ không dấu.
- *
- * Cờ "i" ở /đ/gi là bắt buộc: chữ Đ hoa KHÔNG tách dấu được bằng NFD, mà bước
- * này chạy trước .toLowerCase(), nên nếu chỉ bắt "đ" thường thì "Quận Ba Đình"
- * ra "quan ba đinh" và người dùng gõ "ba dinh" không khớp gì cả — search trả
- * mảng rỗng mà không có lỗi nào để lần ra.
- */
-const normalizeKeyword = (value) =>
+export const normalizeAddressKeyword = (value) =>
   String(value ?? "")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/đ/gi, "d")
     .toLowerCase()
+    .replace(/\s+/g, " ")
     .trim();
 
-const matchesName = (name, keyword) =>
-  normalizeKeyword(name).includes(keyword);
+const ADMIN_PREFIXES = [
+  "thanh pho ",
+  "tinh ",
+  "tp ",
+  "quan ",
+  "huyen ",
+  "thi xa ",
+  "thi tran ",
+  "phuong ",
+  "xa ",
+  "q ",
+  "p ",
+];
+
+/**
+ * Bản sao GoshipService.NormalizeLocationName (backend): bỏ dấu, "." và "," thành
+ * khoảng trắng, cắt MỘT tiền tố hành chính ở đầu. "TP. Hồ Chí Minh" ≡ "Hồ Chí Minh".
+ */
+const normalizeLocationName = (value) => {
+  const cleaned = normalizeAddressKeyword(String(value ?? "").replace(/[.,]/g, " "));
+
+  const prefix = ADMIN_PREFIXES.find((item) => cleaned.startsWith(item));
+
+  return (prefix ? cleaned.slice(prefix.length) : cleaned).trim();
+};
+
+/**
+ * Tên đưa vào chuỗi địa chỉ. Dấu phẩy là ký tự tách 4 phần của chuỗi địa chỉ đã lưu
+ * (OrderDeliveryCard.splitAddress), nên không được lọt vào tên; backend cũng coi ","
+ * như khoảng trắng khi so tên nên thay bằng khoảng trắng vẫn khớp tuyệt đối.
+ */
+const toAddressName = (value) =>
+  String(value ?? "")
+    .replace(/\s*,\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
+ * Tìm mục khớp TÊN trong danh sách đã normalize (tên cũ đã lưu → mã GoShip).
+ * Khớp tuyệt đối trước; "chứa nhau" chỉ tính theo NGUYÊN TỪ và chỉ nhận khi có DUY
+ * NHẤT một ứng viên, để "Quận 1" không bị gán nhầm thành "Quận 10".
+ */
+export const findAddressOptionByName = (options, name) => {
+  const needle = normalizeLocationName(name);
+
+  if (!needle || !Array.isArray(options)) return null;
+
+  const exact = options.find(
+    (option) => normalizeLocationName(option?.name ?? option?.label) === needle,
+  );
+
+  if (exact) return exact;
+
+  const partial = options.filter((option) => {
+    const candidate = normalizeLocationName(option?.name ?? option?.label);
+
+    return (
+      candidate &&
+      (` ${candidate} `.includes(` ${needle} `) || ` ${needle} `.includes(` ${candidate} `))
+    );
+  });
+
+  return partial.length === 1 ? partial[0] : null;
+};
 
 /* =========================================================
-   NORMALIZE — GIỮ NGUYÊN BẢN GỐC
-
-   Đây là phần component gián tiếp phụ thuộc nhiều nhất:
-   value/label nuôi thẻ <option>, code/name nuôi getAddressOptionName.
+   NORMALIZE OPTION — cùng hình dạng bản mock
    ========================================================= */
 
 export const normalizeAddressOption = (item) => {
   if (!item) return null;
 
   const code = item.code ?? item.id ?? item.value;
-  const name = item.name ?? item.label ?? item.full_name ?? "";
+  const name = toAddressName(item.name ?? item.label ?? item.full_name ?? "");
 
-  if (code === undefined || code === null || !String(name).trim()) {
+  if (code === undefined || code === null || String(code).trim() === "" || !name) {
     return null;
   }
 
   return {
     value: String(code),
-    code,
-    label: String(name).trim(),
-    name: String(name).trim(),
+    code: String(code),
+    label: name,
+    name,
     codename: item.codename,
     divisionType: item.division_type,
     phoneCode: item.phone_code,
@@ -212,212 +155,338 @@ export const normalizeAddressOption = (item) => {
 export const normalizeAddressOptions = (items = []) => {
   if (!Array.isArray(items)) return [];
 
-  return items
-    .map(normalizeAddressOption)
-    .filter(Boolean);
+  const seen = new Set();
+
+  return items.map(normalizeAddressOption).filter((option) => {
+    if (!option || seen.has(option.value)) return false;
+
+    seen.add(option.value);
+    return true;
+  });
 };
+
+/* =========================================================
+   HTTP + CACHE
+   ========================================================= */
+
+const createCanceledError = () => {
+  const error = new Error("canceled");
+
+  error.name = "CanceledError";
+  error.code = "ERR_CANCELED";
+  error.__CANCEL__ = true;
+
+  return error;
+};
+
+/** Gắn signal của từng người gọi vào promise dùng chung (request không bị huỷ theo). */
+const withSignal = (promise, signal) => {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(createCanceledError());
+
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(createCanceledError());
+
+    signal.addEventListener("abort", onAbort, { once: true });
+
+    promise.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+};
+
+const getSignal = (options = {}) =>
+  typeof options?.addEventListener === "function" ? options : options?.signal;
+
+/** { message, items } là dạng chuẩn; chấp nhận thêm data / mảng trần cho chắc. */
+const pickItems = (body) => {
+  const candidates = [body?.items, body?.data?.items, body?.data, body];
+
+  return candidates.find(Array.isArray) || [];
+};
+
+const readStoredProvinces = () => {
+  try {
+    const raw = globalThis.sessionStorage?.getItem(PROVINCE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const storeProvinces = (items) => {
+  try {
+    globalThis.sessionStorage?.setItem(PROVINCE_STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    /* Storage bị chặn: vẫn còn cache bộ nhớ. */
+  }
+};
+
+/** key → { value } khi đã có dữ liệu, hoặc { promise } khi đang tải. */
+const cache = new Map();
+
+/** Chỉ mục mã → option để getXxxByCode / getFullAddressByCodes tra được tên. */
+const provinceIndex = new Map();
+const districtIndex = new Map();
+const wardIndex = new Map();
+
+const indexOptions = (index, options) => {
+  options.forEach((option) => index.set(option.value, option));
+};
+
+const fetchItems = async (path) => {
+  if (!hasAccessToken()) {
+    const error = new Error("Vui lòng đăng nhập để tải danh mục địa chỉ.");
+
+    error.code = "NO_ACCESS_TOKEN";
+    throw error;
+  }
+
+  const response = await httpClient.get(path, {
+    timeout: ADDRESS_REQUEST_TIMEOUT_MS,
+  });
+
+  return pickItems(response?.data);
+};
+
+/**
+ * Tải một danh mục, dùng chung request đang bay; chỉ cache khi thành công và CÓ dữ liệu
+ * (cache mảng rỗng sẽ khoá dropdown cả phiên).
+ */
+const loadList = (key, path, annotate, index, options = {}) => {
+  const signal = getSignal(options);
+  const hit = cache.get(key);
+
+  if (hit?.value) return withSignal(Promise.resolve(hit.value), signal);
+  if (hit?.promise) return withSignal(hit.promise, signal);
+
+  const promise = fetchItems(path)
+    .then((items) => {
+      const normalized = normalizeAddressOptions(items.map(annotate));
+
+      if (normalized.length > 0) {
+        cache.set(key, { value: normalized });
+        indexOptions(index, normalized);
+      } else {
+        cache.delete(key);
+      }
+
+      return normalized;
+    })
+    .catch((error) => {
+      cache.delete(key);
+      throw error;
+    });
+
+  cache.set(key, { promise });
+
+  return withSignal(promise, signal);
+};
+
+const cloneOptions = (options) => options.map((option) => ({ ...option }));
 
 /* =========================================================
    PROVINCES — TỈNH / THÀNH PHỐ
    ========================================================= */
 
 export const getProvinces = async (options = {}) => {
-  await delay(ADDRESS_DELAY_MS, options);
+  if (!cache.has("provinces")) {
+    const stored = normalizeAddressOptions(readStoredProvinces() || []);
 
-  /*
-   * Bản gốc gọi "/p/" (không depth) nên tỉnh trả về KHÔNG kèm districts;
-   * bỏ districts ở đây cho option.raw nhẹ và giống hệt dữ liệu thật.
-   */
-  const rows = readCache("provinces", () =>
-    provinceTree.map(stripDistricts)
+    if (stored.length > 0) {
+      cache.set("provinces", { value: stored });
+      indexOptions(provinceIndex, stored);
+    }
+  }
+
+  const list = await loadList(
+    "provinces",
+    CITIES_PATH,
+    (item) => ({ ...item }),
+    provinceIndex,
+    options,
   );
 
-  return normalizeAddressOptions(deepClone(rows));
+  if (list.length > 0 && !readStoredProvinces()) {
+    storeProvinces(list.map((option) => option.raw));
+  }
+
+  return cloneOptions(list);
 };
 
-export const getProvinceByCode = async (
-  provinceCode,
-  options = {}
-) => {
+const toRaw = (option) =>
+  option ? { ...option.raw, id: option.value, code: option.value, name: option.name } : null;
+
+export const getProvinceByCode = async (provinceCode, options = {}) => {
   if (!provinceCode) return null;
 
   const { depth = 1, ...requestOptions } = options;
+  const key = String(provinceCode);
 
-  await delay(ADDRESS_DELAY_MS, requestOptions);
+  if (!provinceIndex.has(key)) {
+    await getProvinces(requestOptions);
+  }
 
-  return shapeProvinceByDepth(
-    findProvince(provinceCode),
-    depth
-  );
+  const province = toRaw(provinceIndex.get(key));
+
+  if (!province || Number(depth) < 2) return province;
+
+  const districts = await getDistrictsByProvinceCode(key, requestOptions);
+
+  return { ...province, districts: districts.map(toRaw) };
 };
 
-export const searchProvinces = async (
-  keyword,
-  options = {}
-) => {
-  const searchText = keyword?.trim();
+export const searchProvinces = async (keyword, options = {}) => {
+  const needle = normalizeAddressKeyword(keyword);
 
-  if (!searchText) return [];
+  if (!needle) return [];
 
-  await delay(ADDRESS_DELAY_MS, options);
+  const provinces = await getProvinces(options);
 
-  const normalized = normalizeKeyword(searchText);
-
-  const rows = provinceTree
-    .filter((province) => matchesName(province.name, normalized))
-    .map(stripDistricts);
-
-  return normalizeAddressOptions(deepClone(rows));
+  return provinces.filter((option) =>
+    normalizeAddressKeyword(option.name).includes(needle),
+  );
 };
 
 /* =========================================================
    DISTRICTS — QUẬN / HUYỆN
    ========================================================= */
 
-export const getDistrictsByProvinceCode = async (
-  provinceCode,
-  options = {}
-) => {
+export const getDistrictsByProvinceCode = async (provinceCode, options = {}) => {
   if (!provinceCode) return [];
 
-  await delay(ADDRESS_DELAY_MS, options);
+  const key = String(provinceCode);
 
-  const rows = readCache(`districts:${provinceCode}`, () => {
-    const province = findProvince(provinceCode);
+  const list = await loadList(
+    `districts:${key}`,
+    districtsPath(key),
+    (item) => ({ ...item, province_code: key }),
+    districtIndex,
+    options,
+  );
 
-    /* Mã lạ -> mảng rỗng, y như API thật trả province null. */
-    return (province?.districts || []).map(stripWards);
-  });
-
-  return normalizeAddressOptions(deepClone(rows));
+  return cloneOptions(list);
 };
 
-export const getDistrictByCode = async (
-  districtCode,
-  options = {}
-) => {
+export const getDistrictByCode = async (districtCode, options = {}) => {
   if (!districtCode) return null;
 
-  const { depth = 1, ...requestOptions } = options;
+  const { depth = 1, provinceCode, ...requestOptions } = options;
+  const key = String(districtCode);
 
-  await delay(ADDRESS_DELAY_MS, requestOptions);
+  /* GoShip không có API tra một quận theo mã: nạp danh sách của tỉnh cha nếu biết. */
+  if (!districtIndex.has(key) && provinceCode) {
+    await getDistrictsByProvinceCode(provinceCode, requestOptions);
+  }
 
-  return shapeDistrictByDepth(
-    findDistrict(districtCode),
-    depth
-  );
+  const district = toRaw(districtIndex.get(key));
+
+  if (!district || Number(depth) < 2) return district;
+
+  const wards = await getWardsByDistrictCode(key, requestOptions);
+
+  return { ...district, wards: wards.map(toRaw) };
 };
 
-export const searchDistricts = async (
-  keyword,
-  options = {}
-) => {
-  const searchText = keyword?.trim();
+/** Tìm trong quận/huyện của options.provinceCode, hoặc mọi danh sách đã tải trong phiên. */
+export const searchDistricts = async (keyword, options = {}) => {
+  const needle = normalizeAddressKeyword(keyword);
 
-  if (!searchText) return [];
+  if (!needle) return [];
 
-  await delay(ADDRESS_DELAY_MS, options);
+  const { provinceCode, ...requestOptions } = options;
 
-  const normalized = normalizeKeyword(searchText);
+  const pool = provinceCode
+    ? await getDistrictsByProvinceCode(provinceCode, requestOptions)
+    : Array.from(districtIndex.values());
 
-  const rows = provinceTree
-    .flatMap((province) => province.districts)
-    .filter((district) => matchesName(district.name, normalized))
-    .map(stripWards);
-
-  return normalizeAddressOptions(deepClone(rows));
+  return cloneOptions(
+    pool.filter((option) => normalizeAddressKeyword(option.name).includes(needle)),
+  );
 };
 
 /* =========================================================
    WARDS — PHƯỜNG / XÃ
    ========================================================= */
 
-export const getWardsByDistrictCode = async (
-  districtCode,
-  options = {}
-) => {
+export const getWardsByDistrictCode = async (districtCode, options = {}) => {
   if (!districtCode) return [];
 
-  await delay(ADDRESS_DELAY_MS, options);
+  const key = String(districtCode);
 
-  const rows = readCache(`wards:${districtCode}`, () => {
-    const district = findDistrict(districtCode);
+  const list = await loadList(
+    `wards:${key}`,
+    wardsPath(key),
+    (item) => ({ ...item, district_code: key }),
+    wardIndex,
+    options,
+  );
 
-    return district?.wards || [];
-  });
-
-  return normalizeAddressOptions(deepClone(rows));
+  return cloneOptions(list);
 };
 
-export const getWardByCode = async (
-  wardCode,
-  options = {}
-) => {
+export const getWardByCode = async (wardCode, options = {}) => {
   if (!wardCode) return null;
 
-  await delay(ADDRESS_DELAY_MS, options);
+  const { districtCode, ...requestOptions } = options;
+  const key = String(wardCode);
 
-  const ward = findWard(wardCode);
+  if (!wardIndex.has(key) && districtCode) {
+    await getWardsByDistrictCode(districtCode, requestOptions);
+  }
 
-  return ward ? deepClone(ward) : null;
+  return toRaw(wardIndex.get(key));
 };
 
-export const searchWards = async (
-  keyword,
-  options = {}
-) => {
-  const searchText = keyword?.trim();
+/** Tìm trong phường/xã của options.districtCode, hoặc mọi danh sách đã tải trong phiên. */
+export const searchWards = async (keyword, options = {}) => {
+  const needle = normalizeAddressKeyword(keyword);
 
-  if (!searchText) return [];
+  if (!needle) return [];
 
-  await delay(ADDRESS_DELAY_MS, options);
+  const { districtCode, ...requestOptions } = options;
 
-  const normalized = normalizeKeyword(searchText);
+  const pool = districtCode
+    ? await getWardsByDistrictCode(districtCode, requestOptions)
+    : Array.from(wardIndex.values());
 
-  const rows = provinceTree
-    .flatMap((province) => province.districts)
-    .flatMap((district) => district.wards)
-    .filter((ward) => matchesName(ward.name, normalized));
-
-  return normalizeAddressOptions(deepClone(rows));
+  return cloneOptions(
+    pool.filter((option) => normalizeAddressKeyword(option.name).includes(needle)),
+  );
 };
 
 /* =========================================================
    FULL ADDRESS HELPER
 
-   ConsignmentOrder / ConsignmentBuyOrder gọi hàm này lúc bấm "Lưu địa chỉ",
-   rồi đọc province?.name, district?.name, ward?.name và fullAddress.
-   Thiếu một trong các field đó là địa chỉ lưu ra bị cụt.
+   ConsignmentOrder / ConsignmentBuyOrder gọi lúc bấm "Lưu địa chỉ" và đọc
+   province?.name, district?.name, ward?.name, fullAddress. Chuỗi ghép theo thứ tự
+   "chi tiết, phường/xã, quận/huyện, tỉnh/thành" bằng TÊN GoShip.
    ========================================================= */
 
-export const getFullAddressByCodes = async ({
-  provinceCode,
-  districtCode,
-  wardCode,
-  detailAddress = "",
-}) => {
+export const getFullAddressByCodes = async (
+  { provinceCode, districtCode, wardCode, detailAddress = "" } = {},
+  options = {},
+) => {
   const [province, district, ward] = await Promise.all([
-    provinceCode
-      ? getProvinceByCode(provinceCode)
-      : Promise.resolve(null),
-
-    districtCode
-      ? getDistrictByCode(districtCode)
-      : Promise.resolve(null),
-
-    wardCode
-      ? getWardByCode(wardCode)
-      : Promise.resolve(null),
+    provinceCode ? getProvinceByCode(provinceCode, options) : null,
+    districtCode ? getDistrictByCode(districtCode, { ...options, provinceCode }) : null,
+    wardCode ? getWardByCode(wardCode, { ...options, districtCode }) : null,
   ]);
 
-  const cleanDetailAddress = detailAddress?.trim() || "";
+  const cleanDetailAddress = String(detailAddress ?? "").trim();
 
-  const parts = [
-    cleanDetailAddress,
-    ward?.name,
-    district?.name,
-    province?.name,
-  ].filter(Boolean);
+  const parts = [cleanDetailAddress, ward?.name, district?.name, province?.name].filter(
+    Boolean,
+  );
 
   return {
     province,
@@ -438,8 +507,73 @@ export const getFullAddressByCodes = async ({
   };
 };
 
+/**
+ * Dò mã GoShip từ TÊN đã lưu (địa chỉ cũ, có thể nhập từ danh sách giả trước đây).
+ * Khớp tới đâu trả tới đó; `matched` = true chỉ khi khớp đủ cả tỉnh, huyện, xã.
+ * Lỗi mạng ném ra ngoài (trừ khi không có tên nào để dò).
+ */
+export const resolveAddressByNames = async (
+  { province, district, ward } = {},
+  options = {},
+) => {
+  const result = {
+    provinceCode: "",
+    provinceName: "",
+    districtCode: "",
+    districtName: "",
+    wardCode: "",
+    wardName: "",
+    matched: false,
+  };
+
+  if (!String(province ?? "").trim()) return result;
+
+  const provinceOption = findAddressOptionByName(await getProvinces(options), province);
+
+  if (!provinceOption) return result;
+
+  result.provinceCode = provinceOption.value;
+  result.provinceName = provinceOption.name;
+
+  if (!String(district ?? "").trim()) return result;
+
+  const districtOption = findAddressOptionByName(
+    await getDistrictsByProvinceCode(provinceOption.value, options),
+    district,
+  );
+
+  if (!districtOption) return result;
+
+  result.districtCode = districtOption.value;
+  result.districtName = districtOption.name;
+
+  if (!String(ward ?? "").trim()) return result;
+
+  const wardOption = findAddressOptionByName(
+    await getWardsByDistrictCode(districtOption.value, options),
+    ward,
+  );
+
+  if (!wardOption) return result;
+
+  result.wardCode = wardOption.value;
+  result.wardName = wardOption.name;
+  result.matched = true;
+
+  return result;
+};
+
 export const clearAddressCache = () => {
   cache.clear();
+  provinceIndex.clear();
+  districtIndex.clear();
+  wardIndex.clear();
+
+  try {
+    globalThis.sessionStorage?.removeItem(PROVINCE_STORAGE_KEY);
+  } catch {
+    /* Như trên. */
+  }
 };
 
 const addressApi = {
@@ -456,6 +590,9 @@ const addressApi = {
   searchWards,
 
   getFullAddressByCodes,
+  resolveAddressByNames,
+  findAddressOptionByName,
+  normalizeAddressKeyword,
   clearAddressCache,
 };
 

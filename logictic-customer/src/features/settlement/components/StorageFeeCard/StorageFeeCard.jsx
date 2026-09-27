@@ -15,6 +15,10 @@ import {
   getOrderStorageFeeApi,
 } from "@features/payment/api/orderPaymentApi";
 import { openCheckout } from "@features/payment/utils/openCheckout";
+import {
+  PAYMENT_PURPOSES,
+  PAYMENT_SUBJECTS,
+} from "@features/payment/utils/pendingPaymentReturn";
 
 /**
  * Phí lưu kho tại kho VN của đơn (GET /api/orders/{id}/storage-fee, hàng về VN mục D1).
@@ -86,7 +90,15 @@ export default function StorageFeeCard({ orderId, refreshKey = 0 }) {
             <Button
               type="primary"
               onClick={() => {
-                if (!openCheckout(payable.checkoutUrl)) {
+                if (
+                  !openCheckout(payable.checkoutUrl, {
+                    subject: PAYMENT_SUBJECTS.order,
+                    targetId: orderId,
+                    purpose: PAYMENT_PURPOSES.storageFee,
+                    orderCode: payable.orderCode,
+                    amount: payable.amount,
+                  })
+                ) {
                   AuthNotify.error("Không mở được trang thanh toán", "Link thanh toán không hợp lệ.");
                 }
               }}

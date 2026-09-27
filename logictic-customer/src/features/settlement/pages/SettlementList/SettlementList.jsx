@@ -18,6 +18,10 @@ import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
 import { getAwaitingSettlementApi } from "@features/settlement/api/settlementApi";
 /* Import sâu có chủ đích: barrel payment / tracking kéo theo trang khác (thứ tự CSS). */
 import { openCheckout } from "@features/payment/utils/openCheckout";
+import {
+  PAYMENT_PURPOSES,
+  PAYMENT_SUBJECTS,
+} from "@features/payment/utils/pendingPaymentReturn";
 /* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
 import {
   ORDER_TABS,
@@ -165,7 +169,15 @@ export default function SettlementList() {
                         startIcon={<PaidRoundedIcon />}
                         onClick={() => {
                           /* Link SePay là đường dẫn tương đối — openCheckout ghép base URL API. */
-                          if (!openCheckout(order.pendingCheckoutUrl)) {
+                          const opened = openCheckout(order.pendingCheckoutUrl, {
+                            subject: PAYMENT_SUBJECTS.order,
+                            targetId: order.orderId,
+                            purpose: PAYMENT_PURPOSES.finalPayment,
+                            code: order.orderCode,
+                            amount: due,
+                          });
+
+                          if (!opened) {
                             AuthNotify.error(
                               "Không mở được trang thanh toán",
                               "Link thanh toán không hợp lệ.",

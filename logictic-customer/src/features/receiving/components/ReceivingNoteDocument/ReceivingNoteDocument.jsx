@@ -52,6 +52,25 @@ const formatNumber = (value) => {
   return Number.isFinite(number) ? number.toLocaleString("vi-VN") : "—";
 };
 
+const formatMoney = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0
+    ? `${number.toLocaleString("vi-VN")}đ`
+    : "—";
+};
+
+/** Kích thước một kiện: chỉ in khi có đủ ba chiều, thiếu một chiều thì con số vô nghĩa. */
+const describeDimensions = (line) => {
+  const length = Number(line?.length);
+  const width = Number(line?.width);
+  const height = Number(line?.height);
+
+  const valid = [length, width, height].every((v) => Number.isFinite(v) && v > 0);
+  if (!valid) return "—";
+
+  return `${formatNumber(length)} × ${formatNumber(width)} × ${formatNumber(height)}`;
+};
+
 function Diff({ value, suffix = "" }) {
   const number = Number(value);
   if (!Number.isFinite(number) || number === 0) {
@@ -79,6 +98,13 @@ export default function ReceivingNoteDocument({ note }) {
     : expected.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
   const totalActual = lines.reduce((sum, i) => sum + (Number(i.actualQuantity) || 0), 0);
   const totalActualWeight = lines.reduce((sum, i) => sum + (Number(i.actualWeight) || 0), 0);
+
+  /* Tổng theo KHAI BÁO — dùng cho phiếu kho chưa cân đếm. */
+  const totalDeclaredWeight = expected.reduce((sum, i) => sum + (Number(i.weight) || 0), 0);
+  const totalDeclaredValue = expected.reduce(
+    (sum, i) => sum + (Number(i.declaredValue) || 0),
+    0,
+  );
 
   return (
     <article className="rnd-doc" id="receiving-note-document">
@@ -197,13 +223,21 @@ export default function ReceivingNoteDocument({ note }) {
                 <th>Tên hàng</th>
                 <th>Loại</th>
                 <th className="rnd-num">Số lượng khai</th>
+                {/*
+                  Cân nặng, kích thước và khai giá là ba số kho phải đối chiếu lúc cân đo
+                  thật, và là căn cứ tính cước sau này. Phiếu thiếu chúng thì kho nhận hàng
+                  mà không biết phải so với cái gì.
+                */}
+                <th className="rnd-num">KG khai</th>
+                <th className="rnd-num">Kích thước (cm)</th>
+                <th className="rnd-num">Khai giá</th>
                 <th>Thùng gỗ / dịch vụ</th>
               </tr>
             </thead>
             <tbody>
               {expected.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="rnd-empty">
+                  <td colSpan={8} className="rnd-empty">
                     Đơn chưa có dòng hàng khai báo.
                   </td>
                 </tr>
@@ -214,6 +248,9 @@ export default function ReceivingNoteDocument({ note }) {
                     <td className="rnd-strong">{line.productName || "—"}</td>
                     <td>{line.productType || "—"}</td>
                     <td className="rnd-num">{formatNumber(line.quantity)}</td>
+                    <td className="rnd-num">{formatNumber(line.weight)}</td>
+                    <td className="rnd-num">{describeDimensions(line)}</td>
+                    <td className="rnd-num">{formatMoney(line.declaredValue)}</td>
                     <td className="rnd-note">{describePackaging(line)}</td>
                   </tr>
                 ))
@@ -223,6 +260,9 @@ export default function ReceivingNoteDocument({ note }) {
               <tr>
                 <td colSpan={3}>Tổng cộng</td>
                 <td className="rnd-num rnd-strong">{formatNumber(totalDeclared)}</td>
+                <td className="rnd-num rnd-strong">{formatNumber(totalDeclaredWeight)}</td>
+                <td className="rnd-num">—</td>
+                <td className="rnd-num rnd-strong">{formatMoney(totalDeclaredValue)}</td>
                 <td />
               </tr>
             </tfoot>

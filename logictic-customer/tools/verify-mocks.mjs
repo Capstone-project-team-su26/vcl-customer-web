@@ -385,25 +385,26 @@ try {
   /* Kịch bản "cọc ở màn tất toán" đã bỏ: settlementApi nay gọi API thật
      (GET /api/orders/awaiting-settlement) — số tiền do server trả, FE không tự tính. */
 
-  /* Tham số giá chốt ngày 2026-09-16: hệ số thể tích 6000, kiểm hàng 20.000. */
+  /* Hệ số thể tích mẫu khớp rule thật PRICING_RULES.VOLUMETRIC_DIVISOR = 5000 (số nghiệp vụ đọc từ backend,
+     đổi ở màn "Tham số vận hành"); kiểm hàng mẫu 20.000. */
   const { getVolumetricDivisorRule } = await server.ssrLoadModule(PRICING_MOCK_MODULE);
   const { findPricingRuleByCode } = await server.ssrLoadModule("/src/mocks/data/catalog.js");
 
-  await checkMatrix("Thể tích (khách): getVolumetricDivisorRule() → 6000, không warn", async () => {
+  await checkMatrix("Thể tích (khách): getVolumetricDivisorRule() → 5000, không warn", async () => {
     const { value: rule, warnings } = await captureWarn(() => getVolumetricDivisorRule());
     return firstFailure(
-      expectEqual("getVolumetricDivisorRule().value", rule?.value, 6000),
+      expectEqual("getVolumetricDivisorRule().value", rule?.value, 5000),
       expectEqual("getVolumetricDivisorRule().isFallback", rule?.isFallback, undefined),
       warnings.length === 0 || `rule có sẵn mà vẫn console.warn: ${warnings[0]}`
     );
   });
 
-  await checkMatrix("Thể tích (khách): thiếu rule VOLUMETRIC_DIVISOR → 6000 và console.warn", async () => {
+  await checkMatrix("Thể tích (khách): thiếu rule VOLUMETRIC_DIVISOR → mặc định backend 5000 và console.warn", async () => {
     const { value: rule, warnings } = await captureWarn(() =>
       withoutRule(pricingRules, "VOLUMETRIC_DIVISOR", () => getVolumetricDivisorRule())
     );
     return firstFailure(
-      expectEqual("getVolumetricDivisorRule().value", rule?.value, 6000),
+      expectEqual("getVolumetricDivisorRule().value", rule?.value, 5000),
       warnings.some((w) => w.includes("VOLUMETRIC_DIVISOR")) || "không có console.warn nhắc VOLUMETRIC_DIVISOR"
     );
   });

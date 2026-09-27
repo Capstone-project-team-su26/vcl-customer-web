@@ -104,3 +104,8 @@
   color: #475569;
   font-size: 0.82rem;
 }
+
+/* Khoản hoàn tiền — cùng nhịp với khối chênh giá ở trên, chỉ khác màu. */
+.supplier-card__refund {
+  margin-top: 10px;
+}

@@ -52,7 +52,8 @@ const DEPOSIT_RATE_CODE = "DEPOSIT_RATE";
  * (kèm console.warn). Nguồn thật luôn là rule trong catalog / API.
  */
 const FALLBACK_DEPOSIT_PERCENT = 30;
-const FALLBACK_VOLUMETRIC_DIVISOR = 6000;
+/* Mặc định cuối của backend (QuotationService.Helpers.GetVolumetricDivisor) khi thiếu rule. */
+const FALLBACK_VOLUMETRIC_DIVISOR = 5000;
 const ACTIVE_STATUS = "ACTIVE";
 
 /* =========================================================
@@ -549,7 +550,7 @@ const pricingRuleService = {
         ruleName: rule?.ruleName || "Hệ số quy đổi thể tích",
         ruleCode: VOLUMETRIC_DIVISOR_CODE,
         ruleType: rule?.ruleType || VOLUMETRIC_DIVISOR_CODE,
-        calculationType: rule?.calculationType || "FORMULA",
+        calculationType: rule?.calculationType || "FIXED",
         status: ACTIVE_STATUS,
         value: FALLBACK_VOLUMETRIC_DIVISOR,
         isFallback: true,

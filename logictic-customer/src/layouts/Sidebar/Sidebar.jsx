@@ -23,25 +23,52 @@ import {
 } from "@ant-design/icons";
 
 import { getUserProfileApi } from "@features/auth/api/authService";
-import { usePendingQuotationCounts } from "@shared/hooks/usePendingQuotationCounts";
+/* Import sâu như orderPaths: barrel orders kéo theo cả các trang (CSS toàn cục). */
+import { ORDER_KINDS } from "@features/orders/constants/orderPaths";
+import { useOrderTodoCounts } from "@features/orders/hooks/useOrderTodoCounts";
 import logoImage from "@assets/anhlogocap2.jpeg";
 
 import "./Sidebar.css";
 
 /**
- * Nhãn số việc đang chờ khách xử lý trên menu.
- * Bằng 0 thì không vẽ gì — menu sạch hơn là gắn số 0 vô nghĩa lên mọi mục.
+ * Hai nhãn số trên mục menu đơn hàng — không phải tổng số đơn:
+ *   - số XÁM (nhỏ, đứng trước) = đơn đang chạy, VCL đang xử lý (vừa tạo, đang báo giá,
+ *     đang xử lý, đang vận chuyển...) — để khách thấy đơn mình vừa gửi đã nằm đó;
+ *   - số ĐỎ (đứng sau)          = đơn đang chờ bạn xử lý.
+ * Hai tập không chồng nhau (features/orders/data/orderTodoRows.js). Số nào bằng 0 thì
+ * không vẽ số đó; cả hai bằng 0 thì không vẽ gì.
+ *
+ * Số hiển thị bị rút gọn ("99+") nên câu đầy đủ nằm ở tooltip (title) và ở phần chữ
+ * ẩn cho trình đọc màn hình; con số nhìn thấy thì aria-hidden để không bị đọc hai lần.
  */
-const MenuBadge = ({ count, label }) => {
-  if (!count || count <= 0) return null;
+const formatBadgeCount = (count) => (count > 99 ? "99+" : count);
+
+const MenuBadge = ({ inProgress = 0, waiting = 0 }) => {
+  const showProgress = inProgress > 0;
+  const showWaiting = waiting > 0;
+
+  if (!showProgress && !showWaiting) return null;
+
+  const description = [
+    showProgress && `${inProgress} đơn VCL đang xử lý`,
+    showWaiting && `${waiting} đơn đang chờ bạn xử lý`,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
-    <span
-      className="menu-badge"
-      aria-label={`${count} ${label}`}
-      title={`${count} ${label}`}
-    >
-      {count > 99 ? "99+" : count}
+    <span className="menu-badges" title={description}>
+      {showProgress && (
+        <span className="menu-badge menu-badge--progress" aria-hidden="true">
+          {formatBadgeCount(inProgress)}
+        </span>
+      )}
+      {showWaiting && (
+        <span className="menu-badge" aria-hidden="true">
+          {formatBadgeCount(waiting)}
+        </span>
+      )}
+      <span className="menu-badge__sr-text">{`: ${description}`}</span>
     </span>
   );
 };
@@ -146,8 +173,10 @@ export default function Sidebar() {
     parseSessionUser
   );
 
-  // Số đơn đang chờ khách xác nhận báo giá, hiện lên menu để khách biết mà bấm vào.
-  const pendingQuotations = usePendingQuotationCounts();
+  /* Mỗi loại đơn hai số: waiting = đơn chờ khách xử lý (báo giá, cọc, thanh toán, bổ sung
+     thông tin, chọn cách nhận hàng...) — cùng định nghĩa với dòng "N đơn đang chờ bạn xử
+     lý" và các dòng tô cam của trang danh sách; inProgress = đơn VCL đang xử lý. */
+  const todoCounts = useOrderTodoCounts();
 
   /* Đơn mua hộ nằm dưới /orders/mua-ho/...; mọi URL /orders còn lại là đơn ký gửi
      (danh sách /orders/ky-gui và chi tiết /orders/:orderId/:tab). */
@@ -339,8 +368,8 @@ export default function Sidebar() {
           <span className="menu-text">Đơn ký gửi</span>
 
           <MenuBadge
-            count={pendingQuotations.consignment}
-            label="đơn ký gửi chờ bạn xác nhận báo giá"
+            inProgress={todoCounts[ORDER_KINDS.consignment].inProgress}
+            waiting={todoCounts[ORDER_KINDS.consignment].waiting}
           />
         </NavLink>
 
@@ -352,8 +381,8 @@ export default function Sidebar() {
           <span className="menu-text">Đơn mua hộ</span>
 
           <MenuBadge
-            count={pendingQuotations.purchase}
-            label="đơn mua hộ chờ bạn xác nhận báo giá"
+            inProgress={todoCounts[ORDER_KINDS.purchase].inProgress}
+            waiting={todoCounts[ORDER_KINDS.purchase].waiting}
           />
         </NavLink>
 

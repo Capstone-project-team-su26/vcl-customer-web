@@ -10,21 +10,21 @@ import {
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
 
-/* Import sâu: chỉ cần hàm gọi danh sách, barrel kéo theo cả các trang (CSS toàn cục). */
-import { getConsignmentsApi } from "@features/consignment/api/consignmentApi";
-import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestApi";
-import { getAwaitingSettlementApi } from "@features/settlement/api/settlementApi";
-
 import {
   ORDER_STAGES,
   ORDER_STAGE_CHIPS,
   countByStage,
   filterRows,
   normalizeStage,
-  sortByNewest,
-  toConsignmentRow,
-  toPurchaseRow,
 } from "./OrderList.helpers";
+/* Cùng một nguồn với badge menu: tải MỌI trang, cùng định nghĩa "đang chờ bạn xử lý"
+   (số đỏ) và "VCL đang xử lý" (số xám). */
+import {
+  isWaitingOnCustomer,
+  loadOrderRows,
+  publishOrderTodoCount,
+  summarizeOrderCounts,
+} from "@features/orders/data/orderTodoRows";
 import {
   ORDER_KINDS,
   ORDER_TABS,
@@ -35,9 +35,8 @@ import {
 
 import "./OrderList.css";
 
-/* Khách hiếm khi có hơn từng này đơn; lấy một lượt rồi lọc tại chỗ thì đổi chip là
-   hiện ngay, không phải chờ mạng sau mỗi lần bấm. */
-const PAGE_SIZE = 100;
+/* Tải hết đơn của khách một lượt (mọi trang) rồi lọc tại chỗ: đổi chip là hiện ngay,
+   không phải chờ mạng sau mỗi lần bấm. */
 
 const COPY = {
   [ORDER_KINDS.consignment]: {
@@ -56,17 +55,6 @@ const COPY = {
     empty: "Không có đơn mua hộ nào khớp bộ lọc này.",
     loadError: "Không tải được danh sách đơn mua hộ.",
   },
-};
-
-const readItems = (response) => {
-  const body = response?.data ?? response;
-
-  if (Array.isArray(body)) return body;
-  if (Array.isArray(body?.items)) return body.items;
-  if (Array.isArray(body?.data)) return body.data;
-  if (Array.isArray(body?.data?.items)) return body.data.items;
-
-  return [];
 };
 
 const EMPTY_STATE = { key: null, rows: [], error: "" };
@@ -90,7 +78,6 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
 
   const stage = normalizeStage(searchParams.get("stage"));
   const search = searchParams.get("q") || "";
-  const isPurchase = kind === ORDER_KINDS.purchase;
   const copy = COPY[kind] || COPY[ORDER_KINDS.consignment];
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -105,53 +92,27 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
     const controller = new AbortController();
     const { signal } = controller;
 
-    const load = isPurchase
-      ? Promise.allSettled([getPurchaseRequestsApi(1, PAGE_SIZE, { signal })])
-      : Promise.allSettled([
-          getConsignmentsApi({
-            params: { pageNumber: 1, pageSize: PAGE_SIZE },
-            signal,
-          }),
-          /* Khoản đợt cuối Sale đã phát hành — để dòng đơn ghi rõ số tiền phải trả. */
-          getAwaitingSettlementApi({ signal }),
-        ]);
+    loadOrderRows(kind, { signal }).then(
+      (rows) => {
+        if (signal.aborted) return;
 
-    load.then(([listResult, settlementResult]) => {
-      if (signal.aborted) return;
-
-      if (listResult.status === "rejected") {
-        if (isCanceledError(listResult.reason)) return;
+        setState({ key: requestKey, rows, error: "" });
+        /* Badge menu nhận đúng hai con số của danh sách vừa tải — hai chỗ không lệch nhau. */
+        publishOrderTodoCount(kind, summarizeOrderCounts(rows));
+      },
+      (error) => {
+        if (signal.aborted || isCanceledError(error)) return;
 
         setState({
           key: requestKey,
           rows: [],
-          error: getApiErrorMessage(listResult.reason, copy.loadError),
+          error: getApiErrorMessage(error, copy.loadError),
         });
-        return;
-      }
-
-      const items = readItems(listResult.value);
-
-      if (isPurchase) {
-        setState({ key: requestKey, rows: sortByNewest(items.map(toPurchaseRow)), error: "" });
-        return;
-      }
-
-      const dueByOrderId = new Map(
-        (settlementResult?.status === "fulfilled" ? settlementResult.value : []).map(
-          (item) => [String(item?.orderId), item],
-        ),
-      );
-
-      setState({
-        key: requestKey,
-        rows: sortByNewest(items.map((item) => toConsignmentRow(item, dueByOrderId))),
-        error: "",
-      });
-    });
+      },
+    );
 
     return () => controller.abort();
-  }, [requestKey, isPurchase, copy.loadError]);
+  }, [requestKey, kind, copy.loadError]);
 
   /* Đổi chip / ô tìm kiếm = đổi query, không đổi state riêng: URL luôn là nguồn sự thật. */
   const updateQuery = (patch) => {
@@ -175,7 +136,7 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
     [state.rows, stage, search],
   );
 
-  const actionCount = visibleRows.filter((row) => row.todo.tone === "action").length;
+  const actionCount = visibleRows.filter(isWaitingOnCustomer).length;
 
   const openRow = (row) => {
     if (row.kind === ORDER_KINDS.purchase) {

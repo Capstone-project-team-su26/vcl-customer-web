@@ -25,6 +25,7 @@ import {
 } from "./redirects";
 
 import Dashboard from "@features/dashboard/pages/Dashboard/Dashboard";
+import { HISTORY_KIND_QUERY_KEY } from "@features/payment/utils/pendingPaymentReturn";
 
 /* Đơn hàng: tạo đơn, danh sách gộp, chi tiết chia tab. */
 import CreateOrder from "@features/orders/pages/CreateOrder/CreateOrder";
@@ -143,16 +144,29 @@ export const dashboardRoutes = (
       path={LEGACY.orderTracking}
       element={<Navigate to={D.consignmentOrders} replace />}
     />
-    {/* payOS trả khách về đây kèm query của nó (đơn tạo trước bản gộp IA) — phải giữ
-        query thì vòng poll trạng thái cọc ở tab lịch sử mới chạy. */}
+    {/* URL trả về MẶC ĐỊNH của backend khi returnUrl FE gửi không hợp lệ / không gửi
+        (FE nay gửi thẳng /payment/lich-su?loai=..., xem buildPaymentReturnUrls), và của
+        link thanh toán tạo trước bản này: /history/consignment cho khoản của đơn kho (cọc,
+        tất toán, phí lưu kho, phí giao lại), /history/buy-on-behalf cho khoản của yêu cầu
+        mua hộ (trả trước, chênh giá). Backend gắn `?orderCode=&status=success|cancelled`,
+        payOS nối thêm query riêng. Cả hai về "Thanh toán → Lịch sử giao dịch", GIỮ NGUYÊN
+        mọi query (kể cả khoá trùng tên), thêm `?loai=` để mở đúng phần Ký gửi / Mua hộ. */}
     <Route
       path={LEGACY.consignmentHistory}
-      element={<RedirectKeepingQuery to={D.paymentTab(PAYMENT_TABS.history)} />}
+      element={
+        <RedirectKeepingQuery
+          to={D.paymentTab(PAYMENT_TABS.history)}
+          params={{ [HISTORY_KIND_QUERY_KEY]: ORDER_KINDS.consignment }}
+        />
+      }
     />
     <Route
       path={LEGACY.buyOnBehalfHistory}
       element={
-        <Navigate to={ordersOf(ORDER_KINDS.purchase, "hoan-tat")} replace />
+        <RedirectKeepingQuery
+          to={D.paymentTab(PAYMENT_TABS.history)}
+          params={{ [HISTORY_KIND_QUERY_KEY]: ORDER_KINDS.purchase }}
+        />
       }
     />
     <Route

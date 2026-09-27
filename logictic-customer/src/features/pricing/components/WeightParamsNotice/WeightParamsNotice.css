@@ -1,0 +1,30 @@
+.weight-params-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid #d6dde8;
+  border-radius: 12px;
+  background: #f5f7fb;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.weight-params-notice--error {
+  border-color: #f5c2c0;
+  background: #fff4f3;
+  color: #9f2a24;
+}
+
+.weight-params-notice__retry {
+  padding: 6px 14px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

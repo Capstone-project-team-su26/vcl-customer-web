@@ -105,8 +105,30 @@
   font-size: 11px;
 }
 
+/*
+ * Màn hẹp: TRƯỚC ĐÂY ẩn hẳn nhãn (`display: none`), còn lại 7 vòng tròn số không ai đọc được
+ * — khách muốn biết bậc nào là bậc nào thì phải phóng to hoặc đoán. Giờ chỉ thu nhỏ chữ và
+ * cho xuống dòng; chỗ hẹp hơn nữa thì xếp hai hàng thay vì xoá chữ.
+ */
 @media (max-width: 640px) {
-  .tracking-stage-bar__label {
+  .tracking-stage-bar__steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    row-gap: 14px;
+  }
+
+  /* Xếp hai hàng nên vạch nối ngang không còn đúng chỗ — bỏ đi cho khỏi nối sai bậc. */
+  .tracking-stage-bar__step::before {
     display: none;
+  }
+
+  .tracking-stage-bar__label {
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 380px) {
+  .tracking-stage-bar__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

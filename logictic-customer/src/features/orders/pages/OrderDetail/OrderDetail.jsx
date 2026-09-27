@@ -35,6 +35,8 @@ import { OrderPaymentHistory } from "@features/payment";
 import { getOrderTrackingApi } from "@features/tracking/api/orderTrackingApi";
 import TrackingStageBar from "@features/tracking/components/TrackingStageBar/TrackingStageBar";
 import TrackingJourney from "@features/tracking/components/TrackingJourney/TrackingJourney";
+import TrackingRouteCard from "@features/tracking/components/TrackingRouteCard/TrackingRouteCard";
+import TrackingMoneyCard from "@features/tracking/components/TrackingMoneyCard/TrackingMoneyCard";
 import ExportHoldCard from "@features/tracking/components/ExportHoldCard/ExportHoldCard";
 import OrderPermitCard from "@features/tracking/components/OrderPermitCard/OrderPermitCard";
 import {
@@ -225,6 +227,13 @@ export default function OrderDetail() {
             onChanged={refresh}
           />
         ) : null}
+
+        {/* Hàng đi qua những đâu, đã tới đâu — đặt trên dòng thời gian vì khách mở tab này
+            gần như luôn để hỏi "giờ hàng ở đâu, còn mấy chặng nữa". */}
+        <TrackingRouteCard route={tracking.route} />
+
+        {/* Tiền của đơn ngay tại đây, khỏi phải nhảy sang tab báo giá. */}
+        <TrackingMoneyCard money={tracking.money} />
 
         {/* Chặng giao cuối: mã vận đơn, số kiện. Nút mở màn theo dõi bị ẩn vì đang đứng
             ở chính màn đó. */}

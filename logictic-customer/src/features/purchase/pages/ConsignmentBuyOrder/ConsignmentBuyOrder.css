@@ -3507,3 +3507,21 @@
     min-height: 132px !important;
   }
 }
+/* Nhãn "1 – 999" cạnh ô Số lượng: khách thấy trần trước khi gõ; ô sai thì nhãn đỏ theo. */
+.purchase-buy-order-page .purchase-buy-field-limit-hint {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.purchase-buy-order-page
+  .purchase-buy-input-field-group:has(.purchase-buy-input-has-error)
+  .purchase-buy-field-limit-hint {
+  background: #fef2f2;
+  color: #dc2626;
+}

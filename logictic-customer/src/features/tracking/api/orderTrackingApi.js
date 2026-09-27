@@ -12,6 +12,8 @@
        theo CODE.
    - getOrderTrackingApi -> GET /api/orders/consignments/{orderId}/tracking
        → { message, data: OrderTrackingDto } — events sắp cũ → mới. Đơn người khác → 403.
+       Kèm `route` (tuyến + 5 chặng từ kho nguồn tới nhà khách, có chặng chưa tới) và `money`
+       (tiền theo báo giá đang hiệu lực + đã trả / còn phải trả). Cả hai có thể null.
    - setExportHoldApi    -> PUT /api/orders/consignments/{orderId}/export-hold { hold, reason }
        → { message, data: { orderId, consignmentCode, exportHold, exportHoldReason,
             exportHoldAt, parcelsAlreadyInApprovedRelease: string[] } }
@@ -141,6 +143,15 @@ export const getOrderTrackingApi = async (orderId, options = {}) => {
         packageCodes: toArray(shipment?.packageCodes),
       })),
       events: toArray(data.events),
+      /*
+       * `route` / `money` có thể là null: đơn chưa được gán tuyến, hoặc chưa có báo giá nào.
+       * Giữ null (không dựng object rỗng) để màn hình ẩn hẳn khối thay vì bày ô toàn số 0 —
+       * "0đ" đọc ra là miễn phí, không phải "chưa biết giá".
+       */
+      route: data.route
+        ? { ...data.route, stops: toArray(data.route.stops) }
+        : null,
+      money: data.money || null,
     };
   } catch (error) {
     logApiError("Lỗi lấy hành trình đơn:", error);

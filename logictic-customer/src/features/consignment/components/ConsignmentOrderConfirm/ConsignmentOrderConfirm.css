@@ -1292,3 +1292,49 @@
 .confirm-package-services em {
   color: #64748b;
 }
+
+/* =========================================================
+   CHI PHÍ DỰ KIẾN — số do backend tính
+
+   Nằm cuối CỘT TRÁI (khu rộng), không còn nhồi vào thẻ cột phải 380px. Lý do: mỗi dòng
+   phí phải cùng lúc đọc được tên phí, cách tính và số tiền; ở bề ngang ~300px thì tên phí
+   vỡ dòng giữa chữ và ghi chú dưới dòng phí tràn, khách nhìn thành một khối chữ vụn.
+
+   Cuối cột trái chứ không phải trên đầu: khách xem xong kiện hàng mới tới tiền, và trên
+   màn hẹp (một cột) tiền vẫn nằm TRƯỚC thẻ nút xác nhận ở cột phải.
+   ========================================================= */
+
+.consignment-confirm-section.is-estimate-section {
+  border-color: #bfdbfe;
+}
+
+/* Đổi màu icon tiêu đề cho biết đây là khối tiền, không phải một mục thông tin nữa. */
+.consignment-confirm-section.is-estimate-section .consignment-confirm-section-title > span {
+  color: #1d4ed8;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #bfdbfe;
+}
+
+.estimate-loading,
+.estimate-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  padding: 12px 14px;
+  border-radius: 12px;
+
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.estimate-loading {
+  color: #475569;
+  background: #f8fafc;
+}
+
+.estimate-error {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}

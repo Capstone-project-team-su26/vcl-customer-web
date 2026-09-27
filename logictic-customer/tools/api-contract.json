@@ -24,6 +24,18 @@
       "sendConversationMessageApi"
     ],
     "hasDefault": true,
+    "originalLines": 301,
+    "realApi": true
+  },
+  "src/features/chat/api/conversationApi.mock.js": {
+    "named": [
+      "createConversationApi",
+      "getConversationDetailApi",
+      "getConversationsApi",
+      "markConversationAsReadApi",
+      "sendConversationMessageApi"
+    ],
+    "hasDefault": true,
     "originalLines": 301
   },
   "src/features/consignment/api/aiOrderIntentApi.js": {
@@ -218,6 +230,30 @@
   },
   "src/shared/api/addressApi.js": {
     "named": [
+      "ADDRESS_REQUEST_TIMEOUT_MS",
+      "clearAddressCache",
+      "findAddressOptionByName",
+      "getDistrictByCode",
+      "getDistrictsByProvinceCode",
+      "getFullAddressByCodes",
+      "getProvinceByCode",
+      "getProvinces",
+      "getWardByCode",
+      "getWardsByDistrictCode",
+      "normalizeAddressKeyword",
+      "normalizeAddressOption",
+      "normalizeAddressOptions",
+      "resolveAddressByNames",
+      "searchDistricts",
+      "searchProvinces",
+      "searchWards"
+    ],
+    "hasDefault": true,
+    "originalLines": 452,
+    "realApi": true
+  },
+  "src/shared/api/addressApi.mock.js": {
+    "named": [
       "clearAddressCache",
       "getDistrictByCode",
       "getDistrictsByProvinceCode",
@@ -355,7 +391,14 @@
       "SUPPLIER_TIMELINE",
       "getSupplierOrderStep",
       "getSupplierOrdersApi",
-      "decideSupplierOrderApi"
+      "decideSupplierOrderApi",
+      "REFUND_REASON_TEXT",
+      "REFUND_LINE_REASON_TEXT",
+      "REFUND_STATUS_TEXT",
+      "getRefundReasonText",
+      "getRefundLineReasonText",
+      "getRefundStatusText",
+      "getPurchaseRefundsApi"
     ],
     "hasDefault": true,
     "realApi": true

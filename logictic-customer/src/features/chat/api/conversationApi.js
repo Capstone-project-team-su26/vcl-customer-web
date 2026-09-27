@@ -1,90 +1,141 @@
-/*
- * MOCK cho bản build UI-only: tầng HTTP thật đã bị gỡ, file này trả dữ liệu
- * mẫu từ "@/mocks/data/conversations" thay vì gọi server. Component màn
- * CustomerServiceChat KHÔNG được sửa, nên mọi tên export, thứ tự tham số và
- * hình dạng dữ liệu trả về ở đây phải y hệt bản gọi API thật:
- * cả 5 hàm đều trả phần thân response (tương đương `response.data` cũ),
- * không phải object axios.
- *
- * CẮM LẠI API THẬT: import lại axiosInstance từ "@shared/api/httpClient",
- * thay thân mỗi hàm bằng đúng lời gọi ghi ở JSDoc phía trên nó
- * (POST /api/conversations, GET /api/conversations,
- *  GET /api/conversations/{id}, POST /api/conversations/{id}/messages,
- *  PUT /api/conversations/{id}/read) rồi `return response.data`.
- * Phần validate payload bên dưới giữ nguyên được vì nó thuần logic.
- */
+/* =========================================================
+   conversationApi.js — CHAT CSKH của khách. ĐÃ NỐI API THẬT.
 
-import { deepClone, delay, newUuid, nowIso } from "@/mocks/mockUtils";
+   Trước đây file này là mock đọc "@/mocks/data/conversations"; bản mock giữ nguyên ở
+   conversationApi.mock.js (không màn nào import).
 
-import {
-  CHAT_CUSTOMER,
-  CHAT_STAFF,
-  conversations,
-  createChatMessage,
-  findConversationById,
-  resolveRelatedCodeById,
-} from "@/mocks/data/conversations";
+   Endpoint thật (VCL_API ConversationController, [Authorize]):
+     POST /api/conversations                          tạo hội thoại (role Customer)
+          body { relatedType?, relatedId?, message (1..2000), attachmentUrl? (≤ 500) }
+          → 201 ConversationDto
+     GET  /api/conversations                          → ConversationDto[] (KHÔNG kèm messages)
+     GET  /api/conversations/{id}                     → ConversationDto kèm messages[]
+     POST /api/conversations/{id}/messages            body { content (1..2000), attachmentUrl? }
+          → MessageDto
+     PUT  /api/conversations/{id}/read                → { message }
 
-const VALID_RELATED_TYPES = [
-  "CONSIGNMENT",
-  "PURCHASE_REQUEST",
-  "QUOTATION",
-];
+   ConversationDto: { id, customerId, customerName, customerCode, salesId, salesName,
+     relatedType, relatedId, relatedCode, status ("OPEN" | "CLOSED"), createdAt, updatedAt,
+     unreadCount, messages[] }.
+   MessageDto: { id, conversationId, senderId, senderRole ("Customer" | "Sale"), content,
+     attachmentUrl, isRead, createdAt }.
 
-const isCanceledRequest = (error) => {
-  return (
-    error?.code === "ERR_CANCELED" ||
-    error?.name === "CanceledError" ||
-    error?.name === "AbortError"
-  );
-};
+   GIỮ NGUYÊN BỀ MẶT của bản mock (5 hàm, cùng tham số, trả phần thân đã bóc — không phải
+   response axios; danh sách là MẢNG TRẦN, chi tiết là object có `messages`, không có khoá
+   `data`/`conversation` ở cấp ngoài) để CustomerServiceChat.jsx không phải sửa.
+
+   Chuẩn hoá thêm cho màn chat (backend không có các field này):
+   - title / staffName / lastMessage / lastMessageAt cho danh sách bên trái;
+   - senderName của tin Sale = salesName;
+   - backend bắt buộc content ≥ 1 ký tự kể cả tin chỉ có ảnh: gửi câu
+     "Đã gửi một hình ảnh" (cùng quy ước với app nhân viên), khi đọc về thì ẩn câu đó
+     nếu tin có ảnh để bong bóng chỉ hiện ảnh như trước.
+   - 400 ModelState (ValidationProblemDetails) → gắn data.message = câu lỗi đầu tiên.
+   ========================================================= */
+
+import httpClient, { hasAccessToken, isCanceledRequest } from "@shared/api/httpClient";
+
+const VALID_RELATED_TYPES = ["CONSIGNMENT", "PURCHASE_REQUEST", "QUOTATION"];
+
+const MAX_CONTENT_LENGTH = 2000;
+const MAX_ATTACHMENT_URL_LENGTH = 500;
+
+/* Nội dung thay thế cho tin chỉ có ảnh — trùng câu app nhân viên đang gửi. */
+const IMAGE_ONLY_MESSAGE_CONTENT = "Đã gửi một hình ảnh";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const getSignal = (options = {}) => {
+  if (options && typeof options.addEventListener === "function") {
+    return options;
+  }
+
   return options?.signal;
 };
 
-const normalizeText = (value) => {
-  return String(value ?? "").trim();
-};
+const normalizeText = (value) => String(value ?? "").trim();
 
 const normalizeNullableText = (value) => {
   const text = normalizeText(value);
   return text || null;
 };
 
-const getApiErrorMessage = (error, fallbackMessage) => {
-  const data = error?.response?.data;
+const toArray = (value) => (Array.isArray(value) ? value : []);
 
-  if (typeof data === "string" && data.trim()) {
-    return data;
-  }
+/** Lỗi dựng tại chỗ mang cùng hình dạng lỗi axios để màn đọc error.response.data.message. */
+const createApiError = (status, message) => {
+  const error = new Error(message);
 
-  if (typeof data?.message === "string") {
-    return data.message;
-  }
+  error.response = { status, data: { message } };
 
-  if (typeof data?.error === "string") {
-    return data.error;
-  }
-
-  if (typeof data?.title === "string") {
-    return data.title;
-  }
-
-  return error?.message || fallbackMessage;
+  return error;
 };
 
-const validateRelatedType = (relatedType) => {
-  const type = normalizeText(relatedType);
+const requireConversationId = (conversationId) => {
+  const id = normalizeText(conversationId);
 
-  if (!type) {
+  if (!id) {
+    throw new Error("Không tìm thấy mã cuộc trò chuyện.");
+  }
+
+  /* Backend route {conversationId} là Guid: chuỗi khác sẽ bị 400 ModelState khó hiểu. */
+  if (!UUID_PATTERN.test(id)) {
+    throw createApiError(404, "Không tìm thấy cuộc trò chuyện.");
+  }
+
+  return id;
+};
+
+/**
+ * 400 ModelState của ASP.NET trả { title, errors: { Field: [msg] } } (hoặc dictionary trần):
+ * không có `message` nên màn chỉ hiện "One or more validation errors occurred.".
+ * Gắn câu lỗi đầu tiên vào data.message, giữ nguyên phần còn lại.
+ */
+const attachValidationMessage = (error) => {
+  const data = error?.response?.data;
+
+  if (!data || typeof data !== "object" || typeof data.message === "string") {
+    return error;
+  }
+
+  const errorSource =
+    data.errors && typeof data.errors === "object" ? data.errors : data;
+
+  const firstMessage = Object.values(errorSource)
+    .flatMap((value) => (Array.isArray(value) ? value : []))
+    .find((value) => typeof value === "string" && value.trim());
+
+  if (firstMessage) {
+    data.message = firstMessage;
+  }
+
+  return error;
+};
+
+const logApiError = (label, error) => {
+  if (isCanceledRequest(error)) {
     return;
   }
 
-  if (!VALID_RELATED_TYPES.includes(type)) {
+  console.error(label, error?.response?.data ?? error?.message ?? error);
+};
+
+/* =========================================================
+   VALIDATE + PAYLOAD (khớp DataAnnotations của DTO backend)
+   ========================================================= */
+
+const validateContentLength = (text) => {
+  if (text.length > MAX_CONTENT_LENGTH) {
     throw new Error(
-      "Loại liên kết chỉ nhận: CONSIGNMENT, PURCHASE_REQUEST, QUOTATION."
+      `Nội dung tin nhắn không được vượt quá ${MAX_CONTENT_LENGTH} ký tự.`
     );
+  }
+};
+
+const validateAttachmentUrl = (attachmentUrl) => {
+  if (attachmentUrl && attachmentUrl.length > MAX_ATTACHMENT_URL_LENGTH) {
+    throw new Error("Đường dẫn ảnh đính kèm quá dài (tối đa 500 ký tự).");
   }
 };
 
@@ -93,21 +144,40 @@ const validateConversationPayload = (payload) => {
     throw new Error("Dữ liệu tạo cuộc trò chuyện không hợp lệ.");
   }
 
-  validateRelatedType(payload.relatedType);
+  const relatedType = normalizeText(payload.relatedType).toUpperCase();
 
-  if (!normalizeText(payload.message)) {
+  if (relatedType && !VALID_RELATED_TYPES.includes(relatedType)) {
+    throw new Error(
+      "Loại liên kết chỉ nhận: CONSIGNMENT, PURCHASE_REQUEST, QUOTATION."
+    );
+  }
+
+  const message = normalizeText(payload.message);
+
+  if (!message) {
     throw new Error("Vui lòng nhập nội dung tin nhắn.");
   }
 
-  if (normalizeText(payload.relatedType) && !normalizeText(payload.relatedId)) {
+  validateContentLength(message);
+  validateAttachmentUrl(normalizeText(payload.attachmentUrl));
+
+  const relatedId = normalizeText(payload.relatedId);
+
+  if (relatedType && !relatedId) {
     throw new Error("Vui lòng cung cấp mã liên kết.");
+  }
+
+  if (relatedId && !UUID_PATTERN.test(relatedId)) {
+    throw new Error("Mã liên kết không hợp lệ, vui lòng chọn lại từ danh sách.");
   }
 };
 
 const buildConversationPayload = (payload) => {
+  const relatedType = normalizeText(payload.relatedType).toUpperCase() || null;
+
   return {
-    relatedType: normalizeNullableText(payload.relatedType),
-    relatedId: normalizeNullableText(payload.relatedId),
+    relatedType,
+    relatedId: relatedType ? normalizeNullableText(payload.relatedId) : null,
     message: normalizeText(payload.message),
     attachmentUrl: normalizeNullableText(payload.attachmentUrl),
   };
@@ -118,126 +188,142 @@ const validateSendMessagePayload = (payload) => {
     throw new Error("Dữ liệu gửi tin nhắn không hợp lệ.");
   }
 
-  if (!normalizeText(payload.content) && !normalizeText(payload.attachmentUrl)) {
+  const content = normalizeText(payload.content);
+  const attachmentUrl = normalizeText(payload.attachmentUrl);
+
+  if (!content && !attachmentUrl) {
     throw new Error("Vui lòng nhập nội dung hoặc đính kèm tệp.");
   }
+
+  validateContentLength(content);
+  validateAttachmentUrl(attachmentUrl);
 };
 
 const buildSendMessagePayload = (payload) => {
+  const attachmentUrl = normalizeNullableText(payload.attachmentUrl);
+
   return {
-    content: normalizeText(payload.content),
-    attachmentUrl: normalizeNullableText(payload.attachmentUrl),
+    content:
+      normalizeText(payload.content) ||
+      (attachmentUrl ? IMAGE_ONLY_MESSAGE_CONTENT : ""),
+    attachmentUrl,
   };
 };
 
 /* =========================================================
-   KHO DỮ LIỆU TRONG BỘ NHỚ
+   CHUẨN HOÁ RESPONSE CHO MÀN CHAT
    ========================================================= */
 
-/*
- * Fixture là mảng dùng chung của cả phiên làm việc: mọi thao tác ghi
- * (tạo hội thoại, gửi tin, đánh dấu đã đọc) sửa thẳng vào đây để lần
- * fetch kế tiếp — kể cả nhịp poll 2,5s của màn chat — nhìn thấy ngay.
- * Dữ liệu không sống qua F5, đúng như mô tả của bản UI-only.
- */
-const store = conversations;
+const RELATED_TYPE_TITLES = {
+  CONSIGNMENT: "Yêu cầu ký gửi",
+  PURCHASE_REQUEST: "Yêu cầu mua hộ",
+  QUOTATION: "Báo giá",
+};
 
-/**
- * Lỗi "không tìm thấy" mang cùng hình dạng lỗi axios 404.
- *
- * helpers.getApiErrorText() đọc error.response.data.message trước tiên,
- * thiếu nhánh này màn hình chỉ hiện được message kỹ thuật của Error.
- */
-const createNotFoundError = (message) => {
-  const error = new Error(message);
+const buildConversationTitle = (conversation) => {
+  const relatedType = normalizeText(conversation?.relatedType).toUpperCase();
+  const typeTitle = RELATED_TYPE_TITLES[relatedType];
+  const relatedCode = normalizeText(conversation?.relatedCode);
 
-  error.response = {
-    status: 404,
-    data: {
-      message,
-    },
+  if (typeTitle) {
+    return relatedCode ? `${typeTitle} ${relatedCode}` : typeTitle;
+  }
+
+  return "Yêu cầu hỗ trợ chung";
+};
+
+/** Danh sách không kèm tin nhắn nên tóm tắt theo tình trạng thay cho "tin cuối". */
+const buildListSummary = (conversation) => {
+  const unreadCount = Number(conversation?.unreadCount) || 0;
+
+  if (unreadCount > 0) {
+    return `${unreadCount} tin nhắn mới từ CSKH`;
+  }
+
+  if (normalizeText(conversation?.status).toUpperCase() === "CLOSED") {
+    return "Cuộc trò chuyện đã đóng";
+  }
+
+  return normalizeText(conversation?.salesName)
+    ? "Nhân viên tư vấn đang hỗ trợ"
+    : "Đang chờ CSKH tiếp nhận";
+};
+
+const isSaleMessage = (message) =>
+  normalizeText(message?.senderRole).toUpperCase() !== "CUSTOMER";
+
+const normalizeMessage = (message, conversation) => {
+  if (!message || typeof message !== "object") {
+    return message;
+  }
+
+  const attachmentUrl = normalizeNullableText(message.attachmentUrl);
+  const content = normalizeText(message.content);
+  const salesName = normalizeText(conversation?.salesName);
+
+  return {
+    ...message,
+    messageId: message.messageId ?? message.id,
+    attachmentUrl,
+    /* Câu thay thế của tin chỉ có ảnh: ẩn đi để bong bóng chỉ hiện ảnh. */
+    content:
+      attachmentUrl && content === IMAGE_ONLY_MESSAGE_CONTENT ? "" : message.content,
+    ...(isSaleMessage(message) && salesName && !message.senderName
+      ? { senderName: salesName }
+      : {}),
   };
-
-  return error;
 };
 
-const requireConversation = (conversationId) => {
-  const conversation = findConversationById(conversationId);
+const summarizeMessage = (message) =>
+  normalizeText(message?.content) ||
+  (message?.attachmentUrl ? IMAGE_ONLY_MESSAGE_CONTENT : "");
 
-  if (!conversation) {
-    throw createNotFoundError("Không tìm thấy cuộc trò chuyện.");
+const normalizeConversation = (conversation) => {
+  if (!conversation || typeof conversation !== "object") {
+    return conversation;
   }
 
-  return conversation;
-};
-
-/*
- * Tiêu đề hội thoại mới lấy từ chính câu hỏi đầu tiên, cắt gọn cho vừa
- * một dòng ở danh sách bên trái (getConversationTitle đọc field title).
- */
-const buildConversationTitle = (message) => {
-  const text = normalizeText(message).replace(/\s+/g, " ");
-
-  if (!text) {
-    return "Yêu cầu hỗ trợ mới";
-  }
-
-  return text.length > 48 ? `${text.slice(0, 47)}…` : text;
-};
-
-/** Tóm tắt nội dung tin cuối cho danh sách bên trái. */
-const summarizeMessage = (message) => {
-  return (
-    normalizeText(message?.content) ||
-    (message?.attachmentUrl ? "Đã gửi một hình ảnh" : "")
+  const messages = toArray(conversation.messages).map((message) =>
+    normalizeMessage(message, conversation)
   );
-};
-
-/** Đồng bộ lại các field tóm tắt sau mỗi lần ghi. */
-const refreshConversationSummary = (conversation) => {
-  const messages = conversation.messages || [];
   const lastMessage = messages[messages.length - 1] || null;
-  const lastMessageAt = lastMessage
-    ? lastMessage.createdAt
-    : conversation.createdAt;
-  const summary = summarizeMessage(lastMessage);
+  const lastMessageAt =
+    lastMessage?.createdAt || conversation.updatedAt || conversation.createdAt;
+  const summary = lastMessage
+    ? summarizeMessage(lastMessage)
+    : buildListSummary(conversation);
+  const staffName = normalizeNullableText(conversation.salesName);
 
-  conversation.lastMessage = summary;
-  conversation.latestMessage = summary;
-  conversation.messageCount = messages.length;
-  conversation.lastMessageAt = lastMessageAt;
-  conversation.latestMessageAt = lastMessageAt;
-  conversation.updatedAt = lastMessageAt;
-
-  return conversation;
+  return {
+    ...conversation,
+    conversationId: conversation.conversationId ?? conversation.id,
+    title: conversation.title || buildConversationTitle(conversation),
+    staffId: conversation.salesId ?? null,
+    staffName,
+    staffRole: staffName ? "Nhân viên tư vấn" : null,
+    lastMessage: summary,
+    latestMessage: summary,
+    lastMessageAt,
+    latestMessageAt: lastMessageAt,
+    unreadCount: Number(conversation.unreadCount) || 0,
+    messages,
+  };
 };
 
-/*
- * Danh sách hội thoại của API thật không kèm mảng messages —
- * chỉ màn chi tiết mới trả. Bỏ đúng field đó để mock không "rộng rãi"
- * hơn backend, tránh việc UI vô tình dựa vào dữ liệu không có thật.
- */
+/** Danh sách không có messages ở backend — bỏ luôn khoá để khỏi hiểu nhầm là rỗng. */
 const toListItem = (conversation) => {
-  const item = deepClone(conversation);
+  const item = normalizeConversation(conversation);
 
-  delete item.messages;
+  if (item && typeof item === "object") {
+    delete item.messages;
+  }
 
   return item;
 };
 
-/** Mới nhất lên đầu, đúng thứ tự người dùng mong đợi ở khung chat. */
-const sortByRecency = (list) => {
-  return [...list].sort((left, right) => {
-    const leftTime = new Date(
-      left.lastMessageAt || left.createdAt || 0
-    ).getTime();
-    const rightTime = new Date(
-      right.lastMessageAt || right.createdAt || 0
-    ).getTime();
-
-    return rightTime - leftTime;
-  });
-};
+/* =========================================================
+   API
+   ========================================================= */
 
 /**
  * Tạo cuộc trò chuyện.
@@ -247,109 +333,46 @@ const sortByRecency = (list) => {
 export const createConversationApi = async (payload, options = {}) => {
   validateConversationPayload(payload);
 
-  const requestPayload = buildConversationPayload(payload);
-
   try {
-    await delay(320, getSignal(options));
+    const response = await httpClient.post(
+      "/api/conversations",
+      buildConversationPayload(payload),
+      { signal: getSignal(options) }
+    );
 
-    const createdAt = nowIso();
-    const conversationId = newUuid();
-
-    /* Hội thoại mới luôn được gán cho một nhân viên tư vấn để header
-       hiện chip "Nhân viên: ..." thay vì chỉ "Đang hỗ trợ trực tuyến". */
-    const staff = CHAT_STAFF.khoi;
-
-    const firstMessage = createChatMessage({
-      seed: `runtime-${conversationId}`,
-      conversationId,
-      sender: CHAT_CUSTOMER,
-      content: requestPayload.message,
-      attachmentUrl: requestPayload.attachmentUrl,
-      createdAt,
-    });
-
-    /* Ghi đè id sinh từ seed bằng GUID runtime cho giống backend. */
-    firstMessage.id = newUuid();
-    firstMessage.messageId = firstMessage.id;
-
-    const conversation = {
-      id: conversationId,
-      conversationId,
-
-      title: buildConversationTitle(requestPayload.message),
-      status: "PENDING",
-
-      relatedType: requestPayload.relatedType,
-      relatedId: requestPayload.relatedId,
-      relatedCode: resolveRelatedCodeById(
-        requestPayload.relatedType,
-        requestPayload.relatedId
-      ),
-
-      customerId: CHAT_CUSTOMER.senderId,
-      customerName: CHAT_CUSTOMER.senderName,
-      customerPhone: CHAT_CUSTOMER.phone,
-      customerEmail: CHAT_CUSTOMER.email,
-
-      staffId: staff.senderId,
-      staffName: staff.senderName,
-      staffRole: "Nhân viên tư vấn",
-
-      lastMessage: summarizeMessage(firstMessage),
-      latestMessage: summarizeMessage(firstMessage),
-
-      unreadCount: 0,
-      unreadMessages: 0,
-      unread: 0,
-
-      messageCount: 1,
-
-      createdAt,
-      updatedAt: createdAt,
-      lastMessageAt: createdAt,
-      latestMessageAt: createdAt,
-      lastReadAt: createdAt,
-
-      messages: [firstMessage],
-    };
-
-    store.unshift(conversation);
-
-    /* Trả nguyên bản ghi vừa tạo: nơi gọi đọc data?.id để mở hội thoại. */
-    return deepClone(conversation);
+    /* Nơi gọi đọc data?.id để mở hội thoại vừa tạo. */
+    return normalizeConversation(response.data);
   } catch (error) {
-    if (!isCanceledRequest(error)) {
-      console.error(
-        "Lỗi tạo cuộc trò chuyện:",
-        getApiErrorMessage(error, "Tạo cuộc trò chuyện thất bại.")
-      );
-    }
+    logApiError("Lỗi tạo cuộc trò chuyện:", error);
 
-    throw error;
+    throw attachValidationMessage(error);
   }
 };
 
 /**
- * Lấy danh sách cuộc trò chuyện.
+ * Lấy danh sách cuộc trò chuyện của khách đang đăng nhập (mới cập nhật trước).
  *
  * GET /api/conversations
  */
 export const getConversationsApi = async (options = {}) => {
+  /* Chưa đăng nhập thì không gọi: 401 body rỗng bị httpClient coi là hết phiên. */
+  if (!hasAccessToken()) {
+    return [];
+  }
+
   try {
-    await delay(260, getSignal(options));
+    const response = await httpClient.get("/api/conversations", {
+      signal: getSignal(options),
+    });
 
-    /* Backend trả thẳng một mảng; helpers.normalizeConversationList()
-       nhận đúng dạng này ở nhánh Array.isArray đầu tiên. */
-    return sortByRecency(store).map(toListItem);
+    const body = response.data;
+    const list = Array.isArray(body) ? body : toArray(body?.data ?? body?.items);
+
+    return list.map(toListItem);
   } catch (error) {
-    if (!isCanceledRequest(error)) {
-      console.error(
-        "Lỗi lấy danh sách cuộc trò chuyện:",
-        getApiErrorMessage(error, "Lấy danh sách cuộc trò chuyện thất bại.")
-      );
-    }
+    logApiError("Lỗi lấy danh sách cuộc trò chuyện:", error);
 
-    throw error;
+    throw attachValidationMessage(error);
   }
 };
 
@@ -358,33 +381,20 @@ export const getConversationsApi = async (options = {}) => {
  *
  * GET /api/conversations/{conversationId}
  */
-export const getConversationDetailApi = async (
-  conversationId,
-  options = {}
-) => {
-  const id = normalizeText(conversationId);
-
-  if (!id) {
-    throw new Error("Không tìm thấy mã cuộc trò chuyện.");
-  }
+export const getConversationDetailApi = async (conversationId, options = {}) => {
+  const id = requireConversationId(conversationId);
 
   try {
-    /* Màn chat abort request cũ mỗi lần đổi hội thoại, nên delay phải
-       nhận signal — nếu không toast lỗi đỏ sẽ nháy mỗi lần bấm chuyển. */
-    await delay(240, getSignal(options));
+    const response = await httpClient.get(
+      `/api/conversations/${encodeURIComponent(id)}`,
+      { signal: getSignal(options) }
+    );
 
-    const conversation = requireConversation(id);
-
-    return deepClone(conversation);
+    return normalizeConversation(response.data);
   } catch (error) {
-    if (!isCanceledRequest(error)) {
-      console.error(
-        "Lỗi lấy chi tiết cuộc trò chuyện:",
-        getApiErrorMessage(error, "Lấy chi tiết cuộc trò chuyện thất bại.")
-      );
-    }
+    logApiError("Lỗi lấy chi tiết cuộc trò chuyện:", error);
 
-    throw error;
+    throw attachValidationMessage(error);
   }
 };
 
@@ -398,104 +408,50 @@ export const sendConversationMessageApi = async (
   payload,
   options = {}
 ) => {
-  const id = normalizeText(conversationId);
-
-  if (!id) {
-    throw new Error("Không tìm thấy mã cuộc trò chuyện.");
-  }
+  const id = requireConversationId(conversationId);
 
   validateSendMessagePayload(payload);
 
-  const requestPayload = buildSendMessagePayload(payload);
-
   try {
-    await delay(300, getSignal(options));
+    const response = await httpClient.post(
+      `/api/conversations/${encodeURIComponent(id)}/messages`,
+      buildSendMessagePayload(payload),
+      { signal: getSignal(options) }
+    );
 
-    const conversation = requireConversation(id);
-    const createdAt = nowIso();
-
-    const message = createChatMessage({
-      seed: `runtime-${id}-${conversation.messages.length + 1}`,
-      conversationId: conversation.id,
-      sender: CHAT_CUSTOMER,
-      content: requestPayload.content,
-      attachmentUrl: requestPayload.attachmentUrl,
-      createdAt,
-    });
-
-    message.id = newUuid();
-    message.messageId = message.id;
-
-    conversation.messages.push(message);
-
-    refreshConversationSummary(conversation);
-
-    /* Khách vừa gửi thì coi như đã đọc hết phần trước đó. */
-    conversation.unreadCount = 0;
-    conversation.unreadMessages = 0;
-    conversation.unread = 0;
-    conversation.lastReadAt = createdAt;
-
-    return deepClone(message);
+    return normalizeMessage(response.data, null);
   } catch (error) {
-    if (!isCanceledRequest(error)) {
-      console.error(
-        "Lỗi gửi tin nhắn:",
-        getApiErrorMessage(error, "Gửi tin nhắn thất bại.")
-      );
-    }
+    logApiError("Lỗi gửi tin nhắn:", error);
 
-    throw error;
+    throw attachValidationMessage(error);
   }
 };
 
 /**
- * Đánh dấu tin nhắn là đã đọc.
+ * Đánh dấu đã đọc tin nhắn của CSKH trong cuộc trò chuyện.
  *
  * PUT /api/conversations/{conversationId}/read
  */
-export const markConversationAsReadApi = async (
-  conversationId,
-  options = {}
-) => {
-  const id = normalizeText(conversationId);
-
-  if (!id) {
-    throw new Error("Không tìm thấy mã cuộc trò chuyện.");
-  }
+export const markConversationAsReadApi = async (conversationId, options = {}) => {
+  const id = requireConversationId(conversationId);
 
   try {
-    await delay(180, getSignal(options));
-
-    const conversation = requireConversation(id);
-    const readAt = nowIso();
-
-    (conversation.messages || []).forEach((message) => {
-      message.isRead = true;
-      message.readAt = message.readAt || readAt;
-    });
-
-    conversation.unreadCount = 0;
-    conversation.unreadMessages = 0;
-    conversation.unread = 0;
-    conversation.lastReadAt = readAt;
+    const response = await httpClient.put(
+      `/api/conversations/${encodeURIComponent(id)}/read`,
+      undefined,
+      { signal: getSignal(options) }
+    );
 
     return {
       success: true,
-      conversationId: conversation.id,
+      conversationId: id,
       unreadCount: 0,
-      readAt,
-      message: "Đã đánh dấu cuộc trò chuyện là đã đọc.",
+      message: response.data?.message || "Đã đánh dấu đọc tin nhắn.",
     };
   } catch (error) {
-    if (!isCanceledRequest(error)) {
-      console.error(
-        "Lỗi đánh dấu tin nhắn đã đọc:",
-        getApiErrorMessage(error, "Đánh dấu tin nhắn đã đọc thất bại.")
-      );
-    }
+    logApiError("Lỗi đánh dấu tin nhắn đã đọc:", error);
 
-    throw error;
+    throw attachValidationMessage(error);
   }
 };
 

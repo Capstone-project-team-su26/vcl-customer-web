@@ -40,13 +40,12 @@ import {
 } from "@features/consignment/api/consignmentApi";
 
 import { createPurchaseRequestApi } from "@features/purchase/api/purchaseRequestApi";
+/* Import sâu: chỉ cần hàm báo menu đếm lại, barrel orders kéo theo cả các trang. */
+import { requestOrderCountsRefresh } from "@features/orders/data/orderTodoRows";
 
-import {
-  getDistrictsByProvinceCode,
-  getFullAddressByCodes,
-  getProvinces,
-  getWardsByDistrictCode,
-} from "@shared/api/addressApi";
+import { getFullAddressByCodes } from "@shared/api/addressApi";
+import AddressSelect from "@shared/components/AddressSelect/AddressSelect";
+import useAddressOptions from "@shared/components/AddressSelect/useAddressOptions";
 
 import ConsignmentBuyOrderConfirm from "@features/purchase/components/ConsignmentBuyOrderConfirm/ConsignmentBuyOrderConfirm";
 
@@ -54,6 +53,9 @@ import {
   INITIAL_ADDRESS_SELECT,
   INITIAL_FORM,
   MAX_IMAGES_PER_ITEM,
+  MAX_PURCHASE_ITEM_QUANTITY,
+  MAX_PURCHASE_ITEMS,
+  PURCHASE_TEXT_LIMITS,
 } from "./ConsignmentBuyOrder.constants";
 
 import {
@@ -65,6 +67,7 @@ import {
   getClientTimePayload,
   getFieldClassName,
   getFileIdentity,
+  getGeneralNoteMaxLength,
   getItemImages,
   getSourceWebsiteFromLink,
   isCanceledRequest,
@@ -74,12 +77,19 @@ import {
   normalizeOptionList,
   normalizeShippingOptionList,
   normalizeStringArray,
-  preventInvalidNumberKeys,
-  sanitizeInteger,
+  PURCHASE_ITEMS_LIMIT_MESSAGE,
+  PURCHASE_QUANTITY_RANGE_MESSAGE,
   uploadProductImages,
   validateBuyOrderForm,
+  validatePurchaseGeneralNote,
+  validatePurchaseItemQuantity,
   validateProductImageFile,
 } from "./ConsignmentBuyOrder.helpers";
+import {
+  blockNonIntegerKeys,
+  isIntegerPasteAllowed,
+  normalizeIntegerInput,
+} from "@shared/utils/integerInput";
 
 import "./ConsignmentBuyOrder.css";
 /* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
@@ -134,6 +144,37 @@ const SelectField = ({
   </div>
 );
 
+/* Ô chọn tỉnh/huyện/xã: danh mục GoShip thật, có tìm kiếm không dấu + nút "Thử lại". */
+const AddressSelectField = ({
+  label,
+  value,
+  list,
+  invalid,
+  disabled,
+  placeholder,
+  onChange,
+}) => (
+  <div className="purchase-buy-input-field-group">
+    <label className="purchase-buy-field-label purchase-buy-required-label">
+      {label}
+    </label>
+
+    <AddressSelect
+      value={value}
+      options={list.options}
+      loading={list.loading}
+      loadError={list.error}
+      onRetry={list.retry}
+      disabled={disabled}
+      placeholder={placeholder}
+      invalid={invalid}
+      errorClassName="purchase-buy-input-has-error"
+      ariaLabel={label}
+      onChange={onChange}
+    />
+  </div>
+);
+
 export default function ConsignmentBuyOrder() {
   const navigate = useNavigate();
 
@@ -175,17 +216,20 @@ export default function ConsignmentBuyOrder() {
     INITIAL_ADDRESS_SELECT,
   );
 
-  const [provinceOptions, setProvinceOptions] = useState([]);
+  /*
+   * Danh mục tỉnh → quận/huyện → phường/xã của GoShip (thật, qua backend). Hook tự nạp
+   * cấp con theo mã đang chọn và tự dọn khi đổi cấp cha; lỗi thì có câu báo + "Thử lại".
+   */
+  const addressLists = useAddressOptions({
+    provinceCode: newAddressSelect.provinceCode,
+    districtCode: newAddressSelect.districtCode,
+  });
 
-  const [districtOptions, setDistrictOptions] = useState([]);
+  const provinceOptions = addressLists.provinces.options;
 
-  const [wardOptions, setWardOptions] = useState([]);
+  const districtOptions = addressLists.districts.options;
 
-  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
-
-  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
-
-  const [isLoadingWards, setIsLoadingWards] = useState(false);
+  const wardOptions = addressLists.wards.options;
 
   const [activeLightboxImg, setActiveLightboxImg] = useState(null);
 
@@ -387,119 +431,6 @@ export default function ConsignmentBuyOrder() {
   }, [loadDeliveryAddresses]);
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    const loadProvinces = async () => {
-      try {
-        setIsLoadingProvinces(true);
-
-        const provinces = await getProvinces({
-          signal: controller.signal,
-        });
-
-        setProvinceOptions(provinces);
-      } catch (error) {
-        if (!isCanceledRequest(error)) {
-          AuthNotify.error(
-            "Không tải được tỉnh/thành",
-            getApiErrorMessage(
-              error,
-              "Không thể tải danh sách tỉnh/thành phố.",
-            ),
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingProvinces(false);
-        }
-      }
-    };
-
-    loadProvinces();
-
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadDistricts = async () => {
-      if (!newAddressSelect.provinceCode) {
-        setDistrictOptions([]);
-        setWardOptions([]);
-        return;
-      }
-
-      try {
-        setIsLoadingDistricts(true);
-
-        const districts = await getDistrictsByProvinceCode(
-          newAddressSelect.provinceCode,
-          {
-            signal: controller.signal,
-          },
-        );
-
-        setDistrictOptions(districts);
-      } catch (error) {
-        if (!isCanceledRequest(error)) {
-          AuthNotify.error(
-            "Không tải được quận/huyện",
-            getApiErrorMessage(error, "Không thể tải danh sách quận/huyện."),
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingDistricts(false);
-        }
-      }
-    };
-
-    loadDistricts();
-
-    return () => controller.abort();
-  }, [newAddressSelect.provinceCode]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadWards = async () => {
-      if (!newAddressSelect.districtCode) {
-        setWardOptions([]);
-        return;
-      }
-
-      try {
-        setIsLoadingWards(true);
-
-        const wards = await getWardsByDistrictCode(
-          newAddressSelect.districtCode,
-          {
-            signal: controller.signal,
-          },
-        );
-
-        setWardOptions(wards);
-      } catch (error) {
-        if (!isCanceledRequest(error)) {
-          AuthNotify.error(
-            "Không tải được phường/xã",
-            getApiErrorMessage(error, "Không thể tải danh sách phường/xã."),
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingWards(false);
-        }
-      }
-    };
-
-    loadWards();
-
-    return () => controller.abort();
-  }, [newAddressSelect.districtCode]);
-
-  useEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
@@ -534,8 +465,6 @@ export default function ConsignmentBuyOrder() {
   const resetNewAddressForm = () => {
     setNewAddressSelect(INITIAL_ADDRESS_SELECT);
     setNewAddressInput("");
-    setDistrictOptions([]);
-    setWardOptions([]);
   };
 
   const updateNewAddressSelect = (field, value) => {
@@ -599,12 +528,13 @@ export default function ConsignmentBuyOrder() {
       newAddressSelect.wardCode,
     );
 
+    /* Tên đã có sẵn trong danh sách vừa chọn; tra lại lỗi thì ghép từ tên đó. */
     const addressResult = await getFullAddressByCodes({
       provinceCode: newAddressSelect.provinceCode,
       districtCode: newAddressSelect.districtCode,
       wardCode: newAddressSelect.wardCode,
       detailAddress,
-    });
+    }).catch(() => null);
 
     const fullAddress =
       addressResult?.fullAddress ||
@@ -765,6 +695,16 @@ export default function ConsignmentBuyOrder() {
 
   /* ================= ITEMS ================= */
 
+  const setItemError = (itemId, field, message) => {
+    setItemErrors((previous) => ({
+      ...previous,
+      [itemId]: {
+        ...(previous[itemId] || {}),
+        [field]: message,
+      },
+    }));
+  };
+
   const handleItemChange = (itemId, field, value) => {
     setItems((previous) =>
       previous.map((item) =>
@@ -780,6 +720,37 @@ export default function ConsignmentBuyOrder() {
     clearItemError(itemId, field);
   };
 
+  /*
+   * Ô Số lượng kiểm NGAY trên từng phím gõ (không đợi bấm "Tiếp tục"): gõ 0 hay vượt
+   * MAX_PURCHASE_ITEM_QUANTITY là viền đỏ + câu lỗi hiện liền dưới ô. Lúc bấm gửi,
+   * validateItem gọi lại đúng validatePurchaseItemQuantity nên hai lúc báo cùng một câu.
+   */
+  const handleQuantityChange = (item, rawValue) => {
+    const nextValue = normalizeIntegerInput(rawValue, item.quantity);
+
+    setItems((previous) =>
+      previous.map((current) =>
+        current.id === item.id ? { ...current, quantity: nextValue } : current,
+      ),
+    );
+
+    setItemError(item.id, "quantity", validatePurchaseItemQuantity(nextValue));
+  };
+
+  /** Dán "1.5", "1e3", "12abc", "-3"... bị từ chối cả cụm (không lọc thành "15"/"13"/"12"). */
+  const handleQuantityPaste = (item, event) => {
+    const pasted = event.clipboardData?.getData("text") ?? "";
+
+    if (!isIntegerPasteAllowed(pasted)) {
+      event.preventDefault();
+      setItemError(
+        item.id,
+        "quantity",
+        `Chỉ dán được số nguyên dương. ${PURCHASE_QUANTITY_RANGE_MESSAGE}`,
+      );
+    }
+  };
+
   const handleProductLinkBlur = (item) => {
     if (item.sourceWebsite.trim() || !isValidHttpUrl(item.productLink)) {
       return;
@@ -792,10 +763,31 @@ export default function ConsignmentBuyOrder() {
     );
   };
 
+  const isItemLimitReached = items.length >= MAX_PURCHASE_ITEMS;
+
+  /* Backend ghép câu của dịch vụ đang tick vào ghi chú chung (tổng ≤ 1000 ký tự) nên số
+     ký tự khách được gõ đổi theo dịch vụ; tick thêm dịch vụ khi ghi chú đã dài thì báo ngay. */
+  const generalNoteMaxLength = getGeneralNoteMaxLength(form.optionalServices);
+  const generalNoteLiveError = validatePurchaseGeneralNote(
+    form.generalNote,
+    form.optionalServices,
+  );
+
   const handleAddItem = () => {
-    if (!isSubmitting) {
-      setItems((previous) => [...previous, createEmptyItem()]);
+    if (isSubmitting) {
+      return;
     }
+
+    if (isItemLimitReached) {
+      AuthNotify.warning("Đã đủ số sản phẩm", PURCHASE_ITEMS_LIMIT_MESSAGE);
+      return;
+    }
+
+    setItems((previous) =>
+      previous.length >= MAX_PURCHASE_ITEMS
+        ? previous
+        : [...previous, createEmptyItem()],
+    );
   };
 
   const handleDeleteItem = (itemId) => {
@@ -1006,7 +998,8 @@ export default function ConsignmentBuyOrder() {
     if (!result.isValid) {
       AuthNotify.warning(
         "Thông tin chưa đầy đủ",
-        "Vui lòng kiểm tra các trường được đánh dấu màu đỏ.",
+        result.formErrors.items ||
+          "Vui lòng kiểm tra các trường được đánh dấu màu đỏ.",
       );
 
       scrollToFirstError();
@@ -1140,6 +1133,9 @@ export default function ConsignmentBuyOrder() {
         result?.message || "Yêu cầu mua hộ đã được tiếp nhận.",
       );
 
+      /* Menu "Đơn mua hộ" đếm lại ngay: đơn mới (chờ VCL duyệt) vào số xám. */
+      requestOrderCountsRefresh();
+
       navigate(PURCHASE_ORDERS_PATH);
     } catch (error) {
       AuthNotify.error(
@@ -1256,6 +1252,7 @@ export default function ConsignmentBuyOrder() {
                 <input
                   type="text"
                   value={form.receiverName}
+                  maxLength={PURCHASE_TEXT_LIMITS.receiverName}
                   disabled={isSubmitting}
                   placeholder="Nhập tên người nhận..."
                   className={getFieldClassName(
@@ -1453,109 +1450,59 @@ export default function ConsignmentBuyOrder() {
                   </label>
 
                   <div className="purchase-buy-address-api-grid">
-                    <div className="purchase-buy-input-field-group">
-                      <label className="purchase-buy-field-label purchase-buy-required-label">
-                        TỈNH / THÀNH PHỐ
-                      </label>
+                    <AddressSelectField
+                      label="TỈNH / THÀNH PHỐ"
+                      value={newAddressSelect.provinceCode}
+                      list={addressLists.provinces}
+                      invalid={
+                        Boolean(newAddressError) && !newAddressSelect.provinceCode
+                      }
+                      disabled={isSubmitting || isSavingAddress}
+                      placeholder="Chọn tỉnh/thành"
+                      onChange={(value) =>
+                        updateNewAddressSelect("provinceCode", value)
+                      }
+                    />
 
-                      <select
-                        value={newAddressSelect.provinceCode}
-                        disabled={
-                          isSubmitting || isSavingAddress || isLoadingProvinces
-                        }
-                        className={getFieldClassName(
-                          "purchase-buy-custom-select",
-                          newAddressError && !newAddressSelect.provinceCode
-                            ? newAddressError
-                            : "",
-                        )}
-                        onChange={(event) =>
-                          updateNewAddressSelect(
-                            "provinceCode",
-                            event.target.value,
-                          )
-                        }
-                      >
-                        <option value="">
-                          {isLoadingProvinces
-                            ? "Đang tải tỉnh/thành..."
-                            : "Chọn tỉnh/thành"}
-                        </option>
+                    <AddressSelectField
+                      label="QUẬN / HUYỆN"
+                      value={newAddressSelect.districtCode}
+                      list={addressLists.districts}
+                      invalid={
+                        Boolean(newAddressError) &&
+                        Boolean(newAddressSelect.provinceCode) &&
+                        !newAddressSelect.districtCode
+                      }
+                      disabled={
+                        isSubmitting ||
+                        isSavingAddress ||
+                        !newAddressSelect.provinceCode
+                      }
+                      placeholder="Chọn quận/huyện"
+                      onChange={(value) =>
+                        updateNewAddressSelect("districtCode", value)
+                      }
+                    />
 
-                        {provinceOptions.map((province) => (
-                          <option key={province.value} value={province.value}>
-                            {province.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="purchase-buy-input-field-group">
-                      <label className="purchase-buy-field-label purchase-buy-required-label">
-                        QUẬN / HUYỆN
-                      </label>
-
-                      <select
-                        value={newAddressSelect.districtCode}
-                        disabled={
-                          isSubmitting ||
-                          isSavingAddress ||
-                          isLoadingDistricts ||
-                          !newAddressSelect.provinceCode
-                        }
-                        className="purchase-buy-custom-select"
-                        onChange={(event) =>
-                          updateNewAddressSelect(
-                            "districtCode",
-                            event.target.value,
-                          )
-                        }
-                      >
-                        <option value="">
-                          {isLoadingDistricts
-                            ? "Đang tải quận/huyện..."
-                            : "Chọn quận/huyện"}
-                        </option>
-
-                        {districtOptions.map((district) => (
-                          <option key={district.value} value={district.value}>
-                            {district.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="purchase-buy-input-field-group">
-                      <label className="purchase-buy-field-label purchase-buy-required-label">
-                        PHƯỜNG / XÃ
-                      </label>
-
-                      <select
-                        value={newAddressSelect.wardCode}
-                        disabled={
-                          isSubmitting ||
-                          isSavingAddress ||
-                          isLoadingWards ||
-                          !newAddressSelect.districtCode
-                        }
-                        className="purchase-buy-custom-select"
-                        onChange={(event) =>
-                          updateNewAddressSelect("wardCode", event.target.value)
-                        }
-                      >
-                        <option value="">
-                          {isLoadingWards
-                            ? "Đang tải phường/xã..."
-                            : "Chọn phường/xã"}
-                        </option>
-
-                        {wardOptions.map((ward) => (
-                          <option key={ward.value} value={ward.value}>
-                            {ward.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <AddressSelectField
+                      label="PHƯỜNG / XÃ"
+                      value={newAddressSelect.wardCode}
+                      list={addressLists.wards}
+                      invalid={
+                        Boolean(newAddressError) &&
+                        Boolean(newAddressSelect.districtCode) &&
+                        !newAddressSelect.wardCode
+                      }
+                      disabled={
+                        isSubmitting ||
+                        isSavingAddress ||
+                        !newAddressSelect.districtCode
+                      }
+                      placeholder="Chọn phường/xã"
+                      onChange={(value) =>
+                        updateNewAddressSelect("wardCode", value)
+                      }
+                    />
                   </div>
 
                   <input
@@ -1727,6 +1674,7 @@ export default function ConsignmentBuyOrder() {
                       <input
                         type="text"
                         value={item.sourceWebsite}
+                        maxLength={PURCHASE_TEXT_LIMITS.sourceWebsite}
                         disabled={isSubmitting}
                         placeholder="Ví dụ: amazon.com"
                         className={getFieldClassName(
@@ -1791,6 +1739,7 @@ export default function ConsignmentBuyOrder() {
                       <input
                         type="text"
                         value={item.productName}
+                        maxLength={PURCHASE_TEXT_LIMITS.productName}
                         disabled={isSubmitting}
                         placeholder="Nhập tên sản phẩm..."
                         className={getFieldClassName(
@@ -1810,27 +1759,34 @@ export default function ConsignmentBuyOrder() {
                     </div>
 
                     <div className="purchase-buy-input-field-group">
-                      <label className="purchase-buy-field-label purchase-buy-required-label">
-                        SỐ LƯỢNG
-                      </label>
+                      <div className="purchase-buy-field-label-row">
+                        <label className="purchase-buy-field-label purchase-buy-required-label">
+                          SỐ LƯỢNG
+                        </label>
+
+                        <span className="purchase-buy-field-limit-hint">
+                          1 – {MAX_PURCHASE_ITEM_QUANTITY}
+                        </span>
+                      </div>
 
                       <input
                         type="text"
                         inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoComplete="off"
                         value={item.quantity}
                         disabled={isSubmitting}
-                        placeholder="Nhập số lượng..."
+                        placeholder={`Từ 1 đến ${MAX_PURCHASE_ITEM_QUANTITY}`}
+                        aria-invalid={Boolean(errors.quantity)}
                         className={getFieldClassName(
                           "purchase-buy-custom-input",
                           errors.quantity,
                         )}
-                        onKeyDown={preventInvalidNumberKeys}
+                        onKeyDown={blockNonIntegerKeys}
+                        onPaste={(event) => handleQuantityPaste(item, event)}
+                        onDrop={(event) => event.preventDefault()}
                         onChange={(event) =>
-                          handleItemChange(
-                            item.id,
-                            "quantity",
-                            sanitizeInteger(event.target.value),
-                          )
+                          handleQuantityChange(item, event.target.value)
                         }
                       />
 
@@ -1866,6 +1822,7 @@ export default function ConsignmentBuyOrder() {
                     <input
                       type="text"
                       value={item.attributes}
+                      maxLength={PURCHASE_TEXT_LIMITS.attributes}
                       disabled={isSubmitting}
                       placeholder="Ví dụ: Màu đen, Size M, phiên bản 256GB..."
                       className={getFieldClassName(
@@ -1893,17 +1850,22 @@ export default function ConsignmentBuyOrder() {
                       rows={3}
                       value={item.note}
                       disabled={isSubmitting}
-                      maxLength={500}
+                      maxLength={PURCHASE_TEXT_LIMITS.note}
                       placeholder="Nhập yêu cầu riêng cho sản phẩm..."
-                      className="purchase-buy-custom-textarea"
+                      className={getFieldClassName(
+                        "purchase-buy-custom-textarea",
+                        errors.note,
+                      )}
                       onChange={(event) =>
                         handleItemChange(item.id, "note", event.target.value)
                       }
                     />
 
                     <div className="purchase-buy-sub-helper-text">
-                      {item.note.length}/500 ký tự
+                      {item.note.length}/{PURCHASE_TEXT_LIMITS.note} ký tự
                     </div>
+
+                    <FieldError message={errors.note} />
                   </div>
 
                   <div className="purchase-buy-input-field-group purchase-buy-package-image-section">
@@ -2062,17 +2024,23 @@ export default function ConsignmentBuyOrder() {
 
             <button
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isItemLimitReached}
+              title={isItemLimitReached ? PURCHASE_ITEMS_LIMIT_MESSAGE : undefined}
               className={[
                 "purchase-buy-add-package-dashed-trigger",
-                isSubmitting && "purchase-buy-add-package-disabled",
+                (isSubmitting || isItemLimitReached) &&
+                  "purchase-buy-add-package-disabled",
               ]
                 .filter(Boolean)
                 .join(" ")}
               onClick={handleAddItem}
             >
               <PlusCircleOutlined className="purchase-buy-plus-dashed-icon" />
-              <span>THÊM SẢN PHẨM MUA HỘ</span>
+              <span>
+                {isItemLimitReached
+                  ? `ĐÃ ĐỦ ${MAX_PURCHASE_ITEMS} SẢN PHẨM — ${PURCHASE_ITEMS_LIMIT_MESSAGE}`
+                  : "THÊM SẢN PHẨM MUA HỘ"}
+              </span>
             </button>
             <div
               className="purchase-buy-form-main-card purchase-buy-general-note-card"
@@ -2120,9 +2088,12 @@ export default function ConsignmentBuyOrder() {
                   rows={4}
                   value={form.generalNote}
                   disabled={isSubmitting}
-                  maxLength={1000}
+                  maxLength={generalNoteMaxLength}
                   placeholder="Nhập ghi chú chung, yêu cầu đóng gói hoặc thông tin cần lưu ý cho toàn bộ yêu cầu mua hộ..."
-                  className="purchase-buy-custom-textarea"
+                  className={getFieldClassName(
+                    "purchase-buy-custom-textarea",
+                    formErrors.generalNote,
+                  )}
                   onChange={(event) =>
                     updateForm("generalNote", event.target.value)
                   }
@@ -2131,8 +2102,14 @@ export default function ConsignmentBuyOrder() {
                 <div className="purchase-buy-textarea-meta">
                   <span>Không bắt buộc</span>
 
-                  <strong>{form.generalNote.length}/1000 ký tự</strong>
+                  <strong>
+                    {form.generalNote.length}/{generalNoteMaxLength} ký tự
+                  </strong>
                 </div>
+
+                <FieldError
+                  message={formErrors.generalNote || generalNoteLiveError}
+                />
               </div>
             </div>
 

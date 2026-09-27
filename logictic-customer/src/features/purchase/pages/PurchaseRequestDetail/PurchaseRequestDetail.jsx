@@ -46,6 +46,7 @@ import { getPurchaseRequestDetailApi } from "@features/purchase/api/purchaseRequ
 /* Loại hàng hoá lấy danh mục thật để nhãn khớp với dữ liệu đơn trả về từ server. */
 import { getProductTypesApi } from "@features/consignment/api/consignmentApi";
 import SupplierOrderPanel from "@features/purchase/components/SupplierOrderPanel/SupplierOrderPanel";
+import PurchaseRefundPanel from "@features/purchase/components/PurchaseRefundPanel/PurchaseRefundPanel";
 
 import "./PurchaseRequestDetail.css";
 
@@ -1116,6 +1117,12 @@ const PurchaseRequestDetail = () => {
 
         <SupplierOrderPanel purchaseRequestId={requestId} />
       </section>
+
+      {/*
+        Tiền hoàn: tổng đã trả / đã hoàn / đang chờ + từng khoản, từng sản phẩm, công thức.
+        Khối tự dựng section riêng và tự ẩn khi chưa có khoản hoàn hoặc máy chủ chưa hỗ trợ.
+      */}
+      <PurchaseRefundPanel purchaseRequestId={requestId} />
 
       <section className="purchase-detail-products-section">
         <div className="purchase-detail-section-header">

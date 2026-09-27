@@ -1,0 +1,99 @@
+/* =========================================================
+   TIỀN CỦA ĐƠN TRÊN MÀN HÀNH TRÌNH
+
+   Ba ô tổng trước, phần chi tiết sau: khách mở khối này để biết "còn phải trả bao nhiêu",
+   phần tách cước / dịch vụ / thuế chỉ để đối chiếu.
+   ========================================================= */
+
+.tracking-money__totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tracking-money__box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e3eaf4;
+  background: #f8fbff;
+}
+
+.tracking-money__box span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b6b80;
+}
+
+.tracking-money__box strong {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0b1b2e;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.tracking-money__box.is-total {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.tracking-money__box.is-total strong {
+  color: #1d4ed8;
+}
+
+.tracking-money__box.is-paid {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.tracking-money__box.is-paid strong {
+  color: #15803d;
+}
+
+.tracking-money__box.is-due {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.tracking-money__box.is-due strong {
+  color: #c2410c;
+}
+
+.tracking-money__lines {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tracking-money__lines li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 8px 0;
+  border-top: 1px dashed #e3eaf4;
+  font-size: 13.5px;
+  color: #334155;
+}
+
+.tracking-money__lines b {
+  font-weight: 800;
+  color: #0b1b2e;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Màn hẹp: ba ô xếp dọc thay vì bóp số tiền xuống nhiều dòng. */
+@media (max-width: 720px) {
+  .tracking-money__totals {
+    grid-template-columns: 1fr;
+  }
+}

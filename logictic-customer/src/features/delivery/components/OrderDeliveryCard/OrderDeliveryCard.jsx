@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -20,6 +20,9 @@ import {
 } from "@ant-design/icons";
 
 import SectionCard from "@shared/components/SectionCard/SectionCard";
+import AddressSelect from "@shared/components/AddressSelect/AddressSelect";
+import useAddressOptions from "@shared/components/AddressSelect/useAddressOptions";
+import { resolveAddressByNames } from "@shared/api/addressApi";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatVnd } from "@shared/utils/formatNumber";
@@ -42,6 +45,10 @@ import {
   getOrderPaymentsApi,
 } from "@features/payment/api/orderPaymentApi";
 import { openCheckout } from "@features/payment/utils/openCheckout";
+import {
+  PAYMENT_PURPOSES,
+  PAYMENT_SUBJECTS,
+} from "@features/payment/utils/pendingPaymentReturn";
 import { getParcelIncidentsApi } from "@features/incidents/api/parcelIncidentApi";
 
 import {
@@ -56,9 +63,10 @@ const EMPTY_FORM = {
   receiverName: "",
   receiverPhone: "",
   addressDetail: "",
-  ward: "",
-  district: "",
-  province: "",
+  /* Mã GoShip đang chọn — chỉ dùng trong FE để nạp cấp con. */
+  provinceCode: "",
+  districtCode: "",
+  wardCode: "",
   scheduledDate: "",
   note: "",
 };
@@ -103,6 +111,23 @@ export default function OrderDeliveryCard({
   const [addresses, setAddresses] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  /*
+   * Địa chỉ đã lưu (của đơn / sổ địa chỉ) đang được dò sang danh mục GoShip:
+   * { text, status: "resolving" | "unmatched" | "error" } — null khi khớp đủ hoặc chưa chọn.
+   */
+  const [savedAddress, setSavedAddress] = useState(null);
+  const resolveSeq = useRef(0);
+
+  /*
+   * Tỉnh/huyện/xã chọn từ danh mục GoShip thật: backend lưu TÊN rồi lúc tạo vận đơn dò lại
+   * mã GoShip bằng tên (GoshipService.ResolveAddressCodesAsync) — gửi đúng tên GoShip thì
+   * vận đơn đúng địa chỉ, gõ tay thì dễ trượt.
+   */
+  const addressLists = useAddressOptions({
+    provinceCode: form.provinceCode,
+    districtCode: form.districtCode,
+    enabled: modalOpen,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -203,17 +228,61 @@ export default function OrderDeliveryCard({
   const redeliveryAmount =
     pendingRedelivery?.redeliveryFee ?? data.redeliveryPayment?.amount;
 
-  const openCreateModal = async () => {
-    const fromOrder = splitAddress(order?.receiverAddress);
+  /**
+   * Đổ một địa chỉ đã lưu (chuỗi "chi tiết, phường, quận, tỉnh") vào form: chi tiết điền
+   * thẳng, còn tỉnh/huyện/xã dò sang mã GoShip theo tên. Không khớp đủ (địa chỉ cũ nhập
+   * từ danh sách mẫu, sai chính tả...) thì giữ phần đã khớp, hiện nguyên chuỗi đã lưu để
+   * khách chọn lại — không đoán bừa, không làm vỡ form.
+   */
+  const applySavedAddress = async (addressText) => {
+    const text = String(addressText ?? "").trim();
+    const seq = ++resolveSeq.current;
+    const parts = splitAddress(text);
 
+    setForm((current) => ({
+      ...current,
+      addressDetail: parts.addressDetail,
+      provinceCode: "",
+      districtCode: "",
+      wardCode: "",
+    }));
+
+    if (!text) {
+      setSavedAddress(null);
+      return;
+    }
+
+    setSavedAddress({ text, status: "resolving" });
+
+    try {
+      const resolved = await resolveAddressByNames(parts);
+
+      if (seq !== resolveSeq.current) return;
+
+      setForm((current) => ({
+        ...current,
+        provinceCode: resolved.provinceCode,
+        districtCode: resolved.districtCode,
+        wardCode: resolved.wardCode,
+      }));
+      setSavedAddress(resolved.matched ? null : { text, status: "unmatched" });
+    } catch (error) {
+      if (seq !== resolveSeq.current || isCanceledError(error)) return;
+
+      setSavedAddress({ text, status: "error" });
+    }
+  };
+
+  const openCreateModal = async () => {
     setForm({
       ...EMPTY_FORM,
-      ...fromOrder,
       parcelIds: readyParcels.map((parcel) => parcel.parcelId),
       receiverName: order?.receiverName || "",
       receiverPhone: order?.receiverPhone || "",
     });
+    setSavedAddress(null);
     setModalOpen(true);
+    applySavedAddress(order?.receiverAddress);
 
     try {
       setAddresses(await getDeliveryAddressesApi());
@@ -225,18 +294,47 @@ export default function OrderDeliveryCard({
 
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
 
+  /* Khách tự chọn lại tỉnh/huyện/xã: huỷ lượt dò địa chỉ đã lưu còn đang chạy. */
+  const selectAddressLevel = (patch) => {
+    resolveSeq.current += 1;
+    setSavedAddress((current) =>
+      current?.status === "resolving" ? { ...current, status: "unmatched" } : current,
+    );
+    updateForm(patch);
+  };
+
+  const findOptionName = (options, code) =>
+    options.find((option) => option.value === String(code ?? ""))?.name || "";
+
   const handleCreate = async () => {
     if (form.parcelIds.length === 0) {
       AuthNotify.warning("Chưa chọn kiện", "Vui lòng chọn ít nhất một kiện cần giao.");
       return;
     }
 
+    /* Gửi đúng TÊN GoShip của mục đã chọn (backend dò mã vận đơn bằng tên). */
+    const province = findOptionName(addressLists.provinces.options, form.provinceCode);
+    const district = findOptionName(addressLists.districts.options, form.districtCode);
+    const ward = findOptionName(addressLists.wards.options, form.wardCode);
+
+    if (!province || !district || !ward) {
+      AuthNotify.warning(
+        "Chưa chọn đủ địa chỉ",
+        "Vui lòng chọn Tỉnh/thành phố, Quận/huyện và Phường/xã trong danh sách.",
+      );
+      return;
+    }
+
     setSubmitting(true);
 
     try {
+      /* createDeliveryRequestApi chỉ lấy đúng các trường của DTO — mã GoShip không bị gửi. */
       const result = await createDeliveryRequestApi({
         orderId,
         ...form,
+        province,
+        district,
+        ward,
         /* Ngày hẹn chỉ có ngày — gửi 00:00 giờ VN để server không lệch sang hôm trước. */
         scheduledDate: form.scheduledDate ? `${form.scheduledDate}T00:00:00+07:00` : null,
       });
@@ -278,7 +376,15 @@ export default function OrderDeliveryCard({
   };
 
   const handlePayRedelivery = () => {
-    if (!openCheckout(redeliveryCheckoutUrl)) {
+    const opened = openCheckout(redeliveryCheckoutUrl, {
+      subject: PAYMENT_SUBJECTS.order,
+      targetId: orderId,
+      purpose: PAYMENT_PURPOSES.redeliveryFee,
+      orderCode: data.redeliveryPayment?.orderCode,
+      amount: redeliveryAmount,
+    });
+
+    if (!opened) {
       AuthNotify.error("Không mở được trang thanh toán", "Link thanh toán không hợp lệ.");
     }
   };
@@ -497,7 +603,7 @@ export default function OrderDeliveryCard({
               }))}
               onChange={(value) => {
                 const picked = addresses.find((address) => address.id === value);
-                if (picked) updateForm(splitAddress(picked.address));
+                if (picked) applySavedAddress(picked.address);
               }}
             />
           </>
@@ -528,28 +634,64 @@ export default function OrderDeliveryCard({
               onChange={(event) => updateForm({ addressDetail: event.target.value })}
             />
           </Col>
+          {savedAddress ? (
+            <Col span={24}>
+              <Alert
+                className="order-delivery__alert"
+                type={savedAddress.status === "resolving" ? "info" : "warning"}
+                showIcon
+                title={
+                  savedAddress.status === "resolving"
+                    ? "Đang đối chiếu địa chỉ đã lưu với danh mục của đơn vị vận chuyển..."
+                    : savedAddress.status === "error"
+                      ? "Chưa đối chiếu được địa chỉ đã lưu — vui lòng chọn Tỉnh/Quận/Phường bên dưới"
+                      : "Địa chỉ đã lưu chưa khớp danh mục của đơn vị vận chuyển — vui lòng chọn lại"
+                }
+                description={`Địa chỉ đã lưu: ${savedAddress.text}`}
+              />
+            </Col>
+          ) : null}
           <Col xs={24} sm={8}>
-            <p className="order-delivery__label">Phường/xã *</p>
-            <Input
-              maxLength={100}
-              value={form.ward}
-              onChange={(event) => updateForm({ ward: event.target.value })}
+            <p className="order-delivery__label">Tỉnh/thành phố *</p>
+            <AddressSelect
+              value={form.provinceCode}
+              options={addressLists.provinces.options}
+              loading={addressLists.provinces.loading}
+              loadError={addressLists.provinces.error}
+              onRetry={addressLists.provinces.retry}
+              placeholder="Chọn tỉnh/thành phố"
+              ariaLabel="Tỉnh/thành phố"
+              onChange={(value) =>
+                selectAddressLevel({ provinceCode: value, districtCode: "", wardCode: "" })
+              }
             />
           </Col>
           <Col xs={24} sm={8}>
             <p className="order-delivery__label">Quận/huyện *</p>
-            <Input
-              maxLength={100}
-              value={form.district}
-              onChange={(event) => updateForm({ district: event.target.value })}
+            <AddressSelect
+              value={form.districtCode}
+              options={addressLists.districts.options}
+              loading={addressLists.districts.loading}
+              loadError={addressLists.districts.error}
+              onRetry={addressLists.districts.retry}
+              disabled={!form.provinceCode}
+              placeholder="Chọn quận/huyện"
+              ariaLabel="Quận/huyện"
+              onChange={(value) => selectAddressLevel({ districtCode: value, wardCode: "" })}
             />
           </Col>
           <Col xs={24} sm={8}>
-            <p className="order-delivery__label">Tỉnh/thành phố *</p>
-            <Input
-              maxLength={100}
-              value={form.province}
-              onChange={(event) => updateForm({ province: event.target.value })}
+            <p className="order-delivery__label">Phường/xã *</p>
+            <AddressSelect
+              value={form.wardCode}
+              options={addressLists.wards.options}
+              loading={addressLists.wards.loading}
+              loadError={addressLists.wards.error}
+              onRetry={addressLists.wards.retry}
+              disabled={!form.districtCode}
+              placeholder="Chọn phường/xã"
+              ariaLabel="Phường/xã"
+              onChange={(value) => selectAddressLevel({ wardCode: value })}
             />
           </Col>
           <Col xs={24} sm={8}>

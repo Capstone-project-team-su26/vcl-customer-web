@@ -1,4 +1,4 @@
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Tabs } from "antd";
 import { HistoryOutlined, WalletOutlined } from "@ant-design/icons";
 
@@ -19,6 +19,10 @@ const TAB_ITEMS = [
 
 const TAB_KEYS = TAB_ITEMS.map((item) => item.key);
 
+/* PayOS:ReturnUrl mặc định của backend (khoản do nhân viên phát hành, khách trả qua payOS)
+   là /payment/success — về Lịch sử giao dịch, giữ query payOS để banner đọc kết quả. */
+const PAYOS_DEFAULT_RETURN_TAB = "success";
+
 /**
  * Trang Thanh toán — gộp "Thanh toán vận chuyển" và "Lịch sử giao dịch" cũ.
  *
@@ -31,7 +35,14 @@ const TAB_KEYS = TAB_ITEMS.map((item) => item.key);
  */
 export default function PaymentCenter() {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { tab } = useParams();
+
+  if (tab === PAYOS_DEFAULT_RETURN_TAB) {
+    return (
+      <Navigate to={{ pathname: paymentTabPath(PAYMENT_TABS.history), search }} replace />
+    );
+  }
 
   if (!TAB_KEYS.includes(tab)) {
     return <Navigate to={paymentTabPath(PAYMENT_TABS.due)} replace />;

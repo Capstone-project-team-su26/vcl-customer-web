@@ -3939,3 +3939,14 @@ body .quotation-payment-dialog * {
   font-weight: 600;
   color: #334155;
 }
+
+/* =========================================================
+   BẢNG KÊ TỪNG DÒNG PHÍ (EstimateInvoice)
+
+   Chính component của màn xác nhận trước khi tạo đơn, đặt thẳng vào thân thẻ "Chi tiết
+   chi phí". Chỉ cần một lớp bọc để có khoảng thở dưới phần tiêu đề thẻ — mọi kiểu còn lại
+   sống trong EstimateInvoice.css, không viết lại ở đây để hai màn không thể lệch nhau.
+   ========================================================= */
+.quotation-invoice-wrap {
+  margin-top: 4px;
+}

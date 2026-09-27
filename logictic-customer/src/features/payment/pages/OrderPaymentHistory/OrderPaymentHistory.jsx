@@ -10,6 +10,7 @@ import axios from "@shared/api/requestCancel";
 import {
   useNavigate,
   useParams,
+  useSearchParams,
 } from "react-router-dom";
 
 import {
@@ -38,6 +39,12 @@ import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import {
   getOrderPaymentHistoryApi,
 } from "@features/payment/api/orderPaymentApi";
+import { openCheckout } from "@features/payment/utils/openCheckout";
+import {
+  PAYMENT_SUBJECTS,
+  PAYMENT_TRANSACTION_QUERY_KEY,
+  purposeFromInstallmentType,
+} from "@features/payment/utils/pendingPaymentReturn";
 
 import {
   ORDER_STATUS_LABELS as SHARED_ORDER_STATUS_LABELS,
@@ -426,6 +433,13 @@ const OrderPaymentHistory = ({ embedded = false }) => {
   const navigate = useNavigate();
   const { orderId } = useParams();
 
+  /* "Xem đơn" từ Lịch sử giao dịch gắn ?giao-dich={orderCode}: tô và cuộn tới đúng
+     giao dịch vừa trả. */
+  const [searchParams] = useSearchParams();
+  const highlightOrderCode = String(
+    searchParams.get(PAYMENT_TRANSACTION_QUERY_KEY) || "",
+  ).trim();
+
   const [
     paymentData,
     setPaymentData,
@@ -610,6 +624,35 @@ const OrderPaymentHistory = ({ embedded = false }) => {
         : [],
     [paymentData]
   );
+
+  /* Cuộn tới giao dịch được chỉ định trên URL, một lần khi danh sách đã có nó. */
+  const scrolledOrderCodeRef = useRef("");
+
+  useEffect(() => {
+    if (
+      !highlightOrderCode ||
+      scrolledOrderCodeRef.current === highlightOrderCode ||
+      !payments.some(
+        (payment) =>
+          String(payment.orderCode) === highlightOrderCode
+      )
+    ) {
+      return;
+    }
+
+    scrolledOrderCodeRef.current = highlightOrderCode;
+
+    const card = document.querySelector(
+      `.payment-transaction-card[data-order-code="${CSS.escape(
+        highlightOrderCode
+      )}"]`
+    );
+
+    card?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [highlightOrderCode, payments]);
 
   const totalBillAmount =
     Number(
@@ -1102,7 +1145,13 @@ const OrderPaymentHistory = ({ embedded = false }) => {
                     }
                     className={`payment-transaction-card payment-transaction-card--${getStatusClassName(
                       paymentStatus
-                    )}`}
+                    )}${
+                      highlightOrderCode &&
+                      String(payment.orderCode) === highlightOrderCode
+                        ? " is-just-paid"
+                        : ""
+                    }`}
+                    data-order-code={payment.orderCode || undefined}
                   >
                     <div className="payment-transaction-card__top">
                       <div>
@@ -1195,11 +1244,28 @@ const OrderPaymentHistory = ({ embedded = false }) => {
                           endIcon={
                             <OpenInNewRoundedIcon />
                           }
-                          onClick={() =>
-                            window.location.assign(
-                              payment.checkoutUrl
-                            )
-                          }
+                          onClick={() => {
+                            const opened = openCheckout(
+                              payment.checkoutUrl,
+                              {
+                                subject: PAYMENT_SUBJECTS.order,
+                                targetId: orderId,
+                                purpose: purposeFromInstallmentType(
+                                  payment.installmentType
+                                ),
+                                orderCode: payment.orderCode,
+                                code: paymentData?.consignmentCode,
+                                amount: payment.amount,
+                              }
+                            );
+
+                            if (!opened) {
+                              AuthNotify.error(
+                                "Không mở được trang thanh toán",
+                                "Link thanh toán không hợp lệ."
+                              );
+                            }
+                          }}
                         >
                           Tiếp tục thanh toán
                         </Button>

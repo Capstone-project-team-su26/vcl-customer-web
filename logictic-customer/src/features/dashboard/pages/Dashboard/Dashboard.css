@@ -1,6 +1,12 @@
-/* Bảng điều khiển "việc cần làm": 3 thẻ đếm + lối tắt.
-   Toàn bộ CSS của bảng thống kê cũ (biểu đồ, danh sách đơn gần đây, thẻ số liệu) đã bỏ
-   cùng với giao diện cũ. */
+/* =========================================================
+   BẢNG ĐIỀU KHIỂN CỦA KHÁCH
+
+   Khối "việc cần làm" (dải tiền + thẻ việc) đã gỡ theo yêu cầu. Còn lại ba phần, đọc
+   từ trên xuống:
+     ① dải "hàng đang chạy" — chỉ để biết đơn không nằm im, không bấm
+     ② thống kê (hai biểu đồ, CSS nằm ở DashboardCharts)
+     ③ lối tắt
+   ========================================================= */
 
 .todo-dashboard {
   display: flex;
@@ -53,126 +59,78 @@
   padding: 60px 0;
 }
 
-.todo-dashboard__cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
+/* =========================================================
+   ① HÀNG ĐANG CHẠY
+   ========================================================= */
 
-.todo-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 20px;
-  border-radius: 18px;
+.todo-progress {
+  padding: 16px 18px;
+  border-radius: 16px;
   border: 1px solid #e3eaf4;
-  background: #ffffff;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background: #f8fbff;
 }
 
-.todo-card:hover {
-  border-color: #2563eb;
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.12);
-}
-
-.todo-card__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  flex-shrink: 0;
-  border-radius: 14px;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 22px;
-}
-
-/* Còn việc thì thẻ đổi màu theo loại việc; hết việc thì để xám cho đỡ ồn. */
-.todo-card--amber.is-due {
-  border-color: #fcd9b6;
-  background: #fffaf5;
-}
-
-.todo-card--amber.is-due .todo-card__icon {
-  background: #ffedd5;
-  color: #c2410c;
-}
-
-.todo-card--rose.is-due {
-  border-color: #fbcfd5;
-  background: #fff7f8;
-}
-
-.todo-card--rose.is-due .todo-card__icon {
-  background: #fee2e2;
-  color: #be123c;
-}
-
-.todo-card--emerald.is-due {
-  border-color: #bbf0d2;
-  background: #f5fdf8;
-}
-
-.todo-card--emerald.is-due .todo-card__icon {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.todo-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.todo-card__count {
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.1;
+.todo-progress__head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
   color: #0b1b2e;
 }
 
-.todo-card__title {
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.todo-card__hint {
+.todo-progress__head p {
+  margin: 2px 0 12px;
   color: #5b6b80;
   font-size: 13px;
-  line-height: 1.5;
 }
 
-.todo-card__arrow {
-  color: #94a3b8;
-  flex-shrink: 0;
+.todo-progress__row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.todo-dashboard__note {
-  margin: 0;
-  padding: 12px 16px;
+.todo-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  padding: 10px 12px;
   border-radius: 12px;
-  background: #f8fbff;
   border: 1px solid #e3eaf4;
-  color: #5b6b80;
-  font-size: 13px;
-  line-height: 1.6;
+  background: #ffffff;
 }
 
-.todo-dashboard__link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #2563eb;
-  font: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
+.todo-stage strong {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #cbd5e1;
+  font-variant-numeric: tabular-nums;
 }
+
+.todo-stage span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Chặng có hàng mới được tô đậm — chặng rỗng để xám, mắt tự bỏ qua. */
+.todo-stage.is-active {
+  border-color: #bfdbfe;
+  background: #ffffff;
+}
+
+.todo-stage.is-active strong {
+  color: #1d4ed8;
+}
+
+.todo-stage.is-active span {
+  color: #334155;
+}
+
+/* =========================================================
+   ② LỐI TẮT
+   ========================================================= */
 
 .todo-dashboard__shortcuts h3 {
   margin: 0 0 10px;
@@ -205,8 +163,18 @@
   color: #2563eb;
 }
 
-@media (max-width: 1024px) {
-  .todo-dashboard__cards {
-    grid-template-columns: 1fr;
+/* =========================================================
+   MÀN HẸP
+   ========================================================= */
+
+@media (max-width: 1180px) {
+  .todo-progress__row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .todo-progress__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

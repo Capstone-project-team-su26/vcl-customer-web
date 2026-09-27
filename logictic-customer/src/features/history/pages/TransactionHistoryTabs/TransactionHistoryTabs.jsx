@@ -1,4 +1,5 @@
-import React, {
+import {
+  useCallback,
   useState,
 } from "react";
 
@@ -9,10 +10,15 @@ import {
   ShoppingOutlined,
 } from "@ant-design/icons";
 
-import { parsePayOsReturn } from "@features/payment/utils/consignmentPaymentReturn";
+import {
+  PAYMENT_SUBJECTS,
+  resolvePaymentReturn,
+} from "@features/payment/utils/pendingPaymentReturn";
+import { ORDER_KINDS } from "@features/orders/constants/orderPaths";
 
 import BuyOrderHistoryContent from "@features/history/components/BuyOrderHistoryContent/BuyOrderHistoryContent";
 import ConsignmentHistoryContent from "@features/history/components/ConsignmentHistoryContent/ConsignmentHistoryContent";
+import PaymentReturnBanner from "@features/history/components/PaymentReturnBanner/PaymentReturnBanner";
 
 import "./TransactionHistoryTabs.css";
 
@@ -62,16 +68,37 @@ const ConsignmentIcon = ({
 export default function TransactionHistoryTabs() {
   const location = useLocation();
 
-  /* payOS trả khách về /payment/lich-su kèm query của nó. Người xử lý query đó nằm trong
-     ConsignmentHistoryList (tab Ký gửi), nên phải mở sẵn đúng tab ấy — mở nhầm tab Mua hộ
-     là khoản cọc vừa trả không ai poll trạng thái. */
+  /* Khách vừa thanh toán xong được đưa về đây (SePay/payOS → /history/* → /payment/lich-su
+     ?loai=...). Đọc MỘT lần lúc mở trang: giao dịch nào vừa trả, của đơn nào, mở phần nào. */
+  const [paymentReturn] = useState(() =>
+    resolvePaymentReturn(location.search)
+  );
+
   const [
     activeTab,
     setActiveTab,
   ] = useState(() =>
-    parsePayOsReturn(location.search).hasPayOsParams
+    paymentReturn.kind === ORDER_KINDS.consignment
       ? TAB_KEYS.CONSIGNMENT
       : TAB_KEYS.BUY_ORDER
+  );
+
+  /* Đơn của giao dịch vừa trả: danh sách bên dưới (luôn "Tất cả") tô đơn này. */
+  const justPaid = paymentReturn.pending;
+  const highlightPurchase =
+    justPaid?.subject === PAYMENT_SUBJECTS.purchaseRequest
+      ? justPaid
+      : null;
+  const highlightOrder =
+    justPaid?.subject === PAYMENT_SUBJECTS.order
+      ? justPaid
+      : null;
+
+  /* Tiền đã về: dựng lại danh sách để trạng thái đơn mới nhất hiện ngay. */
+  const [listVersion, setListVersion] = useState(0);
+  const handlePaid = useCallback(
+    () => setListVersion((value) => value + 1),
+    []
   );
 
   const isBuyOrder =
@@ -106,6 +133,11 @@ export default function TransactionHistoryTabs() {
           </p>
         </div>
       </section>
+
+      <PaymentReturnBanner
+        context={paymentReturn}
+        onPaid={handlePaid}
+      />
 
       <section className="transaction-tabs-card">
         <div
@@ -167,9 +199,15 @@ export default function TransactionHistoryTabs() {
           role="tabpanel"
         >
           {isBuyOrder ? (
-            <BuyOrderHistoryContent />
+            <BuyOrderHistoryContent
+              key={listVersion}
+              highlightRequestId={highlightPurchase?.targetId}
+            />
           ) : (
-            <ConsignmentHistoryContent />
+            <ConsignmentHistoryContent
+              key={listVersion}
+              highlightOrderId={highlightOrder?.targetId}
+            />
           )}
         </div>
       </section>

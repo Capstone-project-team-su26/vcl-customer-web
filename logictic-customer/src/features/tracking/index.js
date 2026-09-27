@@ -13,6 +13,8 @@ export { default as OrderLookup } from "./pages/OrderLookup/OrderLookup";
 
 // Khối dùng lại.
 export { default as TrackingStageBar } from "./components/TrackingStageBar/TrackingStageBar";
+export { default as TrackingRouteCard } from "./components/TrackingRouteCard/TrackingRouteCard";
+export { default as TrackingMoneyCard } from "./components/TrackingMoneyCard/TrackingMoneyCard";
 
 // Hằng số chặng / trạng thái kiện và đường dẫn màn theo dõi.
 export * from "./constants/trackingStages";

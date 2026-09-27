@@ -522,9 +522,9 @@ const toUtcDateOnly = (value) => {
 
 /*
  * Hệ số quy đổi thể tích đọc từ rule VOLUMETRIC_DIVISOR của danh mục
- * pricingRules. Thiếu rule thì dùng mặc định 6000 và cảnh báo.
+ * pricingRules. Thiếu rule thì dùng mặc định cuối của backend (5000) và cảnh báo.
  */
-const FALLBACK_VOLUMETRIC_DIVISOR = 6000;
+const FALLBACK_VOLUMETRIC_DIVISOR = 5000;
 
 const resolveVolumetricDivisor = () => {
   const raw = catalog?.findPricingRuleByCode?.("VOLUMETRIC_DIVISOR")?.value;

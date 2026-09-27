@@ -812,15 +812,13 @@ export const validateImageFile = (file) => {
     .trim()
     .toLowerCase();
 
-  const extensionIsAccepted = /\.(?:jpe?g|png|webp)$/i.test(
-    String(file.name || ""),
-  );
-
-  if (
-    !ACCEPTED_CHAT_IMAGE_TYPES.has(mimeType) &&
-    !extensionIsAccepted
-  ) {
+  /* Backend xét Content-Type, không xét đuôi file: đuôi .jpg mà MIME khác vẫn bị 400. */
+  if (!ACCEPTED_CHAT_IMAGE_TYPES.has(mimeType)) {
     throw new Error("Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.");
+  }
+
+  if (!file.size) {
+    throw new Error("Ảnh rỗng, vui lòng chọn ảnh khác.");
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {

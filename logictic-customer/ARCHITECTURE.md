@@ -74,11 +74,10 @@ Hai nhóm lệch đang tồn tại — code mới không được thêm vào dan
    mỗi lần chạm vào một file, đổi import của nó sang barrel. **Code mới thì bắt buộc dùng barrel
    ngay.**
 
-2. **`shared` đang import ngược vào `features`** — đúng một chỗ:
-   `src/shared/hooks/usePendingQuotationCounts.js` gọi `@features/consignment/api/consignmentApi`
-   và `@features/purchase/api/purchaseRequestApi` để đếm số kiện chờ báo giá cho badge trên
-   Sidebar. Đây là vi phạm rõ ràng của quy tắc "shared không biết features". Chỗ đúng của hook này
-   là một feature (hoặc tách phần gọi API ra và truyền dữ liệu vào hook).
+2. ~~`shared` đang import ngược vào `features`~~ — đã gỡ: hook badge menu cũ
+   `src/shared/hooks/usePendingQuotationCounts.js` chuyển về feature orders thành
+   `src/features/orders/hooks/useOrderTodoCounts.js`, đếm bằng cùng nguồn với trang danh sách
+   (`src/features/orders/data/orderTodoRows.js`). `src/shared/` không còn import `features`.
 
 `src/layouts/` cũng gọi API của feature (`Sidebar.jsx` → `@features/auth/api/authService`,
 `NotificationPanel.jsx` → `@features/notifications/api/notificationApi`). Cái này chấp nhận được:
@@ -121,7 +120,6 @@ riêng nghiệp vụ nào.
 | `components/` | `AuthNotify`, `BackToHomeButton`, `FieldLabelTooltip`, `LogisticsLoading` |
 | `config/` | `aiConfig.js` |
 | `constants/` | `homeData.js` (nội dung tĩnh của trang chủ) |
-| `hooks/` | `usePendingQuotationCounts.js` |
 | `styles/` | `fonts.css` (đang dùng) và `legacy/` (cố ý không import — xem README) |
 | `utils/` | `timeUtc.js` — chuẩn hóa mốc thời gian API trả về, kể cả khi thiếu hậu tố `Z` |
 

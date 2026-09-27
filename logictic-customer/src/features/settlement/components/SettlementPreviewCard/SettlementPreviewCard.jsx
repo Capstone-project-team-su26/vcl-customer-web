@@ -17,6 +17,10 @@ import {
   getOrderPaymentsApi,
 } from "@features/payment/api/orderPaymentApi";
 import { openCheckout } from "@features/payment/utils/openCheckout";
+import {
+  PAYMENT_PURPOSES,
+  PAYMENT_SUBJECTS,
+} from "@features/payment/utils/pendingPaymentReturn";
 import { getPackageStatusLabel } from "@features/tracking/constants/trackingStages";
 
 import "./SettlementPreviewCard.css";
@@ -81,7 +85,15 @@ export default function SettlementPreviewCard({ orderId, refreshKey = 0 }) {
   const openBlockers = blockers.filter((blocker) => blocker.code !== "ALREADY_SETTLED");
 
   const handlePay = () => {
-    if (!openCheckout(finalPayment?.checkoutUrl)) {
+    const opened = openCheckout(finalPayment?.checkoutUrl, {
+      subject: PAYMENT_SUBJECTS.order,
+      targetId: orderId,
+      purpose: PAYMENT_PURPOSES.finalPayment,
+      orderCode: finalPayment?.orderCode,
+      amount: finalPayment?.amount,
+    });
+
+    if (!opened) {
       AuthNotify.error("Không mở được trang thanh toán", "Link thanh toán không hợp lệ.");
     }
   };

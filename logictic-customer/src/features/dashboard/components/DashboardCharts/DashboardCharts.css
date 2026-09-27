@@ -1,0 +1,157 @@
+/* =========================================================
+   THỐNG KÊ CỦA KHÁCH — hai biểu đồ Chart.js
+
+   Đặt DƯỚI phần việc cần làm và dải hàng đang chạy: đây là thứ để nhìn lại, không phải
+   việc phải xử lý hôm nay, nên nó không được tranh chỗ với mấy thẻ việc ở trên.
+
+   Canvas có chiều cao CỐ ĐỊNH vì Chart.js cần một khung đo được; `maintainAspectRatio:
+   false` cho nó co theo chiều ngang của thẻ.
+   ========================================================= */
+
+.dash-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dash-charts__head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0b1b2e;
+}
+
+.dash-charts__head p {
+  margin: 2px 0 0;
+  color: #5b6b80;
+  font-size: 13px;
+}
+
+.dash-charts__empty {
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px dashed #d5dfec;
+  background: #f8fbff;
+
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.dash-charts__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dash-chart {
+  display: flex;
+  flex-direction: column;
+
+  padding: 16px 18px 18px;
+  border-radius: 16px;
+  border: 1px solid #e3eaf4;
+  background: #ffffff;
+}
+
+.dash-chart__head h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dash-chart__head p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.dash-chart__head b {
+  color: #0b1b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-chart__canvas {
+  position: relative;
+  height: 190px;
+  margin-top: 14px;
+}
+
+/* Thanh chồng chỉ có một dải nên không cần cao bằng biểu đồ cột. */
+.dash-chart__canvas--short {
+  height: 64px;
+}
+
+.dash-chart__note {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed #e8edf4;
+
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.dash-chart__note b {
+  color: #1e293b;
+}
+
+/* ---- chú giải kiêm nhãn trực tiếp ---- */
+
+.dash-chart__legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dash-chart__legend li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-chart__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dash-chart__legend-name {
+  color: #475569;
+  font-size: 12.5px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-chart__legend-value {
+  color: #0b1b2e;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dash-chart__legend-share {
+  min-width: 46px;
+  text-align: right;
+
+  color: #94a3b8;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .dash-charts__grid {
+    grid-template-columns: 1fr;
+  }
+}

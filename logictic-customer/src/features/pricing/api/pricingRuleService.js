@@ -3,7 +3,8 @@
 
    ĐÃ NỐI API THẬT (đợt A — form tạo đơn ký gửi cần id thật):
        GET  /api/pricing-rules?orderType=CONSIGNMENT → getPricingRules
-            (getVolumetricDivisorRule gọi nội bộ hàm này nên cũng là dữ liệu thật)
+            (getVolumetricDivisorRule và getWeightPricingParams gọi nội bộ hàm này
+            nên cũng là dữ liệu thật — hệ số DIM + cân tối thiểu cho mọi màn tính giá)
        GET  /api/package-configurations              → getPackageConfigurations
             (mảng trần; KHÔNG dùng /options vì thiếu id)
        POST /api/package-configurations/suggest      → suggestPackageConfiguration
@@ -14,9 +15,11 @@
 
    ĐÃ NỐI API THẬT (đợt B): getDepositRate (GET /api/additional-service-fees).
 
-   Màn ngoài đợt A (mua hộ, trang giá công khai) import bản sao
-   pricingRuleService.mock.js: getPricingRules ở đây luôn lọc orderType=CONSIGNMENT
-   nên không dùng được cho luồng mua hộ, và trang giá công khai giữ dữ liệu mẫu.
+   Màn mua hộ import bản sao pricingRuleService.mock.js: getPricingRules ở đây
+   luôn lọc orderType=CONSIGNMENT nên không dùng được cho luồng mua hộ. Các trang
+   tính giá công khai (báo giá, bảng giá ký gửi/quốc tế, công cụ tính, dịch vụ ký
+   gửi) đọc hệ số DIM + cân tối thiểu THẬT qua getWeightPricingParams (hook
+   useWeightPricingParams); đơn giá cước trên các trang đó vẫn là số mẫu.
 
    Giữ NGUYÊN tên export, thứ tự tham số và kiểu trả về (mảng/object đã
    chuẩn hóa, KHÔNG phải response axios) — component không được sửa một dòng.
@@ -40,7 +43,23 @@ const DEPOSIT_RATE_CODE = "DEPOSIT_RATE";
  */
 /* ConsignmentPaymentService.DefaultDepositRate khi chưa cấu hình DEPOSIT_RATE. */
 const BACKEND_DEFAULT_DEPOSIT_PERCENT = 50;
-const FALLBACK_VOLUMETRIC_DIVISOR = 6000;
+/*
+ * Hệ số DIM — bám QuotationService.Helpers.GetVolumetricDivisor và
+ * ParcelService.GetVolumetricDivisorAsync của backend: rule ACTIVE có ruleCode HOẶC
+ * ruleType VOLUMETRIC_DIVISOR và value > 0 → dùng value; không có → appsettings
+ * PricingSettings:VolumetricDivisor (= 5000) → cuối cùng 5000. FE không đọc được
+ * appsettings nên CHỈ khi API trả danh sách thành công mà thiếu rule (hoặc value <= 0)
+ * mới dùng đúng số mặc định cuối của backend, kèm isFallback + console.warn.
+ * Lỗi mạng / HTTP thì KHÔNG đoán số: hàm ném lỗi để màn hình báo "chưa tải được hệ số".
+ */
+const BACKEND_DEFAULT_VOLUMETRIC_DIVISOR = 5000;
+/*
+ * Cân tối thiểu — bám QuotationService.Helpers.GetMinimumWeight: rule có ruleCode /
+ * ruleType / conditionType MIN_WEIGHT (value > 0, không thì conditionValue); không có
+ * rule → backend dùng 1,0 kg. Đây là số backend tự dùng, không phải số FE đoán.
+ */
+const BACKEND_DEFAULT_MINIMUM_WEIGHT = 1;
+const MIN_WEIGHT_CODE = "MIN_WEIGHT";
 const ACTIVE_STATUS = "ACTIVE";
 const CONSIGNMENT_ORDER_TYPE = "CONSIGNMENT";
 
@@ -398,6 +417,69 @@ const normalizeAdditionalServiceFee = (item = {}) => {
    SERVICE
    ========================================================= */
 
+/* =========================================================
+   HỆ SỐ DIM + CÂN TỐI THIỂU (đọc từ danh sách rule đã chuẩn hoá)
+   ========================================================= */
+
+const isVolumetricDivisorRule = (rule) =>
+  rule?.ruleCode === VOLUMETRIC_DIVISOR_CODE ||
+  rule?.ruleType === VOLUMETRIC_DIVISOR_CODE;
+
+const resolveVolumetricDivisor = (pricingRules = []) => {
+  const rule = toArray(pricingRules).find(isVolumetricDivisorRule) || null;
+  const divisor = Number(rule?.value);
+
+  if (!rule || !Number.isFinite(divisor) || divisor <= 0) {
+    console.warn(
+      `[pricingRuleService] Thiếu rule VOLUMETRIC_DIVISOR hợp lệ trong pricingRules, dùng mặc định backend ${BACKEND_DEFAULT_VOLUMETRIC_DIVISOR}.`,
+    );
+
+    return {
+      rule,
+      value: BACKEND_DEFAULT_VOLUMETRIC_DIVISOR,
+      isFallback: true,
+    };
+  }
+
+  return { rule, value: divisor, isFallback: false };
+};
+
+/*
+ * Trang công khai chưa biết khách sẽ khớp bảng giá (ServicePricing) nào nên chỉ xét
+ * rule MIN_WEIGHT dùng chung (servicePricingId rỗng) — backend cũng nhận rule này
+ * cho mọi bảng giá.
+ */
+const resolveMinimumWeight = (pricingRules = []) => {
+  const rule =
+    toArray(pricingRules).find(
+      (item) =>
+        !item?.servicePricingId &&
+        [item?.ruleCode, item?.ruleType, normalizeCode(item?.conditionType)].includes(
+          MIN_WEIGHT_CODE,
+        ),
+    ) || null;
+
+  if (!rule) {
+    return {
+      rule: null,
+      value: BACKEND_DEFAULT_MINIMUM_WEIGHT,
+      isFallback: true,
+    };
+  }
+
+  const ruleValue = Number(rule.value);
+
+  if (Number.isFinite(ruleValue) && ruleValue > 0) {
+    return { rule, value: ruleValue, isFallback: false };
+  }
+
+  const conditionValue = toFiniteNumberOrNull(rule.conditionValue);
+
+  return conditionValue === null
+    ? { rule, value: BACKEND_DEFAULT_MINIMUM_WEIGHT, isFallback: true }
+    : { rule, value: conditionValue, isFallback: false };
+};
+
 const pricingRuleService = {
   /**
    * GET /api/pricing-rules
@@ -471,32 +553,24 @@ const pricingRuleService = {
   getVolumetricDivisorRule: async (options = {}) => {
     const { signal, params = {} } = options;
 
+    /* Lỗi mạng / HTTP ném thẳng lên — không đoán hệ số. */
     const pricingRules = await pricingRuleService.getPricingRules({
       signal,
       params,
       onlyActive: true,
-      ruleCodes: [VOLUMETRIC_DIVISOR_CODE],
     });
 
-    const rule = pricingRules.find(
-      (item) => item.ruleCode === VOLUMETRIC_DIVISOR_CODE,
-    );
+    const { rule, value, isFallback } = resolveVolumetricDivisor(pricingRules);
 
-    const divisor = Number(rule?.value);
-
-    if (!rule || !Number.isFinite(divisor) || divisor <= 0) {
-      console.warn(
-        `[pricingRuleService] Thiếu rule VOLUMETRIC_DIVISOR hợp lệ trong pricingRules, dùng mặc định ${FALLBACK_VOLUMETRIC_DIVISOR}.`,
-      );
-
+    if (isFallback) {
       return normalizePricingRule({
         ...(rule || {}),
         ruleName: rule?.ruleName || "Hệ số quy đổi thể tích",
         ruleCode: VOLUMETRIC_DIVISOR_CODE,
         ruleType: rule?.ruleType || VOLUMETRIC_DIVISOR_CODE,
-        calculationType: rule?.calculationType || "FORMULA",
+        calculationType: rule?.calculationType || "FIXED",
         status: ACTIVE_STATUS,
-        value: FALLBACK_VOLUMETRIC_DIVISOR,
+        value,
         isFallback: true,
       });
     }
@@ -504,7 +578,47 @@ const pricingRuleService = {
     return {
       ...rule,
       ruleCode: VOLUMETRIC_DIVISOR_CODE,
-      value: divisor,
+      value,
+    };
+  },
+
+  /**
+   * GET /api/pricing-rules?orderType=CONSIGNMENT (một request)
+   *
+   * Hai tham số cân dùng cho mọi màn tính giá phía khách, đọc từ cùng nguồn backend
+   * đang dùng để báo giá: hệ số DIM (VOLUMETRIC_DIVISOR) và cân tối thiểu (MIN_WEIGHT).
+   * Đổi ở màn "Tham số vận hành" của Admin là mọi màn này đổi theo.
+   *
+   * Lỗi mạng / HTTP → ném lỗi (màn hình hiện "chưa tải được hệ số", không ra số).
+   *
+   * @param {{ signal?: AbortSignal }} options
+   * @returns {Promise<{
+   *   volumetricDivisor: number,
+   *   minimumWeight: number,
+   *   volumetricDivisorRule: object|null,
+   *   minimumWeightRule: object|null,
+   *   isVolumetricDivisorFallback: boolean,
+   *   isMinimumWeightFallback: boolean
+   * }>}
+   */
+  getWeightPricingParams: async (options = {}) => {
+    const { signal } = options;
+
+    const pricingRules = await pricingRuleService.getPricingRules({
+      signal,
+      onlyActive: true,
+    });
+
+    const divisor = resolveVolumetricDivisor(pricingRules);
+    const minimumWeight = resolveMinimumWeight(pricingRules);
+
+    return {
+      volumetricDivisor: divisor.value,
+      minimumWeight: minimumWeight.value,
+      volumetricDivisorRule: divisor.rule,
+      minimumWeightRule: minimumWeight.rule,
+      isVolumetricDivisorFallback: divisor.isFallback,
+      isMinimumWeightFallback: minimumWeight.isFallback,
     };
   },
 
@@ -817,6 +931,7 @@ const pricingRuleService = {
 export const {
   getPricingRules,
   getVolumetricDivisorRule,
+  getWeightPricingParams,
   getServicePricings,
   getServicePricingById,
   getPackageConfigurations,

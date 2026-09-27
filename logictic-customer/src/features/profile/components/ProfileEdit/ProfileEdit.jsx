@@ -13,11 +13,8 @@ import {
   updateUserProfileApi,
 } from "@features/auth/api/authService";
 
-import {
-  getDistrictsByProvinceCode,
-  getProvinces,
-  getWardsByDistrictCode,
-} from "@shared/api/addressApi";
+import AddressSelect from "@shared/components/AddressSelect/AddressSelect";
+import useAddressOptions from "@shared/components/AddressSelect/useAddressOptions";
 
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 
@@ -68,14 +65,6 @@ const normalizeCountryValue = (country) => {
   return matchedCountry?.name || country || "Vietnam";
 };
 
-const isCanceledRequest = (error) => {
-  return (
-    error?.code === "ERR_CANCELED" ||
-    error?.name === "AbortError" ||
-    error?.name === "CanceledError"
-  );
-};
-
 const getOptionLabel = (
   options,
   selectedValue
@@ -110,36 +99,6 @@ export default function ProfileEdit({
   });
 
   const [
-    provinceOptions,
-    setProvinceOptions,
-  ] = useState([]);
-
-  const [
-    districtOptions,
-    setDistrictOptions,
-  ] = useState([]);
-
-  const [
-    wardOptions,
-    setWardOptions,
-  ] = useState([]);
-
-  const [
-    loadingProvinces,
-    setLoadingProvinces,
-  ] = useState(false);
-
-  const [
-    loadingDistricts,
-    setLoadingDistricts,
-  ] = useState(false);
-
-  const [
-    loadingWards,
-    setLoadingWards,
-  ] = useState(false);
-
-  const [
     addressTouched,
     setAddressTouched,
   ] = useState(false);
@@ -156,6 +115,25 @@ export default function ProfileEdit({
     normalizeCountryValue(
       formData.country
     ) === "Vietnam";
+
+  /*
+   * Danh mục tỉnh → quận/huyện → phường/xã của GoShip (thật, qua backend). Hook tự nạp
+   * cấp con theo mã đang chọn và tự dọn khi đổi cấp cha; lỗi thì có câu báo + "Thử lại".
+   */
+  const addressLists = useAddressOptions({
+    provinceCode: addressForm.provinceCode,
+    districtCode: addressForm.districtCode,
+    enabled: isVietnam,
+  });
+
+  const provinceOptions = addressLists.provinces.options;
+  const districtOptions = addressLists.districts.options;
+  const wardOptions = addressLists.wards.options;
+
+  const loadingAddressLists =
+    addressLists.provinces.loading ||
+    addressLists.districts.loading ||
+    addressLists.wards.loading;
 
   /* =========================================================
      ĐỔ DỮ LIỆU PROFILE VÀO FORM
@@ -182,228 +160,9 @@ export default function ProfileEdit({
       ...EMPTY_ADDRESS_FORM,
     });
 
-    setDistrictOptions([]);
-    setWardOptions([]);
     setAddressTouched(false);
     setErrors({});
   }, [profile]);
-
-  /* =========================================================
-     TẢI TỈNH / THÀNH PHỐ
-     ========================================================= */
-
-  useEffect(() => {
-    if (!isVietnam) {
-      setProvinceOptions([]);
-      setDistrictOptions([]);
-      setWardOptions([]);
-      return undefined;
-    }
-
-    const controller =
-      new AbortController();
-
-    const fetchProvinces =
-      async () => {
-        try {
-          setLoadingProvinces(true);
-
-          const data =
-            await getProvinces({
-              signal:
-                controller.signal,
-            });
-
-          setProvinceOptions(
-            Array.isArray(data)
-              ? data
-              : []
-          );
-        } catch (error) {
-          if (
-            isCanceledRequest(error)
-          ) {
-            return;
-          }
-
-          console.error(
-            "Lỗi tải tỉnh/thành phố:",
-            error
-          );
-
-          setProvinceOptions([]);
-
-          AuthNotify.error(
-            "Không tải được tỉnh/thành phố",
-            error?.message ||
-              "Vui lòng thử lại sau."
-          );
-        } finally {
-          if (
-            !controller.signal.aborted
-          ) {
-            setLoadingProvinces(
-              false
-            );
-          }
-        }
-      };
-
-    fetchProvinces();
-
-    return () => {
-      controller.abort();
-    };
-  }, [isVietnam]);
-
-  /* =========================================================
-     TẢI QUẬN / HUYỆN
-     ========================================================= */
-
-  useEffect(() => {
-    if (
-      !isVietnam ||
-      !addressForm.provinceCode
-    ) {
-      setDistrictOptions([]);
-      setWardOptions([]);
-      return undefined;
-    }
-
-    const controller =
-      new AbortController();
-
-    const fetchDistricts =
-      async () => {
-        try {
-          setLoadingDistricts(true);
-
-          const data =
-            await getDistrictsByProvinceCode(
-              addressForm.provinceCode,
-              {
-                signal:
-                  controller.signal,
-              }
-            );
-
-          setDistrictOptions(
-            Array.isArray(data)
-              ? data
-              : []
-          );
-        } catch (error) {
-          if (
-            isCanceledRequest(error)
-          ) {
-            return;
-          }
-
-          console.error(
-            "Lỗi tải quận/huyện:",
-            error
-          );
-
-          setDistrictOptions([]);
-          setWardOptions([]);
-
-          AuthNotify.error(
-            "Không tải được quận/huyện",
-            error?.message ||
-              "Vui lòng thử lại sau."
-          );
-        } finally {
-          if (
-            !controller.signal.aborted
-          ) {
-            setLoadingDistricts(
-              false
-            );
-          }
-        }
-      };
-
-    fetchDistricts();
-
-    return () => {
-      controller.abort();
-    };
-  }, [
-    isVietnam,
-    addressForm.provinceCode,
-  ]);
-
-  /* =========================================================
-     TẢI PHƯỜNG / XÃ
-     ========================================================= */
-
-  useEffect(() => {
-    if (
-      !isVietnam ||
-      !addressForm.districtCode
-    ) {
-      setWardOptions([]);
-      return undefined;
-    }
-
-    const controller =
-      new AbortController();
-
-    const fetchWards = async () => {
-      try {
-        setLoadingWards(true);
-
-        const data =
-          await getWardsByDistrictCode(
-            addressForm.districtCode,
-            {
-              signal:
-                controller.signal,
-            }
-          );
-
-        setWardOptions(
-          Array.isArray(data)
-            ? data
-            : []
-        );
-      } catch (error) {
-        if (
-          isCanceledRequest(error)
-        ) {
-          return;
-        }
-
-        console.error(
-          "Lỗi tải phường/xã:",
-          error
-        );
-
-        setWardOptions([]);
-
-        AuthNotify.error(
-          "Không tải được phường/xã",
-          error?.message ||
-            "Vui lòng thử lại sau."
-        );
-      } finally {
-        if (
-          !controller.signal.aborted
-        ) {
-          setLoadingWards(false);
-        }
-      }
-    };
-
-    fetchWards();
-
-    return () => {
-      controller.abort();
-    };
-  }, [
-    isVietnam,
-    addressForm.districtCode,
-  ]);
 
   /* =========================================================
      LẤY TÊN ĐỊA CHỈ ĐÃ CHỌN
@@ -549,8 +308,6 @@ export default function ProfileEdit({
       ...EMPTY_ADDRESS_FORM,
     });
 
-    setDistrictOptions([]);
-    setWardOptions([]);
     setAddressTouched(false);
 
     clearError("country");
@@ -561,22 +318,18 @@ export default function ProfileEdit({
   };
 
   const handleProvinceChange = (
-    event
+    value
   ) => {
     setAddressTouched(true);
 
     setAddressForm(
       (previous) => ({
         ...previous,
-        provinceCode:
-          event.target.value,
+        provinceCode: value,
         districtCode: "",
         wardCode: "",
       })
     );
-
-    setDistrictOptions([]);
-    setWardOptions([]);
 
     clearError("provinceCode");
     clearError("districtCode");
@@ -585,20 +338,17 @@ export default function ProfileEdit({
   };
 
   const handleDistrictChange = (
-    event
+    value
   ) => {
     setAddressTouched(true);
 
     setAddressForm(
       (previous) => ({
         ...previous,
-        districtCode:
-          event.target.value,
+        districtCode: value,
         wardCode: "",
       })
     );
-
-    setWardOptions([]);
 
     clearError("districtCode");
     clearError("wardCode");
@@ -606,15 +356,14 @@ export default function ProfileEdit({
   };
 
   const handleWardChange = (
-    event
+    value
   ) => {
     setAddressTouched(true);
 
     setAddressForm(
       (previous) => ({
         ...previous,
-        wardCode:
-          event.target.value,
+        wardCode: value,
       })
     );
 
@@ -869,8 +618,6 @@ export default function ProfileEdit({
       ...EMPTY_ADDRESS_FORM,
     });
 
-    setDistrictOptions([]);
-    setWardOptions([]);
     setAddressTouched(false);
     setErrors({});
   };
@@ -1035,9 +782,7 @@ export default function ProfileEdit({
                 </p>
               </div>
 
-              {(loadingProvinces ||
-                loadingDistricts ||
-                loadingWards) && (
+              {loadingAddressLists && (
                 <CircularProgress
                   size={18}
                 />
@@ -1071,43 +816,31 @@ export default function ProfileEdit({
                   </span>
                 </label>
 
-                <select
+                <AddressSelect
                   value={
                     addressForm.provinceCode
                   }
                   onChange={
                     handleProvinceChange
                   }
-                  disabled={
-                    loadingProvinces
+                  options={
+                    addressLists.provinces.options
                   }
-                  className={`profile-form-input ${
+                  loading={
+                    addressLists.provinces.loading
+                  }
+                  loadError={
+                    addressLists.provinces.error
+                  }
+                  onRetry={
+                    addressLists.provinces.retry
+                  }
+                  invalid={Boolean(
                     errors.provinceCode
-                      ? "error"
-                      : ""
-                  }`}
-                >
-                  <option value="">
-                    {loadingProvinces
-                      ? "Đang tải tỉnh/thành phố..."
-                      : "Chọn tỉnh/thành phố"}
-                  </option>
-
-                  {provinceOptions.map(
-                    (option) => (
-                      <option
-                        key={
-                          option.value
-                        }
-                        value={
-                          option.value
-                        }
-                      >
-                        {option.label}
-                      </option>
-                    )
                   )}
-                </select>
+                  placeholder="Chọn tỉnh/thành phố"
+                  ariaLabel="Tỉnh/Thành phố"
+                />
 
                 {errors.provinceCode && (
                   <span className="profile-form-error">
@@ -1126,44 +859,34 @@ export default function ProfileEdit({
                   </span>
                 </label>
 
-                <select
+                <AddressSelect
                   value={
                     addressForm.districtCode
                   }
                   onChange={
                     handleDistrictChange
                   }
-                  disabled={
-                    !addressForm.provinceCode ||
-                    loadingDistricts
+                  options={
+                    addressLists.districts.options
                   }
-                  className={`profile-form-input ${
+                  loading={
+                    addressLists.districts.loading
+                  }
+                  loadError={
+                    addressLists.districts.error
+                  }
+                  onRetry={
+                    addressLists.districts.retry
+                  }
+                  disabled={
+                    !addressForm.provinceCode
+                  }
+                  invalid={Boolean(
                     errors.districtCode
-                      ? "error"
-                      : ""
-                  }`}
-                >
-                  <option value="">
-                    {loadingDistricts
-                      ? "Đang tải quận/huyện..."
-                      : "Chọn quận/huyện"}
-                  </option>
-
-                  {districtOptions.map(
-                    (option) => (
-                      <option
-                        key={
-                          option.value
-                        }
-                        value={
-                          option.value
-                        }
-                      >
-                        {option.label}
-                      </option>
-                    )
                   )}
-                </select>
+                  placeholder="Chọn quận/huyện"
+                  ariaLabel="Quận/Huyện"
+                />
 
                 {errors.districtCode && (
                   <span className="profile-form-error">
@@ -1182,44 +905,34 @@ export default function ProfileEdit({
                   </span>
                 </label>
 
-                <select
+                <AddressSelect
                   value={
                     addressForm.wardCode
                   }
                   onChange={
                     handleWardChange
                   }
-                  disabled={
-                    !addressForm.districtCode ||
-                    loadingWards
+                  options={
+                    addressLists.wards.options
                   }
-                  className={`profile-form-input ${
+                  loading={
+                    addressLists.wards.loading
+                  }
+                  loadError={
+                    addressLists.wards.error
+                  }
+                  onRetry={
+                    addressLists.wards.retry
+                  }
+                  disabled={
+                    !addressForm.districtCode
+                  }
+                  invalid={Boolean(
                     errors.wardCode
-                      ? "error"
-                      : ""
-                  }`}
-                >
-                  <option value="">
-                    {loadingWards
-                      ? "Đang tải phường/xã..."
-                      : "Chọn phường/xã"}
-                  </option>
-
-                  {wardOptions.map(
-                    (option) => (
-                      <option
-                        key={
-                          option.value
-                        }
-                        value={
-                          option.value
-                        }
-                      >
-                        {option.label}
-                      </option>
-                    )
                   )}
-                </select>
+                  placeholder="Chọn phường/xã"
+                  ariaLabel="Phường/Xã"
+                />
 
                 {errors.wardCode && (
                   <span className="profile-form-error">

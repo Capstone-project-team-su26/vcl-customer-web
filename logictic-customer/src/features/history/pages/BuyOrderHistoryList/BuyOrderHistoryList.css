@@ -649,3 +649,9 @@
 .buy-order-history-page .pagination-info strong {
   color: #0f172a;
 }
+/* Yêu cầu mua hộ của giao dịch vừa thanh toán (khách từ trang thanh toán về). */
+.buy-order-history-card.is-just-paid {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
+}

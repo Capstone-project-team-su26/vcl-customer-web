@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightOutlined,
@@ -21,7 +21,8 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import "./ConsignmentService.css";
-import { getVolumetricDivisorRule } from "@features/pricing/api/pricingRuleService.mock";
+import useWeightPricingParams from "@features/pricing/hooks/useWeightPricingParams";
+import WeightParamsNotice from "@features/pricing/components/WeightParamsNotice/WeightParamsNotice";
 import Header from "@layouts/SiteHeader/SiteHeader";
 
 const PROCESS_STEPS = [
@@ -212,32 +213,12 @@ const ConsignmentService = () => {
   const navigate = useNavigate();
 
   /*
-   * Hệ số quy đổi thể tích đọc từ rule VOLUMETRIC_DIVISOR của danh mục
-   * pricingRules (qua api), không gõ số riêng ở trang công khai.
+   * Hệ số quy đổi thể tích (VOLUMETRIC_DIVISOR) và cân tối thiểu (MIN_WEIGHT) đọc
+   * THẬT từ GET /api/pricing-rules — cùng số backend dùng khi báo giá. Chưa tải được
+   * thì không tạm tính (không đoán số).
    */
-  const [volumetricDivisor, setVolumetricDivisor] = useState(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    getVolumetricDivisorRule({ signal: controller.signal })
-      .then((rule) => {
-        const divisor = Number(rule?.value);
-
-        if (!controller.signal.aborted && Number.isFinite(divisor) && divisor > 0) {
-          setVolumetricDivisor(divisor);
-        }
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          console.error("Không tải được hệ số quy đổi thể tích:", error);
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
+  const weightParams = useWeightPricingParams();
+  const { volumetricDivisor, minimumWeight } = weightParams;
   const [form, setForm] = useState(INITIAL_FORM);
   const [openFaq, setOpenFaq] = useState(0);
 
@@ -269,13 +250,12 @@ const ConsignmentService = () => {
       volumetricWeightPerPackage,
     );
 
-    const totalChargeableWeight = chargeableWeightPerPackage * quantity;
-    const freight = totalChargeableWeight
-      ? Math.max(
-          totalChargeableWeight * selectedMethod.rate,
-          selectedMethod.rate,
-        )
-      : 0;
+    /* Cân tối thiểu của cả đơn lấy từ rule MIN_WEIGHT của backend. */
+    const totalChargeableWeight =
+      chargeableWeightPerPackage > 0
+        ? Math.max(chargeableWeightPerPackage * quantity, minimumWeight || 0)
+        : 0;
+    const freight = totalChargeableWeight * selectedMethod.rate;
 
     const handlingFee = freight ? 30000 : 0;
     const declaredValue = toPositiveNumber(form.declaredValue);
@@ -292,7 +272,7 @@ const ConsignmentService = () => {
       insuranceFee,
       total: freight + handlingFee + insuranceFee,
     };
-  }, [form, selectedMethod, volumetricDivisor]);
+  }, [form, selectedMethod, volumetricDivisor, minimumWeight]);
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -349,7 +329,8 @@ const ConsignmentService = () => {
           height: form.height,
           declaredValue: form.declaredValue,
           insurance: form.insurance,
-          estimatedTotal: calculation.total,
+          /* Chưa có hệ số thật thì không mang số tạm tính sai sang bước sau. */
+          estimatedTotal: weightParams.isReady ? calculation.total : null,
         },
       },
     });
@@ -809,6 +790,9 @@ const ConsignmentService = () => {
                 </span>
               </label>
 
+              <WeightParamsNotice status={weightParams.status} onRetry={weightParams.retry} />
+
+              {weightParams.isReady && (
               <div className="consignment-result">
                 <div className="consignment-result__row">
                   <span>Khối lượng quy đổi mỗi kiện</span>
@@ -845,6 +829,7 @@ const ConsignmentService = () => {
                   <strong>{formatCurrency(calculation.total)}</strong>
                 </div>
               </div>
+              )}
 
               <button
                 type="button"

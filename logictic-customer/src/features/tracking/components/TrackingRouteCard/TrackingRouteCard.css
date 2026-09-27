@@ -1,0 +1,113 @@
+/* =========================================================
+   LỘ TRÌNH ĐƠN
+
+   Danh sách dọc, không phải thanh ngang: lộ trình có tên kho và địa chỉ giao đầy đủ, xếp
+   ngang thì tới màn hẹp là phải cắt chữ — mà địa chỉ giao bị cắt thì khách đọc ra nghĩa khác.
+   ========================================================= */
+
+.tracking-route {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tracking-route__stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+.tracking-route__stop:last-child {
+  padding-bottom: 0;
+}
+
+/* Vạch nối xuống chặng sau — chặng cuối không có. */
+.tracking-route__stop::before {
+  content: "";
+  position: absolute;
+  top: 28px;
+  bottom: 0;
+  left: 13px;
+  width: 2px;
+  background: #dfe7f1;
+}
+
+.tracking-route__stop:last-child::before {
+  display: none;
+}
+
+.tracking-route__stop.is-done::before,
+.tracking-route__stop.is-current::before {
+  background: #2563eb;
+}
+
+.tracking-route__marker {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 12px;
+  font-weight: 800;
+  background: #eef2f7;
+  border: 2px solid #dfe7f1;
+  color: #7a8aa0;
+}
+
+.tracking-route__stop.is-done .tracking-route__marker,
+.tracking-route__stop.is-current .tracking-route__marker {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.tracking-route__stop.is-current .tracking-route__marker {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16);
+}
+
+.tracking-route__body {
+  min-width: 0;
+  padding-top: 3px;
+}
+
+.tracking-route__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #5b6b80;
+}
+
+.tracking-route__stop.is-done .tracking-route__title,
+.tracking-route__stop.is-current .tracking-route__title {
+  color: #0b1b2e;
+}
+
+.tracking-route__stop.is-current .tracking-route__title {
+  font-weight: 800;
+}
+
+.tracking-route__where,
+.tracking-route__time {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.tracking-route__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.tracking-route__stop.is-current .tracking-route__time {
+  color: #1d4ed8;
+  font-weight: 700;
+}

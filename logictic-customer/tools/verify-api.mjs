@@ -4,7 +4,8 @@
  * Quyết định đã chốt: không gọi production, không tạo dữ liệu thật. Script này:
  * Đợt B (báo giá + cọc ký gửi) thêm các kịch bản: lấy báo giá, từ chối, xác nhận và
  * tạo cọc (payOS / chuyển khoản tay), poll trạng thái thanh toán, tỷ lệ cọc, lịch sử
- * thanh toán và việc luồng mua hộ vẫn trỏ bản mock.
+ * thanh toán. Đợt sửa ảnh mock: màn tạo mua hộ + chat CSKH upload ảnh THẬT, chat CSKH
+ * gọi /api/conversations thật, hộp thoại cọc mặc định đọc tỷ lệ cọc thật.
  *
  * - chặn http/https/net/tls/fetch của Node TRƯỚC khi nạp bất cứ module sản phẩm nào —
  *   lời gọi nào lọt ra mạng đều bị ghi lại và làm script FAIL;
@@ -113,6 +114,7 @@ const MOCK_MODULES = {
   pricing: "/src/features/pricing/api/pricingRuleService.mock.js",
   upload: "/src/shared/api/uploadImage.mock.js",
   restricted: "/src/shared/api/restrictedItemApi.mock.js",
+  address: "/src/shared/api/addressApi.mock.js",
 };
 
 try {
@@ -130,14 +132,23 @@ try {
     quotationHelpers: await load("/src/features/consignment/pages/QuotationDetail/QuotationDetail.helpers.js"),
     payment: await load("/src/features/payment/api/orderPaymentApi.js"),
     paymentUtils: await load("/src/features/payment/utils/consignmentPaymentReturn.js"),
+    pendingReturn: await load("/src/features/payment/utils/pendingPaymentReturn.js"),
     orderHelpers: await load("/src/features/consignment/pages/ConsignmentOrder/ConsignmentOrder.helpers.js"),
     time: await load("/src/shared/utils/timeUtc.js"),
     historyPage: await load("/src/features/history/pages/ConsignmentHistoryList/ConsignmentHistoryList.jsx"),
+    conversation: await load("/src/features/chat/api/conversationApi.js"),
+    chatHelpers: await load("/src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.helpers.js"),
+    buyOrderHelpers: await load("/src/features/purchase/pages/ConsignmentBuyOrder/ConsignmentBuyOrder.helpers.js"),
+    /* Đợt địa chỉ GoShip: danh mục tỉnh/huyện/xã thật + hook dùng chung + tách địa chỉ đã lưu. */
+    address: await load("/src/shared/api/addressApi.js"),
+    addressHook: await load("/src/shared/components/AddressSelect/useAddressOptions.js"),
+    deliveryHelpers: await load("/src/features/delivery/components/OrderDeliveryCard/OrderDeliveryCard.helpers.js"),
     mock: {
       consignment: await load(MOCK_MODULES.consignment),
       pricing: await load(MOCK_MODULES.pricing),
       upload: await load(MOCK_MODULES.upload),
       restricted: await load(MOCK_MODULES.restricted),
+      address: await load(MOCK_MODULES.address),
     },
   };
 } catch (error) {
@@ -493,8 +504,15 @@ if (loadError) {
     quotationHelpers,
     payment,
     paymentUtils,
+    pendingReturn,
     orderHelpers,
     time,
+    conversation,
+    chatHelpers,
+    buyOrderHelpers,
+    address,
+    addressHook,
+    deliveryHelpers,
     mock,
   } = mods;
   const httpClient = httpMod.default;
@@ -833,7 +851,7 @@ if (loadError) {
     );
   });
 
-  await check("Hệ số thể tích: thiếu rule VOLUMETRIC_DIVISOR hoặc value 0 → dùng 6000, isFallback, console.warn", async () => {
+  await check("Hệ số thể tích: thiếu rule VOLUMETRIC_DIVISOR hoặc value 0 → mặc định backend 5000, isFallback, console.warn", async () => {
     resetState();
     let rules = [{ id: "66666666-7777-4888-9999-aaaaaaaaaaaa", ruleCode: "WOOD_CRATE", ruleType: "PACKING", calculationType: "FIXED", value: 200000, status: "ACTIVE" }];
     routes = [{ method: "GET", url: "/api/pricing-rules", reply: () => ok(rules) }];
@@ -843,11 +861,71 @@ if (loadError) {
     const zero = await pricing.getVolumetricDivisorRule();
     const warnsAfterZero = capturedLogs.filter((l) => l.startsWith("[warn]") && l.includes("VOLUMETRIC_DIVISOR")).length;
     return all(
-      expectEqual("thiếu rule", [missing?.value, missing?.isFallback, missing?.ruleCode], [6000, true, "VOLUMETRIC_DIVISOR"]),
+      expectEqual("thiếu rule", [missing?.value, missing?.isFallback, missing?.ruleCode], [5000, true, "VOLUMETRIC_DIVISOR"]),
       expectEqual("warn khi thiếu rule", warnsAfterMissing, 1),
-      expectEqual("value 0", [zero?.value, zero?.isFallback], [6000, true]),
+      expectEqual("value 0", [zero?.value, zero?.isFallback], [5000, true]),
       expectEqual("warn khi value 0", warnsAfterZero, 2)
     );
+  });
+
+  await check("Tham số cân (trang tính giá): getWeightPricingParams đọc VOLUMETRIC_DIVISOR (theo ruleCode hoặc ruleType) + MIN_WEIGHT thật, một request", async () => {
+    resetState();
+    let rules = [
+      { id: "11111111-2222-4333-8444-555555555555", ruleCode: "HE_SO_DIM", ruleType: "VOLUMETRIC_DIVISOR", calculationType: "FIXED", value: 6000, status: "ACTIVE" },
+      { id: "66666666-7777-4888-9999-aaaaaaaaaaaa", ruleCode: "MIN_WEIGHT", ruleType: "MIN_WEIGHT", calculationType: "FIXED", value: 0.5, status: "ACTIVE" },
+      { id: "77777777-7777-4888-9999-aaaaaaaaaaaa", ruleCode: "MIN_WEIGHT_RIENG", ruleType: "MIN_WEIGHT", servicePricingId: GUID, calculationType: "FIXED", value: 9, status: "ACTIVE" },
+    ];
+    routes = [{ method: "GET", url: "/api/pricing-rules", reply: () => ok(rules) }];
+    const withRules = await pricing.getWeightPricingParams();
+    const requestCount = requests.filter((r) => r.url === "/api/pricing-rules").length;
+    rules = [
+      { id: "11111111-2222-4333-8444-555555555555", ruleCode: "VOLUMETRIC_DIVISOR", ruleType: "VOLUMETRIC_DIVISOR", calculationType: "FIXED", value: 5000, status: "ACTIVE" },
+      { id: "88888888-7777-4888-9999-aaaaaaaaaaaa", ruleCode: "CAN_TOI_THIEU", ruleType: "SURCHARGE", conditionType: "min_weight", conditionValue: "2", calculationType: "FIXED", value: 0, status: "ACTIVE" },
+    ];
+    const byCondition = await pricing.getWeightPricingParams();
+    rules = [{ id: "11111111-2222-4333-8444-555555555555", ruleCode: "VOLUMETRIC_DIVISOR", ruleType: "VOLUMETRIC_DIVISOR", calculationType: "FIXED", value: 5000, status: "ACTIVE" }];
+    const noMinRule = await pricing.getWeightPricingParams();
+    return all(
+      expectEqual("hệ số theo ruleType + cân tối thiểu dùng chung", [withRules.volumetricDivisor, withRules.isVolumetricDivisorFallback, withRules.minimumWeight, withRules.isMinimumWeightFallback], [6000, false, 0.5, false]),
+      expectEqual("một request", requestCount, 1),
+      expectEqual("MIN_WEIGHT theo conditionType, value 0 → conditionValue", byCondition.minimumWeight, 2),
+      expectEqual("không có MIN_WEIGHT → 1 kg như backend", [noMinRule.minimumWeight, noMinRule.isMinimumWeightFallback], [1, true])
+    );
+  });
+
+  await check("Tham số cân: lỗi mạng / HTTP → ném lỗi, KHÔNG đoán hệ số", async () => {
+    resetState();
+    routes = [{ method: "GET", url: "/api/pricing-rules", reply: () => ({ networkError: true }) }];
+    const networkError = await pricing.getWeightPricingParams().then(() => null, (e) => e);
+    const divisorNetworkError = await pricing.getVolumetricDivisorRule().then(() => null, (e) => e);
+    routes = [{ method: "GET", url: "/api/pricing-rules", reply: () => fail(500, { message: "Lỗi máy chủ" }) }];
+    const httpError = await pricing.getWeightPricingParams().then(() => null, (e) => e);
+    return all(
+      expectTrue("lỗi mạng ném lỗi", networkError instanceof Error),
+      expectTrue("getVolumetricDivisorRule lỗi mạng ném lỗi", divisorNetworkError instanceof Error),
+      expectTrue("HTTP 500 ném lỗi", httpError instanceof Error)
+    );
+  });
+
+  await check("Trang tính giá công khai: đọc hệ số qua useWeightPricingParams (API thật), không import bản mock, không gõ cứng cân tối thiểu", () => {
+    const issues = [];
+    const PUBLIC_PRICING_PAGES = [
+      "src/features/pricing/pages/InternationalShippingPricing/InternationalShippingPricing.jsx",
+      "src/features/pricing/pages/ConsignmentPricing/ConsignmentPricing.jsx",
+      "src/features/pricing/pages/PricingCalculator/PricingCalculator.jsx",
+      "src/features/marketing/pages/QuotationPage/QuotationPage.jsx",
+      "src/features/services/pages/ConsignmentService/ConsignmentService.jsx",
+    ];
+    for (const rel of PUBLIC_PRICING_PAGES) {
+      const source = fs.readFileSync(path.join(ROOT, rel), "utf8");
+      if (source.includes("pricingRuleService.mock")) issues.push(`${rel}: còn import pricingRuleService.mock`);
+      if (!source.includes("@features/pricing/hooks/useWeightPricingParams")) issues.push(`${rel}: không dùng useWeightPricingParams`);
+      if (/\b0\.5\b/.test(source)) issues.push(`${rel}: còn số 0.5 gõ cứng`);
+      if (!source.includes("<WeightParamsNotice")) issues.push(`${rel}: thiếu thông báo khi chưa tải được hệ số`);
+    }
+    const hook = fs.readFileSync(path.join(ROOT, "src/features/pricing/hooks/useWeightPricingParams.js"), "utf8");
+    if (!hook.includes('from "@features/pricing/api/pricingRuleService"')) issues.push("useWeightPricingParams không gọi bản thật");
+    return issues.length === 0 ? true : issues.join("; ");
   });
 
   await check("Dữ liệu form: gợi ý thùng POST /api/package-configurations/suggest trả id cấu hình thật", async () => {
@@ -1291,23 +1369,17 @@ if (loadError) {
        (PurchaseRequestPendingList, BuyForMeQuotationList) cũng đã xoá, thay bằng danh
        sách đơn duy nhất /orders. Màn chi tiết mua hộ còn lại vẫn phải trỏ bản mock. */
     "src/features/marketing/components/FloatingChat/FloatingChat.jsx": ["consignment", "restricted", "pricing"],
-    "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.constants.js": ["consignment"],
-    "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.jsx": ["upload"],
-    /* Màn tạo yêu cầu mua hộ nay lấy tuyến / phương thức / loại hàng từ consignmentApi THẬT
-       — chỉ phần tạo yêu cầu (purchaseRequestApi) còn là mock. */
-    "src/features/purchase/pages/ConsignmentBuyOrder/ConsignmentBuyOrder.helpers.js": ["upload"],
+    /* Chat CSKH (constants + màn), màn tạo mua hộ (helpers upload ảnh) và hộp thoại cọc
+       đã rời danh sách này: xem kịch bản "Ảnh thật / chat thật" bên dưới — chúng phải
+       import bản THẬT, không còn import *.mock.js. */
     /* Chi tiết mua hộ nay đọc yêu cầu + danh mục loại hàng từ API thật. */
     /* Dịch vụ tuỳ chọn của mua hộ nay đọc BẢNG GIÁ THẬT: rule mock để value=null nên màn
        in "1 kiện × 0 đ = 0 đ", khách tưởng miễn phí trong khi thật là 35.000 đ/kiện. */
-    /* Đợt B: hộp thoại cọc dùng chung với mua hộ — mặc định phải là tỷ lệ cọc mock. */
-    "src/features/payment/components/QuotationPaymentConfirmDialog/QuotationPaymentConfirmDialog.jsx": ["pricing"],
     /* Đợt B: màn báo giá mua hộ không được chạm vào module đã nối API thật. */
     "src/features/purchase/pages/BuyForMeQuotationListDetail/BuyForMeQuotationListDetail.jsx": [],
-    "src/features/pricing/pages/InternationalShippingPricing/InternationalShippingPricing.jsx": ["pricing"],
-    "src/features/pricing/pages/ConsignmentPricing/ConsignmentPricing.jsx": ["pricing"],
-    "src/features/pricing/pages/PricingCalculator/PricingCalculator.jsx": ["pricing"],
-    "src/features/marketing/pages/QuotationPage/QuotationPage.jsx": ["pricing"],
-    "src/features/services/pages/ConsignmentService/ConsignmentService.jsx": ["pricing"],
+    /* Năm trang tính giá công khai (báo giá, bảng giá ký gửi/quốc tế, công cụ tính, dịch vụ
+       ký gửi) đã rời danh sách này: hệ số DIM + cân tối thiểu đọc THẬT qua
+       useWeightPricingParams — xem kịch bản "Trang tính giá công khai" ở trên. */
   };
 
   const REAL_SPECIFIERS = {
@@ -1376,6 +1448,186 @@ if (loadError) {
     return issues.length === 0 ? true : issues.join("; ");
   });
 
+  /*
+   * Lỗi khách báo: "tạo đơn mua hộ, up 1 ảnh mà ra 1 ảnh khác" — màn mua hộ và chat CSKH
+   * import uploadImage.mock.js (URL picsum ngẫu nhiên, ảnh không lên server). Các file dưới
+   * đây phải import bản THẬT và không còn import bất kỳ *.mock nào.
+   */
+  const MUST_USE_REAL = {
+    "src/features/purchase/pages/ConsignmentBuyOrder/ConsignmentBuyOrder.helpers.js": ["@shared/api/uploadImage"],
+    "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.jsx": ["@shared/api/uploadImage", "@features/chat/api/conversationApi"],
+    "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.constants.js": ["@features/consignment/api/consignmentApi", "@features/purchase/api/purchaseRequestApi"],
+    "src/features/payment/components/QuotationPaymentConfirmDialog/QuotationPaymentConfirmDialog.jsx": ["@features/pricing/api/pricingRuleService"],
+  };
+
+  await check("Ảnh thật / chat thật: màn mua hộ, chat CSKH, hộp thoại cọc import bản THẬT, không còn import *.mock hay @/mocks", () => {
+    const issues = [];
+    for (const [rel, wants] of Object.entries(MUST_USE_REAL)) {
+      const source = fs.readFileSync(path.join(ROOT, rel), "utf8");
+      const specifiers = readImports(source).map(({ specifier }) => specifier.replace(/\.js$/, ""));
+      for (const want of wants) {
+        if (!specifiers.includes(want)) issues.push(`${rel}: thiếu import "${want}"`);
+      }
+      const leaked = specifiers.filter((spec) => /\.mock$/.test(spec) || spec.startsWith("@/mocks"));
+      if (leaked.length) issues.push(`${rel}: còn import ${leaked.join(", ")}`);
+    }
+    return issues.length === 0 ? true : issues.join("; ");
+  });
+
+  await check("Mua hộ: uploadProductImages gọi POST /api/uploads/images thật (mỗi request một ảnh như màn ký gửi), trả đúng URL server theo thứ tự; bấm gửi lại không upload lại ảnh đã lên", async () => {
+    resetState({ localToken: "tok-local" });
+    routes = [
+      {
+        method: "POST",
+        url: "/api/uploads/images",
+        reply: (req) => ok({ message: "ok", urls: req.rawData.getAll("files").map((f) => `https://res.cloudinary.test/vcl/${f.name}`) }),
+      },
+    ];
+    const fileA = makeFile("ao-do.jpg", "image/jpeg");
+    const fileB = makeFile("ao-xanh.webp", "image/webp");
+    const first = await buyOrderHelpers.uploadProductImages([fileA, fileB]);
+    const [firstRequest, secondRequest] = requests;
+    const seen = [];
+    const again = await buyOrderHelpers.uploadProductImages([fileA, fileB], (percent) => seen.push(percent));
+    return all(
+      expectEqual("method/url", requests.map((r) => `${r.method} ${r.url}`), ["POST /api/uploads/images", "POST /api/uploads/images"]),
+      expectEqual("field files, một ảnh mỗi request", [firstRequest, secondRequest].map((r) => r?.rawData?.getAll?.("files")?.map((f) => f.name)), [["ao-do.jpg"], ["ao-xanh.webp"]]),
+      expectEqual("token", firstRequest?.authorization, "Bearer tok-local"),
+      expectEqual("URL server đúng thứ tự", first, ["https://res.cloudinary.test/vcl/ao-do.jpg", "https://res.cloudinary.test/vcl/ao-xanh.webp"]),
+      expectTrue("không còn URL ảnh mẫu picsum", !first.some((url) => /picsum/.test(url))),
+      expectEqual("gửi lại dùng lại URL, không request thêm", [again, requests.length, seen], [first, 2, [100]])
+    );
+  });
+
+  await check("Mua hộ: ảnh HEIC / rỗng / > 5MB bị chặn trước khi gửi; server không trả URL, 400, 413 HTML → ném lỗi tiếng Việt, không trả URL hỏng", async () => {
+    resetState({ localToken: "tok-local" });
+    let uploadCount = 0;
+    routes = [{ method: "POST", url: "/api/uploads/images", reply: () => ok({ message: "ok", urls: (uploadCount += 1) === 1 ? ["https://res.cloudinary.test/a.jpg"] : [] }) }];
+    const heic = await rejection(buyOrderHelpers.uploadProductImages([makeFile("iphone.heic", "image/heic")]));
+    const empty = await rejection(buyOrderHelpers.uploadProductImages([makeFile("rong.jpg", "image/jpeg", 0)]));
+    const big = await rejection(buyOrderHelpers.uploadProductImages([makeFile("to.jpg", "image/jpeg", 5 * 1024 * 1024 + 1)]));
+    const blockedRequests = requests.length;
+    const partial = await rejection(buyOrderHelpers.uploadProductImages([makeFile("a.jpg", "image/jpeg"), makeFile("b.jpg", "image/jpeg")]));
+    routes = [{ method: "POST", url: "/api/uploads/images", reply: () => fail(400, { message: "File thứ 1 (x.jpg): vượt quá dung lượng tối đa 5MB." }) }];
+    const rejected = await rejection(buyOrderHelpers.uploadProductImages([makeFile("x.jpg", "image/jpeg")]));
+    routes = [{ method: "POST", url: "/api/uploads/images", reply: () => fail(413, "<html><body>413 Request Entity Too Large</body></html>") }];
+    const tooLarge = await rejection(buyOrderHelpers.uploadProductImages([makeFile("y.jpg", "image/jpeg")]));
+    return all(
+      expectEqual("3 ca bị chặn tại chỗ, 0 request", blockedRequests, 0),
+      expectTrue("HEIC → JPG, PNG hoặc WEBP", !heic.resolved && /JPG, PNG hoặc WEBP/.test(String(heic.error?.message))),
+      expectTrue("ảnh rỗng bị chặn", !empty.resolved && /rỗng/.test(String(empty.error?.message))),
+      expectTrue("ảnh > 5MB bị chặn", !big.resolved && /5MB/.test(String(big.error?.message))),
+      expectTrue("ảnh thứ hai không có URL → lỗi nêu tên ảnh", !partial.resolved && /"b\.jpg"/.test(String(partial.error?.message))),
+      expectEqual("400 giữ message backend", [rejected.resolved, rejected.error?.response?.data?.message], [false, "File thứ 1 (x.jpg): vượt quá dung lượng tối đa 5MB."]),
+      expectTrue("413 HTML → câu tiếng Việt, không lộ HTML", !tooLarge.resolved && /quá lớn/.test(tooLarge.error?.message) && !tooLarge.error?.response)
+    );
+  });
+
+  await check("Chat CSKH: chọn ảnh chặn đúng giới hạn backend (JPG/PNG/WEBP theo MIME, ≤ 5MB, không rỗng)", () => {
+    const tryPick = (file) => {
+      try {
+        chatHelpers.validateImageFile(file);
+        return "ok";
+      } catch (error) {
+        return error.message;
+      }
+    };
+    return all(
+      expectEqual("jpg 5MB", tryPick(makeFile("a.jpg", "image/jpeg", 5 * 1024 * 1024)), "ok"),
+      expectTrue("> 5MB", /5MB/.test(tryPick(makeFile("b.jpg", "image/jpeg", 5 * 1024 * 1024 + 1)))),
+      expectTrue("đuôi .jpg nhưng MIME rỗng", /JPG, PNG hoặc WEBP/.test(tryPick(makeFile("c.jpg", "")))),
+      expectTrue("HEIC", /JPG, PNG hoặc WEBP/.test(tryPick(makeFile("d.heic", "image/heic")))),
+      expectTrue("rỗng", /rỗng/.test(tryPick(makeFile("e.png", "image/png", 0))))
+    );
+  });
+
+  await check("Chat CSKH: GET /api/conversations (mảng trần) → tiêu đề theo liên kết, tên Sale, tóm tắt; chưa đăng nhập → [] không gọi mạng", async () => {
+    resetState();
+    const noToken = await conversation.getConversationsApi();
+    const noTokenRequests = requests.length;
+    resetState({ localToken: "tok-local" });
+    routes = [
+      {
+        method: "GET",
+        url: "/api/conversations",
+        reply: () => ok([
+          { id: GUID, customerName: "Nguyễn Văn A", salesId: null, salesName: null, relatedType: "PURCHASE_REQUEST", relatedId: GUID, relatedCode: "PUR-20260926-1", status: "OPEN", createdAt: "2026-09-26T01:00:00", updatedAt: "2026-09-26T02:00:00", unreadCount: 0, messages: [] },
+          { id: PRODUCT_TYPE_ID, customerName: "Nguyễn Văn A", salesId: GUID, salesName: "Trần Sale", relatedType: null, relatedId: null, relatedCode: null, status: "OPEN", createdAt: "2026-09-25T01:00:00", updatedAt: "2026-09-25T02:00:00", unreadCount: 2, messages: [] },
+        ]),
+      },
+    ];
+    const list = await conversation.getConversationsApi();
+    const [linked, general] = list;
+    return all(
+      expectEqual("chưa đăng nhập", [noToken, noTokenRequests], [[], 0]),
+      expectEqual("request", `${requests[0]?.method} ${requests[0]?.url} ${requests[0]?.authorization}`, "GET /api/conversations Bearer tok-local"),
+      expectEqual("tiêu đề", [linked.title, general.title], ["Yêu cầu mua hộ PUR-20260926-1", "Yêu cầu hỗ trợ chung"]),
+      expectEqual("nhân viên", [linked.staffName, general.staffName], [null, "Trần Sale"]),
+      expectEqual("tóm tắt", [linked.lastMessage, general.lastMessage], ["Đang chờ CSKH tiếp nhận", "2 tin nhắn mới từ CSKH"]),
+      expectEqual("mốc thời gian", linked.lastMessageAt, "2026-09-26T02:00:00"),
+      expectEqual("danh sách không có khoá messages/data", ["messages" in linked, "data" in linked], [false, false])
+    );
+  });
+
+  await check("Chat CSKH: chi tiết bóc messages, tin Sale có tên nhân viên, tin chỉ có ảnh ẩn câu thay thế; id không phải GUID → 404 không gọi mạng", async () => {
+    resetState({ localToken: "tok-local" });
+    routes = [
+      {
+        method: "GET",
+        url: `/api/conversations/${GUID}`,
+        reply: () => ok({
+          id: GUID, salesId: PRODUCT_TYPE_ID, salesName: "Trần Sale", relatedType: "CONSIGNMENT", relatedCode: "VCL-1", status: "OPEN", unreadCount: 0,
+          createdAt: "2026-09-26T01:00:00", updatedAt: "2026-09-26T03:00:00",
+          messages: [
+            { id: "m1", senderId: "u-1", senderRole: "Customer", content: "Đơn của tôi tới đâu rồi?", attachmentUrl: null, isRead: true, createdAt: "2026-09-26T01:00:00" },
+            { id: "m2", senderId: "u-1", senderRole: "Customer", content: "Đã gửi một hình ảnh", attachmentUrl: "https://res.cloudinary.test/vcl/a.jpg", isRead: true, createdAt: "2026-09-26T02:00:00" },
+            { id: "m3", senderId: PRODUCT_TYPE_ID, senderRole: "Sale", content: "Hàng đang ở kho VN.", attachmentUrl: null, isRead: false, createdAt: "2026-09-26T03:00:00" },
+          ],
+        }),
+      },
+    ];
+    const detail = await conversation.getConversationDetailApi(GUID);
+    const bad = await rejection(conversation.getConversationDetailApi("abc"));
+    const [first, image, sale] = detail.messages;
+    return all(
+      expectEqual("request", requests.map((r) => `${r.method} ${r.url}`), [`GET /api/conversations/${GUID}`]),
+      expectEqual("không bọc data/conversation", ["data" in detail, "conversation" in detail], [false, false]),
+      expectEqual("tin khách", [first.content, first.senderRole], ["Đơn của tôi tới đâu rồi?", "Customer"]),
+      expectEqual("tin chỉ có ảnh", [image.content, chatHelpers.getMessageAttachment(image)], ["", "https://res.cloudinary.test/vcl/a.jpg"]),
+      expectEqual("tin Sale", [sale.senderName, chatHelpers.isMessageMine(sale, "u-1"), chatHelpers.isMessageMine(first, "u-1")], ["Trần Sale", false, true]),
+      expectEqual("tóm tắt = tin cuối", detail.lastMessage, "Hàng đang ở kho VN."),
+      expectEqual("id sai → 404", [bad.resolved, bad.error?.response?.status], [false, 404])
+    );
+  });
+
+  await check("Chat CSKH: tạo hội thoại POST đúng DTO; gửi tin chỉ có ảnh → content \"Đã gửi một hình ảnh\"; đọc → PUT read; 400 ModelState → message tiếng Việt", async () => {
+    resetState({ localToken: "tok-local" });
+    routes = [
+      { method: "POST", url: "/api/conversations", reply: (req) => ok({ id: GUID, status: "OPEN", ...req.body, messages: [] }, 201) },
+      { method: "POST", url: `/api/conversations/${GUID}/messages`, reply: (req) => ok({ id: "m9", senderRole: "Customer", ...req.body }) },
+      { method: "PUT", url: `/api/conversations/${GUID}/read`, reply: () => ok({ message: "Đã đánh dấu đọc tin nhắn." }) },
+    ];
+    const created = await conversation.createConversationApi({ relatedType: "consignment", relatedId: GUID, message: "  Cần hỗ trợ  ", attachmentUrl: "https://res.cloudinary.test/vcl/a.jpg", createdAtUtc: "x" });
+    const sent = await conversation.sendConversationMessageApi(GUID, { content: "", attachmentUrl: "https://res.cloudinary.test/vcl/b.jpg", sentAtUtc: "x" });
+    const read = await conversation.markConversationAsReadApi(GUID);
+    const beforeBlocked = requests.length;
+    const empty = await rejection(conversation.sendConversationMessageApi(GUID, { content: " ", attachmentUrl: null }));
+    const tooLong = await rejection(conversation.sendConversationMessageApi(GUID, { content: "x".repeat(2001) }));
+    const badRelated = await rejection(conversation.createConversationApi({ relatedType: "CONSIGNMENT", relatedId: "mock-0001", message: "Hi" }));
+    const blocked = requests.length - beforeBlocked;
+    routes = [{ method: "POST", url: `/api/conversations/${GUID}/messages`, reply: () => fail(400, { title: "One or more validation errors occurred.", errors: { Content: ["Nội dung tin nhắn không được để trống."] } }) }];
+    const invalid = await rejection(conversation.sendConversationMessageApi(GUID, { content: "hi" }));
+    return all(
+      expectEqual("body tạo", requests[0]?.body, { relatedType: "CONSIGNMENT", relatedId: GUID, message: "Cần hỗ trợ", attachmentUrl: "https://res.cloudinary.test/vcl/a.jpg" }),
+      expectEqual("id hội thoại mới", created?.id, GUID),
+      expectEqual("body tin ảnh", requests[1]?.body, { content: "Đã gửi một hình ảnh", attachmentUrl: "https://res.cloudinary.test/vcl/b.jpg" }),
+      expectEqual("tin ảnh trả về ẩn câu thay thế", sent?.content, ""),
+      expectEqual("đọc", [requests[2]?.method, requests[2]?.url, read?.success], ["PUT", `/api/conversations/${GUID}/read`, true]),
+      expectEqual("rỗng / > 2000 / mã liên kết giả bị chặn tại chỗ", [empty.resolved, tooLong.resolved, badRelated.resolved, blocked], [false, false, false, 0]),
+      expectEqual("400 ModelState → message", invalid.error?.response?.data?.message, "Nội dung tin nhắn không được để trống.")
+    );
+  });
+
   await check("Màn ngoài đợt A: bản *.mock.js trả dữ liệu mẫu như trước, không gọi mạng", async () => {
     resetState({ localToken: "tok-local" });
     const attemptsBefore = networkAttempts.length;
@@ -1391,7 +1643,7 @@ if (loadError) {
       expectTrue("loại hàng mẫu", productTypes.length > 0),
       expectEqual("tra theo mã VCL- vẫn ra đơn (Nhận hàng)", byCode?.orderCode, list.items[0]?.orderCode),
       expectTrue("quy tắc giá mẫu", purchaseRules.length > 0),
-      expectEqual("hệ số thể tích mẫu", divisor?.value, 6000),
+      expectEqual("hệ số thể tích mẫu (khớp rule thật)", divisor?.value, 5000),
       expectTrue("hàng cấm mẫu", restrictedItems.length > 0),
       expectEqual("URL ảnh mẫu", urls.length, 2),
       expectEqual("không request qua axios", requests.length, 0),
@@ -1760,6 +2012,82 @@ if (loadError) {
     );
   });
 
+  await check("Trả về từ trang thanh toán: returnUrl/cancelUrl chung, gắn vào link SePay, đọc orderCode/status trên URL trước bản ghi", () => {
+    const {
+      buildPaymentReturnUrls,
+      withPaymentReturnUrls,
+      resolvePaymentReturn,
+      savePendingPayment,
+      clearPendingPayment,
+      extractOrderCodeFromCheckoutUrl,
+      PAYMENT_SUBJECTS,
+      PAYMENT_PURPOSES,
+    } = pendingReturn;
+    const { stripPayOsReturnParams } = paymentUtils;
+    const origin = "https://khach.vcl.vn";
+    const urls = buildPaymentReturnUrls("mua-ho", origin);
+    const sepay = withPaymentReturnUrls("https://api.vcl.vn/api/payments/sepay/checkout/555", "ky-gui", origin);
+    const sepayQuery = new URL(sepay).searchParams;
+
+    clearPendingPayment();
+    savePendingPayment({ subject: PAYMENT_SUBJECTS.order, targetId: "o-1", purpose: PAYMENT_PURPOSES.finalPayment, orderCode: 555 });
+    const success = resolvePaymentReturn("?loai=ky-gui&orderCode=555&status=success");
+    const otherCode = resolvePaymentReturn("?loai=mua-ho&orderCode=777&status=cancelled");
+    const payOsCancel = resolvePaymentReturn("?loai=ky-gui&orderCode=555&status=cancelled&code=00&id=x&cancel=true&status=CANCELLED&orderCode=555");
+    const payOsPaid = resolvePaymentReturn("?orderCode=555&status=success&code=00&id=x&cancel=false&status=PAID&orderCode=555");
+    const plainVisit = resolvePaymentReturn("");
+
+    clearPendingPayment();
+    savePendingPayment({ subject: PAYMENT_SUBJECTS.purchaseRequest, targetId: "pr-1", purpose: PAYMENT_PURPOSES.purchasePriceDifference });
+    const unknownCode = resolvePaymentReturn("?loai=mua-ho&orderCode=888&status=success");
+    clearPendingPayment();
+
+    return all(
+      expectEqual("returnUrl mua hộ", [urls.returnUrl, urls.cancelUrl], [`${origin}/payment/lich-su?loai=mua-ho`, `${origin}/payment/lich-su?loai=mua-ho`]),
+      expectEqual("returnUrl ký gửi", buildPaymentReturnUrls("ky-gui", origin).returnUrl, `${origin}/payment/lich-su?loai=ky-gui`),
+      expectEqual("không biết origin → rỗng", buildPaymentReturnUrls("ky-gui", "").returnUrl, ""),
+      expectEqual("gắn vào link SePay", [sepayQuery.get("returnUrl"), sepayQuery.get("cancelUrl")], [`${origin}/payment/lich-su?loai=ky-gui`, `${origin}/payment/lich-su?loai=ky-gui`]),
+      expectEqual("vẫn đọc được mã trên link SePay", extractOrderCodeFromCheckoutUrl(sepay), "555"),
+      expectEqual("link tương đối", withPaymentReturnUrls("/api/payments/sepay/checkout/9?x=1", "mua-ho", origin).startsWith("/api/payments/sepay/checkout/9?x=1&returnUrl="), true),
+      expectEqual("link đã có returnUrl giữ nguyên", withPaymentReturnUrls("https://api.vcl.vn/api/payments/sepay/checkout/5?returnUrl=a", "ky-gui", origin), "https://api.vcl.vn/api/payments/sepay/checkout/5?returnUrl=a"),
+      expectEqual("link payOS giữ nguyên", withPaymentReturnUrls("https://pay.payos.vn/web/abc", "ky-gui", origin), "https://pay.payos.vn/web/abc"),
+      expectEqual("success khớp bản ghi", [success.pending?.targetId, success.orderCode, success.status, success.cancelled, success.fromPaymentReturn, success.hasReturnParams, success.kind], ["o-1", "555", "success", false, true, true, "ky-gui"]),
+      expectEqual("mã khác bản ghi → bỏ bản ghi, vẫn báo huỷ", [otherCode.pending, otherCode.orderCode, otherCode.cancelled, otherCode.kind], [null, "777", true, "mua-ho"]),
+      expectEqual("payOS huỷ (2 status)", [payOsCancel.orderCode, payOsCancel.status, payOsCancel.pending?.targetId], ["555", "cancelled", "o-1"]),
+      expectEqual("payOS trả xong: status của ta đứng trước", [payOsPaid.status, payOsPaid.cancelled], ["success", false]),
+      expectEqual("tự bấm vào tab", [plainVisit.fromPaymentReturn, plainVisit.pending, plainVisit.status], [false, null, ""]),
+      expectEqual("bản ghi chưa biết mã nhận mã URL", [unknownCode.pending?.targetId, unknownCode.pending?.orderCode, unknownCode.kind], ["pr-1", "888", "mua-ho"]),
+      expectEqual("dọn orderCode/status + payOS, giữ loai", stripPayOsReturnParams("?loai=ky-gui&orderCode=555&status=success&code=00&id=x&cancel=false&status=PAID&orderCode=555"), "?loai=ky-gui")
+    );
+  });
+
+  await check("Giới hạn tạo đơn: mua hộ ≤ 50 sản phẩm, ghi chú chung ≤ 1000 ký tự sau khi ghép dịch vụ; ký gửi ≤ 50 kiện", () => {
+    const {
+      buildPurchaseGeneralNote,
+      getGeneralNoteMaxLength,
+      validatePurchaseGeneralNote,
+      validateBuyOrderForm,
+      createEmptyItem,
+    } = buyOrderHelpers;
+    const allServices = { requiresPacking: true, requiresWoodenCrate: true, requiresInsurance: true };
+    const max = getGeneralNoteMaxLength(allServices);
+    const form = { route: "", shippingOption: "", receiverName: "", receiverPhone: "", selectedDeliveryAddress: "", generalNote: "", optionalServices: {} };
+    const items = (count) => Array.from({ length: count }, () => createEmptyItem());
+
+    return all(
+      expectEqual("không dịch vụ → 1000", getGeneralNoteMaxLength({}), 1000),
+      expectEqual("đủ 3 dịch vụ: ghép vừa đúng 1000", buildPurchaseGeneralNote("a".repeat(max), allServices).length, 1000),
+      expectEqual("ghép giống backend", buildPurchaseGeneralNote("  Gói kỹ ", { requiresInsurance: true }), "Gói kỹ. Đăng ký bảo hiểm"),
+      expectEqual("chỉ dịch vụ", buildPurchaseGeneralNote("", { requiresPacking: true, requiresInsurance: true }), "Yêu cầu đóng gói lại. Đăng ký bảo hiểm"),
+      expectEqual("vừa giới hạn → không lỗi", validatePurchaseGeneralNote("a".repeat(max), allServices), ""),
+      expectTrue("vượt 1 ký tự → báo lỗi", validatePurchaseGeneralNote("a".repeat(max + 1), allServices).includes(String(max))),
+      expectEqual("50 sản phẩm không lỗi số dòng", validateBuyOrderForm({ form, items: items(50) }).formErrors.items, ""),
+      expectTrue("51 sản phẩm → lỗi số dòng", validateBuyOrderForm({ form, items: items(51) }).formErrors.items.includes("50")),
+      expectEqual("50 kiện không lỗi", orderHelpers.getPackageCountError(new Array(50).fill({})), ""),
+      expectTrue("51 kiện → lỗi", orderHelpers.getPackageCountError(new Array(51).fill({})).includes("50"))
+    );
+  });
+
   await check("Tỷ lệ cọc: DEPOSIT_RATE 30 → 30; thiếu cấu hình → 50 như backend", async () => {
     resetState({ localToken: "tok-local" });
     let fees = [
@@ -2006,6 +2334,251 @@ if (loadError) {
     return all(
       expectEqual("estimate", [estimate.freeDays, estimate.samples.length, estimate.currency], [7, 1, "VND"]),
       expectEqual("fee", fee.parcels, [])
+    );
+  });
+
+  /* ---------- Hoàn tiền mua hộ (backend mới — chỉ có trên env test) ---------- */
+
+  const purchaseOrders = await load("/src/features/purchase/api/purchaseOrderApi.js");
+
+  await check("Tiền hoàn mua hộ: GET /purchase-requests/{id}/refunds bóc data, giữ nguyên số backend, nhãn tiếng Việt, mã lạ hiện mã; 404 → null; 403 ném lỗi", async () => {
+    resetState({ localToken: "tok-local" });
+    /* Mẫu chép từ tests/purchase_refund_flow.py (kịch bản A) của VCL_API. */
+    const body = { message: "OK", data: {
+      purchaseRequestId: GUID, purchaseCode: "PR-1", totalCollected: 1086400, totalRefunded: 421600, totalPendingRefund: 230800, refundableRemaining: 434000,
+      refunds: [
+        { refundId: "r1", refundType: "REFUND_UNFULFILLED", amount: 421600, status: "REFUNDED", transactionCode: "RF-A", lines: [
+          { lineId: "l1", productName: "Ao thun", reasonCode: "UNFULFILLED", quantity: 2, unitPrice: 200000, goodsAmount: 400000, serviceFeeAmount: 20000, vatAmount: 1600, amount: 421600, formula: "tiền hàng 2 × 200.000đ = 400.000đ + … = 421.600đ" }] },
+        { refundId: "r2", refundType: "REFUND_UNFULFILLED", amount: 200800, status: "PENDING", lines: [
+          { lineId: "l2", productName: "Ao thun", reasonCode: "SUPPLIER_SHORT", quantity: 1, unitPrice: 190000, goodsAmount: 200000, priceDifferenceAmount: -10000, serviceFeeAmount: 10000, vatAmount: 800, importTaxAdjustment: 15200, importTaxInRefund: false, amount: 200800 }] },
+        { refundId: "r3", refundType: "REFUND_SOMETHING_NEW", amount: "30000", status: "ODD", lines: [{ reasonCode: "NEW_CODE", amount: 30000 }] },
+      ] } };
+    routes = [{ method: "GET", url: `/api/purchase-requests/${GUID}/refunds`, reply: () => ok(body) }];
+    const data = await purchaseOrders.getPurchaseRefundsApi(GUID);
+    routes = [{ method: "GET", url: `/api/purchase-requests/${GUID}/refunds`, reply: () => fail(404, { message: "Not found" }) }];
+    const missing = await purchaseOrders.getPurchaseRefundsApi(GUID);
+    routes = [{ method: "GET", url: `/api/purchase-requests/${GUID}/refunds`, reply: () => fail(403, { message: "Bạn không có quyền xem tiền hoàn của yêu cầu mua hộ này." }) }];
+    const denied = await rejection(purchaseOrders.getPurchaseRefundsApi(GUID));
+    const [done, pending, odd] = data.refunds;
+    return all(
+      expectEqual("tổng đọc thẳng", [data.totalCollected, data.totalRefunded, data.totalPendingRefund], [1086400, 421600, 230800]),
+      expectEqual("khoản + trạng thái", [done.reasonText, done.statusText.label, pending.statusText.label], ["Người bán hết hàng hoặc giao thiếu", "Đã chuyển cho bạn", "Đang chờ chuyển"]),
+      expectEqual("dòng", [done.lines[0].reasonText, pending.lines[0].reasonText, pending.lines[0].importTaxAdjustment, pending.lines[0].importTaxInRefund, pending.lines[0].priceDifferenceAmount], ["Người bán hết hàng / không mua đủ số lượng bạn đặt", "Người bán giao thiếu", 15200, false, -10000]),
+      expectEqual("mã lạ", [odd.reasonText, odd.statusText.label, odd.lines[0].reasonText, odd.amount], ["REFUND_SOMETHING_NEW", "ODD", "NEW_CODE", 30000]),
+      expectEqual("404 → null", missing, null),
+      expectEqual("403 ném lỗi", [denied.resolved, denied.error?.response?.status], [false, 403])
+    );
+  });
+
+  /* ---------- Địa chỉ: danh mục GoShip thật (thay danh sách tỉnh/huyện/xã giả) ---------- */
+
+  /*
+   * Lỗi khách báo: addressApi trả danh sách GIẢ (~8 tỉnh) nên khách ở tỉnh khác không thêm
+   * được địa chỉ. Mọi màn chọn địa chỉ của web khách phải đi qua bản THẬT (trực tiếp hoặc
+   * qua hook/ô chọn dùng chung) và không file nào trong src/ còn import addressApi.mock.
+   */
+  const ADDRESS_MUST_USE_REAL = {
+    "src/shared/components/AddressSelect/useAddressOptions.js": ["@shared/api/addressApi"],
+    "src/shared/components/AddressSelect/AddressSelect.jsx": ["@shared/api/addressApi"],
+    "src/features/profile/components/ProfileEdit/ProfileEdit.jsx": ["@shared/components/AddressSelect/AddressSelect", "@shared/components/AddressSelect/useAddressOptions"],
+    "src/features/consignment/pages/ConsignmentOrder/ConsignmentOrder.jsx": ["@shared/api/addressApi", "@shared/components/AddressSelect/AddressSelect", "@shared/components/AddressSelect/useAddressOptions"],
+    "src/features/purchase/pages/ConsignmentBuyOrder/ConsignmentBuyOrder.jsx": ["@shared/api/addressApi", "@shared/components/AddressSelect/AddressSelect", "@shared/components/AddressSelect/useAddressOptions"],
+    "src/features/delivery/components/OrderDeliveryCard/OrderDeliveryCard.jsx": ["@shared/api/addressApi", "@shared/components/AddressSelect/AddressSelect", "@shared/components/AddressSelect/useAddressOptions"],
+  };
+
+  const listSourceFiles = (dir) =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return listSourceFiles(full);
+      return /\.(jsx?|mjs)$/.test(entry.name) ? [full] : [];
+    });
+
+  await check("Địa chỉ GoShip: 4 màn chọn địa chỉ (Cấu hình tài khoản, tạo ký gửi, tạo mua hộ, đặt giao) import bản THẬT / ô chọn dùng chung; không file nào trong src/ import addressApi.mock hay @/mocks/data/addresses", () => {
+    const issues = [];
+    for (const [rel, wants] of Object.entries(ADDRESS_MUST_USE_REAL)) {
+      const specifiers = readImports(fs.readFileSync(path.join(ROOT, rel), "utf8")).map(({ specifier }) => specifier.replace(/\.js$/, ""));
+      for (const want of wants) {
+        if (!specifiers.includes(want)) issues.push(`${rel}: thiếu import "${want}"`);
+      }
+      const leaked = specifiers.filter((spec) => /\.mock$/.test(spec) || spec.startsWith("@/mocks"));
+      if (leaked.length) issues.push(`${rel}: còn import ${leaked.join(", ")}`);
+    }
+    for (const file of listSourceFiles(path.join(ROOT, "src"))) {
+      const rel = path.relative(ROOT, file).split(path.sep).join("/");
+      if (rel === "src/shared/api/addressApi.mock.js") continue;
+      const specifiers = readImports(fs.readFileSync(file, "utf8")).map(({ specifier }) => specifier);
+      if (specifiers.some((spec) => /addressApi\.mock/.test(spec) || /mocks\/data\/addresses/.test(spec))) {
+        issues.push(`${rel}: import danh sách địa chỉ giả`);
+      }
+    }
+    return issues.length === 0 ? true : issues.join("; ");
+  });
+
+  const GOSHIP_CITIES = [
+    { id: "100000", name: "Hà Nội" },
+    { id: "700000", name: "Hồ Chí Minh" },
+    { id: "880000", name: "Cà Mau" },
+  ];
+  const GOSHIP_DISTRICTS_HN = [
+    { id: "100100", name: "Quận Ba Đình" },
+    { id: "100200", name: "Quận Hoàn Kiếm" },
+  ];
+  const GOSHIP_DISTRICTS_HCM = [
+    { id: "700100", name: "Quận 1" },
+    { id: "701000", name: "Quận 10" },
+  ];
+  /* GoShip trả id phường dạng SỐ (8955) — backend ép sang chuỗi, FE phải chịu cả hai. */
+  const GOSHIP_WARDS_BA_DINH = [
+    { id: 8955, name: "Phường Phúc Xá" },
+    { id: 8956, name: "Phường Trúc Bạch" },
+  ];
+
+  const goshipRoutes = (overrides = {}) => [
+    { method: "GET", url: "/api/Goship/cities", reply: () => ok({ message: "Lấy danh sách tỉnh/thành thành công.", items: GOSHIP_CITIES }) },
+    { method: "GET", url: "/api/Goship/cities/100000/districts", reply: () => ok({ message: "ok", items: GOSHIP_DISTRICTS_HN }) },
+    { method: "GET", url: "/api/Goship/cities/700000/districts", reply: () => ok({ message: "ok", items: GOSHIP_DISTRICTS_HCM }) },
+    { method: "GET", url: "/api/Goship/districts/100100/wards", reply: () => ok({ message: "ok", items: GOSHIP_WARDS_BA_DINH }) },
+    ...(overrides.extra || []),
+  ];
+
+  await check("Địa chỉ GoShip: getProvinces gọi GET /api/Goship/cities (Bearer, timeout 15 giây), bóc { items } → { value, label, code, name } đủ mọi tỉnh; gọi lại dùng cache phiên, không gọi mạng lần 2", async () => {
+    resetState({ localToken: "tok-local" });
+    address.clearAddressCache();
+    routes = goshipRoutes();
+    const first = await address.getProvinces();
+    const second = await address.getProvinces();
+    const request = requests[0];
+    return all(
+      expectEqual("request", [requests.length, request?.method, request?.url, request?.authorization, request?.timeout], [1, "GET", "/api/Goship/cities", "Bearer tok-local", 15000]),
+      expectEqual("options", first.map((o) => [o.value, o.label, o.code, o.name]), [["100000", "Hà Nội", "100000", "Hà Nội"], ["700000", "Hồ Chí Minh", "700000", "Hồ Chí Minh"], ["880000", "Cà Mau", "880000", "Cà Mau"]]),
+      expectEqual("lần 2 giống lần 1", second.map((o) => o.value), first.map((o) => o.value)),
+      expectTrue("lưu sessionStorage cho cả phiên", String(sessionStorage.getItem("vcl.goship.cities.v1") || "").includes("Cà Mau"))
+    );
+  });
+
+  await check("Địa chỉ GoShip: quận/huyện GET /api/Goship/cities/{cityId}/districts, phường/xã GET /api/Goship/districts/{districtId}/wards (id số → chuỗi); tải theo lựa chọn, cache theo mã cha", async () => {
+    resetState({ localToken: "tok-local" });
+    address.clearAddressCache();
+    routes = goshipRoutes();
+    const districts = await address.getDistrictsByProvinceCode("100000");
+    const wards = await address.getWardsByDistrictCode("100100");
+    await address.getDistrictsByProvinceCode("100000");
+    await address.getWardsByDistrictCode(100100);
+    return all(
+      expectEqual("urls", requests.map((r) => r.url), ["/api/Goship/cities/100000/districts", "/api/Goship/districts/100100/wards"]),
+      expectEqual("districts", districts.map((o) => [o.value, o.label, o.provinceCode]), [["100100", "Quận Ba Đình", "100000"], ["100200", "Quận Hoàn Kiếm", "100000"]]),
+      expectEqual("wards", wards.map((o) => [o.value, o.label, o.districtCode]), [["8955", "Phường Phúc Xá", "100100"], ["8956", "Phường Trúc Bạch", "100100"]]),
+      expectEqual("mã rỗng", [await address.getDistrictsByProvinceCode(""), await address.getWardsByDistrictCode(null)], [[], []])
+    );
+  });
+
+  await check("Địa chỉ GoShip: getFullAddressByCodes ghép 'chi tiết, phường, quận, tỉnh' bằng ĐÚNG TÊN GoShip (thứ backend lưu và dò lại mã khi tạo vận đơn); splitAddress của thẻ đặt giao tách ngược ra đúng 3 tên đó", async () => {
+    resetState({ localToken: "tok-local" });
+    address.clearAddressCache();
+    routes = goshipRoutes();
+    await address.getProvinces();
+    await address.getDistrictsByProvinceCode("100000");
+    await address.getWardsByDistrictCode("100100");
+    const before = requests.length;
+    const result = await address.getFullAddressByCodes({ provinceCode: "100000", districtCode: "100100", wardCode: "8955", detailAddress: " 12 Lê Lợi, ngõ 3 " });
+    const split = deliveryHelpers.splitAddress(result.fullAddress);
+    return all(
+      expectEqual("không gọi thêm", requests.length, before),
+      expectEqual("tên", [result.province?.name, result.district?.name, result.ward?.name], ["Hà Nội", "Quận Ba Đình", "Phường Phúc Xá"]),
+      expectEqual("fullAddress", result.fullAddress, "12 Lê Lợi, ngõ 3, Phường Phúc Xá, Quận Ba Đình, Hà Nội"),
+      expectEqual("mã", [result.provinceCode, result.districtCode, result.wardCode], ["100000", "100100", "8955"]),
+      expectEqual("splitAddress", split, { addressDetail: "12 Lê Lợi, ngõ 3", ward: "Phường Phúc Xá", district: "Quận Ba Đình", province: "Hà Nội" })
+    );
+  });
+
+  await check("Địa chỉ GoShip: getFullAddressByCodes khi chưa có cache tự nạp danh sách cha rồi tra tên (không trả chuỗi cụt)", async () => {
+    resetState({ localToken: "tok-local" });
+    address.clearAddressCache();
+    routes = goshipRoutes();
+    const result = await address.getFullAddressByCodes({ provinceCode: "100000", districtCode: "100100", wardCode: "8956", detailAddress: "5 Hàng Bài" });
+    return expectEqual("fullAddress", result.fullAddress, "5 Hàng Bài, Phường Trúc Bạch, Quận Ba Đình, Hà Nội");
+  });
+
+  await check("Địa chỉ GoShip: lỗi 500 / timeout / mất mạng → ném lỗi (KHÔNG rơi về danh sách giả), không cache lỗi — thử lại thì gọi lại và thành công; hook có câu báo tiếng Việt", async () => {
+    resetState({ localToken: "tok-local" });
+    address.clearAddressCache();
+    let calls = 0;
+    routes = [{ method: "GET", url: "/api/Goship/cities", reply: () => (++calls === 1 ? fail(500, { message: "Không lấy được danh sách tỉnh/thành.", error: "GoShip 502" }) : ok({ message: "ok", items: GOSHIP_CITIES })) }];
+    const failed = await rejection(address.getProvinces());
+    const retried = await address.getProvinces();
+    address.clearAddressCache();
+    routes = [{ method: "GET", url: "/api/Goship/cities", reply: () => ({ timeout: true }) }];
+    const timedOut = await rejection(address.getProvinces());
+    routes = [{ method: "GET", url: "/api/Goship/cities", reply: () => ({ networkError: true }) }];
+    const offline = await rejection(address.getProvinces());
+    const msg = addressHook.getAddressLoadErrorMessage;
+    return all(
+      expectEqual("500 reject", [failed.resolved, failed.error?.response?.status], [false, 500]),
+      expectEqual("thử lại", [calls, retried.length], [2, 3]),
+      expectEqual("timeout", [timedOut.resolved, timedOut.error?.code], [false, "ECONNABORTED"]),
+      expectEqual("mất mạng", offline.resolved, false),
+      expectTrue("câu timeout", /quá lâu/.test(msg(timedOut.error, "tỉnh/thành phố"))),
+      expectTrue("câu mất mạng", /Không kết nối được máy chủ/.test(msg(offline.error, "tỉnh/thành phố"))),
+      expectTrue("câu 500", /Không tải được danh sách quận\/huyện/.test(msg(failed.error, "quận/huyện")))
+    );
+  });
+
+  await check("Địa chỉ GoShip: chưa đăng nhập → báo cần đăng nhập, KHÔNG gọi mạng (tránh 401 đá về /login giữa form)", async () => {
+    resetState();
+    address.clearAddressCache();
+    routes = goshipRoutes();
+    const noToken = await rejection(address.getProvinces());
+    return all(
+      expectEqual("reject", [noToken.resolved, noToken.error?.code], [false, "NO_ACCESS_TOKEN"]),
+      expectEqual("không request", requests.length, 0),
+      expectEqual("câu báo", addressHook.getAddressLoadErrorMessage(noToken.error, "tỉnh/thành phố"), "Vui lòng đăng nhập để tải danh mục địa chỉ."),
+      expectEqual("không chuyển trang", fakeLocation.replaced, [])
+    );
+  });
+
+  await check("Địa chỉ GoShip: huỷ signal → CanceledError (isCanceledRequest nhận), request dùng chung vẫn nạp cache cho lần sau", async () => {
+    resetState({ localToken: "tok-local" });
+    address.clearAddressCache();
+    routes = goshipRoutes();
+    const controller = new AbortController();
+    const pending = rejection(address.getProvinces({ signal: controller.signal }));
+    controller.abort();
+    const canceled = await pending;
+    const later = await address.getProvinces();
+    return all(
+      expectEqual("reject", canceled.resolved, false),
+      expectEqual("isCanceledRequest", httpMod.isCanceledRequest(canceled.error), true),
+      expectEqual("một request", requests.length, 1),
+      expectEqual("cache", later.length, 3)
+    );
+  });
+
+  await check("Địa chỉ GoShip: địa chỉ cũ đã lưu (tên kiểu 'Thành phố Hà Nội' của danh sách giả) dò lại được mã GoShip; không khớp thì matched=false, giữ phần đã khớp; 'Quận 1' không bị gán nhầm 'Quận 10'; tìm kiếm không dấu", async () => {
+    resetState({ localToken: "tok-local" });
+    address.clearAddressCache();
+    routes = goshipRoutes();
+    const old = await address.resolveAddressByNames({ province: "Thành phố Hà Nội", district: "Quận Ba Đình", ward: "Phường Phúc Xá" });
+    const partial = await address.resolveAddressByNames({ province: "TP. Hà Nội", district: "Huyện Không Có", ward: "Xã X" });
+    const unknown = await address.resolveAddressByNames({ province: "Tỉnh Không Tồn Tại", district: "Q1", ward: "P1" });
+    const hcm = await address.getDistrictsByProvinceCode("700000");
+    const found = await address.searchProvinces("ca mau");
+    return all(
+      expectEqual("cũ khớp đủ", [old.matched, old.provinceCode, old.districtCode, old.wardCode, old.provinceName, old.wardName], [true, "100000", "100100", "8955", "Hà Nội", "Phường Phúc Xá"]),
+      expectEqual("khớp một phần", [partial.matched, partial.provinceCode, partial.districtCode, partial.wardCode], [false, "100000", "", ""]),
+      expectEqual("không khớp", [unknown.matched, unknown.provinceCode], [false, ""]),
+      expectEqual("Quận 1", address.findAddressOptionByName(hcm, "Q.1")?.value, "700100"),
+      expectEqual("Quận 1 ≠ Quận 10", address.findAddressOptionByName(hcm.filter((o) => o.value !== "700100"), "Quận 1"), null),
+      expectEqual("không dấu", found.map((o) => o.value), ["880000"]),
+      expectEqual("normalizeAddressKeyword", address.normalizeAddressKeyword("  Quận  ĐỐNG Đa "), "quan dong da")
+    );
+  });
+
+  await check("Địa chỉ GoShip: bản mock cũ còn nguyên hợp đồng (addressApi.mock.js) nhưng không màn nào dùng", async () => {
+    resetState({ localToken: "tok-local" });
+    const provinces = await mock.address.getProvinces();
+    return all(
+      expectTrue("mock còn chạy", provinces.length > 0),
+      expectEqual("không request", requests.length, 0)
     );
   });
 

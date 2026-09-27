@@ -2175,3 +2175,9 @@
     animation: none;
   }
 }
+/* Đơn của giao dịch vừa thanh toán (khách từ trang thanh toán về). */
+.consignment-card.is-just-paid {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
+}

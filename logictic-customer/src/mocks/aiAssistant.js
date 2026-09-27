@@ -15,7 +15,7 @@ import { delay, normalizeText } from "./mockUtils";
 const SCRIPTS = [
   {
     keywords: ["gia", "bao gia", "cuoc", "phi", "bao nhieu tien", "chi phi"],
-    reply: `Cước được tính theo **khối lượng tính cước** = số lớn hơn giữa cân nặng thực và cân nặng quy đổi (dài × rộng × cao ÷ 6000).
+    reply: `Cước được tính theo **khối lượng tính cước** = số lớn hơn giữa cân nặng thực và cân nặng quy đổi (dài × rộng × cao ÷ hệ số quy đổi thể tích trong bảng giá hiện hành).
 
 Tham khảo nhanh tuyến Trung Quốc → Việt Nam:
 • Đường bộ tiêu chuẩn: từ 32.000 đ/kg, 5–10 ngày

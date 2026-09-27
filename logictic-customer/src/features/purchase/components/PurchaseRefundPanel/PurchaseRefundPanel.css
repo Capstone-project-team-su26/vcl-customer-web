@@ -1,0 +1,165 @@
+/* Khối "Tiền hoàn" trong chi tiết yêu cầu mua hộ của khách — cùng nhịp với khối đơn mua NCC. */
+
+.refund-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.refund-panel__totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.refund-panel__total {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #e5eaf1;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.refund-panel__total span {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.refund-panel__total strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.refund-panel__total.is-done strong {
+  color: #15803d;
+}
+
+.refund-panel__total.is-pending strong {
+  color: #b45309;
+}
+
+.refund-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e5eaf1;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.refund-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.refund-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.refund-card__title strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.refund-card__meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.refund-card__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.refund-card__amount strong {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.refund-line {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.refund-line__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #0f172a;
+  font-size: 0.86rem;
+}
+
+.refund-line__reason {
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.refund-line__parts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.refund-line__parts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.refund-line__parts li b {
+  font-variant-numeric: tabular-nums;
+}
+
+.refund-line__parts li.is-minus b {
+  color: #b91c1c;
+}
+
+.refund-line__note {
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.refund-line__formula {
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+  color: #475569;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .refund-panel__totals {
+    grid-template-columns: 1fr;
+  }
+
+  .refund-card__amount {
+    align-items: flex-start;
+  }
+}

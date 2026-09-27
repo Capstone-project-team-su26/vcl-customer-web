@@ -18,6 +18,14 @@ import {
 } from "@features/consignment/api/consignmentApi";
 import { getConsignmentStatusesApi } from "@features/consignment/api/consignmentStatusApi";
 import { getOrderStatusLabel } from "@features/consignment/constants/orderStatus";
+import {
+  CONSIGNMENT_CANCEL_MODE,
+  getConsignmentCancelMode,
+  isCustomerCancellableStatus,
+} from "@features/consignment/utils/consignmentCancel";
+/* Import sâu như QuotationDetail: barrel payment kéo OrderPaymentHistory, trang này lại
+   import barrel consignment → vòng import. */
+import { getOrderPaymentsApi } from "@features/payment/api/orderPaymentApi";
 import pricingRuleService from "@features/pricing/api/pricingRuleService";
 /* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
 import { CONSIGNMENT_ORDERS_PATH } from "@features/orders/constants/orderPaths";
@@ -179,6 +187,13 @@ const ConsignmentListDetail = ({ embedded = true }) => {
   const [cancelReasonError, setCancelReasonError] = useState("");
 
   const [isCancelling, setIsCancelling] = useState(false);
+
+  /* Các khoản thanh toán của đơn, chỉ tải khi trạng thái còn cho huỷ — để biết đơn đã trả
+     tiền chưa (backend chặn huỷ khi có khoản PAID). `key` gắn kết quả với đúng đơn/trạng thái. */
+  const [cancelPaymentsState, setCancelPaymentsState] = useState({
+    key: "",
+    payments: null,
+  });
 
   const [fullTextPreview, setFullTextPreview] = useState({
     open: false,
@@ -619,6 +634,14 @@ const ConsignmentListDetail = ({ embedded = true }) => {
       AuthNotify.error(
         "Không thể hủy đơn",
         "Không tìm thấy thông tin đơn hàng để hủy.",
+      );
+      return;
+    }
+
+    if (cancelMode === CONSIGNMENT_CANCEL_MODE.paid) {
+      AuthNotify.warning(
+        "Không thể tự hủy đơn",
+        "Đơn đã thanh toán nên không tự hủy được. Vui lòng liên hệ CSKH nếu cần hỗ trợ.",
       );
       return;
     }
@@ -1195,8 +1218,41 @@ const ConsignmentListDetail = ({ embedded = true }) => {
 
   const displayCode = getDisplayCode(consignment);
   const statusClass = getStatusClassName(consignment?.status);
-  const isAlreadyCancelled =
-    normalizeStatus(consignment?.status) === "CANCELLED";
+  /* Nút "Hủy đơn" chỉ hiện khi backend thật sự cho khách huỷ (utils/consignmentCancel.js). */
+  const cancelPaymentsKey =
+    orderId && isCustomerCancellableStatus(consignment?.status)
+      ? `${orderId}|${String(consignment?.status ?? "").trim().toUpperCase()}`
+      : "";
+  const cancelPaymentsReady = cancelPaymentsState.key === cancelPaymentsKey;
+  const cancelMode = getConsignmentCancelMode({
+    status: consignment?.status,
+    payments: cancelPaymentsReady ? cancelPaymentsState.payments : null,
+    paymentsLoading: Boolean(cancelPaymentsKey) && !cancelPaymentsReady,
+  });
+
+  useEffect(() => {
+    if (!cancelPaymentsKey) return undefined;
+
+    const controller = new AbortController();
+
+    getOrderPaymentsApi(orderId, { signal: controller.signal })
+      .then((result) => {
+        setCancelPaymentsState({
+          key: cancelPaymentsKey,
+          payments: result?.payments ?? [],
+        });
+      })
+      .catch((error) => {
+        if (controller.signal.aborted || axios.isCancel(error)) return;
+
+        /* Không đọc được thanh toán: vẫn hiện nút, backend là chốt chặn cuối. */
+        setCancelPaymentsState({ key: cancelPaymentsKey, payments: null });
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [orderId, cancelPaymentsKey]);
 
   const quotationStatusClass = getStatusClassName(
     consignment?.quotation?.status,
@@ -1426,7 +1482,16 @@ const ConsignmentListDetail = ({ embedded = true }) => {
   const quotation = consignment?.quotation || null;
   const totalPackageCount = items.length;
 
-  const calculatedTotalDimWeight = volumetricDivisor
+  /*
+   * Số DIM: ƯU TIÊN số backend trả (đã tính bằng hệ số thật lúc lập đơn / báo giá);
+   * chỉ tự tính theo hệ số VOLUMETRIC_DIVISOR hiện hành khi API không có số.
+   */
+  const apiVolumetricWeight = toFiniteNumberOrNull(
+    consignment?.volumetricWeight ?? quotation?.volumetricWeight,
+  );
+
+  const calculatedTotalDimWeight =
+    apiVolumetricWeight === null && volumetricDivisor
     ? items.reduce((total, item) => {
         const dimWeight = calculateDimWeight(
           item.length,
@@ -1439,13 +1504,9 @@ const ConsignmentListDetail = ({ embedded = true }) => {
       }, 0)
     : null;
 
-  const apiVolumetricWeight = toFiniteNumberOrNull(
-    consignment?.volumetricWeight ?? quotation?.volumetricWeight,
-  );
-
-  const totalDimWeight = Number.isFinite(calculatedTotalDimWeight)
-    ? calculatedTotalDimWeight
-    : apiVolumetricWeight;
+  const totalDimWeight =
+    apiVolumetricWeight ??
+    (Number.isFinite(calculatedTotalDimWeight) ? calculatedTotalDimWeight : null);
 
   const summaryCards = consignment
     ? [
@@ -1523,7 +1584,7 @@ const ConsignmentListDetail = ({ embedded = true }) => {
       cancelReasonError={cancelReasonError}
       isCancelModalOpen={isCancelModalOpen}
       isCancelling={isCancelling}
-      isAlreadyCancelled={isAlreadyCancelled}
+      cancelMode={cancelMode}
       onBack={handleBack}
       onReload={handleReload}
       onCopyConsignmentCode={handleCopyConsignmentCode}

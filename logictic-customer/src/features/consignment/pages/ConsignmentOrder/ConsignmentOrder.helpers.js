@@ -5,6 +5,7 @@
  * kiểm thử riêng phần logic nghiệp vụ.
  */
 import uploadImage from "@shared/api/uploadImage";
+import { validateIntegerInRange } from "@shared/utils/integerInput";
 import {
   ACCEPTED_IMAGE_TYPES,
   MAX_IMAGE_SIZE,
@@ -555,9 +556,23 @@ export const PACKAGE_LIMITS = Object.freeze({
 export const ORDER_LIMITS = Object.freeze({
   maxTotalWeight: 5,
   maxTotalValue: 10000000,
+  /* Số kiện tối đa của một đơn — backend (POST /api/orders/consignments) trả 400 khi vượt. */
+  maxPackages: 50,
 });
 
+/** Câu giải thích khi đơn đã đủ số kiện tối đa. */
+export const PACKAGES_LIMIT_MESSAGE = `Mỗi đơn ký gửi tối đa ${ORDER_LIMITS.maxPackages} kiện hàng. Cần gửi thêm, vui lòng tạo đơn mới.`;
+
+/** "" nếu số kiện còn trong giới hạn, ngược lại là câu báo lỗi. */
+export const getPackageCountError = (packages) =>
+  (Array.isArray(packages) ? packages.length : 0) > ORDER_LIMITS.maxPackages
+    ? PACKAGES_LIMIT_MESSAGE
+    : "";
+
 const toText = (value) => String(value ?? "").trim();
+
+/** Câu báo lỗi ô Số lượng kiện — gõ sai, dán sai, bấm gửi đều dùng câu này. */
+export const QUANTITY_RANGE_MESSAGE = `Số lượng từ 1 đến ${PACKAGE_LIMITS.maxQuantity} sản phẩm trên 1 kiện hàng.`;
 
 const formatVndNumber = (value) => Number(value).toLocaleString("vi-VN");
 
@@ -574,21 +589,14 @@ export const PACKAGE_FIELD_VALIDATORS = Object.freeze({
 
   productType: (pkg) => (pkg?.productType ? "" : "Vui lòng chọn loại hàng hóa."),
 
-  quantity: (pkg) => {
-    if (toText(pkg?.quantity) === "") return "Vui lòng nhập số lượng.";
-
-    const quantity = Number(pkg.quantity);
-
-    if (!Number.isInteger(quantity) || quantity < 1) {
-      return "Số lượng phải là số nguyên từ 1 trở lên.";
-    }
-
-    if (quantity > PACKAGE_LIMITS.maxQuantity) {
-      return `Số lượng tối đa ${PACKAGE_LIMITS.maxQuantity} sản phẩm trên 1 kiện hàng.`;
-    }
-
-    return "";
-  },
+  // Dùng chung validator số nguyên với form mua hộ: "1.0", "1e3", "-1" đều bị từ chối.
+  quantity: (pkg) =>
+    validateIntegerInRange(pkg?.quantity, {
+      min: 1,
+      max: PACKAGE_LIMITS.maxQuantity,
+      emptyMessage: "Vui lòng nhập số lượng.",
+      rangeMessage: QUANTITY_RANGE_MESSAGE,
+    }),
 
   declaredValue: (pkg) => {
     if (toText(pkg?.declaredValue) === "") return "Vui lòng nhập giá trị khai báo.";
@@ -719,6 +727,83 @@ export const FORM_FIELD_VALIDATORS = Object.freeze({
 export const validateFormField = (field, form) =>
   FORM_FIELD_VALIDATORS[field] ? FORM_FIELD_VALIDATORS[field](form) : "";
 
+/* =========================================================
+   FORM THÊM ĐỊA CHỈ NHẬN HÀNG
+
+   Cùng kiểu với hai bộ trên: MỘT nguồn luật duy nhất, dùng chung cho lúc khách
+   đang gõ/chọn và cho lúc bấm Lưu. Trước đây form này chỉ kiểm lúc bấm Lưu nên
+   khách gõ hai chữ vào ô địa chỉ, bấm Lưu mới biết là chưa đủ.
+
+   Cột `address` trong DB là nvarchar(max) nên 255 ở đây là giới hạn NGHIỆP VỤ
+   (một dòng số nhà + tên đường), không phải giới hạn kỹ thuật.
+   ========================================================= */
+
+export const ADDRESS_LIMITS = Object.freeze({
+  detailAddress: { min: 5, max: 255 },
+});
+
+export const ADDRESS_FIELD_VALIDATORS = Object.freeze({
+  provinceCode: (form) =>
+    form?.provinceCode ? "" : "Vui lòng chọn tỉnh/thành phố.",
+
+  districtCode: (form) =>
+    form?.districtCode ? "" : "Vui lòng chọn quận/huyện.",
+
+  wardCode: (form) => (form?.wardCode ? "" : "Vui lòng chọn phường/xã."),
+
+  detailAddress: (form) => {
+    const detail = toText(form?.detailAddress);
+
+    if (!detail) {
+      return "Vui lòng nhập số nhà, tên đường hoặc địa chỉ chi tiết.";
+    }
+
+    if (detail.length < ADDRESS_LIMITS.detailAddress.min) {
+      return `Địa chỉ chi tiết phải có ít nhất ${ADDRESS_LIMITS.detailAddress.min} ký tự.`;
+    }
+
+    if (detail.length > ADDRESS_LIMITS.detailAddress.max) {
+      return `Địa chỉ chi tiết tối đa ${ADDRESS_LIMITS.detailAddress.max} ký tự.`;
+    }
+
+    return "";
+  },
+});
+
+/**
+ * Form địa chỉ SAU khi đổi một ô. Đổi tỉnh thì huyện/xã phải rỗng theo, đổi huyện
+ * thì xã rỗng theo — nếu không, mã cũ còn sót lại sẽ đi thẳng vào payload.
+ *
+ * Tách ra hàm thuần vì màn hình cần con số "sau khi đổi" ở HAI chỗ: để đặt state
+ * và để kiểm ô ngay lúc đó (state chưa kịp cập nhật trong cùng một lần chạy).
+ */
+export const getNextAddressFormValue = (form, field, value) => {
+  if (field === "provinceCode") {
+    return { ...form, provinceCode: value, districtCode: "", wardCode: "" };
+  }
+
+  if (field === "districtCode") {
+    return { ...form, districtCode: value, wardCode: "" };
+  }
+
+  return { ...form, [field]: value };
+};
+
+/** Kiểm MỘT ô của form thêm địa chỉ. */
+export const validateAddressField = (field, form) =>
+  ADDRESS_FIELD_VALIDATORS[field]
+    ? ADDRESS_FIELD_VALIDATORS[field](form)
+    : "";
+
+/** Kiểm CẢ form thêm địa chỉ — dùng lúc bấm Lưu. */
+export const validateAddressForm = (form) =>
+  Object.fromEntries(
+    Object.keys(ADDRESS_FIELD_VALIDATORS).map((field) => [
+      field,
+      validateAddressField(field, form),
+    ]),
+  );
+
 /** Số liệu cộng dồn của đơn — màn hình vừa dùng để báo lỗi, vừa để vẽ thanh giới hạn. */
 export const getOrderTotals = (packages = []) => ({
   packageCount: packages.length,
@@ -763,8 +848,9 @@ export const validateConsignmentForm = ({ form, packages }) => {
     formErrors[field] = validateFormField(field, form);
   });
 
-  /* Trần của cả đơn: tổng cân nặng và tổng giá trị mọi kiện. */
-  formErrors.packages = getOrderTotalsError(packages);
+  /* Trần của cả đơn: số kiện, tổng cân nặng và tổng giá trị mọi kiện. */
+  formErrors.packages =
+    getPackageCountError(packages) || getOrderTotalsError(packages);
 
   if (form?.optionalServices?.requiresWoodenCrate !== true) {
     formErrors.optionalServices =

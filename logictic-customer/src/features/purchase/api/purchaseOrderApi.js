@@ -9,6 +9,10 @@
 
    Mọi thao tác còn lại (lập đơn, duyệt ngân sách, đặt NCC) là việc của nhân viên —
    backend tự chặn theo vai trò, FE không bày nút.
+
+   TIỀN HOÀN (chỉ đọc): GET /api/purchase-requests/{id}/refunds → tổng đã trả / đã hoàn /
+   đang chờ hoàn + từng khoản, từng dòng, công thức. Backend mới — hiện CHỈ có trên env test;
+   production trả 404 → hàm trả null và màn hình ẩn khối.
    ========================================================= */
 import httpClient from "@shared/api/httpClient";
 
@@ -89,6 +93,15 @@ const normalizeOrder = (order = {}) => ({
   quotedGoodsAmount: toNumber(order.quotedGoodsAmount),
   priceDifferenceAmount: toNumber(order.priceDifferenceAmount),
   priceToleranceRate: toNumber(order.priceToleranceRate),
+  /*
+   * Tiền công ty trả LẠI khách: giá mua thực thấp hơn giá đã báo, hoặc đơn bị huỷ
+   * sau khi đã đặt NCC. Khách đã trả trước 100% nên đây là tiền của khách.
+   */
+  refundAmount: toNumber(order.refundAmount),
+  cancelFeeAmount: toNumber(order.cancelFeeAmount),
+  /* Backend mới: MỌI khoản hoàn của đơn + tổng; backend cũ không có → rỗng / 0. */
+  refunds: toArray(order.refunds).map((refund) => normalizeRefund(refund)),
+  totalRefundAmount: toNumber(order.totalRefundAmount),
   items: toArray(order.items).map((item) => ({
     ...item,
     quantity: toNumber(item.quantity),
@@ -98,6 +111,119 @@ const normalizeOrder = (order = {}) => ({
   })),
   step: getSupplierOrderStep(order.status),
 });
+
+/*
+ * Câu giải thích cho KHÁCH vì sao có khoản hoàn — đọc đúng mã của backend
+ * (PurchasePaymentTypes / PurchaseRefundReasons / PurchaseRefundStatuses), viết bằng lời của
+ * khách, không dùng từ nội bộ ("NCC", "PO"...). Mã lạ thì hiện nguyên mã: thà để khách hỏi lại
+ * còn hơn giải thích sai một khoản tiền.
+ */
+
+/** Loại KHOẢN hoàn (`refundType`). */
+export const REFUND_REASON_TEXT = Object.freeze({
+  REFUND_PRICE_DIFF: "Giá mua thực tế thấp hơn giá đã báo",
+  REFUND_CANCEL: "Đơn mua bị huỷ",
+  REFUND_UNFULFILLED: "Người bán hết hàng hoặc giao thiếu",
+});
+
+/** Lý do từng DÒNG hoàn (`reasonCode`). */
+export const REFUND_LINE_REASON_TEXT = Object.freeze({
+  PRICE_DIFF: "Chênh giá: người bán bán rẻ hơn giá đã báo",
+  UNFULFILLED: "Người bán hết hàng / không mua đủ số lượng bạn đặt",
+  SUPPLIER_SHORT: "Người bán giao thiếu",
+  CANCEL_CUSTOMER: "Bạn huỷ đơn sau khi VCL đã đặt hàng",
+  CANCEL_SUPPLIER: "Người bán huỷ đơn / hết hàng sau khi VCL đã đặt",
+  PRICE_DIFF_RETURN: "Trả lại phần chênh giá bạn đã trả (đơn huỷ trước khi đặt hàng)",
+});
+
+/** Trạng thái khoản hoàn — không dùng "đã thanh toán" để khỏi hiểu ngược là bạn trả tiền. */
+export const REFUND_STATUS_TEXT = Object.freeze({
+  PENDING: { label: "Đang chờ chuyển", tone: "processing" },
+  REFUNDED: { label: "Đã chuyển cho bạn", tone: "success" },
+  CANCELLED: { label: "Không còn hiệu lực", tone: "default" },
+});
+
+const upperCode = (value) => trimText(value).toUpperCase();
+
+export const getRefundReasonText = (refundType) =>
+  REFUND_REASON_TEXT[upperCode(refundType)] || trimText(refundType) || "Hoàn tiền";
+
+export const getRefundLineReasonText = (reasonCode) =>
+  REFUND_LINE_REASON_TEXT[upperCode(reasonCode)] || trimText(reasonCode) || "—";
+
+export const getRefundStatusText = (status) =>
+  REFUND_STATUS_TEXT[upperCode(status)] || { label: trimText(status) || "—", tone: "default" };
+
+/* Chỉ ép kiểu số — KHÔNG cộng trừ gì: mọi con số và câu công thức là thứ backend đã chốt. */
+const normalizeRefundLine = (line = {}) => ({
+  ...line,
+  reasonCode: upperCode(line.reasonCode),
+  reasonText: getRefundLineReasonText(line.reasonCode),
+  quantity: toNumber(line.quantity),
+  unitPrice: toNumber(line.unitPrice),
+  goodsAmount: toNumber(line.goodsAmount),
+  priceDifferenceAmount: toNumber(line.priceDifferenceAmount),
+  serviceFeeAmount: toNumber(line.serviceFeeAmount),
+  vatAmount: toNumber(line.vatAmount),
+  importTaxAdjustment: toNumber(line.importTaxAdjustment),
+  importTaxInRefund: Boolean(line.importTaxInRefund),
+  cancelFeeAmount: toNumber(line.cancelFeeAmount),
+  amount: toNumber(line.amount),
+  formula: trimText(line.formula),
+});
+
+const normalizeRefund = (refund = {}) => ({
+  ...refund,
+  refundType: upperCode(refund.refundType),
+  reasonText: getRefundReasonText(refund.refundType),
+  status: upperCode(refund.status),
+  statusText: getRefundStatusText(refund.status),
+  amount: toNumber(refund.amount),
+  goodsAmount: toNumber(refund.goodsAmount),
+  priceDifferenceAmount: toNumber(refund.priceDifferenceAmount),
+  serviceFeeAmount: toNumber(refund.serviceFeeAmount),
+  vatAmount: toNumber(refund.vatAmount),
+  importTaxAdjustment: toNumber(refund.importTaxAdjustment),
+  cancelFeeAmount: toNumber(refund.cancelFeeAmount),
+  isLegacy: Boolean(refund.isLegacy),
+  lines: toArray(refund.lines).map(normalizeRefundLine),
+});
+
+/**
+ * Tiền hoàn của một yêu cầu mua hộ (khách chỉ xem được yêu cầu của mình — backend chặn 403).
+ *
+ * @returns {Promise<null | { totalCollected, totalRefunded, totalPendingRefund, refundableRemaining, refunds: any[] }>}
+ *   null khi máy chủ chưa có API này (404) — màn hình ẩn khối thay vì báo lỗi.
+ */
+export const getPurchaseRefundsApi = async (purchaseRequestId, options = {}) => {
+  const id = trimText(purchaseRequestId);
+
+  if (!id) return null;
+
+  try {
+    const response = await httpClient.get(
+      `/api/purchase-requests/${encodeURIComponent(id)}/refunds`,
+      { signal: getSignal(options) }
+    );
+    const data = unwrapData(response.data) || {};
+
+    return {
+      ...data,
+      totalCollected: toNumber(data.totalCollected),
+      totalRefunded: toNumber(data.totalRefunded),
+      totalPendingRefund: toNumber(data.totalPendingRefund),
+      refundableRemaining: toNumber(data.refundableRemaining),
+      refunds: toArray(data.refunds).map(normalizeRefund),
+    };
+  } catch (error) {
+    if (error?.code === "ERR_CANCELED") throw error;
+
+    /* Bản backend chưa có sổ hoàn (production hiện tại) — coi như không có gì để hiện. */
+    if (error?.response?.status === 404) return null;
+
+    throw error;
+  }
+};
 
 /** Đơn mua của một yêu cầu — backend chỉ trả đơn thuộc khách đang đăng nhập. */
 export const getSupplierOrdersApi = async (purchaseRequestId, options = {}) => {
@@ -126,7 +252,10 @@ export const getSupplierOrdersApi = async (purchaseRequestId, options = {}) => {
  * Khách quyết định với phần chênh giá.
  *
  * @param {string} purchaseOrderId
- * @param {{ accept: boolean, reason?: string, paymentMethod?: string, returnUrl?: string }} payload
+ * @param {{ accept: boolean, reason?: string, paymentMethod?: string, returnUrl?: string,
+ *   cancelUrl?: string }} payload
+ *   returnUrl/cancelUrl: nơi trang thanh toán phần chênh trả khách về (xem
+ *   buildPaymentReturnUrls); backend gắn thêm `orderCode` + `status`.
  */
 export const decideSupplierOrderApi = async (purchaseOrderId, payload = {}) => {
   const id = trimText(purchaseOrderId);
@@ -147,6 +276,7 @@ export const decideSupplierOrderApi = async (purchaseOrderId, payload = {}) => {
     /* Đồng ý thì backend tạo luôn lần thu phần chênh — mặc định quét QR SePay. */
     ...(accept ? { paymentMethod: trimText(payload?.paymentMethod).toUpperCase() || "SEPAY" } : {}),
     ...(trimText(payload?.returnUrl) ? { returnUrl: trimText(payload.returnUrl) } : {}),
+    ...(trimText(payload?.cancelUrl) ? { cancelUrl: trimText(payload.cancelUrl) } : {}),
   };
 
   const response = await httpClient.post(
@@ -157,4 +287,4 @@ export const decideSupplierOrderApi = async (purchaseOrderId, payload = {}) => {
   return unwrapData(response.data);
 };
 
-export default { getSupplierOrdersApi, decideSupplierOrderApi };
+export default { getSupplierOrdersApi, decideSupplierOrderApi, getPurchaseRefundsApi };
