@@ -44,6 +44,11 @@ const toText = (value) => String(value ?? "").trim();
 const normalizeItem = (item = {}) => ({
   kind: toText(item.kind).toUpperCase(),
   id: toText(item.id),
+  /*
+   * Dòng đến từ ĐƠN KHO của yêu cầu mua hộ (PUR-xxx-n): kind vẫn PURCHASE, id là yêu cầu mua hộ,
+   * còn orderId của đơn kho nằm ở đây. Rỗng với dòng của chính yêu cầu mua hộ / đơn ký gửi.
+   */
+  warehouseOrderId: toText(item.warehouseOrderId),
   code: toText(item.code),
   status: toText(item.status),
   statusText: toText(item.statusText),

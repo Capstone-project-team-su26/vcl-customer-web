@@ -95,8 +95,13 @@ const EMPTY_DATA = {
  * - trả phí giao lại khi Sale báo phí (redeliveryFeeCheckoutUrl / khoản REDELIVERY_FEE),
  * - bấm "Đã nhận hàng" khi đơn DELIVERED (PUT .../customer-confirm).
  *
+ *
+ * `paymentOwner` (tuỳ chọn): { orderType, purchaseRequestId, code } của đơn — ghi vào bản
+ *   ghi thanh toán để khoản của đơn kho mua hộ (PUR-…-n) trả về phần Mua hộ của Lịch sử giao
+ *   dịch và "Xem đơn" kèm `?yc=` (xem pendingPaymentReturn.js).
+ *
  * @param {{ orderId: string, order?: object, orderStatus?: string, refreshKey?: number,
- *           onChanged?: () => void }} props
+ *           onChanged?: () => void, paymentOwner?: object }} props
  */
 export default function OrderDeliveryCard({
   orderId,
@@ -104,6 +109,7 @@ export default function OrderDeliveryCard({
   orderStatus,
   refreshKey = 0,
   onChanged,
+  paymentOwner,
 }) {
   const [data, setData] = useState({ loading: true, error: "", ...EMPTY_DATA });
   const [modalOpen, setModalOpen] = useState(false);
@@ -377,6 +383,7 @@ export default function OrderDeliveryCard({
 
   const handlePayRedelivery = () => {
     const opened = openCheckout(redeliveryCheckoutUrl, {
+      ...paymentOwner,
       subject: PAYMENT_SUBJECTS.order,
       targetId: orderId,
       purpose: PAYMENT_PURPOSES.redeliveryFee,

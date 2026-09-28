@@ -4,6 +4,8 @@ import { HistoryOutlined, WalletOutlined } from "@ant-design/icons";
 
 import { SettlementList } from "@features/settlement";
 import { TransactionHistoryTabs } from "@features/history";
+/* Import sâu: barrel purchase kéo theo các trang mua hộ (thứ tự CSS). */
+import PurchasePaymentsDue from "@features/purchase/components/PurchasePaymentsDue/PurchasePaymentsDue";
 
 import {
   PAYMENT_TABS,
@@ -29,6 +31,9 @@ const PAYOS_DEFAULT_RETURN_TAB = "success";
  * Tiền của khách trước đây rải ở ba chỗ: màn tất toán, menu "Lịch sử giao dịch", và
  * mấy URL lịch sử thanh toán rời của từng đơn mua hộ. Giờ chỉ còn hai câu hỏi khách
  * thật sự hỏi: "tôi đang phải trả gì?" và "tôi đã trả những gì rồi?".
+ *
+ * "Cần thanh toán" = khoản mua hộ chờ trả (trả trước sau khi chấp nhận báo giá, phần
+ * chênh giá đã đồng ý — PurchasePaymentsDue) + tất toán vận chuyển (SettlementList).
  *
  * Tab nằm trên URL (`/payment/can-thanh-toan` | `/payment/lich-su`) để link cũ chuyển
  * hướng về được và khách gửi link cho CSKH vẫn đúng chỗ.
@@ -66,7 +71,15 @@ export default function PaymentCenter() {
       />
 
       <div className="payment-center__panel">
-        {tab === PAYMENT_TABS.history ? <TransactionHistoryTabs /> : <SettlementList />}
+        {tab === PAYMENT_TABS.history ? (
+          <TransactionHistoryTabs />
+        ) : (
+          <>
+            {/* Mọi khoản khách phải trả ở một chỗ: mua hộ (trả trước, chênh giá) + tất toán vận chuyển. */}
+            <PurchasePaymentsDue />
+            <SettlementList />
+          </>
+        )}
       </div>
     </div>
   );

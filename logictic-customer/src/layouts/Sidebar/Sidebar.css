@@ -254,26 +254,11 @@
 /* ================= NHÃN SỐ VIỆC CHỜ XỬ LÝ ================= */
 
 /*
- * Dùng tông đỏ của thương hiệu chứ không phải đỏ báo lỗi: đây là việc đang chờ khách,
- * không phải sự cố. Đủ nổi để khách nhìn thấy mà không làm menu trông như đang hỏng.
+ * Màu/hình của số đỏ và số xám nằm ở shared/styles/countBadge.css — dùng chung với câu
+ * tóm tắt đầu trang danh sách đơn, để khách đối chiếu hai chỗ bằng mắt. Ở đây chỉ còn bố cục.
  */
 .menu-badge {
-  min-width: 20px;
-  padding: 0 6px;
   margin-left: auto;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 18px;
-
-  background: linear-gradient(135deg, #f43f5e, #e11d48);
-  border-radius: 999px;
-  box-shadow: 0 1px 4px rgba(225, 29, 72, 0.35);
 }
 
 /*
@@ -292,23 +277,6 @@
 
 .menu-badges .menu-badge {
   margin-left: 0;
-}
-
-/*
- * Số xám: nhỏ và nhạt hơn số đỏ — chỉ để khách biết đơn đang chạy, không phải việc cần làm.
- * Chữ #475569 trên nền #f1f5f9 ≈ 6.9:1 (đạt WCAG AA cho chữ nhỏ).
- */
-.menu-badge.menu-badge--progress {
-  min-width: 18px;
-  padding: 0 5px;
-
-  color: #475569;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 16px;
-
-  background: #f1f5f9;
-  box-shadow: inset 0 0 0 1px #e2e8f0;
 }
 
 /* Câu đầy đủ cho trình đọc màn hình ("2 đơn VCL đang xử lý, 1 đơn đang chờ bạn xử lý"), ẩn khỏi mắt. */

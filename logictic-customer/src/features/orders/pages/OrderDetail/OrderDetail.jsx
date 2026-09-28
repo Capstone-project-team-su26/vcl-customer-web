@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button, Result, Spin, Tabs, Tag } from "antd";
 import {
   ArrowLeftOutlined,
@@ -13,6 +13,10 @@ import {
 
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
+import {
+  isPurchaseWarehouseOrder,
+  purchaseCodeOfWarehouseOrder,
+} from "@shared/utils/orderType";
 
 import {
   ConsignmentListDetail,
@@ -29,6 +33,8 @@ import {
 import { SettlementPreviewCard, StorageFeeCard } from "@features/settlement";
 import { OrderIncidentsCard } from "@features/incidents";
 import { OrderPaymentHistory } from "@features/payment";
+/* Import sâu: chỉ cần hàm gọi danh sách, barrel purchase kéo theo các trang (thứ tự CSS). */
+import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestApi";
 
 /* Import sâu vào tracking: barrel của nó kéo theo trang tra cứu công khai (CSS toàn cục),
    ở đây chỉ cần API, hai khối hành trình và bảng đường dẫn — xem ARCHITECTURE mục 4. */
@@ -46,8 +52,12 @@ import {
 } from "@features/tracking/constants/trackingStages";
 import {
   CONSIGNMENT_ORDERS_PATH,
+  ORDER_KINDS,
   ORDER_TABS,
+  PURCHASE_REQUEST_QUERY_KEY,
   orderDetailPath,
+  orderListPath,
+  purchaseRequestDetailPath,
 } from "@features/orders/constants/orderPaths";
 
 import "./OrderDetail.css";
@@ -75,6 +85,22 @@ const TRACKING_ONLY_TABS = new Set([ORDER_TABS.journey, ORDER_TABS.incidents]);
 const getVisibleTabs = (hasTracking) =>
   hasTracking ? TAB_ITEMS : TAB_ITEMS.filter((item) => !TRACKING_ONLY_TABS.has(item.key));
 
+const readItems = (page) =>
+  Array.isArray(page?.items) ? page.items : Array.isArray(page) ? page : [];
+
+/**
+ * Id yêu cầu mua hộ có mã `purchaseCode` — chi tiết đơn kho của backend không trả id này.
+ * Không tìm thấy thì trả chuỗi rỗng (nút quay về mở danh sách mua hộ lọc theo mã).
+ */
+const findPurchaseRequestId = async (purchaseCode, signal) => {
+  const page = await getPurchaseRequestsApi(1, 20, { searchKeyword: purchaseCode, signal });
+  const match = readItems(page).find(
+    (item) => String(item?.purchaseCode || "").toUpperCase() === purchaseCode.toUpperCase(),
+  );
+
+  return String(match?.purchaseRequestId || match?.id || "");
+};
+
 /**
  * MỘT đơn ký gửi = MỘT trang, năm tab.
  *
@@ -90,10 +116,17 @@ const getVisibleTabs = (hasTracking) =>
  * Các thẻ tự tải dữ liệu của mình; thao tác ở thẻ này (ví dụ chọn xử lý sự cố) có thể đổi
  * thẻ khác (tất toán hết vướng, kiện sẵn sàng giao) nên mọi thẻ nhận chung `refreshKey` và
  * báo `onChanged` để cả trang tải lại một lượt.
+ *
+ * Trang này cũng là chi tiết của ĐƠN KHO MUA HỘ (mã PUR-…-n, sinh khi VCL đặt nhà cung
+ * cấp): cùng hành trình, cùng tất toán, nhưng nhãn và nút quay về trỏ về yêu cầu mua hộ
+ * (id đi theo query `?yc=`; thiếu thì tra theo mã yêu cầu).
  */
 export default function OrderDetail() {
   const { orderId, tab } = useParams();
   const navigate = useNavigate();
+  const { search } = useLocation();
+  const [searchParams] = useSearchParams();
+  const queryRequestId = searchParams.get(PURCHASE_REQUEST_QUERY_KEY) || "";
 
   const [refreshKey, setRefreshKey] = useState(0);
   const requestKey = `${orderId}|${refreshKey}`;
@@ -146,6 +179,50 @@ export default function OrderDetail() {
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
 
   const { tracking, order, error } = result;
+
+  const orderCode =
+    tracking?.consignmentCode || order?.consignmentCode || order?.orderCode || orderId;
+
+  /* Đơn kho của mua hộ: OrderType backend trả; thiếu thì theo tiền tố mã PUR-. */
+  const isPurchaseOrder =
+    Boolean(tracking || order) &&
+    isPurchaseWarehouseOrder({ orderType: order?.orderType, consignmentCode: orderCode });
+  const purchaseCode = isPurchaseOrder ? purchaseCodeOfWarehouseOrder(orderCode) : "";
+
+  /* Id yêu cầu mua hộ tra theo mã — chỉ khi link không mang sẵn `?yc=`. */
+  const [lookedUpRequest, setLookedUpRequest] = useState({ code: "", id: "" });
+
+  useEffect(() => {
+    if (!purchaseCode || queryRequestId) return undefined;
+
+    const controller = new AbortController();
+
+    findPurchaseRequestId(purchaseCode, controller.signal)
+      .then((id) => setLookedUpRequest({ code: purchaseCode, id }))
+      .catch(() => {
+        /* Không tra được thì nút quay về mở danh sách mua hộ lọc theo mã — không báo lỗi. */
+      });
+
+    return () => controller.abort();
+  }, [purchaseCode, queryRequestId]);
+
+  const purchaseRequestId =
+    queryRequestId || (lookedUpRequest.code === purchaseCode ? lookedUpRequest.id : "");
+
+  /* Đơn này thuộc đâu — đi kèm mọi lần mở trang thanh toán trong các tab, để trả xong khách
+     về đúng phần (Mua hộ / Ký gửi) của Lịch sử giao dịch và "Xem đơn" giữ `?yc=`. */
+  const paymentOwner = {
+    orderType: isPurchaseOrder ? "PURCHASE" : "CONSIGNMENT",
+    purchaseRequestId: isPurchaseOrder ? purchaseRequestId || null : null,
+    code: orderCode,
+  };
+
+  const backToPurchase = () =>
+    navigate(
+      purchaseRequestId
+        ? purchaseRequestDetailPath(purchaseRequestId)
+        : orderListPath({ kind: ORDER_KINDS.purchase, search: purchaseCode || undefined }),
+    );
   const firstLoad = result.key === null;
   const reloading = result.key !== requestKey && !firstLoad;
 
@@ -175,9 +252,15 @@ export default function OrderDetail() {
         title={error.status === 403 ? "Bạn không xem được đơn này" : "Không tải được đơn hàng"}
         subTitle={error.message}
         extra={
-          <Button type="primary" onClick={() => navigate(CONSIGNMENT_ORDERS_PATH)}>
-            Về danh sách đơn ký gửi
-          </Button>
+          queryRequestId ? (
+            <Button type="primary" onClick={backToPurchase}>
+              Về yêu cầu mua hộ
+            </Button>
+          ) : (
+            <Button type="primary" onClick={() => navigate(CONSIGNMENT_ORDERS_PATH)}>
+              Về danh sách đơn ký gửi
+            </Button>
+          )
         }
       />
     );
@@ -189,16 +272,13 @@ export default function OrderDetail() {
   const orderStatusLabel =
     EXTRA_ORDER_STATUS_LABELS[orderStatus] || getOrderStatusLabel(orderStatus);
 
-  const orderCode =
-    tracking?.consignmentCode || order?.consignmentCode || order?.orderCode || orderId;
-
   /* Tab lạ trên URL, hoặc tab không dùng được với đơn này (gõ tay, link cũ, thông báo
      dẫn tới tab hành trình của đơn chưa gửi hàng) → về tab đầu tiên còn hiện. */
   const visibleTabs = getVisibleTabs(Boolean(tracking));
   const defaultTab = visibleTabs[0].key;
 
   if (!visibleTabs.some((item) => item.key === tab)) {
-    return <Navigate to={orderDetailPath(orderId, defaultTab)} replace />;
+    return <Navigate to={{ pathname: orderDetailPath(orderId, defaultTab), search }} replace />;
   }
 
   /* Tới kho VN khi đơn — hoặc bất kỳ kiện nào (đơn tách chuyến) — đã ở chặng VN. */
@@ -225,6 +305,7 @@ export default function OrderDetail() {
             orderStatus={orderStatus}
             refreshKey={refreshKey}
             onChanged={refresh}
+            paymentOwner={paymentOwner}
           />
         ) : null}
 
@@ -257,12 +338,20 @@ export default function OrderDetail() {
           <>
             {atVn ? (
               <>
-                <SettlementPreviewCard orderId={orderId} refreshKey={refreshKey} />
-                <StorageFeeCard orderId={orderId} refreshKey={refreshKey} />
+                <SettlementPreviewCard
+                  orderId={orderId}
+                  refreshKey={refreshKey}
+                  paymentOwner={paymentOwner}
+                />
+                <StorageFeeCard
+                  orderId={orderId}
+                  refreshKey={refreshKey}
+                  paymentOwner={paymentOwner}
+                />
               </>
             ) : null}
 
-            <OrderPaymentHistory embedded />
+            <OrderPaymentHistory embedded paymentOwner={paymentOwner} />
           </>
         );
 
@@ -301,12 +390,18 @@ export default function OrderDetail() {
   return (
     <div className="order-detail">
       <div className="order-detail__nav">
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate(CONSIGNMENT_ORDERS_PATH)}
-        >
-          Đơn ký gửi
-        </Button>
+        {isPurchaseOrder ? (
+          <Button icon={<ArrowLeftOutlined />} onClick={backToPurchase}>
+            {purchaseCode ? `Đơn mua hộ · ${purchaseCode}` : "Đơn mua hộ"}
+          </Button>
+        ) : (
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(CONSIGNMENT_ORDERS_PATH)}
+          >
+            Đơn ký gửi
+          </Button>
+        )}
 
         <Button icon={<ReloadOutlined />} loading={reloading} onClick={refresh}>
           Tải lại
@@ -316,7 +411,11 @@ export default function OrderDetail() {
       <section className="order-detail__hero">
         <div className="order-detail__hero-top">
           <div>
-            <span className="order-detail__eyebrow">Đơn ký gửi</span>
+            <span className="order-detail__eyebrow">
+              {isPurchaseOrder
+                ? `Đơn mua hộ${purchaseCode ? ` · ${purchaseCode}` : ""}`
+                : "Đơn ký gửi"}
+            </span>
             <h1>{orderCode}</h1>
             <p>
               {tracking
@@ -365,7 +464,7 @@ export default function OrderDetail() {
             </span>
           ),
         }))}
-        onChange={(key) => navigate(orderDetailPath(orderId, key))}
+        onChange={(key) => navigate({ pathname: orderDetailPath(orderId, key), search })}
       />
 
       <div className="order-detail__panel">{renderTab()}</div>

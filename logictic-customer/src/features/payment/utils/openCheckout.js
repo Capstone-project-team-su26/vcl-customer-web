@@ -6,7 +6,7 @@
      toán (window.location.assign) — payOS tự đưa khách về returnUrl.
    - SePay (trang QR của server, /api/payments/sepay/checkout/...): mở TAB MỚI, link gắn
      `?returnUrl=&cancelUrl=` = "Thanh toán → Lịch sử giao dịch" `?loai=` (mua-ho cho khoản
-     của yêu cầu mua hộ, ky-gui cho khoản của đơn kho); trả xong / bấm Huỷ trang QR đưa tab
+     của yêu cầu mua hộ và của đơn kho PUR-…-n, ky-gui cho đơn ký gửi); trả xong / bấm Huỷ trang QR đưa tab
      đó về URL này kèm `orderCode` + `status`.
    Link luôn đi qua resolveCheckoutUrl để link SePay tương đối được ghép base URL API.
 
@@ -37,7 +37,7 @@ export const openCheckout = (url, pending) => {
 
   /* Không biết khoản của đâu thì để trang QR dùng URL trả về mặc định của backend. */
   const resolved = pending
-    ? withPaymentReturnUrls(checkoutUrl, paymentReturnKindOf(pending.subject))
+    ? withPaymentReturnUrls(checkoutUrl, paymentReturnKindOf(pending))
     : checkoutUrl;
 
   if (pending) {

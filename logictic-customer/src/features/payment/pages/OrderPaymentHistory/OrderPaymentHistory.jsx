@@ -428,8 +428,11 @@ const PaymentSummaryCard = ({
 /**
  * `embedded`: trang đang nằm trong tab "Thanh toán" của /orders/:orderId, nên bỏ thanh
  * "Quay lại / Làm mới" — khung trang chi tiết đơn đã có nút tải lại chung.
+ * `paymentOwner` (tuỳ chọn): { orderType, purchaseRequestId, code } của đơn — ghi vào bản
+ *   ghi thanh toán để khoản của đơn kho mua hộ (PUR-…-n) trả về phần Mua hộ của Lịch sử giao
+ *   dịch và "Xem đơn" kèm `?yc=` (xem pendingPaymentReturn.js).
  */
-const OrderPaymentHistory = ({ embedded = false }) => {
+const OrderPaymentHistory = ({ embedded = false, paymentOwner }) => {
   const navigate = useNavigate();
   const { orderId } = useParams();
 
@@ -1248,13 +1251,16 @@ const OrderPaymentHistory = ({ embedded = false }) => {
                             const opened = openCheckout(
                               payment.checkoutUrl,
                               {
+                                ...paymentOwner,
                                 subject: PAYMENT_SUBJECTS.order,
                                 targetId: orderId,
                                 purpose: purposeFromInstallmentType(
                                   payment.installmentType
                                 ),
                                 orderCode: payment.orderCode,
-                                code: paymentData?.consignmentCode,
+                                code:
+                                  paymentData?.consignmentCode ||
+                                  paymentOwner?.code,
                                 amount: payment.amount,
                               }
                             );

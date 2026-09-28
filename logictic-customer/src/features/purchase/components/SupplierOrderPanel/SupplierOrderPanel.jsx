@@ -1,17 +1,23 @@
 /**
  * Khối "Đơn mua nhà cung cấp" trong màn chi tiết yêu cầu mua hộ của KHÁCH.
  *
- * Làm đúng hai việc khách cần:
+ * Làm đúng ba việc khách cần:
  *   1. Khi giá mua thực vượt giá đã báo quá ngưỡng, hiện rõ chênh bao nhiêu, vì sao, và hai
  *      nút Đồng ý / Từ chối. Đồng ý xong hiện nút trả phần chênh.
  *   2. Theo dõi tiến độ người bán: đã đặt → người bán xác nhận → người bán gửi hàng
  *      (kèm mã vận đơn nội địa để khách tự tra).
+ *   3. Lối sang ĐƠN KHO của đơn mua (mã PUR-…-n, backend sinh khi đặt nhà cung cấp): từ đây
+ *      hàng đi như đơn ký gửi, nên khách theo dõi hành trình và tất toán ở trang chi tiết đơn
+ *      kho (tab Hành trình / Thanh toán). Đơn kho KHÔNG hiện trong "Đơn ký gửi" — đây là lối
+ *      vào của nó.
  *
  * Không bày bất cứ thao tác nội bộ nào (lập đơn, duyệt ngân sách, đặt NCC) — đó là việc
  * của nhân viên và backend cũng chặn theo vai trò.
  */
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Alert, Button, Empty, Input, Modal, Spin, Tag, Typography } from "antd";
+import { CompassOutlined, WalletOutlined } from "@ant-design/icons";
 
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import {
@@ -29,7 +35,15 @@ import {
   buildPaymentReturnUrls,
 } from "@features/payment/utils/pendingPaymentReturn";
 /* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
-import { ORDER_KINDS } from "@features/orders/constants/orderPaths";
+import {
+  ORDER_KINDS,
+  ORDER_TABS,
+  purchaseWarehouseOrderPath,
+} from "@features/orders/constants/orderPaths";
+/* Import sâu: chỉ cần API / bảng trạng thái, barrel kéo theo các trang (thứ tự CSS). */
+import { getAwaitingSettlementApi } from "@features/settlement/api/settlementApi";
+import { getOrderStatusLabel } from "@features/consignment/constants/orderStatus";
+import { isPurchaseWarehouseOrder } from "@shared/utils/orderType";
 
 import "./SupplierOrderPanel.css";
 
@@ -45,8 +59,39 @@ const formatDateTime = (value) => {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("vi-VN");
 };
 
+/**
+ * Đơn kho của một đơn mua: id/mã từ DTO (WarehouseOrderId / WarehouseOrderCode); backend
+ * đời cũ chưa trả hai trường này thì khớp dòng chờ tất toán theo mã `{mã yêu cầu}-{n}`.
+ *
+ * @returns {{ orderId: string, orderCode: string, status: string, dueAmount: number } | null}
+ */
+const resolveWarehouseOrder = (order, settlements) => {
+  const expectedCode =
+    order.purchaseCode && order.sequenceNo ? `${order.purchaseCode}-${order.sequenceNo}` : "";
+
+  const settlement = settlements.find((item) =>
+    order.warehouseOrderId
+      ? String(item?.orderId) === String(order.warehouseOrderId)
+      : expectedCode &&
+        String(item?.orderCode || "").toUpperCase() === expectedCode.toUpperCase(),
+  );
+
+  const orderId = order.warehouseOrderId || settlement?.orderId || "";
+  if (!orderId) return null;
+
+  return {
+    orderId: String(orderId),
+    orderCode: order.warehouseOrderCode || settlement?.orderCode || expectedCode,
+    status: order.warehouseOrderStatus || settlement?.status || "",
+    dueAmount: Number(settlement?.pendingPaymentAmount) || 0,
+  };
+};
+
 export default function SupplierOrderPanel({ purchaseRequestId }) {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  /* Đơn kho PUR đã về VN, chờ khách tất toán (GET /api/orders/awaiting-settlement). */
+  const [settlements, setSettlements] = useState([]);
   const [loading, setLoading] = useState(Boolean(purchaseRequestId));
   const [busyId, setBusyId] = useState("");
 
@@ -66,17 +111,23 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
 
     let alive = true;
 
-    getSupplierOrdersApi(purchaseRequestId)
-      .then((rows) => {
-        if (alive) setOrders(rows);
-      })
-      .catch(() => {
-        /* Không chặn cả màn vì một khối phụ: lỗi ở đây chỉ làm khối rỗng. */
-        if (alive) setOrders([]);
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
+    Promise.allSettled([
+      getSupplierOrdersApi(purchaseRequestId),
+      getAwaitingSettlementApi(),
+    ]).then(([ordersResult, settlementResult]) => {
+      if (!alive) return;
+
+      /* Không chặn cả màn vì một khối phụ: lỗi ở đây chỉ làm khối rỗng. */
+      setOrders(ordersResult.status === "fulfilled" ? ordersResult.value : []);
+
+      /* Lỗi danh sách chờ tất toán chỉ làm mất dòng "Cần tất toán"; nút vẫn dẫn sang đơn kho. */
+      setSettlements(
+        settlementResult.status === "fulfilled" && Array.isArray(settlementResult.value)
+          ? settlementResult.value.filter(isPurchaseWarehouseOrder)
+          : [],
+      );
+      setLoading(false);
+    });
 
     return () => {
       alive = false;
@@ -190,6 +241,7 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
         const needsDecision = order.status === "AWAITING_CUSTOMER";
         const needsPayment = order.status === "AWAITING_CUSTOMER_PAYMENT";
         const checkoutUrl = order.priceDifferenceCheckoutUrl;
+        const warehouse = resolveWarehouseOrder(order, settlements);
 
         return (
           <article key={order.purchaseOrderId} className="supplier-card">
@@ -321,6 +373,62 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
                 Mã vận đơn nội địa: <b>{order.domesticTrackingCode}</b>
                 {order.domesticCarrier ? ` · ${order.domesticCarrier}` : ""}
               </p>
+            )}
+
+            {/* Đơn kho của đơn mua: từ đây theo dõi và tất toán như một đơn ký gửi. */}
+            {warehouse && (
+              <div className="supplier-card__warehouse">
+                <p className="supplier-card__warehouse-line">
+                  Đơn vận chuyển: <b>{warehouse.orderCode || "—"}</b>
+                  {warehouse.status ? (
+                    <Tag className="supplier-card__warehouse-tag">
+                      {getOrderStatusLabel(warehouse.status)}
+                    </Tag>
+                  ) : null}
+                </p>
+
+                {warehouse.dueAmount > 0 && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    className="supplier-card__diff"
+                    message={`Cần tất toán ${formatVnd(warehouse.dueAmount)}`}
+                    description="Hàng của đơn mua này đã về kho Việt Nam. Thanh toán phần còn lại để VCL xuất kho và giao tới bạn."
+                  />
+                )}
+
+                <div className="supplier-card__actions">
+                  <Button
+                    icon={<CompassOutlined />}
+                    onClick={() =>
+                      navigate(
+                        purchaseWarehouseOrderPath(
+                          warehouse.orderId,
+                          ORDER_TABS.journey,
+                          purchaseRequestId,
+                        ),
+                      )
+                    }
+                  >
+                    Theo dõi hành trình
+                  </Button>
+                  <Button
+                    type={warehouse.dueAmount > 0 ? "primary" : "default"}
+                    icon={<WalletOutlined />}
+                    onClick={() =>
+                      navigate(
+                        purchaseWarehouseOrderPath(
+                          warehouse.orderId,
+                          ORDER_TABS.payment,
+                          purchaseRequestId,
+                        ),
+                      )
+                    }
+                  >
+                    Thanh toán tất toán
+                  </Button>
+                </div>
+              </div>
             )}
           </article>
         );

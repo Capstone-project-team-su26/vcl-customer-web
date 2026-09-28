@@ -32,7 +32,7 @@ import CreateOrder from "@features/orders/pages/CreateOrder/CreateOrder";
 import OrderList from "@features/orders/pages/OrderList/OrderList";
 import OrderDetail from "@features/orders/pages/OrderDetail/OrderDetail";
 
-/* Mua hộ — hai màn chi tiết riêng, hiện còn đọc dữ liệu mẫu. */
+/* Mua hộ — hai màn chi tiết riêng (chi tiết yêu cầu, báo giá + khoản trả trước), đọc API thật. */
 import PurchaseRequestDetail from "@features/purchase/pages/PurchaseRequestDetail/PurchaseRequestDetail";
 import BuyForMeQuotationListDetail from "@features/purchase/pages/BuyForMeQuotationListDetail/BuyForMeQuotationListDetail";
 

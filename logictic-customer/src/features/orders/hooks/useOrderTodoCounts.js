@@ -26,8 +26,10 @@ import {
  *   - định kỳ 3 phút (tab mở sẵn vẫn thấy báo giá mới);
  *   - trang danh sách vừa tải / bấm "Tải lại" (nhận thẳng con số của danh sách).
  *
- * @returns {{ "ky-gui": { waiting: number, inProgress: number },
- *             "mua-ho": { waiting: number, inProgress: number } }}
+ * Kèm finished (đã xong/đã huỷ) và total (mọi đơn) cho tooltip "Tổng N đơn".
+ *
+ * @returns {{ "ky-gui": { waiting, inProgress, finished, total },
+ *             "mua-ho": { waiting, inProgress, finished, total } }} (đều là number)
  */
 
 const REFRESH_INTERVAL_MS = 3 * 60 * 1000;
@@ -37,14 +39,16 @@ const FOCUS_MIN_GAP_MS = 10 * 1000;
 
 const KINDS = [ORDER_KINDS.consignment, ORDER_KINDS.purchase];
 
-const EMPTY_KIND_COUNTS = Object.freeze({ waiting: 0, inProgress: 0 });
+const EMPTY_KIND_COUNTS = Object.freeze({ waiting: 0, inProgress: 0, finished: 0, total: 0 });
 
 const EMPTY_COUNTS = Object.freeze({
   [ORDER_KINDS.consignment]: EMPTY_KIND_COUNTS,
   [ORDER_KINDS.purchase]: EMPTY_KIND_COUNTS,
 });
 
-const sameCounts = (a, b) => a?.waiting === b?.waiting && a?.inProgress === b?.inProgress;
+const COUNT_FIELDS = ["waiting", "inProgress", "finished", "total"];
+
+const sameCounts = (a, b) => COUNT_FIELDS.every((field) => a?.[field] === b?.[field]);
 
 export const useOrderTodoCounts = () => {
   const { pathname } = useLocation();
@@ -98,12 +102,10 @@ export const useOrderTodoCounts = () => {
     const timer = window.setInterval(refresh, REFRESH_INTERVAL_MS);
     window.addEventListener("focus", handleFocus);
 
-    const unsubscribeCounts = subscribeOrderTodoCount(({ kind, waiting, inProgress }) => {
+    const unsubscribeCounts = subscribeOrderTodoCount(({ kind, ...summary }) => {
       lastLoadAtRef.current = Date.now();
       setCounts((current) =>
-        sameCounts(current[kind], { waiting, inProgress })
-          ? current
-          : { ...current, [kind]: { waiting, inProgress } },
+        sameCounts(current[kind], summary) ? current : { ...current, [kind]: summary },
       );
     });
 

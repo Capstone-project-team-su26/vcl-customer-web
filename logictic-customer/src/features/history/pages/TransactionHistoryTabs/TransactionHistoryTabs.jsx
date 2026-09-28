@@ -12,6 +12,7 @@ import {
 
 import {
   PAYMENT_SUBJECTS,
+  isPurchaseOrderPayment,
   resolvePaymentReturn,
 } from "@features/payment/utils/pendingPaymentReturn";
 import { ORDER_KINDS } from "@features/orders/constants/orderPaths";
@@ -85,12 +86,16 @@ export default function TransactionHistoryTabs() {
 
   /* Đơn của giao dịch vừa trả: danh sách bên dưới (luôn "Tất cả") tô đơn này. */
   const justPaid = paymentReturn.pending;
+  /* Khoản của đơn kho mua hộ (PUR-…-n) nằm ở phần Mua hộ: tô yêu cầu mua hộ sở hữu nó. */
+  const paidPurchaseOrder = isPurchaseOrderPayment(justPaid);
   const highlightPurchase =
     justPaid?.subject === PAYMENT_SUBJECTS.purchaseRequest
       ? justPaid
-      : null;
+      : paidPurchaseOrder && justPaid?.purchaseRequestId
+        ? { targetId: justPaid.purchaseRequestId }
+        : null;
   const highlightOrder =
-    justPaid?.subject === PAYMENT_SUBJECTS.order
+    justPaid?.subject === PAYMENT_SUBJECTS.order && !paidPurchaseOrder
       ? justPaid
       : null;
 

@@ -34,9 +34,14 @@ import "./SettlementPreviewCard.css";
  * - Khoản FINAL_PAYMENT do Sale phát hành: đọc GET /api/orders/{id}/payments, khoản đang
  *   PENDING có checkoutUrl thì cho khách trả — cùng cách màn cọc đang làm.
  *
- * @param {{ orderId: string, refreshKey?: number }} props
+ *
+ * `paymentOwner` (tuỳ chọn): { orderType, purchaseRequestId, code } của đơn — ghi vào bản
+ *   ghi thanh toán để khoản của đơn kho mua hộ (PUR-…-n) trả về phần Mua hộ của Lịch sử giao
+ *   dịch và "Xem đơn" kèm `?yc=` (xem pendingPaymentReturn.js).
+ *
+ * @param {{ orderId: string, refreshKey?: number, paymentOwner?: object }} props
  */
-export default function SettlementPreviewCard({ orderId, refreshKey = 0 }) {
+export default function SettlementPreviewCard({ orderId, refreshKey = 0, paymentOwner }) {
   const [state, setState] = useState({ loading: true, preview: null, finalPayment: null, error: "" });
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -86,6 +91,7 @@ export default function SettlementPreviewCard({ orderId, refreshKey = 0 }) {
 
   const handlePay = () => {
     const opened = openCheckout(finalPayment?.checkoutUrl, {
+      ...paymentOwner,
       subject: PAYMENT_SUBJECTS.order,
       targetId: orderId,
       purpose: PAYMENT_PURPOSES.finalPayment,

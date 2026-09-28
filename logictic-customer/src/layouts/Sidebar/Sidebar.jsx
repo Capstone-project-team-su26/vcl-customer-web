@@ -24,9 +24,15 @@ import {
 
 import { getUserProfileApi } from "@features/auth/api/authService";
 /* Import sâu như orderPaths: barrel orders kéo theo cả các trang (CSS toàn cục). */
-import { ORDER_KINDS } from "@features/orders/constants/orderPaths";
+import {
+  ORDER_KINDS,
+  PURCHASE_REQUEST_QUERY_KEY,
+} from "@features/orders/constants/orderPaths";
 import { useOrderTodoCounts } from "@features/orders/hooks/useOrderTodoCounts";
 import logoImage from "@assets/anhlogocap2.jpeg";
+
+/* Màu số đỏ/xám dùng chung với câu tóm tắt trang danh sách đơn — nạp trước Sidebar.css. */
+import "@shared/styles/countBadge.css";
 
 import "./Sidebar.css";
 
@@ -40,24 +46,28 @@ import "./Sidebar.css";
  *
  * Số hiển thị bị rút gọn ("99+") nên câu đầy đủ nằm ở tooltip (title) và ở phần chữ
  * ẩn cho trình đọc màn hình; con số nhìn thấy thì aria-hidden để không bị đọc hai lần.
+ * Tooltip thêm dòng "Tổng N đơn (gồm cả đã xong)" — đúng con số đầu trang danh sách — để
+ * khách không tưởng xám + đỏ phải bằng tổng.
  */
 const formatBadgeCount = (count) => (count > 99 ? "99+" : count);
 
-const MenuBadge = ({ inProgress = 0, waiting = 0 }) => {
+const MenuBadge = ({ inProgress = 0, waiting = 0, total = 0 }) => {
   const showProgress = inProgress > 0;
   const showWaiting = waiting > 0;
 
   if (!showProgress && !showWaiting) return null;
 
-  const description = [
+  const lines = [
     showProgress && `${inProgress} đơn VCL đang xử lý`,
     showWaiting && `${waiting} đơn đang chờ bạn xử lý`,
-  ]
-    .filter(Boolean)
-    .join(", ");
+    /* Chỉ ghi khi tổng khác xám + đỏ, tức là có đơn đã xong/đã huỷ. */
+    total > inProgress + waiting && `Tổng ${total} đơn (gồm cả đã xong)`,
+  ].filter(Boolean);
+
+  const description = lines.join(", ");
 
   return (
-    <span className="menu-badges" title={description}>
+    <span className="menu-badges" title={lines.join("\n")}>
       {showProgress && (
         <span className="menu-badge menu-badge--progress" aria-hidden="true">
           {formatBadgeCount(inProgress)}
@@ -179,8 +189,12 @@ export default function Sidebar() {
   const todoCounts = useOrderTodoCounts();
 
   /* Đơn mua hộ nằm dưới /orders/mua-ho/...; mọi URL /orders còn lại là đơn ký gửi
-     (danh sách /orders/ky-gui và chi tiết /orders/:orderId/:tab). */
-  const purchaseOrdersActive = startsWith(pathname, "/orders/mua-ho");
+     (danh sách /orders/ky-gui và chi tiết /orders/:orderId/:tab) — trừ chi tiết đơn kho của
+     mua hộ (PUR-…-n), mở từ yêu cầu mua hộ với `?yc=`. */
+  const purchaseOrdersActive =
+    startsWith(pathname, "/orders/mua-ho") ||
+    (startsWith(pathname, "/orders") &&
+      new URLSearchParams(location.search).has(PURCHASE_REQUEST_QUERY_KEY));
   const consignmentOrdersActive =
     !purchaseOrdersActive && startsWith(pathname, "/orders");
   const createOrderActive = startsWith(pathname, "/create-order");
@@ -370,6 +384,7 @@ export default function Sidebar() {
           <MenuBadge
             inProgress={todoCounts[ORDER_KINDS.consignment].inProgress}
             waiting={todoCounts[ORDER_KINDS.consignment].waiting}
+            total={todoCounts[ORDER_KINDS.consignment].total}
           />
         </NavLink>
 
@@ -383,6 +398,7 @@ export default function Sidebar() {
           <MenuBadge
             inProgress={todoCounts[ORDER_KINDS.purchase].inProgress}
             waiting={todoCounts[ORDER_KINDS.purchase].waiting}
+            total={todoCounts[ORDER_KINDS.purchase].total}
           />
         </NavLink>
 

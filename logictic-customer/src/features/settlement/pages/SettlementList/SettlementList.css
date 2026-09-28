@@ -86,6 +86,36 @@
   text-transform: uppercase;
 }
 
+/* Nhãn "Mua hộ": đơn kho sinh từ yêu cầu mua hộ (mã PUR-…-n). */
+.settlement-card__tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  letter-spacing: 0.02em;
+}
+
+.settlement-card__origin {
+  margin: 0 0 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.settlement-card__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settlement-card__link:hover {
+  text-decoration: underline;
+}
+
 .settlement-card__top strong {
   color: #111827;
   font-size: 15px;

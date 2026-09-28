@@ -109,3 +109,22 @@
 .supplier-card__refund {
   margin-top: 10px;
 }
+
+/* Đơn kho của đơn mua (PUR-…-n) — lối sang trang theo dõi / tất toán. */
+.supplier-card__warehouse {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5eaf1;
+}
+
+.supplier-card__warehouse-line {
+  margin: 0;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.supplier-card__warehouse-tag {
+  margin-left: 8px;
+}

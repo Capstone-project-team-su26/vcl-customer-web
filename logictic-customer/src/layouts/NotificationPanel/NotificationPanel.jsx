@@ -26,6 +26,7 @@ import {
   markAllNotificationsAsReadApi,
 } from "@features/notifications/api/notificationApi";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
+import { purchaseCodeOfWarehouseOrder } from "@shared/utils/orderType";
 import {
   CONSIGNMENT_ORDERS_PATH,
   ORDER_KINDS,
@@ -36,6 +37,7 @@ import {
   paymentTabPath,
   purchaseRequestDetailPath,
   purchaseRequestQuotationPath,
+  purchaseWarehouseOrderPath,
 } from "@features/orders/constants/orderPaths";
 
 import "./NotificationPanel.css";
@@ -123,6 +125,28 @@ const JOURNEY_KEYWORDS = [
 ];
 
 /**
+ * Tab của trang chi tiết đơn kho ứng với nội dung thông báo (dùng cho đơn kho mua hộ PUR-…-n).
+ */
+const resolveWarehouseOrderTab = (fullText, normalizedType) => {
+  if (normalizedType === "quotation" || fullText.includes("báo giá")) return ORDER_TABS.quotation;
+  if (
+    normalizedType === "payment" ||
+    fullText.includes("thanh toán") ||
+    fullText.includes("tất toán") ||
+    fullText.includes("đặt cọc") ||
+    fullText.includes("phí")
+  ) {
+    return ORDER_TABS.payment;
+  }
+  if (fullText.includes("sự cố") || fullText.includes("khiếu nại") || fullText.includes("bồi thường")) {
+    return ORDER_TABS.incidents;
+  }
+  if (fullText.includes("phiếu nhập kho")) return ORDER_TABS.parcels;
+
+  return ORDER_TABS.journey;
+};
+
+/**
  * Suy đoán URL chuyển hướng từ dữ liệu thông báo đến đúng màn hình trong hệ thống
  */
 const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
@@ -142,6 +166,32 @@ const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
     item.referenceId ||
     item.orderId ||
     item.purchaseRequestId;
+
+  // 1a. ĐƠN KHO của mua hộ (mã PUR-…-n, sinh khi VCL đặt nhà cung cấp): đi như đơn ký gửi,
+  //     nên mở trang chi tiết đơn kho (tab theo nội dung) kèm `?yc=` — KHÔNG phải
+  //     /orders/mua-ho/{id} (id đơn kho không phải id yêu cầu → "không tìm thấy").
+  //     Mã yêu cầu PUR-… (không hậu tố) không vào nhánh này.
+  const warehousePurchaseCode = purchaseCodeOfWarehouseOrder(code);
+
+  if (warehousePurchaseCode) {
+    const relatedIsRequest = String(item.relatedType || "").toUpperCase().includes("PURCHASE");
+    const warehouseOrderId =
+      item.orderId || (relatedIsRequest ? "" : item.relatedId || item.referenceId || "");
+    const requestId =
+      item.purchaseRequestId || (relatedIsRequest ? item.relatedId || item.referenceId || "" : "");
+
+    if (warehouseOrderId) {
+      return purchaseWarehouseOrderPath(
+        warehouseOrderId,
+        resolveWarehouseOrderTab(fullText, normalizedType),
+        requestId,
+      );
+    }
+
+    return requestId
+      ? purchaseRequestDetailPath(requestId)
+      : orderListPath({ kind: ORDER_KINDS.purchase, search: warehousePurchaseCode });
+  }
 
   // 1b. Thông báo hành trình / hàng về VN của đơn ký gửi — "Đơn VCL-...: Hàng đã khởi hành",
   //     kho VN đã nhận hàng, sự cố, tất toán, đặt giao, đã giao, giữ hàng... Backend không gửi
@@ -220,7 +270,10 @@ const resolveNavigationUrl = (item, extractedCode, normalizedType, source) => {
   ) {
     return relatedId
       ? purchaseRequestDetailPath(relatedId)
-      : orderListPath({ kind: ORDER_KINDS.purchase });
+      : orderListPath({
+          kind: ORDER_KINDS.purchase,
+          search: code.toUpperCase().startsWith("PUR-") ? code : undefined,
+        });
   }
 
   // 7. Mặc định

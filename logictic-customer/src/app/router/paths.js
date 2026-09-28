@@ -157,7 +157,8 @@ export const DASHBOARD_ROUTES = {
   orderDetail: (orderId = ":orderId", tab = DEFAULT_ORDER_DETAIL_TAB) =>
     `/orders/${orderId}/${tab}`,
 
-  /* Chi tiết đơn MUA HỘ — hai màn riêng, còn chạy dữ liệu mẫu. */
+  /* Chi tiết đơn MUA HỘ — hai màn riêng (chi tiết yêu cầu + báo giá/trả trước), đọc API thật
+     /api/purchase-requests/{id}[/quotation|/payments|/purchase-orders|/refunds]. */
   purchaseRequestDetail: (requestId = ":requestId") =>
     `/orders/${ORDER_KINDS.purchase}/${requestId}`,
   purchaseRequestQuotation: (requestId = ":requestId") =>

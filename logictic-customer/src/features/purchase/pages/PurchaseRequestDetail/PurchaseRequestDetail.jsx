@@ -1110,7 +1110,8 @@ const PurchaseRequestDetail = () => {
 
             <p>
               VCL đặt hàng theo từng nhà cung cấp. Nếu giá mua thực cao hơn giá đã báo,
-              bạn sẽ thấy phần chênh và quyết định ở đây.
+              bạn sẽ thấy phần chênh và quyết định ở đây. Đơn đã đặt hàng có nút "Theo dõi
+              hành trình" và "Thanh toán tất toán" khi hàng về Việt Nam.
             </p>
           </div>
         </div>

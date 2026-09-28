@@ -119,8 +119,30 @@
 
 .order-list__summary {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
   color: #5b6b80;
   font-weight: 600;
+}
+
+/* Mỗi phần "· [số] nhãn" không bị bẻ giữa chừng khi màn hẹp. */
+.order-list__summary-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.order-list__summary-sep {
+  color: #94a3b8;
+}
+
+.order-list__summary-note {
+  color: #8a97a8;
+  font-weight: 500;
 }
 
 .order-list__rows {

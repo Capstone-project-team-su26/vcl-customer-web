@@ -30,6 +30,12 @@
    phí giao lại / chênh giá mở ở TAB MỚI (noopener) — tab đó không thấy sessionStorage
    của tab cũ. Bản ghi hết hạn sau 1 giờ.
 
+   ĐƠN KHO CỦA MUA HỘ (mã PUR-…-n, OrderType=PURCHASE): khoản của nó (tất toán, phí lưu kho,
+   phí giao lại…) vẫn là subject ORDER, nhưng bản ghi mang thêm `purchaseOrder` +
+   `purchaseRequestId` (nơi mở thanh toán truyền orderType / purchaseRequestId / mã đơn).
+   Nhờ vậy returnUrl là `?loai=mua-ho` (phần Mua hộ của Lịch sử giao dịch — đơn kho PUR không
+   nằm trong phần Ký gửi) và "Xem đơn" về tab Thanh toán của đơn kho kèm `?yc=`.
+
    Hàm thuần, không đụng window/storage ở top-level (tools/verify-api.mjs nạp qua SSR).
    ========================================================= */
 
@@ -41,11 +47,12 @@ import {
   ORDER_KINDS,
   ORDER_TABS,
   PAYMENT_TABS,
-  orderDetailPath,
   paymentTabPath,
   purchaseRequestDetailPath,
   purchaseRequestQuotationPath,
+  purchaseWarehouseOrderPath,
 } from "@features/orders/constants/orderPaths";
+import { isPurchaseWarehouseOrder } from "@shared/utils/orderType";
 
 export const PENDING_PAYMENT_KEY = "vcl_pending_payment";
 
@@ -146,10 +153,27 @@ export const extractOrderCodeFromCheckoutUrl = (url) => {
 };
 
 /**
+ * Khoản của một ĐƠN KHO MUA HỘ (PUR-…-n)? Nhận cả bản ghi đã lưu (`purchaseOrder`) lẫn
+ * input của nơi mở thanh toán (`orderType` / `purchaseRequestId` / mã đơn `code`).
+ */
+export const isPurchaseOrderPayment = (pending) => {
+  if (!pending || pending.subject !== PAYMENT_SUBJECTS.order) return false;
+  if (typeof pending.purchaseOrder === "boolean") return pending.purchaseOrder;
+
+  return isPurchaseWarehouseOrder({
+    orderType: pending.orderType,
+    purchaseRequestId: pending.purchaseRequestId,
+    orderCode: pending.code,
+  });
+};
+
+/**
  * Ghi khoản sắp trả. Thiếu đơn đích thì không ghi (không biết quay về đâu).
  *
  * @param {{ subject: string, targetId: string, purpose?: string, orderCode?: string|number,
- *   checkoutUrl?: string, code?: string, amount?: number }} input
+ *   checkoutUrl?: string, code?: string, amount?: number, orderType?: string,
+ *   purchaseRequestId?: string }} input
+ *   orderType / purchaseRequestId / code (mã đơn): để nhận ra đơn kho của mua hộ.
  * @returns {boolean}
  */
 export const savePendingPayment = ({
@@ -160,6 +184,8 @@ export const savePendingPayment = ({
   checkoutUrl,
   code,
   amount,
+  orderType,
+  purchaseRequestId,
   createdAt = new Date().toISOString(),
 } = {}) => {
   const id = String(targetId ?? "").trim();
@@ -185,6 +211,8 @@ export const savePendingPayment = ({
           !Number.isFinite(Number(amount))
             ? null
             : Number(amount),
+        purchaseOrder: isPurchaseOrderPayment({ subject, orderType, purchaseRequestId, code }),
+        purchaseRequestId: purchaseRequestId ? String(purchaseRequestId) : null,
         createdAt,
       }),
     );
@@ -248,14 +276,17 @@ export const getPendingPaymentOrderPath = (pending, { retry = false } = {}) => {
       : purchaseRequestDetailPath(pending.targetId);
   }
 
+  /* Đơn kho của mua hộ: kèm `?yc=` để trang đơn hiện "Đơn mua hộ · …" và quay về yêu cầu. */
+  const requestId = isPurchaseOrderPayment(pending) ? pending.purchaseRequestId : null;
+
   if (retry && pending.purpose === PAYMENT_PURPOSES.deposit) {
-    return orderDetailPath(pending.targetId, ORDER_TABS.quotation);
+    return purchaseWarehouseOrderPath(pending.targetId, ORDER_TABS.quotation, requestId);
   }
 
-  const path = orderDetailPath(pending.targetId, ORDER_TABS.payment);
+  const path = purchaseWarehouseOrderPath(pending.targetId, ORDER_TABS.payment, requestId);
 
   return pending.orderCode
-    ? `${path}?${PAYMENT_TRANSACTION_QUERY_KEY}=${encodeURIComponent(pending.orderCode)}`
+    ? `${path}${path.includes("?") ? "&" : "?"}${PAYMENT_TRANSACTION_QUERY_KEY}=${encodeURIComponent(pending.orderCode)}`
     : path;
 };
 
@@ -263,16 +294,29 @@ export const getPendingPaymentOrderPath = (pending, { retry = false } = {}) => {
 export const isPurchaseRequestPayment = (pending) =>
   pending?.subject === PAYMENT_SUBJECTS.purchaseRequest;
 
-/** Phần của Lịch sử giao dịch ứng với khoản: yêu cầu mua hộ → mua-ho, đơn kho → ky-gui. */
-export const paymentReturnKindOf = (subject) =>
-  subject === PAYMENT_SUBJECTS.purchaseRequest ? ORDER_KINDS.purchase : ORDER_KINDS.consignment;
+/**
+ * Phần của Lịch sử giao dịch ứng với khoản: yêu cầu mua hộ và đơn kho của mua hộ (PUR-…-n)
+ * → mua-ho; đơn ký gửi → ky-gui.
+ *
+ * @param {string | object} subjectOrPending mã subject, hoặc cả bản ghi / input của
+ *   savePendingPayment (để nhận ra đơn kho của mua hộ).
+ */
+export const paymentReturnKindOf = (subjectOrPending) => {
+  const pending =
+    subjectOrPending && typeof subjectOrPending === "object" ? subjectOrPending : null;
+  const subject = pending ? pending.subject : subjectOrPending;
+
+  return subject === PAYMENT_SUBJECTS.purchaseRequest || isPurchaseOrderPayment(pending)
+    ? ORDER_KINDS.purchase
+    : ORDER_KINDS.consignment;
+};
 
 /**
  * returnUrl / cancelUrl gửi kèm MỌI lần tạo thanh toán: cùng về "Thanh toán → Lịch sử giao
  * dịch" `?loai=`; backend tự gắn `orderCode` + `status` (success / cancelled) để banner xử lý.
  *
- * @param {string} kind ORDER_KINDS.purchase (khoản của yêu cầu mua hộ) | ORDER_KINDS.consignment
- *   (khoản của đơn kho, kể cả đơn kho sinh từ mua hộ).
+ * @param {string} kind ORDER_KINDS.purchase (khoản của yêu cầu mua hộ hoặc đơn kho PUR-…-n của
+ *   mua hộ) | ORDER_KINDS.consignment (khoản của đơn ký gửi).
  * @param {string} [origin] mặc định window.location.origin.
  * @returns {{ returnUrl: string, cancelUrl: string }} chuỗi rỗng khi không biết origin (SSR).
  */
@@ -410,7 +454,7 @@ export const resolvePaymentReturn = (search = "", now = Date.now()) => {
   let kind = null;
 
   if (pending) {
-    kind = paymentReturnKindOf(pending.subject);
+    kind = paymentReturnKindOf(pending);
   } else if (kindParam === ORDER_KINDS.purchase || kindParam === ORDER_KINDS.consignment) {
     kind = kindParam;
   } else if (hasReturnParams) {

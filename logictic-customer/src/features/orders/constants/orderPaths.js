@@ -52,6 +52,25 @@ const encodeId = (value) => encodeURIComponent(String(value ?? ""));
 export const orderDetailPath = (orderId, tab = ORDER_TABS.journey) =>
   `${ORDERS_ROOT_PATH}/${encodeId(orderId)}/${tab}`;
 
+/**
+ * Query mang theo id yêu cầu mua hộ khi mở chi tiết một ĐƠN KHO PUR (đơn kho sinh ra khi
+ * VCL đặt nhà cung cấp cho yêu cầu mua hộ). Chi tiết đơn kho của backend không trả id yêu
+ * cầu, nên trang chi tiết đọc query này để dựng lối quay về yêu cầu mua hộ.
+ */
+export const PURCHASE_REQUEST_QUERY_KEY = "yc";
+
+/**
+ * `/orders/{id}/{tab}?yc={requestId}` — chi tiết ĐƠN KHO của một yêu cầu mua hộ (mã
+ * PUR-…-n). Cùng trang với đơn ký gửi (tab Hành trình / Thanh toán...), kèm id yêu cầu
+ * để trang hiện nhãn "Đơn mua hộ" và nút quay về yêu cầu.
+ */
+export const purchaseWarehouseOrderPath = (orderId, tab = ORDER_TABS.journey, requestId) => {
+  const base = orderDetailPath(orderId, tab);
+  const id = String(requestId ?? "").trim();
+
+  return id ? `${base}?${PURCHASE_REQUEST_QUERY_KEY}=${encodeId(id)}` : base;
+};
+
 /** `/orders/mua-ho/{id}` — chi tiết một yêu cầu mua hộ. */
 export const purchaseRequestDetailPath = (requestId) =>
   `${PURCHASE_ORDERS_PATH}/${encodeId(requestId)}`;

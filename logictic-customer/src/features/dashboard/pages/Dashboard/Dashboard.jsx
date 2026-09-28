@@ -121,7 +121,7 @@ export default function Dashboard() {
             {loading
               ? "Đang đọc tình hình đơn của bạn…"
               : progress.total > 0
-                ? `${progress.total} đơn đang đi tiếp. Việc cần bạn xử lý xem ở mục Đơn ký gửi và Thanh toán.`
+                ? `${progress.total} đơn đang đi tiếp. Việc cần bạn xử lý xem ở mục Đơn ký gửi, Đơn mua hộ và Thanh toán.`
                 : "Chưa có đơn nào đang chạy. Tạo đơn mới ở lối tắt bên dưới."}
           </p>
         </div>

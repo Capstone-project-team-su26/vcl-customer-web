@@ -21,6 +21,7 @@
    Lỗi HTTP ném nguyên dạng axios để component đọc `error.response.data.message` như cũ.
    ========================================================= */
 import httpClient from "@shared/api/httpClient";
+import { normalizePurchasePaymentHistory } from "@features/purchase/utils/purchasePayments";
 
 /* =========================================================
    HELPER
@@ -323,7 +324,14 @@ export const getPaymentCheckoutUrl = (payment = {}) =>
   trimText(payment?.paymentUrl) ||
   getSepayCheckoutPageUrl(payment?.orderCode);
 
-/** Lịch sử thu tiền của một yêu cầu: trả trước, chênh giá, đợt cuối ở VN. */
+/**
+ * Lịch sử thu tiền của một yêu cầu: trả trước, chênh giá (kèm các khoản hoàn).
+ *
+ * Backend trả PurchasePaymentHistoryResponseDto — MỘT object { requestStatus, totalPaid,
+ * outstanding, depositAmount, payments: [{ paymentId, orderCode, paymentType, amount,
+ * status, checkoutUrl, … }], refunds, … }, không phải mảng. Bản trước bọc toArray nên
+ * luôn ra [] (mất cả khoản đang chờ lẫn link thanh toán).
+ */
 export const getPurchaseRequestPaymentHistoryApi = async (requestId, options = {}) => {
   const id = requireRequestId(requestId);
 
@@ -333,7 +341,7 @@ export const getPurchaseRequestPaymentHistoryApi = async (requestId, options = {
       { signal: getSignal(options) }
     );
 
-    return toArray(unwrapData(response.data));
+    return normalizePurchasePaymentHistory(unwrapData(response.data));
   } catch (error) {
     logApiError("Lỗi lấy lịch sử thanh toán mua hộ:", error);
 

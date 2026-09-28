@@ -4,6 +4,9 @@
  * API thật GET /api/orders/awaiting-settlement (server tự lọc đơn của khách). Đơn ký gửi
  * có thêm lối sang màn Theo dõi đơn để xem trước tất toán theo cân đo VN (bảng từng kiện,
  * điều chỉnh cước, VAT, vướng mắc) trước khi trả.
+ *
+ * Danh sách gồm CẢ đơn kho của mua hộ (mã PUR-…-n): không lọc đi — đây là chỗ khách tất
+ * toán chúng. Thẻ gắn nhãn "Mua hộ" và có lối về yêu cầu mua hộ sở hữu đơn.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -25,8 +28,10 @@ import {
 /* Import sâu: chỉ cần bảng đường dẫn, không kéo theo trang của feature orders. */
 import {
   ORDER_TABS,
-  orderDetailPath,
+  purchaseRequestDetailPath,
+  purchaseWarehouseOrderPath,
 } from "@features/orders/constants/orderPaths";
+import { isPurchaseWarehouseOrder } from "@shared/utils/orderType";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 
@@ -110,13 +115,23 @@ export default function SettlementList() {
           {orders.map((order) => {
             const due = order.pendingPaymentAmount;
             const canPay = Number(due) > 0 && Boolean(order.pendingCheckoutUrl);
+            /* Đơn kho mua hộ: orderType backend trả, thiếu thì theo tiền tố mã PUR-. */
+            const isPurchase = isPurchaseWarehouseOrder(order);
+            const requestId = isPurchase ? order.purchaseRequestId : null;
+            /* Chi tiết đơn (ký gửi hay đơn kho mua hộ) — đơn mua hộ mang theo id yêu cầu. */
+            const openPaymentTab = () =>
+              navigate(purchaseWarehouseOrderPath(order.orderId, ORDER_TABS.payment, requestId));
 
             return (
               <article key={order.orderId} className="settlement-card">
                 <div className="settlement-card__top">
                   <div>
                     <span className="settlement-card__kind">
-                      {order.orderType === "PURCHASE" ? "Đơn mua hộ" : "Đơn ký gửi"}
+                      {isPurchase ? (
+                        <span className="settlement-card__tag">Mua hộ</span>
+                      ) : (
+                        "Đơn ký gửi"
+                      )}
                     </span>
                     <strong>{order.orderCode}</strong>
                   </div>
@@ -146,6 +161,19 @@ export default function SettlementList() {
                   </div>
                 </dl>
 
+                {isPurchase && requestId ? (
+                  <p className="settlement-card__origin">
+                    Đơn vận chuyển của một yêu cầu mua hộ.{" "}
+                    <button
+                      type="button"
+                      className="settlement-card__link"
+                      onClick={() => navigate(purchaseRequestDetailPath(requestId))}
+                    >
+                      Xem yêu cầu mua hộ
+                    </button>
+                  </p>
+                ) : null}
+
                 {order.discrepancyParcelCount > 0 && (
                   <p className="settlement-card__warning">
                     <ReportProblemRoundedIcon />
@@ -170,6 +198,9 @@ export default function SettlementList() {
                         onClick={() => {
                           /* Link SePay là đường dẫn tương đối — openCheckout ghép base URL API. */
                           const opened = openCheckout(order.pendingCheckoutUrl, {
+                            /* Đơn kho mua hộ: trả xong về phần Mua hộ, "Xem đơn" kèm ?yc=. */
+                            orderType: isPurchase ? "PURCHASE" : "CONSIGNMENT",
+                            purchaseRequestId: requestId,
                             subject: PAYMENT_SUBJECTS.order,
                             targetId: order.orderId,
                             purpose: PAYMENT_PURPOSES.finalPayment,
@@ -194,18 +225,12 @@ export default function SettlementList() {
                         Nhân viên đang chốt phí cuối cho đơn này.
                       </span>
 
-                      {order.orderType === "PURCHASE" ? (
-                        <Button
-                          variant="outlined"
-                          onClick={() => navigate(orderDetailPath(order.orderId, ORDER_TABS.payment))}
-                        >
+                      {isPurchase ? (
+                        <Button variant="outlined" onClick={openPaymentTab}>
                           Xem lịch sử thanh toán
                         </Button>
                       ) : (
-                        <Button
-                          variant="outlined"
-                          onClick={() => navigate(orderDetailPath(order.orderId, ORDER_TABS.payment))}
-                        >
+                        <Button variant="outlined" onClick={openPaymentTab}>
                           Xem trước tất toán
                         </Button>
                       )}

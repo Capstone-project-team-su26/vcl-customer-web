@@ -28,9 +28,14 @@ import {
  * gọi được) — khách chỉ xem, và trả khi khoản đó xuất hiện (link trong danh sách thanh toán).
  * Đơn không có kiện nào từng lên kệ VN thì ẩn thẻ.
  *
- * @param {{ orderId: string, refreshKey?: number }} props
+ *
+ * `paymentOwner` (tuỳ chọn): { orderType, purchaseRequestId, code } của đơn — ghi vào bản
+ *   ghi thanh toán để khoản của đơn kho mua hộ (PUR-…-n) trả về phần Mua hộ của Lịch sử giao
+ *   dịch và "Xem đơn" kèm `?yc=` (xem pendingPaymentReturn.js).
+ *
+ * @param {{ orderId: string, refreshKey?: number, paymentOwner?: object }} props
  */
-export default function StorageFeeCard({ orderId, refreshKey = 0 }) {
+export default function StorageFeeCard({ orderId, refreshKey = 0, paymentOwner }) {
   const [state, setState] = useState({ fee: null, payable: null });
 
   useEffect(() => {
@@ -92,6 +97,7 @@ export default function StorageFeeCard({ orderId, refreshKey = 0 }) {
               onClick={() => {
                 if (
                   !openCheckout(payable.checkoutUrl, {
+                    ...paymentOwner,
                     subject: PAYMENT_SUBJECTS.order,
                     targetId: orderId,
                     purpose: PAYMENT_PURPOSES.storageFee,

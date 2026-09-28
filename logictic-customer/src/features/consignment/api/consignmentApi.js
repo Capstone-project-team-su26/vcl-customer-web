@@ -37,6 +37,10 @@ import {
 } from "@/mocks/data/consignments";
 import { delay, nowIso } from "@/mocks/mockUtils";
 import httpClient, { isCanceledRequest } from "@shared/api/httpClient";
+import {
+  CONSIGNMENT_ORDER_TYPE,
+  isPurchaseWarehouseOrder,
+} from "@shared/utils/orderType";
 
 const getSignal = (options = {}) => {
   if (typeof options?.addEventListener === "function") {
@@ -467,8 +471,6 @@ const createApiError = (status, message) => {
    TIỆN ÍCH GỌI API THẬT
    ========================================================= */
 
-const CONSIGNMENT_ORDER_TYPE = "CONSIGNMENT";
-
 const DEFAULT_PAGE_SIZE = 10;
 
 /** Bóc một lớp envelope { message, data }; body không có khoá data thì trả nguyên. */
@@ -608,10 +610,21 @@ const toConsignmentPage = (pageData, requestedPage, requestedSize) => {
       ? pageData
       : { items: toArray(pageData) };
 
-  const items = toArray(data.items).map(toConsignmentRecord);
+  const rawItems = toArray(data.items);
+
+  /*
+   * Lưới an toàn: request đã gửi orderType=CONSIGNMENT, nhưng backend đời cũ bỏ qua tham số
+   * này và trả lẫn đơn kho của mua hộ (mã PUR-…-n). Lọc lại ở đây để mọi màn "Đơn ký gửi"
+   * (danh sách, badge menu, lịch sử, chat) không bao giờ hiện đơn khách không tạo.
+   * Backend đã lọc thì bước này không bỏ dòng nào.
+   */
+  const items = rawItems
+    .filter((item) => !isPurchaseWarehouseOrder(item))
+    .map(toConsignmentRecord);
+  const droppedCount = rawItems.length - items.length;
 
   const totalCount = Number.isFinite(Number(data.totalCount))
-    ? Number(data.totalCount)
+    ? Math.max(items.length, Number(data.totalCount) - droppedCount)
     : items.length;
 
   const pageNumber = Number(data.pageNumber) || requestedPage;

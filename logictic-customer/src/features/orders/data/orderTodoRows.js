@@ -19,11 +19,20 @@
      - "action" → chờ khách (dòng tô cam)            → số đỏ
      - "wait"   → VCL/hệ thống đang làm (đơn vừa tạo, đang báo giá, đang xử lý, đang
                   vận chuyển, đang giao...)          → số xám
-     - "done"   → hoàn tất / huỷ / từ chối           → không đếm
-   Mỗi dòng chỉ có một tone nên hai tập KHÔNG bao giờ chồng nhau.
+     - "done"   → hoàn tất / huỷ / từ chối           → không có badge, chỉ vào "tổng"
+   Mỗi dòng chỉ có một tone nên ba tập KHÔNG bao giờ chồng nhau, và phủ kín:
+   đỏ + xám + đã xong = tổng số đơn (tooltip menu và câu tóm tắt đầu danh sách ghi đủ ba).
 
    Đếm trên TOÀN BỘ đơn của khách: đi hết mọi trang của API danh sách chứ không dừng ở
    trang đầu.
+
+   ĐƠN KHO PUR-…-n (backend sinh khi VCL đặt nhà cung cấp cho yêu cầu mua hộ, OrderType =
+   PURCHASE) nằm chung bảng với đơn ký gửi nhưng là việc của ĐƠN MUA HỘ:
+     - "Đơn ký gửi": getConsignmentsApi luôn gửi orderType=CONSIGNMENT và tự lọc lại
+       (lưới an toàn cho backend cũ) → không bao giờ có đơn kho PUR;
+     - "Đơn mua hộ": khoản tất toán Sale đã phát hành cho đơn kho PUR gắn vào dòng yêu cầu
+       mua hộ sở hữu nó (tone "action" → số đỏ Đơn mua hộ).
+   Hai loại đơn vì vậy không đếm trùng một đơn kho nào.
    ========================================================= */
 
 /* Import sâu: chỉ cần hàm gọi danh sách, barrel kéo theo cả các trang (CSS toàn cục). */
@@ -33,6 +42,7 @@ import { getAwaitingSettlementApi } from "@features/settlement/api/settlementApi
 
 import { ORDER_KINDS } from "@features/orders/constants/orderPaths";
 import {
+  groupPurchaseSettlementsByRequest,
   sortByNewest,
   toConsignmentRow,
   toPurchaseRow,
@@ -76,6 +86,9 @@ const fetchAllPages = async (fetchPage) => {
   return items;
 };
 
+const settledItems = (result) =>
+  result.status === "fulfilled" && Array.isArray(result.value) ? result.value : [];
+
 /**
  * Tải toàn bộ đơn của một loại và quy về dòng danh sách (kèm việc khách cần làm).
  * Lỗi của API danh sách được ném ra; lỗi của danh sách chờ tất toán thì bỏ qua (dòng
@@ -86,14 +99,25 @@ const fetchAllPages = async (fetchPage) => {
  */
 export const loadOrderRows = async (kind, { signal } = {}) => {
   if (kind === ORDER_KINDS.purchase) {
-    const items = await fetchAllPages((page) =>
-      getPurchaseRequestsApi(page, PAGE_SIZE, { signal }),
+    const [listResult, settlementResult] = await Promise.allSettled([
+      fetchAllPages((page) => getPurchaseRequestsApi(page, PAGE_SIZE, { signal })),
+      /* Đơn kho PUR đã về VN chờ khách tất toán — việc của đơn mua hộ, xem đầu file. */
+      getAwaitingSettlementApi({ signal }),
+    ]);
+
+    if (listResult.status === "rejected") throw listResult.reason;
+
+    const requests = listResult.value;
+    const settlementsByRequestId = groupPurchaseSettlementsByRequest(
+      settledItems(settlementResult),
+      requests,
     );
 
-    return sortByNewest(items.map(toPurchaseRow));
+    return sortByNewest(requests.map((item) => toPurchaseRow(item, settlementsByRequestId)));
   }
 
   const [listResult, settlementResult] = await Promise.allSettled([
+    /* getConsignmentsApi luôn gửi orderType=CONSIGNMENT và lọc bỏ đơn kho PUR — xem đầu file. */
     fetchAllPages((page) =>
       getConsignmentsApi({ params: { pageNumber: page, pageSize: PAGE_SIZE }, signal }),
     ),
@@ -103,11 +127,10 @@ export const loadOrderRows = async (kind, { signal } = {}) => {
 
   if (listResult.status === "rejected") throw listResult.reason;
 
+  /* Chỉ khớp theo orderId của đơn ký gửi đã tải, nên dòng tất toán của đơn kho PUR ở đây
+     không bao giờ được dùng — nó được đếm bên "Đơn mua hộ". */
   const dueByOrderId = new Map(
-    (settlementResult.status === "fulfilled" && Array.isArray(settlementResult.value)
-      ? settlementResult.value
-      : []
-    ).map((item) => [String(item?.orderId), item]),
+    settledItems(settlementResult).map((item) => [String(item?.orderId), item]),
   );
 
   return sortByNewest(listResult.value.map((item) => toConsignmentRow(item, dueByOrderId)));
@@ -115,16 +138,25 @@ export const loadOrderRows = async (kind, { signal } = {}) => {
 
 /* Tone do OrderList.helpers gán — xem chú thích đầu file. */
 const TONE_WAITING_ON_CUSTOMER = "action";
-const TONE_IN_PROGRESS_FOR_VCL = "wait";
+const TONE_FINISHED = "done";
 
 /** Dòng này đang chờ khách bấm một việc (dòng tô cam). */
 export const isWaitingOnCustomer = (row) => row?.todo?.tone === TONE_WAITING_ON_CUSTOMER;
 
+/** Đơn đã hoàn tất / đã huỷ / bị từ chối — không vào số đỏ lẫn số xám. */
+export const isFinishedOrder = (row) => row?.todo?.tone === TONE_FINISHED;
+
 /**
  * Đơn đang chạy, chờ VCL/hệ thống (chưa hoàn tất, chưa huỷ, không phải việc của khách):
  * đơn vừa tạo chờ duyệt, đang lên báo giá, đang mua/gom hàng, đang vận chuyển, đang giao...
+ *
+ * Định nghĩa là "không phải action, không phải done" chứ không so đúng "wait": dòng có tone
+ * lạ/thiếu (dữ liệu hỏng) vẫn rơi vào nhóm này — giống nhánh default của hai hàm resolve…Todo
+ * trong OrderList.helpers (trạng thái lạ → "VCL đang xử lý đơn"). Nhờ vậy ba nhóm luôn phủ
+ * kín: đỏ + xám + đã xong = tổng số đơn, không đơn nào lọt ra ngoài.
  */
-export const isInProgressForVcl = (row) => row?.todo?.tone === TONE_IN_PROGRESS_FOR_VCL;
+export const isInProgressForVcl = (row) =>
+  Boolean(row) && !isWaitingOnCustomer(row) && !isFinishedOrder(row);
 
 const countRows = (rows, predicate) =>
   Array.isArray(rows) ? rows.filter(predicate).length : 0;
@@ -135,13 +167,19 @@ export const countWaitingOnCustomer = (rows) => countRows(rows, isWaitingOnCusto
 /** Số đơn VCL đang xử lý trong một tập dòng (số xám). */
 export const countInProgress = (rows) => countRows(rows, isInProgressForVcl);
 
+/** Số đơn đã xong / đã huỷ trong một tập dòng (không có badge). */
+export const countFinished = (rows) => countRows(rows, isFinishedOrder);
+
 /**
- * Cả hai số của một tập dòng — dạng dữ liệu mà badge menu dùng.
- * @returns {{ waiting: number, inProgress: number }}
+ * Mọi con số của một tập dòng — dạng dữ liệu mà badge menu và câu tóm tắt đầu danh sách
+ * cùng dùng. total = waiting + inProgress + finished (ba nhóm rời nhau, phủ kín).
+ * @returns {{ waiting: number, inProgress: number, finished: number, total: number }}
  */
 export const summarizeOrderCounts = (rows) => ({
   waiting: countWaitingOnCustomer(rows),
   inProgress: countInProgress(rows),
+  finished: countFinished(rows),
+  total: countRows(rows, Boolean),
 });
 
 /* ---------------------------------------------------------- *
@@ -158,12 +196,13 @@ const isCount = (value) => Number.isFinite(value) && value >= 0;
  * menu, để hai chỗ luôn cùng một bản dữ liệu, không chờ badge tự tải lại.
  *
  * @param {"ky-gui" | "mua-ho"} kind
- * @param {{ waiting: number, inProgress: number }} counts thường là summarizeOrderCounts(rows)
+ * @param {{ waiting: number, inProgress: number, finished: number, total: number }} counts
+ *   thường là summarizeOrderCounts(rows)
  */
-export const publishOrderTodoCount = (kind, { waiting, inProgress } = {}) => {
+export const publishOrderTodoCount = (kind, { waiting, inProgress, finished, total } = {}) => {
   globalThis.window?.dispatchEvent?.(
     new globalThis.CustomEvent(ORDER_TODO_COUNT_EVENT, {
-      detail: { kind, waiting, inProgress },
+      detail: { kind, waiting, inProgress, finished, total },
     }),
   );
 };
@@ -171,9 +210,12 @@ export const publishOrderTodoCount = (kind, { waiting, inProgress } = {}) => {
 /** @returns {() => void} hàm huỷ đăng ký */
 export const subscribeOrderTodoCount = (listener) => {
   const handler = (event) => {
-    const { kind, waiting, inProgress } = event?.detail || {};
-    if (Object.values(ORDER_KINDS).includes(kind) && isCount(waiting) && isCount(inProgress)) {
-      listener({ kind, waiting, inProgress });
+    const { kind, waiting, inProgress, finished, total } = event?.detail || {};
+    if (
+      Object.values(ORDER_KINDS).includes(kind) &&
+      [waiting, inProgress, finished, total].every(isCount)
+    ) {
+      listener({ kind, waiting, inProgress, finished, total });
     }
   };
 

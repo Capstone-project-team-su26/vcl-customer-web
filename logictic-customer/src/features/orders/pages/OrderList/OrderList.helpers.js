@@ -20,6 +20,10 @@ import {
 } from "@features/consignment/constants/orderStatus";
 import { formatVnd } from "@shared/utils/formatNumber";
 import { apiToTimestamp } from "@shared/utils/timeUtc";
+import {
+  isPurchaseWarehouseOrder,
+  purchaseCodeOfWarehouseOrder,
+} from "@shared/utils/orderType";
 import { ORDER_KINDS, ORDER_TABS } from "@features/orders/constants/orderPaths";
 
 /* ---------------------------------------------------------- *
@@ -204,13 +208,34 @@ const resolveConsignmentTodo = (status, dueAmount) => {
   }
 };
 
-const resolvePurchaseTodo = (status) => {
+/** Tab "ảo" của dòng mua hộ: mở phần Thanh toán của đơn kho PUR đang chờ tất toán. */
+export const PURCHASE_SETTLEMENT_TAB = "settlement";
+
+/**
+ * @param {string} status mã trạng thái yêu cầu mua hộ
+ * @param {Array<{ amount: number }>} settlements đơn kho PUR của yêu cầu đang chờ khách tất toán
+ */
+const resolvePurchaseTodo = (status, settlements = []) => {
+  /* Đơn kho của yêu cầu đã về VN và Sale đã phát hành đợt cuối: việc gấp nhất của khách,
+     bất kể yêu cầu đang ở trạng thái nào (thường là "VCL đang mua và gom hàng"). */
+  const settlementTotal = settlements.reduce((sum, due) => sum + (Number(due.amount) || 0), 0);
+
+  if (settlementTotal > 0) {
+    return todo(
+      "action",
+      `Cần tất toán ${formatVnd(settlementTotal)}`,
+      PURCHASE_SETTLEMENT_TAB,
+    );
+  }
+
   switch (status) {
     case "QUOTED":
     case "QUOTATION_SENT":
       return todo("action", "Cần xác nhận báo giá", "quotation");
     case "PENDING_CUSTOMER_CONFIRMATION":
       return todo("action", "Cần xác nhận thông tin đơn", "detail");
+    /* Đã chấp nhận báo giá, khoản trả trước PENDING: màn báo giá có nút "Tiếp tục thanh
+       toán" mở lại đúng khoản đó (backend không có yêu cầu ACCEPTED — giữ cho dữ liệu cũ). */
     case "ACCEPTED":
     case "WAITING_PAYMENT":
       return todo("action", "Cần thanh toán", "quotation");
@@ -257,10 +282,64 @@ export const toConsignmentRow = (item, dueByOrderId) => {
   };
 };
 
-/** @param {object} item bản ghi yêu cầu mua hộ (hiện còn đọc dữ liệu mẫu) */
-export const toPurchaseRow = (item) => {
+/**
+ * Gom khoản tất toán của ĐƠN KHO PUR theo yêu cầu mua hộ sở hữu nó.
+ *
+ * Đơn kho PUR-…-n (sinh khi VCL đặt nhà cung cấp) về kho VN thì cũng phải tất toán như
+ * đơn ký gửi, và GET /api/orders/awaiting-settlement trả chung cả hai loại. Khoản đó là
+ * việc của ĐƠN MUA HỘ: đếm vào dòng yêu cầu mua hộ (số đỏ "Đơn mua hộ"), không vào "Đơn
+ * ký gửi" — danh sách ký gửi đã lọc bỏ đơn kho PUR nên hai tập không chồng nhau.
+ *
+ * Chỉ tính khoản Sale ĐÃ phát hành (pendingPaymentAmount > 0); "chờ nhân viên chốt phí"
+ * chưa phải việc của khách.
+ *
+ * @param {object[]} settlements dòng của GET /api/orders/awaiting-settlement
+ * @param {object[]} requests    yêu cầu mua hộ (để khớp theo mã khi dòng thiếu purchaseRequestId)
+ * @returns {Map<string, Array<{ orderId: string, orderCode: string, amount: number }>>}
+ */
+export const groupPurchaseSettlementsByRequest = (settlements, requests = []) => {
+  const requestIdByCode = new Map(
+    (Array.isArray(requests) ? requests : [])
+      .map((request) => [
+        upper(request?.purchaseCode),
+        String(request?.purchaseRequestId || request?.id || ""),
+      ])
+      .filter(([code, id]) => code && id),
+  );
+
+  const byRequest = new Map();
+
+  for (const item of Array.isArray(settlements) ? settlements : []) {
+    const amount = Number(item?.pendingPaymentAmount);
+
+    if (!isPurchaseWarehouseOrder(item) || !(amount > 0)) continue;
+
+    const requestId =
+      String(item?.purchaseRequestId || "") ||
+      requestIdByCode.get(upper(purchaseCodeOfWarehouseOrder(item?.orderCode))) ||
+      "";
+
+    if (!requestId) continue;
+
+    const list = byRequest.get(requestId) || [];
+    list.push({ orderId: String(item?.orderId || ""), orderCode: item?.orderCode || "", amount });
+    byRequest.set(requestId, list);
+  }
+
+  return byRequest;
+};
+
+/**
+ * @param {object} item bản ghi yêu cầu mua hộ (GET /api/purchase-requests, API thật)
+ * @param {Map<string, Array>} [settlementsByRequestId] kết quả groupPurchaseSettlementsByRequest
+ */
+export const toPurchaseRow = (item, settlementsByRequestId) => {
   const status = upper(item?.status);
   const requestId = item?.purchaseRequestId || item?.id || "";
+  const settlements =
+    settlementsByRequestId instanceof Map
+      ? settlementsByRequestId.get(String(requestId)) || []
+      : [];
 
   return {
     key: `purchase:${requestId}`,
@@ -275,7 +354,9 @@ export const toPurchaseRow = (item) => {
     createdAt: item?.createdAt || null,
     createdAtTs: apiToTimestamp(item?.createdAt) || 0,
     itemCount: Number(item?.itemCount) || (item?.items?.length ?? 0),
-    todo: resolvePurchaseTodo(status),
+    /* Đơn kho PUR đang chờ tất toán — bấm dòng là mở thẳng phần Thanh toán của đơn đó. */
+    settlements,
+    todo: resolvePurchaseTodo(status, settlements),
   };
 };
 
@@ -308,3 +389,45 @@ export const countByStage = (rows) => {
 
   return counts;
 };
+
+/* ---------------------------------------------------------- *
+ * Câu tóm tắt đầu danh sách                                   *
+ * ---------------------------------------------------------- */
+
+/** Đang lọc khi chip khác "Tất cả" hoặc ô tìm có chữ (khớp đúng cách filterRows đọc search). */
+export const isFilteredView = ({ stage, search }) =>
+  stage !== ORDER_STAGES.all || String(search ?? "").trim() !== "";
+
+/**
+ * Nội dung câu tóm tắt đầu danh sách.
+ *
+ * `counts` PHẢI là summarizeOrderCounts(toàn bộ dòng) — đúng bộ số trang này gửi cho badge
+ * menu — nên ở tab "Tất cả" câu này và badge luôn cùng số:
+ *   "50 đơn · [8] chờ bạn xử lý · [40] VCL đang xử lý · 2 đã xong / đã huỷ"
+ * (badge = "waiting" → số đỏ, "progress" → số xám, null → chữ thường). Nhóm bằng 0 thì bỏ.
+ *
+ * Đang lọc/tìm thì chỉ ghi số dòng đang hiện, kèm tổng — để khách không đem số đã lọc so
+ * với menu (menu luôn đếm toàn bộ).
+ *
+ * @param {{ counts: { waiting: number, inProgress: number, finished: number, total: number },
+ *           visibleCount: number, filtered: boolean }} input
+ */
+export const buildOrderListSummary = ({ counts, visibleCount, filtered }) => {
+  const total = Number(counts?.total) || 0;
+
+  if (filtered) return { filtered: true, visibleCount, total, parts: [] };
+
+  const parts = [
+    { key: "waiting", count: counts?.waiting, label: "chờ bạn xử lý", badge: "waiting" },
+    { key: "inProgress", count: counts?.inProgress, label: "VCL đang xử lý", badge: "progress" },
+    { key: "finished", count: counts?.finished, label: "đã xong / đã huỷ", badge: null },
+  ].filter((part) => Number(part.count) > 0);
+
+  return { filtered: false, visibleCount, total, parts };
+};
+
+/** Bản chữ thuần của câu tóm tắt — cho aria-label/kiểm thử. */
+export const summaryToText = ({ filtered, visibleCount, total, parts }) =>
+  filtered
+    ? `Đang lọc: ${visibleCount} đơn · số trên menu đếm toàn bộ ${total} đơn`
+    : [`${total} đơn`, ...parts.map((part) => `${part.count} ${part.label}`)].join(" · ");

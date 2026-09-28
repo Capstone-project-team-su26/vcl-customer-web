@@ -13,14 +13,16 @@ import { formatVietnamDateTime } from "@shared/utils/timeUtc";
 import {
   ORDER_STAGES,
   ORDER_STAGE_CHIPS,
+  PURCHASE_SETTLEMENT_TAB,
+  buildOrderListSummary,
   countByStage,
   filterRows,
+  isFilteredView,
   normalizeStage,
 } from "./OrderList.helpers";
 /* Cùng một nguồn với badge menu: tải MỌI trang, cùng định nghĩa "đang chờ bạn xử lý"
    (số đỏ) và "VCL đang xử lý" (số xám). */
 import {
-  isWaitingOnCustomer,
   loadOrderRows,
   publishOrderTodoCount,
   summarizeOrderCounts,
@@ -31,8 +33,11 @@ import {
   orderDetailPath,
   purchaseRequestDetailPath,
   purchaseRequestQuotationPath,
+  purchaseWarehouseOrderPath,
 } from "@features/orders/constants/orderPaths";
 
+/* Cùng class/màu với badge menu: số đỏ/xám trong câu tóm tắt trông y như trên menu. */
+import "@shared/styles/countBadge.css";
 import "./OrderList.css";
 
 /* Tải hết đơn của khách một lượt (mọi trang) rồi lọc tại chỗ: đổi chip là hiện ngay,
@@ -136,10 +141,31 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
     [state.rows, stage, search],
   );
 
-  const actionCount = visibleRows.filter(isWaitingOnCustomer).length;
+  /* Đúng bộ số đã gửi cho badge menu (publishOrderTodoCount ở trên): tính trên TOÀN BỘ
+     dòng, không phải dòng đang lọc. */
+  const orderCounts = useMemo(() => summarizeOrderCounts(state.rows), [state.rows]);
+
+  const summary = buildOrderListSummary({
+    counts: orderCounts,
+    visibleCount: visibleRows.length,
+    filtered: isFilteredView({ stage, search }),
+  });
 
   const openRow = (row) => {
     if (row.kind === ORDER_KINDS.purchase) {
+      /* Chờ tất toán đơn kho PUR: một đơn thì mở thẳng tab Thanh toán của đơn đó; nhiều
+         đơn thì về yêu cầu mua hộ, khối "Đơn mua nhà cung cấp" có nút cho từng đơn. */
+      if (row.todo.tab === PURCHASE_SETTLEMENT_TAB) {
+        const [only, ...rest] = row.settlements || [];
+
+        navigate(
+          only?.orderId && rest.length === 0
+            ? purchaseWarehouseOrderPath(only.orderId, ORDER_TABS.payment, row.id)
+            : purchaseRequestDetailPath(row.id),
+        );
+        return;
+      }
+
       navigate(
         row.todo.tab === "quotation"
           ? purchaseRequestQuotationPath(row.id)
@@ -213,10 +239,37 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
         <Empty className="order-list__empty" description={copy.empty} />
       ) : (
         <>
-          <p className="order-list__summary">
-            {visibleRows.length} đơn
-            {actionCount > 0 ? ` · ${actionCount} đơn đang chờ bạn xử lý` : ""}
-          </p>
+          {summary.filtered ? (
+            <p className="order-list__summary">
+              Đang lọc: {summary.visibleCount} đơn
+              <span className="order-list__summary-note">
+                {` · số trên menu đếm toàn bộ ${summary.total} đơn`}
+              </span>
+            </p>
+          ) : (
+            <p className="order-list__summary">
+              <span>{summary.total} đơn</span>
+              {summary.parts.map((part) => (
+                <span key={part.key} className="order-list__summary-part">
+                  <span className="order-list__summary-sep" aria-hidden="true">
+                    ·
+                  </span>
+                  {part.badge ? (
+                    <span
+                      className={`menu-badge${
+                        part.badge === "progress" ? " menu-badge--progress" : ""
+                      }`}
+                    >
+                      {part.count}
+                    </span>
+                  ) : (
+                    <span>{part.count}</span>
+                  )}
+                  <span>{part.label}</span>
+                </span>
+              ))}
+            </p>
+          )}
 
           <ul className="order-list__rows">
             {visibleRows.map((row) => (

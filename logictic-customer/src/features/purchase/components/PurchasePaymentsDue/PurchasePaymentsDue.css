@@ -1,0 +1,149 @@
+/* Khối "Đơn mua hộ chờ bạn thanh toán" trên tab Cần thanh toán — cùng bộ màu với
+   SettlementList: nền trắng, viền #e6ebf3, chữ phụ #6b7280, nhấn xanh #1d4ed8. */
+
+.purchase-due {
+  padding: 24px 26px 4px;
+}
+
+.purchase-due__head h2 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.purchase-due__head p {
+  margin: 0 0 18px;
+  max-width: 62ch;
+  color: #6b7280;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.purchase-due__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+}
+
+.purchase-due__card {
+  padding: 18px 19px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+.purchase-due__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.purchase-due__kind {
+  display: block;
+  margin-bottom: 3px;
+  color: #9ca3af;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.purchase-due__top strong {
+  color: #111827;
+  font-size: 15px;
+  word-break: break-all;
+}
+
+.purchase-due__badge {
+  flex: 0 0 auto;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.purchase-due__badge.is-due {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.purchase-due__meta {
+  margin: 0 0 12px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.purchase-due__foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.purchase-due__amount span {
+  display: block;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.purchase-due__amount strong {
+  color: #1d4ed8;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.purchase-due__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.purchase-due__more {
+  margin: 14px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.purchase-due__more button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.purchase-due--error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 26px 0;
+  padding: 10px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .purchase-due {
+    padding: 18px 16px 4px;
+  }
+
+  .purchase-due--error {
+    margin: 16px 16px 0;
+  }
+}

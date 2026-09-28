@@ -43,9 +43,11 @@ import {
   confirmAndPayQuotationApi,
   getPaymentCheckoutUrl,
   getPurchaseRequestDetailApi,
+  getPurchaseRequestPaymentHistoryApi,
   getPurchaseRequestQuotationApi,
   rejectQuotationApi,
 } from "@features/purchase/api/purchaseRequestApi";
+import { resolvePrepayState } from "@features/purchase/utils/purchasePayments";
 import {
   formatUtcDateTime,
   formatVietnamDateTime,
@@ -61,7 +63,10 @@ import "./BuyForMeQuotationListDetail.css";
 import {
   ORDER_KINDS,
   PURCHASE_ORDERS_PATH,
+  purchaseRequestDetailPath,
 } from "@features/orders/constants/orderPaths";
+/* Import sâu: barrel payment kéo theo các trang (thứ tự CSS). */
+import { openCheckout } from "@features/payment/utils/openCheckout";
 import {
   PAYMENT_PURPOSES,
   PAYMENT_SUBJECTS,
@@ -196,7 +201,7 @@ const formatDateDisplay = (value) => {
   });
 };
 
-const formatStatusTag = (status) => {
+const formatStatusTag = (status, displayName = "") => {
   const normalized = String(status || "")
     .trim()
     .toUpperCase();
@@ -207,19 +212,38 @@ const formatStatusTag = (status) => {
       return <Tag color="gold">Đã báo giá</Tag>;
     case "PENDING_REVIEW":
       return <Tag color="blue">Chờ duyệt</Tag>;
+    /* confirm-and-pay đẩy yêu cầu sang WAITING_PAYMENT (backend không có yêu cầu ACCEPTED). */
+    case "ACCEPTED":
+    case "WAITING_PAYMENT":
+      return <Tag color="orange">Chờ thanh toán trả trước</Tag>;
+    case "PAID":
+      return <Tag color="green">Đã trả trước</Tag>;
     case "APPROVED":
     case "CONFIRMED":
-    case "ACCEPTED":
-    case "PAID":
       return <Tag color="green">Đã xác nhận</Tag>;
     case "REJECTED":
+    case "QUOTATION_REJECTED":
     case "CANCELLED":
     case "CANCELED":
       return <Tag color="red">Đã từ chối</Tag>;
     default:
-      return <Tag color="default">{normalized || "Chưa xác định"}</Tag>;
+      return <Tag color="default">{displayName || normalized || "Chưa xác định"}</Tag>;
   }
 };
+
+/* Trang CSKH (DASHBOARD_ROUTES.customerServiceChat) — khoản trả trước đã huỷ chỉ CSKH mở lại được. */
+const CUSTOMER_SERVICE_CHAT_PATH = "/customer-service-chat";
+
+/*
+ * Link của khoản đang chờ: link backend lưu lúc tạo khoản (SePay: trang QR của server;
+ * payOS: link cổng). Chỉ khoản SePay mới dựng lại được từ orderCode — link payOS mất thì
+ * không đoán.
+ */
+const getPendingCheckoutUrl = (payment) =>
+  getPaymentCheckoutUrl({
+    checkoutUrl: payment?.checkoutUrl,
+    orderCode: payment?.paymentMethod === "PAYOS" ? "" : payment?.orderCode,
+  });
 
 const writeTextToClipboard = async (text) => {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -268,6 +292,10 @@ const BuyForMeQuotationListDetail = () => {
   const [quotationAction, setQuotationAction] = useState("");
   const [isActionLoading, setIsActionLoading] = useState(false);
 
+  /* Khoản thu của yêu cầu (sau khi khách đã chấp nhận báo giá). key = lần tải ứng với dữ liệu. */
+  const [paymentsState, setPaymentsState] = useState({ key: "", payments: null, error: false });
+  const [paymentsTick, setPaymentsTick] = useState(0);
+
   useEffect(() => {
     return () => {
       if (copyTimerRef.current) {
@@ -281,11 +309,11 @@ const BuyForMeQuotationListDetail = () => {
      ========================================================= */
 
   const fetchDetail = useCallback(
-    async (signal) => {
+    async (signal, { silent = false } = {}) => {
       if (!requestId) return;
 
       try {
-        setLoading(true);
+        if (!silent) setLoading(true);
         const result = await getPurchaseRequestDetailApi(requestId, { signal });
         let dataPayload = result?.data ?? result;
 
@@ -601,16 +629,112 @@ const BuyForMeQuotationListDetail = () => {
     .trim()
     .toUpperCase();
 
-  const isQuoted =
-    statusNormalized === "QUOTED" ||
-    quotationStatusNormalized === "PENDING_CUSTOMER_CONFIRMATION";
+  /*
+   * KHOẢN TRẢ TRƯỚC SAU KHI CHẤP NHẬN — đọc GET /api/purchase-requests/{id}/payments.
+   * confirm-and-pay chỉ chạy một lần (báo giá phải còn PENDING_CUSTOMER_CONFIRMATION); sau
+   * đó yêu cầu là WAITING_PAYMENT và khoản PREPAYMENT nằm PENDING kèm link. Trước bản này
+   * màn chỉ có thanh xác nhận cho QUOTED → khách bấm "Cần thanh toán" từ danh sách tới đây
+   * mà không có gì để trả. Xem features/purchase/utils/purchasePayments.js.
+   */
+  const purchaseRequestId = requestInfo.purchaseRequestId || requestId;
 
-  const showQuotationActions = isQuoted && Boolean(quotation);
+  /* Lượt đầu (chưa có khoản thu) để biết có cần tải khoản thu không. */
+  const needsPayments = ["loading", "unknown", "paid"].includes(
+    resolvePrepayState({
+      requestStatus: statusNormalized,
+      quotationStatus: quotationStatusNormalized,
+      hasQuotation: Boolean(quotation),
+    }).view
+  );
+
+  const paymentsKey =
+    !loading && needsPayments && purchaseRequestId
+      ? `${purchaseRequestId}|${statusNormalized}|${paymentsTick}`
+      : "";
+
+  useEffect(() => {
+    if (!paymentsKey) return undefined;
+
+    const controller = new AbortController();
+
+    getPurchaseRequestPaymentHistoryApi(purchaseRequestId, { signal: controller.signal })
+      .then((history) => {
+        if (controller.signal.aborted) return;
+        setPaymentsState({ key: paymentsKey, payments: history?.payments ?? [], error: false });
+      })
+      .catch((error) => {
+        if (controller.signal.aborted || isCanceledRequest(error)) return;
+        console.error("Lỗi tải khoản thu của yêu cầu mua hộ:", error);
+        setPaymentsState({ key: paymentsKey, payments: null, error: true });
+      });
+
+    return () => controller.abort();
+  }, [paymentsKey, purchaseRequestId]);
+
+  const paymentsReady = Boolean(paymentsKey) && paymentsState.key === paymentsKey;
+
+  const prepay = resolvePrepayState({
+    requestStatus: statusNormalized,
+    quotationStatus: quotationStatusNormalized,
+    hasQuotation: Boolean(quotation),
+    payments: paymentsReady ? paymentsState.payments : null,
+    paymentsError: paymentsReady && paymentsState.error,
+  });
+
+  const showQuotationActions = prepay.view === "quote" && Boolean(quotation);
+  const showPrepayDock =
+    !loading && Boolean(quotation) && prepay.view !== "quote" && prepay.view !== "none";
+
+  /* Kiểm tra lại sau khi trả ở tab SePay: tải lại yêu cầu (trạng thái) + khoản thu, không che trang. */
+  const refreshPrepay = useCallback(() => {
+    setPaymentsTick((tick) => tick + 1);
+    fetchDetail(undefined, { silent: true });
+  }, [fetchDetail]);
+
+  /* SePay mở ở TAB MỚI: khách quay lại tab này là tự kiểm tra lại. */
+  const waitingForMoney = prepay.view === "awaitingPayment" || prepay.view === "verifying";
+
+  useEffect(() => {
+    if (!waitingForMoney) return undefined;
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshPrepay();
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [waitingForMoney, refreshPrepay]);
+
+  /* Mở lại ĐÚNG khoản đang chờ — không gọi confirm-and-pay (backend từ chối lần hai). */
+  const handleContinuePayment = () => {
+    const payment = prepay.payment;
+    const opened = openCheckout(getPendingCheckoutUrl(payment), {
+      subject: PAYMENT_SUBJECTS.purchaseRequest,
+      targetId: purchaseRequestId,
+      purpose: PAYMENT_PURPOSES.purchasePrepay,
+      orderCode: payment?.orderCode,
+      code: requestInfo.purchaseCode,
+      amount: payment?.amount,
+    });
+
+    if (!opened) {
+      AuthNotify.error(
+        "Không mở được trang thanh toán",
+        "Khoản trả trước chưa có link thanh toán. Vui lòng liên hệ CSKH để được hỗ trợ."
+      );
+      return;
+    }
+
+    AuthNotify.info(
+      "Đã mở trang thanh toán",
+      "Quét mã VietQR để trả. Trả xong quay lại đây, màn sẽ tự cập nhật."
+    );
+  };
 
   return (
     <div
       className={`quotation-detail-page ${
-        showQuotationActions ? "has-action-dock" : ""
+        showQuotationActions || showPrepayDock ? "has-action-dock" : ""
       }`}
     >
       {/* Top Navigation */}
@@ -678,7 +802,7 @@ const BuyForMeQuotationListDetail = () => {
                       )}
 
                       <div className="quotation-status-badge">
-                        {formatStatusTag(requestInfo.status)}
+                        {formatStatusTag(requestInfo.status, requestInfo.statusDisplayName)}
                       </div>
                     </div>
                   </div>
@@ -1333,6 +1457,145 @@ const BuyForMeQuotationListDetail = () => {
                     ? "Đang xử lý..."
                     : "Chọn cách xác nhận"}
                 </Button>
+              </div>
+            </aside>
+          )}
+
+          {/* Sau khi chấp nhận: khoản trả trước đang chờ / đã trả / cần CSKH mở lại */}
+          {showPrepayDock && (
+            <aside
+              className={`quotation-action-dock is-payment quotation-prepay-dock is-${prepay.view}`}
+              aria-live="polite"
+            >
+              <div className="quotation-action-dock-icon">
+                {prepay.view === "paid" ? (
+                  <TaskAltRoundedIcon />
+                ) : prepay.view === "verifying" ? (
+                  <AccessTimeOutlinedIcon />
+                ) : prepay.view === "reissueNeeded" || prepay.view === "unknown" ? (
+                  <InfoOutlinedIcon />
+                ) : (
+                  <PaymentRoundedIcon />
+                )}
+              </div>
+
+              <div className="quotation-action-dock-content">
+                {prepay.view === "awaitingPayment" && (
+                  <>
+                    <span>CHỜ BẠN THANH TOÁN TRẢ TRƯỚC</span>
+                    <strong>{formatVndCurrency(prepay.amount)}</strong>
+                    <small>
+                      Bạn đã chấp nhận báo giá. Khoản trả trước
+                      {prepay.payment?.orderCode ? <> (mã GD <b>{prepay.payment.orderCode}</b>)</> : null}{" "}
+                      đang chờ tiền — bấm Tiếp tục thanh toán để mở lại đúng khoản này.
+                    </small>
+                  </>
+                )}
+
+                {prepay.view === "verifying" && (
+                  <>
+                    <span>ĐANG ĐỐI SOÁT KHOẢN TRẢ TRƯỚC</span>
+                    <strong>{formatVndCurrency(prepay.amount)}</strong>
+                    <small>VCL đang xác nhận tiền bạn đã chuyển. Không cần chuyển thêm.</small>
+                  </>
+                )}
+
+                {prepay.view === "paid" && (
+                  <>
+                    <span>ĐÃ TRẢ TRƯỚC</span>
+                    <strong>
+                      {prepay.amount !== null
+                        ? formatVndCurrency(prepay.amount)
+                        : "VCL đã nhận khoản trả trước"}
+                    </strong>
+                    <small>VCL đang đặt mua hàng. Theo dõi tiến độ ở chi tiết đơn.</small>
+                  </>
+                )}
+
+                {prepay.view === "reissueNeeded" && (
+                  <>
+                    <span>KHOẢN TRẢ TRƯỚC KHÔNG CÒN HIỆU LỰC</span>
+                    <strong>Liên hệ CSKH để được cấp lại lần thanh toán</strong>
+                    <small>
+                      {prepay.payment
+                        ? `Khoản ${formatVndCurrency(prepay.amount)}${prepay.payment.orderCode ? ` (mã GD ${prepay.payment.orderCode})` : ""} đã bị huỷ. `
+                        : "Chưa có khoản trả trước nào đang chờ. "}
+                      Báo giá đã được chấp nhận nên không tạo lại được trên web.
+                    </small>
+                  </>
+                )}
+
+                {prepay.view === "loading" && (
+                  <>
+                    <span>ĐÃ CHẤP NHẬN BÁO GIÁ</span>
+                    <strong>Đang tải khoản trả trước…</strong>
+                  </>
+                )}
+
+                {prepay.view === "unknown" && (
+                  <>
+                    <span>ĐÃ CHẤP NHẬN BÁO GIÁ</span>
+                    <strong>Không tải được khoản trả trước</strong>
+                    <small>Bấm Kiểm tra lại, hoặc xem ở Thanh toán → Cần thanh toán.</small>
+                  </>
+                )}
+              </div>
+
+              <div className="quotation-action-dock-buttons">
+                {prepay.view === "paid" ? (
+                  <Button
+                    type="button"
+                    variant="contained"
+                    className="quotation-payment-button"
+                    onClick={() => navigate(purchaseRequestDetailPath(purchaseRequestId))}
+                  >
+                    Xem chi tiết đơn
+                  </Button>
+                ) : (
+                  <>
+                    {prepay.view !== "reissueNeeded" && (
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        startIcon={
+                          prepay.view === "loading" ? (
+                            <CircularProgress size={17} thickness={5} />
+                          ) : (
+                            <AutorenewIcon />
+                          )
+                        }
+                        disabled={prepay.view === "loading"}
+                        onClick={refreshPrepay}
+                        className="quotation-refresh-button"
+                      >
+                        Kiểm tra lại
+                      </Button>
+                    )}
+
+                    {prepay.view === "awaitingPayment" && (
+                      <Button
+                        type="button"
+                        variant="contained"
+                        startIcon={<PaymentRoundedIcon />}
+                        onClick={handleContinuePayment}
+                        className="quotation-payment-button"
+                      >
+                        Tiếp tục thanh toán
+                      </Button>
+                    )}
+
+                    {prepay.view === "reissueNeeded" && (
+                      <Button
+                        type="button"
+                        variant="contained"
+                        onClick={() => navigate(CUSTOMER_SERVICE_CHAT_PATH)}
+                        className="quotation-payment-button"
+                      >
+                        Liên hệ CSKH
+                      </Button>
+                    )}
+                  </>
+                )}
               </div>
             </aside>
           )}
