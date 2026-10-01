@@ -473,14 +473,24 @@ const requestCodexReply = async ({
     return requestMockAssistantReply({ messages, signal });
   }
 
+  const isExternalProvider =
+    /openrouter\.ai|openai\.com|anthropic\.com|groq\.com/i.test(AI_CONFIG.endpoint);
+
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${activeApiKey}`,
   };
 
-  if (customerToken) {
+  // Chỉ đính kèm token người dùng khi gọi backend/proxy nội bộ.
+  // Các dịch vụ public như OpenRouter sẽ từ chối qua CORS preflight (Access-Control-Allow-Headers).
+  if (customerToken && !isExternalProvider) {
     headers["X-Customer-Token"] = customerToken;
     headers["X-Access-Token"] = customerToken;
+  }
+
+  if (AI_CONFIG.endpoint.includes("openrouter.ai")) {
+    headers["HTTP-Referer"] = typeof window !== "undefined" ? window.location.origin : "";
+    headers["X-Title"] = "Vietnam Logistic Assistant";
   }
 
   const codexResponse = await fetch(AI_CONFIG.endpoint, {
