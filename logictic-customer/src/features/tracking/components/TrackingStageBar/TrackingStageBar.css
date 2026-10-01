@@ -3,7 +3,8 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* Số bậc do component đặt (mặc định 7 bậc hành trình; mua hộ 9 bậc). */
+  grid-template-columns: repeat(var(--tracking-stage-count, 7), minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -74,6 +75,19 @@
   box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.15);
 }
 
+/* Đơn dừng hẳn (huỷ / từ chối): các bậc sau không bao giờ tới — mờ hẳn đi. */
+.tracking-stage-bar__step--skipped .tracking-stage-bar__dot {
+  background: #f8fafc;
+  border-style: dashed;
+  color: #b4c0cf;
+}
+
+.tracking-stage-bar__step--skipped .tracking-stage-bar__label {
+  color: #a3b0c0;
+  text-decoration: line-through;
+  text-decoration-color: rgba(163, 176, 192, 0.6);
+}
+
 .tracking-stage-bar__label {
   font-size: 12px;
   font-weight: 600;
@@ -99,6 +113,16 @@
 .tracking-stage-bar__now.is-warning {
   background: #fff4e6;
   color: #9a3412;
+}
+
+.tracking-stage-bar__now.is-stopped {
+  background: #fdecec;
+  color: #991b1b;
+}
+
+.tracking-stage-bar__now.is-done {
+  background: #e8f8f0;
+  color: #065f46;
 }
 
 .tracking-stage-bar--compact .tracking-stage-bar__label {
@@ -129,6 +153,13 @@
 
 @media (max-width: 380px) {
   .tracking-stage-bar__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Nhiều bậc (mua hộ 9 bậc): màn hẹp xếp 3 cột cho đều hàng (3 × 3) thay vì 4 + 4 + 1. */
+@media (max-width: 640px) {
+  .tracking-stage-bar--many .tracking-stage-bar__steps {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

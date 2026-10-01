@@ -9,12 +9,17 @@ import {
   PARCEL_HANDLING,
   PARCEL_HANDLING_LABELS,
   getParcelHandlingApi,
+  getParcelHandlingLabel,
   updateParcelHandlingApi,
 } from "@features/delivery/api/destinationHandlingApi";
 /* Import sâu có chủ đích: barrel @features/tracking kéo theo các trang (kể cả trang công
    khai OrderLookup có CSS toàn cục) vào sớm, làm đổi thứ tự nạp CSS của app
    (ARCHITECTURE mục 4). Chỉ lấy đúng file hằng số. */
 import { getPackageStatusLabel } from "@features/tracking/constants/trackingStages";
+import { buildTablePagination } from "@shared/utils/pagination";
+
+/* Bảng dài (nhiều kiện) thì phân trang 10/20/50; ≤ 10 dòng không hiện thanh phân trang. */
+const PARCEL_TABLE_PAGINATION = buildTablePagination({ unit: "kiện" });
 
 const HANDLING_OPTIONS = [
   { value: PARCEL_HANDLING.DIRECT_DELIVERY, label: PARCEL_HANDLING_LABELS.DIRECT_DELIVERY },
@@ -101,7 +106,7 @@ export default function ParcelHandlingCard({ orderId, refreshKey = 0, onChanged 
           return (
             <Tooltip title={row.lockedReason || "Kiện đã khoá, không đổi được."}>
               <span>
-                <LockOutlined /> {PARCEL_HANDLING_LABELS[row.handling] || row.handling}
+                <LockOutlined /> {getParcelHandlingLabel(row.handling)}
                 <br />
                 <small style={{ color: "#5b6b80" }}>{row.lockedReason}</small>
               </span>
@@ -151,7 +156,7 @@ export default function ParcelHandlingCard({ orderId, refreshKey = 0, onChanged 
           rowKey="parcelId"
           columns={columns}
           dataSource={state.rows}
-          pagination={false}
+          pagination={PARCEL_TABLE_PAGINATION}
           scroll={{ x: 560 }}
         />
       )}

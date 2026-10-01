@@ -12,14 +12,17 @@
    - Mã giữ nguyên như backend trả, vì đó cũng là giá trị gửi lại khi lọc danh sách.
    - Mã chuẩn (khoá của ORDER_STATUS_LABELS) dùng nhãn thống nhất trong
      orderStatus.js — cùng nhãn với chip trạng thái — và xếp theo ORDER_STATUS_ORDER.
-   - Mã lạ giữ nhãn backend, xếp cuối theo đúng thứ tự backend trả.
+   - Mã lạ giữ nhãn backend (nếu là chữ đọc được — không in mã thô), xếp cuối theo đúng
+     thứ tự backend trả.
    ========================================================= */
 
 import httpClient from "@shared/api/httpClient";
 import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_ORDER,
+  getOrderStatusLabel,
 } from "@features/consignment/constants/orderStatus";
+import { textOr } from "@shared/utils/statusLabel";
 
 /* Component truyền signal theo hai kiểu: AbortSignal trần hoặc { signal }. */
 const getSignal = (options = {}) => {
@@ -52,9 +55,10 @@ const createStatusOption = (raw) => {
     source.label ?? source.name ?? ""
   ).trim();
 
+  /* Mã lạ: nhãn backend nếu đọc được (không phải chính cái mã), không thì nhãn an toàn. */
   const label = isStandardCode(code)
     ? ORDER_STATUS_LABELS[code]
-    : backendLabel || code;
+    : textOr(backendLabel, getOrderStatusLabel(code));
 
   return {
     code,

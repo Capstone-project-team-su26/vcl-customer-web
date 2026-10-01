@@ -51,6 +51,16 @@ import {
   normalizeOrderStatus,
 } from "@features/consignment";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import {
+  INSTALLMENT_TYPE_LABELS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_STATUS_LABELS,
+  QUOTATION_STATUS_LABELS,
+  QUOTE_TYPE_LABELS,
+  labelOf,
+} from "@shared/utils/statusLabel";
+import { usePagedRows } from "@shared/hooks/usePagination";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
 
 import ReceivingNoteCard from "@features/receiving/components/ReceivingNoteCard/ReceivingNoteCard";
 import DeliveryTrackingCard from "@features/delivery/components/DeliveryTrackingCard/DeliveryTrackingCard";
@@ -66,63 +76,8 @@ import "./OrderPaymentHistory.css";
  */
 const ORDER_STATUS_LABELS = SHARED_ORDER_STATUS_LABELS;
 
-const QUOTATION_STATUS_LABELS = {
-  DRAFT: "Bản nháp",
-  PENDING: "Chờ xác nhận",
-  ACCEPTED: "Đã chấp nhận",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Đã từ chối",
-  EXPIRED: "Đã hết hạn",
-  CANCELLED: "Đã hủy",
-  CANCELED: "Đã hủy",
-};
-
-const QUOTE_TYPE_LABELS = {
-  ESTIMATE: "Báo giá tạm tính",
-  PROVISIONAL: "Báo giá tạm tính",
-  OFFICIAL: "Báo giá chính thức",
-  FINAL: "Báo giá chính thức",
-};
-
-const PAYMENT_STATUS_LABELS = {
-  PENDING: "Chờ thanh toán",
-  WAITING_PAYMENT: "Chờ thanh toán",
-  PAYMENT_PENDING: "Chờ thanh toán",
-  PROCESSING: "Đang xác nhận giao dịch",
-  DEPOSIT_PAID: "Đã thanh toán tiền cọc",
-  PARTIALLY_PAID: "Đã thanh toán một phần",
-  PAID: "Đã thanh toán",
-  FULLY_PAID: "Đã thanh toán đầy đủ",
-  /* Chuyển khoản tay: đã tạo khoản thu, chờ Admin đối soát sao kê. */
-  PENDING_RECONCILIATION: "Chờ đối soát",
-  /* Tiền về cho đơn đã đóng / khoản đã huỷ: Admin xử lý tiếp. */
-  RECEIVED_UNALLOCATED: "Đã nhận, chưa phân bổ",
-  SUCCESS: "Thanh toán thành công",
-  COMPLETED: "Hoàn thành",
-  FAILED: "Thanh toán thất bại",
-  CANCELLED: "Đã hủy",
-  CANCELED: "Đã hủy",
-  EXPIRED: "Đã hết hạn",
-  REFUNDED: "Đã hoàn tiền",
-};
-
-const INSTALLMENT_TYPE_LABELS = {
-  DEPOSIT: "Thanh toán tiền cọc",
-  FIRST_DEPOSIT: "Thanh toán tiền cọc",
-  REMAINING: "Thanh toán số tiền còn lại",
-  REMAINING_PAYMENT: "Thanh toán số tiền còn lại",
-  FULL_PAYMENT: "Thanh toán toàn bộ",
-  FINAL_PAYMENT: "Thanh toán lần cuối",
-};
-
-const PAYMENT_METHOD_LABELS = {
-  SEPAY: "Chuyển khoản qua SePay",
-  PAYOS: "Chuyển khoản qua PayOS",
-  BANK_TRANSFER: "Chuyển khoản ngân hàng",
-  CASH: "Thanh toán tiền mặt",
-  ONLINE: "Thanh toán trực tuyến",
-  OFFLINE: "Thanh toán thủ công",
-};
+/* Báo giá, loại báo giá, khoản thanh toán, loại khoản, phương thức: MỘT bảng dùng chung
+   (shared/utils/statusLabel.js) — cùng câu với các màn khác và web quản trị. */
 
 const PAYMENT_FAILURE_LABELS = {
   PAYMENT_FAILED: "Giao dịch thanh toán không thành công.",
@@ -156,13 +111,14 @@ const normalizeStatus = (value) => {
     .replaceAll("-", "_");
 };
 
+/* Mã → nhãn tiếng Việt; mã lạ ra nhãn chung (không bao giờ in mã thô). */
 const getVietnameseLabel = (
   labels,
   value,
   fallback = "Đang cập nhật"
 ) => {
   const key = normalizeStatus(value);
-  return labels[key] || fallback;
+  return key ? labelOf(labels, key, { generic: fallback }) : fallback;
 };
 
 const getStatusClassName = (value) => {
@@ -628,18 +584,35 @@ const OrderPaymentHistory = ({ embedded = false, paymentOwner }) => {
     [paymentData]
   );
 
-  /* Cuộn tới giao dịch được chỉ định trên URL, một lần khi danh sách đã có nó. */
+  /* Giao dịch của một đơn: API trả hết một lượt → cắt trang phía client (≤ 10 thì ẩn thanh). */
+  const pagedPayments = usePagedRows(payments);
+  const { page: paymentPage, pageSize: paymentPageSize, onChange: changePaymentPage } =
+    pagedPayments;
+
+  /* Cuộn tới giao dịch được chỉ định trên URL, một lần khi danh sách đã có nó
+     (nằm ở trang khác thì chuyển tới trang đó trước). */
   const scrolledOrderCodeRef = useRef("");
 
   useEffect(() => {
+    const highlightIndex = highlightOrderCode
+      ? payments.findIndex(
+          (payment) =>
+            String(payment.orderCode) === highlightOrderCode
+        )
+      : -1;
+
     if (
-      !highlightOrderCode ||
-      scrolledOrderCodeRef.current === highlightOrderCode ||
-      !payments.some(
-        (payment) =>
-          String(payment.orderCode) === highlightOrderCode
-      )
+      highlightIndex === -1 ||
+      scrolledOrderCodeRef.current === highlightOrderCode
     ) {
+      return;
+    }
+
+    const targetPage =
+      Math.floor(highlightIndex / paymentPageSize) + 1;
+
+    if (targetPage !== paymentPage) {
+      changePaymentPage(targetPage, paymentPageSize);
       return;
     }
 
@@ -655,7 +628,13 @@ const OrderPaymentHistory = ({ embedded = false, paymentOwner }) => {
       behavior: "smooth",
       block: "center",
     });
-  }, [highlightOrderCode, payments]);
+  }, [
+    highlightOrderCode,
+    payments,
+    paymentPage,
+    paymentPageSize,
+    changePaymentPage,
+  ]);
 
   const totalBillAmount =
     Number(
@@ -1121,167 +1100,177 @@ const OrderPaymentHistory = ({ embedded = false, paymentOwner }) => {
             </span>
           </div>
         ) : (
-          <div className="payment-transaction-list">
-            {payments.map(
-              (payment, index) => {
-                const paymentStatus =
-                  normalizeStatus(
-                    payment.status
-                  );
+          <>
+            <div className="payment-transaction-list">
+              {pagedPayments.items.map(
+                (payment, index) => {
+                  const paymentStatus =
+                    normalizeStatus(
+                      payment.status
+                    );
 
-                /*
-                 * Backend chuẩn hoá trạng thái về PENDING | SUCCESS | FAILED |
-                 * CANCELED; chỉ khoản PENDING còn link cổng thanh toán mới
-                 * tiếp tục trả tiền được (PENDING_RECONCILIATION chờ Admin).
-                 */
-                const canContinuePayment =
-                  Boolean(
-                    payment.checkoutUrl
-                  ) &&
-                  paymentStatus === "PENDING";
+                  /*
+                   * Backend chuẩn hoá trạng thái về PENDING | SUCCESS | FAILED |
+                   * CANCELED; chỉ khoản PENDING còn link cổng thanh toán mới
+                   * tiếp tục trả tiền được (PENDING_RECONCILIATION chờ Admin).
+                   */
+                  const canContinuePayment =
+                    Boolean(
+                      payment.checkoutUrl
+                    ) &&
+                    paymentStatus === "PENDING";
 
-                return (
-                  <article
-                    key={
-                      payment.paymentId ||
-                      `${payment.orderCode}-${index}`
-                    }
-                    className={`payment-transaction-card payment-transaction-card--${getStatusClassName(
-                      paymentStatus
-                    )}${
-                      highlightOrderCode &&
-                      String(payment.orderCode) === highlightOrderCode
-                        ? " is-just-paid"
-                        : ""
-                    }`}
-                    data-order-code={payment.orderCode || undefined}
-                  >
-                    <div className="payment-transaction-card__top">
-                      <div>
-                        <span className="payment-transaction-number">
-                          Giao dịch {index + 1}
-                        </span>
+                  return (
+                    <article
+                      key={
+                        payment.paymentId ||
+                        `${payment.orderCode}-${index}`
+                      }
+                      className={`payment-transaction-card payment-transaction-card--${getStatusClassName(
+                        paymentStatus
+                      )}${
+                        highlightOrderCode &&
+                        String(payment.orderCode) === highlightOrderCode
+                          ? " is-just-paid"
+                          : ""
+                      }`}
+                      data-order-code={payment.orderCode || undefined}
+                    >
+                      <div className="payment-transaction-card__top">
+                        <div>
+                          <span className="payment-transaction-number">
+                            Giao dịch {index + 1}
+                          </span>
 
-                        <h3>
-                          {getVietnameseLabel(
-                            INSTALLMENT_TYPE_LABELS,
-                            payment.installmentType,
-                            "Thanh toán đơn hàng"
-                          )}
-                        </h3>
-                      </div>
+                          <h3>
+                            {getVietnameseLabel(
+                              INSTALLMENT_TYPE_LABELS,
+                              payment.installmentType,
+                              "Thanh toán đơn hàng"
+                            )}
+                          </h3>
+                        </div>
 
-                      <strong className="payment-transaction-amount">
-                        {formatMoney(
-                          payment.amount
-                        )}
-                      </strong>
-                    </div>
-
-                    <div className="payment-transaction-tags">
-                      <Tag
-                        className={`payment-status-tag payment-status-tag--${getStatusClassName(
-                          paymentStatus
-                        )}`}
-                      >
-                        {getVietnameseLabel(
-                          PAYMENT_STATUS_LABELS,
-                          paymentStatus,
-                          "Đang xác nhận"
-                        )}
-                      </Tag>
-
-                      <Tag className="payment-method-tag">
-                        {getVietnameseLabel(
-                          PAYMENT_METHOD_LABELS,
-                          payment.paymentMethod,
-                          "Thanh toán trực tuyến"
-                        )}
-                      </Tag>
-                    </div>
-
-                    <div className="payment-transaction-details">
-                      <div>
-                        <span>
-                          Thời gian tạo giao dịch
-                        </span>
-
-                        <strong>
-                          {formatDateTime(
-                            payment.createdAt
+                        <strong className="payment-transaction-amount">
+                          {formatMoney(
+                            payment.amount
                           )}
                         </strong>
                       </div>
 
-                      <div>
-                        <span>
-                          Thời gian hoàn tất
-                        </span>
-
-                        <strong>
-                          {payment.paidAt
-                            ? formatDateTime(
-                                payment.paidAt
-                              )
-                            : "Chưa hoàn tất"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {payment.failureReason && (
-                      <div className="payment-failure-reason">
-                        <ErrorOutlineRoundedIcon />
-
-                        <span>
-                          {getPaymentFailureMessage(
-                            payment.failureReason
-                          )}
-                        </span>
-                      </div>
-                    )}
-
-                    {canContinuePayment && (
-                      <div className="payment-transaction-actions">
-                        <Button
-                          variant="contained"
-                          endIcon={
-                            <OpenInNewRoundedIcon />
-                          }
-                          onClick={() => {
-                            const opened = openCheckout(
-                              payment.checkoutUrl,
-                              {
-                                ...paymentOwner,
-                                subject: PAYMENT_SUBJECTS.order,
-                                targetId: orderId,
-                                purpose: purposeFromInstallmentType(
-                                  payment.installmentType
-                                ),
-                                orderCode: payment.orderCode,
-                                code:
-                                  paymentData?.consignmentCode ||
-                                  paymentOwner?.code,
-                                amount: payment.amount,
-                              }
-                            );
-
-                            if (!opened) {
-                              AuthNotify.error(
-                                "Không mở được trang thanh toán",
-                                "Link thanh toán không hợp lệ."
-                              );
-                            }
-                          }}
+                      <div className="payment-transaction-tags">
+                        <Tag
+                          className={`payment-status-tag payment-status-tag--${getStatusClassName(
+                            paymentStatus
+                          )}`}
                         >
-                          Tiếp tục thanh toán
-                        </Button>
+                          {getVietnameseLabel(
+                            PAYMENT_STATUS_LABELS,
+                            paymentStatus,
+                            "Đang xác nhận"
+                          )}
+                        </Tag>
+
+                        <Tag className="payment-method-tag">
+                          {getVietnameseLabel(
+                            PAYMENT_METHOD_LABELS,
+                            payment.paymentMethod,
+                            "Thanh toán trực tuyến"
+                          )}
+                        </Tag>
                       </div>
-                    )}
-                  </article>
-                );
-              }
-            )}
-          </div>
+
+                      <div className="payment-transaction-details">
+                        <div>
+                          <span>
+                            Thời gian tạo giao dịch
+                          </span>
+
+                          <strong>
+                            {formatDateTime(
+                              payment.createdAt
+                            )}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <span>
+                            Thời gian hoàn tất
+                          </span>
+
+                          <strong>
+                            {payment.paidAt
+                              ? formatDateTime(
+                                  payment.paidAt
+                                )
+                              : "Chưa hoàn tất"}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {payment.failureReason && (
+                        <div className="payment-failure-reason">
+                          <ErrorOutlineRoundedIcon />
+
+                          <span>
+                            {getPaymentFailureMessage(
+                              payment.failureReason
+                            )}
+                          </span>
+                        </div>
+                      )}
+
+                      {canContinuePayment && (
+                        <div className="payment-transaction-actions">
+                          <Button
+                            variant="contained"
+                            endIcon={
+                              <OpenInNewRoundedIcon />
+                            }
+                            onClick={() => {
+                              const opened = openCheckout(
+                                payment.checkoutUrl,
+                                {
+                                  ...paymentOwner,
+                                  subject: PAYMENT_SUBJECTS.order,
+                                  targetId: orderId,
+                                  purpose: purposeFromInstallmentType(
+                                    payment.installmentType
+                                  ),
+                                  orderCode: payment.orderCode,
+                                  code:
+                                    paymentData?.consignmentCode ||
+                                    paymentOwner?.code,
+                                  amount: payment.amount,
+                                }
+                              );
+
+                              if (!opened) {
+                                AuthNotify.error(
+                                  "Không mở được trang thanh toán",
+                                  "Link thanh toán không hợp lệ."
+                                );
+                              }
+                            }}
+                          >
+                            Tiếp tục thanh toán
+                          </Button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                }
+              )}
+            </div>
+
+            <ListPagination
+              {...pagedPayments.paginationProps}
+              hideOnSinglePage
+              unit="giao dịch"
+              className="payment-transaction-pager"
+              ariaLabel="Phân trang giao dịch của đơn"
+            />
+          </>
         )}
       </section>
 

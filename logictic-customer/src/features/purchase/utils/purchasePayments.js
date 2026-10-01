@@ -24,6 +24,7 @@
 
    Hàm thuần, không gọi API, không đụng window.
    ========================================================= */
+import { textOr } from "@shared/utils/statusLabel";
 
 export const PURCHASE_PAYMENT_TYPES = Object.freeze({
   prepayment: "PREPAYMENT",
@@ -265,7 +266,8 @@ export const buildPurchaseDueRows = (dueItems, historyByRequestId = new Map()) =
           requestId,
           code: text(other.code),
           paymentType: "",
-          label: text(other.statusText) || "Khoản chờ thanh toán",
+          /* statusText của bảng việc có lúc là mã thô → chỉ dùng khi đọc được. */
+          label: textOr(other.statusText, "Khoản chờ thanh toán"),
           amount: toNumber(other.amount),
           verifying: isVerifyingStatus(other.status),
           createdAt: other.updatedAt || null,

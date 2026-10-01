@@ -190,6 +190,7 @@
       "getPurchaseRequestById",
       "getPurchaseRequestByIdApi",
       "getPurchaseRequestDetailApi",
+      "getPurchaseRequestHistoryApi",
       "getPurchaseRequestPaymentHistoryApi",
       "getPurchaseRequestQuotationApi",
       "getPurchaseRequestsApi",
@@ -401,6 +402,17 @@
       "getPurchaseRefundsApi"
     ],
     "hasDefault": true,
+    "realApi": true
+  },
+  "src/shared/api/orderLimitsApi.js": {
+    "named": [
+      "NO_ORDER_LIMITS",
+      "ORDER_LIMITS_ENDPOINT",
+      "getOrderLimitsApi",
+      "normalizeOrderLimits"
+    ],
+    "hasDefault": false,
+    "originalLines": 0,
     "realApi": true
   }
 }

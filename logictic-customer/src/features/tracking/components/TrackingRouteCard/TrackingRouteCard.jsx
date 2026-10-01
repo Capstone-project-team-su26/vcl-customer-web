@@ -7,6 +7,8 @@ import {
 
 import SectionCard from "@shared/components/SectionCard/SectionCard";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
+import { getRouteLabel, labelOf, textOr } from "@shared/utils/statusLabel";
+import { getTrackingRouteStopLabel } from "@features/tracking/constants/trackingStages";
 
 import "./TrackingRouteCard.css";
 
@@ -28,8 +30,11 @@ export default function TrackingRouteCard({ route }) {
   const reachedCount = stops.filter((stop) => stop.reached).length;
 
   const subtitleParts = [
-    route.routeName || route.routeCode,
-    route.transportModeText,
+    /* Mã tuyến "CN-VN" không in thô. */
+    getRouteLabel(route.routeName || route.routeCode),
+    route.transportModeText || route.transportMode
+      ? textOr(route.transportModeText, labelOf(null, route.transportMode))
+      : "",
     route.estimatedTransitDays ? `dự kiến ${route.estimatedTransitDays} ngày trên đường` : "",
   ].filter(Boolean);
 
@@ -61,7 +66,9 @@ export default function TrackingRouteCard({ route }) {
               </span>
 
               <div className="tracking-route__body">
-                <p className="tracking-route__title">{stop.title}</p>
+                <p className="tracking-route__title">
+                  {getTrackingRouteStopLabel(stop.key, stop.title)}
+                </p>
 
                 {stop.subtitle ? (
                   <p className="tracking-route__where">

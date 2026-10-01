@@ -10,6 +10,7 @@ import {
   meetsItemServiceCondition,
   sumSelectedItemServiceFees,
 } from "./PackageItemServices.helpers";
+import { displayCode } from "@shared/utils/statusLabel";
 import "./PackageItemServices.css";
 
 /**
@@ -113,7 +114,7 @@ export default function PackageItemServices({
                   onChange={(event) => toggle(id, event.target.checked)}
                 >
                   <span className="pis-name">
-                    {service.name || service.code}
+                    {service.name || displayCode(service.code, null, { generic: "Dịch vụ bổ sung" })}
                   </span>
 
                   <span className="pis-fee">

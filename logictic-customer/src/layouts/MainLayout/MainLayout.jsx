@@ -16,13 +16,20 @@ import {
 import { Badge, Tooltip } from "antd";
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 
+import { PURCHASE_REQUEST_QUERY_KEY } from "@features/orders/constants/orderPaths";
 import Sidebar from "@layouts/Sidebar/Sidebar";
 import NotificationPanel from "@layouts/NotificationPanel/NotificationPanel";
 import "./MainLayout.css";
 
 /* Tiêu đề thanh header theo trang. Khớp theo TIỀN TỐ đường dẫn nên phải xếp mục cụ thể
-   trước mục tổng quát (/orders/... trước /orders). */
+   trước mục tổng quát (/orders/... trước /orders). `match` là chuỗi (chứa trong đường dẫn)
+   hoặc RegExp; `query` (tuỳ chọn) bắt buộc URL có khoá query đó. */
 const PAGE_META = [
+  {
+    match: "/customer/dashboard",
+    title: "BẢNG ĐIỀU KHIỂN",
+    subtitle: "Tổng quan đơn hàng và chi tiêu của bạn.",
+  },
   {
     match: "/create-order/mua-ho",
     title: "TẠO ĐƠN MUA HỘ",
@@ -34,6 +41,16 @@ const PAGE_META = [
     subtitle: "Khai báo hàng hóa và gửi về kho VCL.",
   },
   {
+    match: /^\/orders\/mua-ho\/[^/]+\/bao-gia/,
+    title: "BÁO GIÁ ĐƠN MUA HỘ",
+    subtitle: "Báo giá chi tiết và khoản trả trước của yêu cầu mua hộ.",
+  },
+  {
+    match: /^\/orders\/mua-ho\/[^/]+/,
+    title: "CHI TIẾT ĐƠN MUA HỘ",
+    subtitle: "Sản phẩm, thông tin nhận hàng và trạng thái xử lý của yêu cầu mua hộ.",
+  },
+  {
     match: "/orders/mua-ho",
     title: "ĐƠN MUA HỘ",
     subtitle: "Yêu cầu VCL mua hàng hộ và vận chuyển về Việt Nam.",
@@ -42,6 +59,14 @@ const PAGE_META = [
     match: "/orders/ky-gui",
     title: "ĐƠN KÝ GỬI",
     subtitle: "Hàng bạn tự mua và gửi về kho VCL, lọc theo việc bạn cần làm.",
+  },
+  {
+    /* Đơn kho của yêu cầu mua hộ (PUR-…-n) mở bằng trang chi tiết đơn, kèm `?yc=` —
+       cùng cách Sidebar tô mục "Đơn mua hộ". */
+    match: "/orders/",
+    query: PURCHASE_REQUEST_QUERY_KEY,
+    title: "CHI TIẾT ĐƠN MUA HỘ",
+    subtitle: "Hành trình, thanh toán và kiện & kho của đơn hàng VCL mua hộ bạn.",
   },
   {
     match: "/orders/",
@@ -67,23 +92,30 @@ const PAGE_META = [
   {
     match: "/settings/chinh-sach-dich-vu",
     title: "CHÍNH SÁCH DỊCH VỤ",
-    subtitle: "Thông tin điều khoản và chính sách sử dụng.",
-  },
-  {
-    match: "/dashboard",
-    title: "VIỆC CẦN LÀM",
-    subtitle: "Những việc đang chờ bạn xử lý hôm nay.",
+    subtitle: "Bảng giá vận chuyển và phí dịch vụ VCL đang áp dụng.",
   },
 ];
 
-const getPageMeta = (pathname) =>
-  PAGE_META.find((item) =>
-    pathname.includes(item.match)
+const matchesPageMeta = (item, pathname, searchParams) => {
+  const pathMatches =
+    item.match instanceof RegExp
+      ? item.match.test(pathname)
+      : pathname.includes(item.match);
+
+  return pathMatches && (!item.query || searchParams.has(item.query));
+};
+
+const getPageMeta = (pathname, search = "") => {
+  const searchParams = new URLSearchParams(search);
+
+  return PAGE_META.find((item) =>
+    matchesPageMeta(item, pathname, searchParams)
   ) || {
     title: "HỆ THỐNG VIETNAM LOGISTICS",
     subtitle:
       "Quản lý đơn hàng và dịch vụ vận chuyển.",
   };
+};
 
 const getTimeTheme = (date) => {
   const hour = date.getHours();
@@ -210,9 +242,10 @@ export default function MainLayout() {
   const pageMeta = useMemo(
     () =>
       getPageMeta(
-        location.pathname
+        location.pathname,
+        location.search
       ),
-    [location.pathname]
+    [location.pathname, location.search]
   );
 
   const timeTheme = useMemo(
@@ -261,12 +294,11 @@ export default function MainLayout() {
 
           <div className="main-header-left">
             <div className="header-breadcrumb">
-              {/* "Việc cần làm" không còn là một dòng menu (menu chỉ còn 4 mục), nên đây
-                  là lối quay về nó từ mọi trang. */}
+              {/* Chữ HOME là lối quay về Bảng điều khiển từ mọi trang. */}
               <Link
                 to="/customer/dashboard"
                 className="breadcrumb-home-link"
-                title="Về bảng Việc cần làm"
+                title="Về Bảng điều khiển"
               >
                 <span className="breadcrumb-home-box">
                   <HomeOutlined />

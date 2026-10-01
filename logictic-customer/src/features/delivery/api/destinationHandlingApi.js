@@ -18,6 +18,7 @@
    ========================================================= */
 
 import httpClient, { isCanceledRequest } from "@shared/api/httpClient";
+import { labelOf } from "@shared/utils/statusLabel";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -31,6 +32,10 @@ export const PARCEL_HANDLING_LABELS = Object.freeze({
   DIRECT_DELIVERY: "Giao ngay",
   STORE_AT_VN: "Gửi kho Việt Nam",
 });
+
+/** Nhãn hướng xử lý kiện (`destinationHandling` / `handling`); `handlingText` server nếu đọc được. */
+export const getParcelHandlingLabel = (handling, serverText) =>
+  labelOf(PARCEL_HANDLING_LABELS, handling, { preferred: serverText, generic: "Chưa chọn cách nhận" });
 
 /** lockedReason mà server ghi khi kiện đã nằm trong một yêu cầu giao còn hiệu lực. */
 export const LOCKED_BY_DELIVERY_REASON = "Kiện đã nằm trong yêu cầu giao hàng.";

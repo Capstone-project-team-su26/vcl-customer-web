@@ -15,6 +15,7 @@
    production trả 404 → hàm trả null và màn hình ẩn khối.
    ========================================================= */
 import httpClient from "@shared/api/httpClient";
+import { labelOf, metaOf } from "@shared/utils/statusLabel";
 
 const trimText = (value) => String(value ?? "").trim();
 
@@ -74,11 +75,7 @@ export const SUPPLIER_ORDER_STEPS = Object.freeze({
 });
 
 export const getSupplierOrderStep = (status) =>
-  SUPPLIER_ORDER_STEPS[trimText(status).toUpperCase()] || {
-    label: status || "—",
-    tone: "default",
-    hint: "",
-  };
+  metaOf(SUPPLIER_ORDER_STEPS, status, { tone: "default", hint: "" }, { generic: "Đang xử lý" });
 
 /** Các mốc hiện trên dòng thời gian, đúng thứ tự thật. */
 export const SUPPLIER_TIMELINE = Object.freeze([
@@ -115,8 +112,8 @@ const normalizeOrder = (order = {}) => ({
 /*
  * Câu giải thích cho KHÁCH vì sao có khoản hoàn — đọc đúng mã của backend
  * (PurchasePaymentTypes / PurchaseRefundReasons / PurchaseRefundStatuses), viết bằng lời của
- * khách, không dùng từ nội bộ ("NCC", "PO"...). Mã lạ thì hiện nguyên mã: thà để khách hỏi lại
- * còn hơn giải thích sai một khoản tiền.
+ * khách, không dùng từ nội bộ ("NCC", "PO"...). Mã lạ KHÔNG in mã thô: ra câu chung trung tính
+ * ("Hoàn tiền"…) — không đoán lý do cụ thể để khỏi giải thích sai một khoản tiền.
  */
 
 /** Loại KHOẢN hoàn (`refundType`). */
@@ -146,13 +143,13 @@ export const REFUND_STATUS_TEXT = Object.freeze({
 const upperCode = (value) => trimText(value).toUpperCase();
 
 export const getRefundReasonText = (refundType) =>
-  REFUND_REASON_TEXT[upperCode(refundType)] || trimText(refundType) || "Hoàn tiền";
+  labelOf(REFUND_REASON_TEXT, upperCode(refundType), { generic: "Hoàn tiền", empty: "Hoàn tiền" });
 
 export const getRefundLineReasonText = (reasonCode) =>
-  REFUND_LINE_REASON_TEXT[upperCode(reasonCode)] || trimText(reasonCode) || "—";
+  labelOf(REFUND_LINE_REASON_TEXT, upperCode(reasonCode), { generic: "Lý do khác" });
 
 export const getRefundStatusText = (status) =>
-  REFUND_STATUS_TEXT[upperCode(status)] || { label: trimText(status) || "—", tone: "default" };
+  metaOf(REFUND_STATUS_TEXT, upperCode(status), { tone: "default" });
 
 /* Chỉ ép kiểu số — KHÔNG cộng trừ gì: mọi con số và câu công thức là thứ backend đã chốt. */
 const normalizeRefundLine = (line = {}) => ({

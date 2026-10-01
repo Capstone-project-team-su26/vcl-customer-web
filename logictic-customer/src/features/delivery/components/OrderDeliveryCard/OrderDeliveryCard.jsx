@@ -28,12 +28,21 @@ import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatVnd } from "@shared/utils/formatNumber";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
 
-import { createDeliveryRequestApi, getDeliveryRequestByIdApi } from "@features/delivery/api/deliveryRequestApi";
+import {
+  createDeliveryRequestApi,
+  getDeliveryRequestByIdApi,
+  getDeliveryRequestStatusLabel,
+} from "@features/delivery/api/deliveryRequestApi";
 import {
   confirmOrderReceivedApi,
   getOrderDeliveryTrackingApi,
 } from "@features/delivery/api/deliveryTrackingApi";
-import { getParcelHandlingApi } from "@features/delivery/api/destinationHandlingApi";
+import {
+  getParcelHandlingApi,
+  getParcelHandlingLabel,
+} from "@features/delivery/api/destinationHandlingApi";
+import { getPackageStatusLabel } from "@features/tracking/constants/trackingStages";
+import { getPaymentStatusLabel, textOr } from "@shared/utils/statusLabel";
 
 /* Import sâu có chủ đích (không qua barrel): barrel consignment / payment / tracking kéo
    theo các trang của chúng, đổi thứ tự nạp CSS toàn app (ARCHITECTURE mục 4). Chỉ lấy
@@ -401,10 +410,10 @@ export default function OrderDeliveryCard({
       icon={<TruckOutlined />}
       tone={canConfirm ? "success" : "default"}
       title="Giao hàng tới bạn"
-      subtitle={
-        tracking?.orderStatusText ||
-        "Đặt giao cho các kiện đã sẵn sàng, theo dõi phiếu giao và xác nhận khi nhận đủ hàng."
-      }
+      subtitle={textOr(
+        tracking?.orderStatusText,
+        "Đặt giao cho các kiện đã sẵn sàng, theo dõi phiếu giao và xác nhận khi nhận đủ hàng.",
+      )}
       extra={
         <>
           {readyParcels.length > 0 ? (
@@ -496,7 +505,7 @@ export default function OrderDeliveryCard({
                     <div className="order-delivery__item-top">
                       <strong>{delivery.deliveryCode}</strong>
                       <Tag color={DELIVERY_TAG_COLORS[delivery.status] || "default"}>
-                        {delivery.statusText || delivery.status}
+                        {getDeliveryRequestStatusLabel(delivery.status, delivery.statusText)}
                       </Tag>
                     </div>
 
@@ -547,7 +556,7 @@ export default function OrderDeliveryCard({
                           <dd>
                             {formatVnd(detail.redeliveryFee)}
                             {detail.redeliveryFeePaymentStatus
-                              ? ` (${detail.redeliveryFeePaymentStatus === "PAID" ? "đã trả" : detail.redeliveryFeePaymentStatus === "PENDING" ? "chờ trả" : detail.redeliveryFeePaymentStatus})`
+                              ? ` (${detail.redeliveryFeePaymentStatus === "PAID" ? "đã trả" : detail.redeliveryFeePaymentStatus === "PENDING" ? "chờ trả" : getPaymentStatusLabel(detail.redeliveryFeePaymentStatus).toLocaleLowerCase("vi-VN")})`
                               : ""}
                           </dd>
                         </div>
@@ -567,8 +576,10 @@ export default function OrderDeliveryCard({
             <div className="order-delivery__parcels">
               {tracking.parcels.map((parcel) => (
                 <Tag key={parcel.packageCode}>
-                  {parcel.packageCode}: {parcel.statusText || parcel.packageStatus}
-                  {parcel.handlingText ? ` · ${parcel.handlingText}` : ""}
+                  {parcel.packageCode}: {getPackageStatusLabel(parcel.packageStatus, parcel.statusText)}
+                  {parcel.handlingText || parcel.destinationHandling
+                    ? ` · ${getParcelHandlingLabel(parcel.destinationHandling, parcel.handlingText)}`
+                    : ""}
                 </Tag>
               ))}
             </div>

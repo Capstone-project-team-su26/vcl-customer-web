@@ -33,6 +33,8 @@ import { Link } from "react-router-dom";
 
 import Header from "@layouts/SiteHeader/SiteHeader";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import { usePagedRows } from "@shared/hooks/usePagination";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
 
 import {
   apiToUtcIso,
@@ -47,6 +49,17 @@ import {
   getOrderStatusLabel,
   normalizeOrderStatus,
 } from "@features/consignment";
+import {
+  PACKAGE_STATUS_LABELS,
+  TRACKING_STAGE_LABELS,
+} from "@features/tracking/constants/trackingStages";
+import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
+import {
+  getConsignmentTypeLabel,
+  isDisplayableText,
+  labelOf,
+  translateCodesInText,
+} from "@shared/utils/statusLabel";
 
 import "./OrderLookup.css";
 
@@ -161,22 +174,20 @@ const normalizeStatus = (value) => {
     .replaceAll(" ", "_");
 };
 
-const formatStatusCode = (value) => {
-  const status = normalizeStatus(value);
-
-  if (!status) {
+/**
+ * Nhãn tiếng Việt của một mã (kiện / mốc hành trình): chữ server nếu đọc được → bảng của họ mã
+ * → bảng chung. KHÔNG bao giờ in mã thô hay chữ tiếng Anh kiểu "Received At Destination".
+ */
+const formatStatusCode = (value, map = null, serverText) => {
+  if (!normalizeStatus(value) && !String(serverText ?? "").trim()) {
     return "Chưa cập nhật";
   }
 
-  return status
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(
-      /(^|\s)\S/g,
-      (character) =>
-        character.toUpperCase()
-    );
+  return labelOf(map, value, serverText);
 };
+
+/* Chữ server đầu tiên đọc được trong danh sách (bỏ qua chữ là mã thô). */
+const firstReadable = (...values) => values.find(isDisplayableText);
 
 const formatRoute = (route) => {
   const value = String(route ?? "").trim();
@@ -239,10 +250,11 @@ const normalizeParcel = (
     parcel?.parcelStatus ||
     "";
 
-  const statusLabel =
-    parcel?.statusLabel ||
-    parcel?.statusName ||
-    formatStatusCode(status);
+  const statusLabel = formatStatusCode(
+    status,
+    PACKAGE_STATUS_LABELS,
+    firstReadable(parcel?.statusLabel, parcel?.statusName),
+  );
 
   const weightValue =
     parcel?.weight ??
@@ -290,24 +302,35 @@ const extractHistory = (data) => {
 
   return rawHistory.map(
     (item, index) => ({
+      /* Backend có mốc trả chính mã làm `title` (vd. RECEIVED_AT_DESTINATION) → dịch lại. */
       title:
+        item?.stage ||
+        item?.status ||
         item?.title ||
         item?.statusLabel ||
-        item?.statusName ||
-        formatStatusCode(
-          item?.status
-        ) ||
-        `Cập nhật ${index + 1}`,
+        item?.statusName
+          ? formatStatusCode(
+              item?.stage || item?.status,
+              TRACKING_STAGE_LABELS,
+              firstReadable(item?.title, item?.statusLabel, item?.statusName) ||
+                item?.title ||
+                item?.statusLabel ||
+                item?.statusName,
+            )
+          : `Cập nhật ${index + 1}`,
       time: formatDateTime(
         item?.time ||
           item?.updatedAt ||
           item?.createdAt
       ),
-      description:
+      /* Câu hệ thống có lúc chèn nguyên mã trạng thái → dịch mã, giữ phần chữ còn lại. */
+      description: translateCodesInText(
         item?.description ||
-        item?.note ||
-        item?.message ||
-        "Trạng thái được cập nhật từ hệ thống.",
+          item?.note ||
+          item?.message ||
+          "Trạng thái được cập nhật từ hệ thống.",
+        TRACKING_STAGE_LABELS,
+      ),
       completed:
         item?.completed !== false,
       active:
@@ -358,13 +381,14 @@ const normalizeTrackingResult = (
 
   const statusLabel =
     String(
-      isPurchaseOrder
-        ? data.statusLabel ||
-            data.statusName ||
-            formatStatusCode(status)
-        : status
-          ? getOrderStatusLabel(status)
-          : formatStatusCode(status)
+      !status
+        ? formatStatusCode(status)
+        : isPurchaseOrder
+          ? getPurchaseStatusLabel(
+              status,
+              firstReadable(data.statusLabel, data.statusName),
+            )
+          : getOrderStatusLabel(status)
     ).trim();
 
   const parcels = Array.isArray(
@@ -405,8 +429,9 @@ const normalizeTrackingResult = (
     orderCode: consignmentCode,
     consignmentCode,
     consignmentType:
-      data.consignmentType ||
-      "Chưa cập nhật",
+      data.consignmentType
+        ? getConsignmentTypeLabel(data.consignmentType)
+        : "Chưa cập nhật",
     route: formatRoute(data.route),
     status,
     statusText:
@@ -521,6 +546,12 @@ const OrderLookup = () => {
     errorMessage,
     setErrorMessage,
   ] = useState("");
+
+  /* Kiện của vận đơn đang tra: cắt trang phía client, tra mã khác là về trang 1;
+     ≤ 10 kiện thì không hiện thanh phân trang. */
+  const pagedParcels = usePagedRows(orderData?.parcels, {
+    resetKey: searchedCode,
+  });
 
   const [
     isLoading,
@@ -1310,7 +1341,7 @@ const OrderLookup = () => {
                           <div className="order-lookup-items">
                             {orderData.parcels.length >
                             0 ? (
-                              orderData.parcels.map(
+                              pagedParcels.items.map(
                                 (
                                   parcel,
                                   index
@@ -1348,6 +1379,14 @@ const OrderLookup = () => {
                               </div>
                             )}
                           </div>
+
+                          <ListPagination
+                            {...pagedParcels.paginationProps}
+                            hideOnSinglePage
+                            unit="kiện"
+                            className="order-lookup-parcels-pager"
+                            ariaLabel="Phân trang danh sách kiện hàng"
+                          />
                         </div>
 
                         <div className="order-lookup-note-card">

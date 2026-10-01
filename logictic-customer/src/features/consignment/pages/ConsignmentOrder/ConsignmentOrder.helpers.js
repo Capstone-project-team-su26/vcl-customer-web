@@ -540,41 +540,72 @@ export const validatePositiveNumber = (value, label) => {
 };
 
 /*
- * GIỚI HẠN NGHIỆP VỤ — một nguồn duy nhất cho cả câu báo lỗi lẫn dòng gợi ý trên nhãn.
- * Sửa số ở đây là đổi cả hai, không còn cảnh nhãn ghi "tối đa 3 kg" mà lỗi báo 5 kg.
+ * GIỚI HẠN NGHIỆP VỤ — không còn số cứng. Admin cấu hình ở web quản trị, form đọc qua
+ * GET /api/system-settings/order-limits (useOrderLimits) rồi truyền `limits` (nhánh
+ * `consignment` của kết quả) vào các hàm dưới đây. Một nguồn cho cả câu báo lỗi lẫn dòng
+ * gợi ý trên nhãn. Giá trị null = không giới hạn; chưa tải được thì mọi giới hạn là null
+ * và form không chặn — backend vẫn kiểm, trả 400 nêu đúng giới hạn hiện hành.
  */
-export const PACKAGE_LIMITS = Object.freeze({
-  maxQuantity: 5,
-  maxDeclaredValue: 6000000,
-  maxWeight: 3,
-  maxLength: 100,
-  maxWidth: 200,
-  maxHeight: 50,
+export const NO_CONSIGNMENT_LIMITS = Object.freeze({
+  maxParcelQuantity: null,
+  maxItemDeclaredValue: null,
+  maxParcelWeightKg: null,
+  maxParcelLengthCm: null,
+  maxParcelWidthCm: null,
+  maxParcelHeightCm: null,
+  maxTotalWeightKg: null,
+  maxTotalDeclaredValue: null,
+  maxPackages: null,
 });
 
-/** Giới hạn tính trên cả đơn (cộng mọi kiện). */
-export const ORDER_LIMITS = Object.freeze({
-  maxTotalWeight: 5,
-  maxTotalValue: 10000000,
-  /* Số kiện tối đa của một đơn — backend (POST /api/orders/consignments) trả 400 khi vượt. */
-  maxPackages: 50,
-});
+/** Giới hạn có hiệu lực không (số dương hữu hạn). */
+export const hasLimit = (value) => Number.isFinite(value) && value > 0;
 
-/** Câu giải thích khi đơn đã đủ số kiện tối đa. */
-export const PACKAGES_LIMIT_MESSAGE = `Mỗi đơn ký gửi tối đa ${ORDER_LIMITS.maxPackages} kiện hàng. Cần gửi thêm, vui lòng tạo đơn mới.`;
+const readLimits = (limits) => limits || NO_CONSIGNMENT_LIMITS;
+
+const formatVndNumber = (value) => Number(value).toLocaleString("vi-VN");
+
+/** Số kg/cm hiển thị kiểu Việt: 2,5 — không kèm số 0 thừa. */
+export const formatLimitNumber = (value) =>
+  Number(value).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+
+/** Câu giải thích khi đơn đã đủ số kiện tối đa ("" nếu không giới hạn). */
+export const getPackagesLimitMessage = (limits) => {
+  const max = readLimits(limits).maxPackages;
+  return hasLimit(max)
+    ? `Mỗi đơn ký gửi tối đa ${max} kiện hàng. Cần gửi thêm, vui lòng tạo đơn mới.`
+    : "";
+};
 
 /** "" nếu số kiện còn trong giới hạn, ngược lại là câu báo lỗi. */
-export const getPackageCountError = (packages) =>
-  (Array.isArray(packages) ? packages.length : 0) > ORDER_LIMITS.maxPackages
-    ? PACKAGES_LIMIT_MESSAGE
+export const getPackageCountError = (packages, limits) => {
+  const max = readLimits(limits).maxPackages;
+  return hasLimit(max) && (Array.isArray(packages) ? packages.length : 0) > max
+    ? getPackagesLimitMessage(limits)
     : "";
+};
 
 const toText = (value) => String(value ?? "").trim();
 
 /** Câu báo lỗi ô Số lượng kiện — gõ sai, dán sai, bấm gửi đều dùng câu này. */
-export const QUANTITY_RANGE_MESSAGE = `Số lượng từ 1 đến ${PACKAGE_LIMITS.maxQuantity} sản phẩm trên 1 kiện hàng.`;
+export const getQuantityRangeMessage = (limits) => {
+  const max = readLimits(limits).maxParcelQuantity;
+  return hasLimit(max)
+    ? `Số lượng từ 1 đến ${max} sản phẩm trên 1 kiện hàng.`
+    : "Số lượng sản phẩm trên 1 kiện hàng phải là số nguyên từ 1 trở lên.";
+};
 
-const formatVndNumber = (value) => Number(value).toLocaleString("vi-VN");
+/** Kiểm một ô số (cân nặng / kích thước) > 0 và không vượt trần (nếu có). */
+const validateMeasure = (raw, { emptyMessage, positiveMessage, max, overMessage }) => {
+  if (toText(raw) === "") return emptyMessage;
+
+  const number = Number(raw);
+
+  if (!Number.isFinite(number) || number <= 0) return positiveMessage;
+  if (hasLimit(max) && number > max) return overMessage;
+
+  return "";
+};
 
 /*
  * MỘT Ô = MỘT HÀM KIỂM.
@@ -582,6 +613,7 @@ const formatVndNumber = (value) => Number(value).toLocaleString("vi-VN");
  * Màn hình gọi đúng những hàm này lúc khách đang gõ / vừa rời ô, còn lúc bấm gửi thì
  * validatePackage / validateConsignmentForm chạy lại cũng chính chúng. Nhờ vậy không bao
  * giờ có chuyện "gõ thì im, bấm gửi mới báo" hay hai nơi nói hai câu khác nhau.
+ * Tham số thứ hai là giới hạn đang áp dụng (có thể null = chưa tải → không chặn trần).
  */
 export const PACKAGE_FIELD_VALIDATORS = Object.freeze({
   productName: (pkg) =>
@@ -590,86 +622,64 @@ export const PACKAGE_FIELD_VALIDATORS = Object.freeze({
   productType: (pkg) => (pkg?.productType ? "" : "Vui lòng chọn loại hàng hóa."),
 
   // Dùng chung validator số nguyên với form mua hộ: "1.0", "1e3", "-1" đều bị từ chối.
-  quantity: (pkg) =>
-    validateIntegerInRange(pkg?.quantity, {
+  quantity: (pkg, limits) => {
+    const max = readLimits(limits).maxParcelQuantity;
+    return validateIntegerInRange(pkg?.quantity, {
       min: 1,
-      max: PACKAGE_LIMITS.maxQuantity,
+      max: hasLimit(max) ? max : undefined,
       emptyMessage: "Vui lòng nhập số lượng.",
-      rangeMessage: QUANTITY_RANGE_MESSAGE,
-    }),
-
-  declaredValue: (pkg) => {
-    if (toText(pkg?.declaredValue) === "") return "Vui lòng nhập giá trị khai báo.";
-
-    const declaredValue = Number(pkg.declaredValue);
-
-    if (!Number.isFinite(declaredValue) || declaredValue <= 0) {
-      return "Giá trị kiện hàng phải lớn hơn 0.";
-    }
-
-    if (declaredValue > PACKAGE_LIMITS.maxDeclaredValue) {
-      return `Giá trị 1 kiện hàng không được vượt quá ${formatVndNumber(
-        PACKAGE_LIMITS.maxDeclaredValue,
-      )} đ.`;
-    }
-
-    return "";
+      rangeMessage: getQuantityRangeMessage(limits),
+    });
   },
 
-  weight: (pkg) => {
-    if (toText(pkg?.weight) === "") return "Vui lòng nhập cân nặng.";
-
-    const weight = Number(pkg.weight);
-
-    if (!Number.isFinite(weight) || weight <= 0) return "Cân nặng phải lớn hơn 0.";
-
-    if (weight > PACKAGE_LIMITS.maxWeight) {
-      return `Cân nặng tối đa ${PACKAGE_LIMITS.maxWeight} kg cho mỗi kiện hàng.`;
-    }
-
-    return "";
+  declaredValue: (pkg, limits) => {
+    const max = readLimits(limits).maxItemDeclaredValue;
+    return validateMeasure(pkg?.declaredValue, {
+      emptyMessage: "Vui lòng nhập giá trị khai báo.",
+      positiveMessage: "Giá trị kiện hàng phải lớn hơn 0.",
+      max,
+      overMessage: `Giá trị 1 kiện hàng không được vượt quá ${formatVndNumber(max)} đ.`,
+    });
   },
 
-  length: (pkg) => {
-    if (toText(pkg?.length) === "") return "Vui lòng nhập chiều dài.";
-
-    const length = Number(pkg.length);
-
-    if (!Number.isFinite(length) || length <= 0) return "Chiều dài phải lớn hơn 0.";
-
-    if (length > PACKAGE_LIMITS.maxLength) {
-      return `Chiều dài tối đa ${PACKAGE_LIMITS.maxLength} cm.`;
-    }
-
-    return "";
+  weight: (pkg, limits) => {
+    const max = readLimits(limits).maxParcelWeightKg;
+    return validateMeasure(pkg?.weight, {
+      emptyMessage: "Vui lòng nhập cân nặng.",
+      positiveMessage: "Cân nặng phải lớn hơn 0.",
+      max,
+      overMessage: `Cân nặng tối đa ${formatLimitNumber(max)} kg cho mỗi kiện hàng.`,
+    });
   },
 
-  width: (pkg) => {
-    if (toText(pkg?.width) === "") return "Vui lòng nhập chiều rộng.";
-
-    const width = Number(pkg.width);
-
-    if (!Number.isFinite(width) || width <= 0) return "Chiều rộng phải lớn hơn 0.";
-
-    if (width > PACKAGE_LIMITS.maxWidth) {
-      return `Chiều rộng tối đa ${PACKAGE_LIMITS.maxWidth} cm.`;
-    }
-
-    return "";
+  length: (pkg, limits) => {
+    const max = readLimits(limits).maxParcelLengthCm;
+    return validateMeasure(pkg?.length, {
+      emptyMessage: "Vui lòng nhập chiều dài.",
+      positiveMessage: "Chiều dài phải lớn hơn 0.",
+      max,
+      overMessage: `Chiều dài tối đa ${formatLimitNumber(max)} cm.`,
+    });
   },
 
-  height: (pkg) => {
-    if (toText(pkg?.height) === "") return "Vui lòng nhập chiều cao.";
+  width: (pkg, limits) => {
+    const max = readLimits(limits).maxParcelWidthCm;
+    return validateMeasure(pkg?.width, {
+      emptyMessage: "Vui lòng nhập chiều rộng.",
+      positiveMessage: "Chiều rộng phải lớn hơn 0.",
+      max,
+      overMessage: `Chiều rộng tối đa ${formatLimitNumber(max)} cm.`,
+    });
+  },
 
-    const height = Number(pkg.height);
-
-    if (!Number.isFinite(height) || height <= 0) return "Chiều cao phải lớn hơn 0.";
-
-    if (height > PACKAGE_LIMITS.maxHeight) {
-      return `Chiều cao tối đa ${PACKAGE_LIMITS.maxHeight} cm.`;
-    }
-
-    return "";
+  height: (pkg, limits) => {
+    const max = readLimits(limits).maxParcelHeightCm;
+    return validateMeasure(pkg?.height, {
+      emptyMessage: "Vui lòng nhập chiều cao.",
+      positiveMessage: "Chiều cao phải lớn hơn 0.",
+      max,
+      overMessage: `Chiều cao tối đa ${formatLimitNumber(max)} cm.`,
+    });
   },
 
   images: (pkg) =>
@@ -677,13 +687,13 @@ export const PACKAGE_FIELD_VALIDATORS = Object.freeze({
 });
 
 /** Kiểm MỘT ô của kiện hàng — dùng khi khách đang gõ hoặc vừa rời ô. */
-export const validatePackageField = (field, pkg) =>
-  PACKAGE_FIELD_VALIDATORS[field] ? PACKAGE_FIELD_VALIDATORS[field](pkg) : "";
+export const validatePackageField = (field, pkg, limits) =>
+  PACKAGE_FIELD_VALIDATORS[field] ? PACKAGE_FIELD_VALIDATORS[field](pkg, limits) : "";
 
-export const validatePackage = (pkg) =>
+export const validatePackage = (pkg, limits) =>
   Object.fromEntries(
     Object.entries(PACKAGE_FIELD_VALIDATORS)
-      .map(([field, validate]) => [field, validate(pkg)])
+      .map(([field, validate]) => [field, validate(pkg, limits)])
       .filter(([, message]) => Boolean(message)),
   );
 
@@ -819,28 +829,27 @@ export const getOrderTotals = (packages = []) => ({
   ),
 });
 
-/** Lỗi vượt trần của cả đơn; rỗng là chưa chạm trần. */
-export const getOrderTotalsError = (packages = []) => {
+/** Lỗi vượt trần của cả đơn; rỗng là chưa chạm trần (hoặc không giới hạn). */
+export const getOrderTotalsError = (packages = [], limits) => {
   const { totalWeight, totalValue } = getOrderTotals(packages);
+  const { maxTotalDeclaredValue, maxTotalWeightKg } = readLimits(limits);
 
-  if (totalValue > ORDER_LIMITS.maxTotalValue) {
+  if (hasLimit(maxTotalDeclaredValue) && totalValue > maxTotalDeclaredValue) {
     return `Tổng giá trị hàng hóa của đơn hàng (${formatVndNumber(
       totalValue,
-    )} đ) vượt quá giới hạn tối đa ${formatVndNumber(
-      ORDER_LIMITS.maxTotalValue,
-    )} đ.`;
+    )} đ) vượt quá giới hạn tối đa ${formatVndNumber(maxTotalDeclaredValue)} đ.`;
   }
 
-  if (totalWeight > ORDER_LIMITS.maxTotalWeight) {
-    return `Tổng cân nặng toàn bộ đơn hàng (${totalWeight.toFixed(
-      2,
-    )} kg) vượt quá giới hạn tối đa ${ORDER_LIMITS.maxTotalWeight} kg.`;
+  if (hasLimit(maxTotalWeightKg) && totalWeight > maxTotalWeightKg) {
+    return `Tổng cân nặng toàn bộ đơn hàng (${formatLimitNumber(
+      totalWeight,
+    )} kg) vượt quá giới hạn tối đa ${formatLimitNumber(maxTotalWeightKg)} kg.`;
   }
 
   return "";
 };
 
-export const validateConsignmentForm = ({ form, packages }) => {
+export const validateConsignmentForm = ({ form, packages, limits }) => {
   const formErrors = createEmptyFormErrors();
 
   /* Cùng bộ hàm mà màn hình gọi lúc khách đang gõ — xem FORM_FIELD_VALIDATORS. */
@@ -850,7 +859,7 @@ export const validateConsignmentForm = ({ form, packages }) => {
 
   /* Trần của cả đơn: số kiện, tổng cân nặng và tổng giá trị mọi kiện. */
   formErrors.packages =
-    getPackageCountError(packages) || getOrderTotalsError(packages);
+    getPackageCountError(packages, limits) || getOrderTotalsError(packages, limits);
 
   if (form?.optionalServices?.requiresWoodenCrate !== true) {
     formErrors.optionalServices =
@@ -873,7 +882,7 @@ export const validateConsignmentForm = ({ form, packages }) => {
 
   const packageErrors = Object.fromEntries(
     packages.map((pkg) => {
-      const errors = validatePackage(pkg);
+      const errors = validatePackage(pkg, limits);
 
       if (missingWoodCratePackageIds.has(pkg.id)) {
         errors.packageConfigurationId =

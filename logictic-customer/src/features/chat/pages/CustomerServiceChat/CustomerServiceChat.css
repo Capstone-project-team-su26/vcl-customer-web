@@ -2508,3 +2508,37 @@
       grid-template-columns: 1fr;
     }
   }
+/* ===== Phân trang: danh sách hội thoại + "Xem tin nhắn cũ hơn" ===== */
+.cskh-chat-sidebar .list-pagination.cskh-conversation-pager {
+  flex: 0 0 auto;
+  margin: 0 10px 12px;
+}
+
+.cskh-older-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0 12px;
+}
+
+.cskh-older-messages__btn {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid #d5dfec;
+  background: #ffffff;
+  color: #2563eb;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cskh-older-messages__btn:hover {
+  border-color: #2563eb;
+}
+
+.cskh-older-messages__summary {
+  color: #8a97a8;
+  font-size: 12px;
+}

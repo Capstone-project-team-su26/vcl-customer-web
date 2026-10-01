@@ -26,6 +26,7 @@ import httpClient, {
   createHttpClient,
   isCanceledRequest,
 } from "@shared/api/httpClient";
+import { labelOf } from "@shared/utils/statusLabel";
 
 /* Upload có thể là ảnh chụp điện thoại vài MB — cho timeout dài như uploadImage.
    Export để tools/verify-api.mjs gắn adapter giả (giống uploadImage.uploadAxios). */
@@ -53,8 +54,26 @@ export const ATTACHMENT_DOCUMENT_TYPE_LABELS = Object.freeze({
   INCIDENT_PHOTO: "Ảnh hiện trạng",
   COMPENSATION_RECEIPT: "Chứng từ chi bồi thường",
   DELIVERY_PROOF: "Ảnh ký nhận",
+  VN_ARRIVAL_PROOF: "Ảnh kho Việt Nam nhận kiện",
   OTHER: "Giấy tờ khác",
+  /* Đủ bộ AttachmentDocumentTypes của backend (tools/status-codes.json › documentType). */
+  INCIDENT: "Biên bản sự cố",
+  PICKING_ISSUE: "Biên bản sự cố khi xuất kho",
+  PARCEL_PHOTO: "Ảnh kiện hàng",
+  PUT_AWAY_PROOF: "Ảnh kiện trên kệ kho",
+  WRO_APPROVAL_PROOF: "Ảnh hiện trạng lúc xuất kho",
+  HANDOVER_RECORD: "Biên bản bàn giao",
+  WAYBILL: "Vận đơn",
+  COMMERCIAL_INVOICE: "Hoá đơn thương mại",
+  CUSTOMS_EXPORT: "Tờ khai xuất khẩu",
+  CUSTOMS_IMPORT: "Tờ khai nhập khẩu",
+  TAX_RECEIPT: "Biên lai thuế",
+  PURCHASE_PROOF: "Chứng từ mua hàng",
 });
+
+/** Nhãn loại giấy tờ — mã lạ ra "Giấy tờ khác", không in mã thô. */
+export const getAttachmentDocumentTypeLabel = (documentType) =>
+  labelOf(ATTACHMENT_DOCUMENT_TYPE_LABELS, documentType, { generic: "Giấy tờ khác", empty: "Giấy tờ" });
 
 /* Khớp AttachmentService.AllowedContentTypes / MaxFileSize — kiểm trước khi gửi để
    khách biết ngay, không phải chờ tải hết 10 MB lên mới bị 400. */

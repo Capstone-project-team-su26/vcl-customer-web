@@ -24,7 +24,7 @@ const STATS = [["100%", "Báo giá trước"],
   ["01", "Mã yêu cầu"],
   ["24h", "Thời hạn thường dùng"],
   ["0đ", "Tạo yêu cầu"]];
-const POLICY_SECTIONS = [{ title: "Phương thức thanh toán", description: "Hệ thống có thể hỗ trợ chuyển khoản ngân hàng, ví điện tử hoặc các phương thức khác tùy cấu hình thực tế.", items: ["Thanh toán đúng số tiền theo báo giá hoặc thông báo hệ thống.",
+const POLICY_SECTIONS = [{ title: "Phương thức thanh toán", description: "Hệ thống hỗ trợ chuyển khoản qua mã QR (SePay) và thanh toán tiền mặt (VCL xác nhận sau khi nhận tiền), tùy loại khoản thu.", items: ["Thanh toán đúng số tiền theo báo giá hoặc thông báo hệ thống.",
   "Ghi rõ mã yêu cầu, số điện thoại hoặc tên khách hàng.",
   "Lưu lại biên lai để hỗ trợ đối soát khi cần."] },
   { title: "Thời hạn thanh toán", description: "Báo giá có thể có thời hạn hiệu lực do tỷ giá, giá sản phẩm, phí vận chuyển hoặc tình trạng hàng thay đổi.", items: ["Thanh toán trong thời hạn báo giá để giữ mức phí đã xác nhận.",

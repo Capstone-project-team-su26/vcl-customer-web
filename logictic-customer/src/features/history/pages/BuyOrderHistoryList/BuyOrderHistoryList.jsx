@@ -18,7 +18,6 @@ import {
 import {
   Button,
   CircularProgress,
-  Pagination,
 } from "@mui/material";
 
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -30,7 +29,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
+import { clampPage } from "@shared/utils/pagination";
 import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestApi";
+import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
+import { displayCode, getRouteLabel } from "@shared/utils/statusLabel";
 import { apiToTimestamp, formatVietnamDateTime } from "@shared/utils/timeUtc";
 
 import "./BuyOrderHistoryList.css";
@@ -108,8 +111,9 @@ const getStatusLabel = (status) => {
     case "FAILED":
       return "Đã từ chối / Đã hủy";
     default:
+      /* Mã khác (NEED_MORE_INFO, QUOTATION_REJECTED…): nhãn của bảng trạng thái mua hộ. */
       return normalized
-        ? normalized.replaceAll("_", " ")
+        ? getPurchaseStatusLabel(normalized)
         : "Chưa xác định";
   }
 };
@@ -213,7 +217,7 @@ const renderStatusTag = (status) => {
     default:
       return (
         <Tag color="default" className="buy-order-status-pill">
-          {normalized || "Chưa xác định"}
+          {normalized ? getPurchaseStatusLabel(normalized) : "Chưa xác định"}
         </Tag>
       );
   }
@@ -238,7 +242,7 @@ const formatShippingOption = (option) => {
     case "SEA":
       return "Đường biển";
     default:
-      return option;
+      return displayCode(option, null, { generic: "Hình thức vận chuyển khác" });
   }
 };
 
@@ -578,12 +582,24 @@ const BuyOrderHistoryList = ({ defaultStatus, highlightRequestId = "" } = {}) =>
 
   // Paginated Data
   const totalCount = filteredOrders.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  /* Trang đang xem kẹp vào số trang thật (vừa tải lại / lọc bớt thì không rơi vào trang rỗng). */
+  const currentPage = clampPage(pageNumber, totalCount, pageSize);
 
   const pageOrders = useMemo(() => {
-    const startIndex = (pageNumber - 1) * pageSize;
+    const startIndex = (currentPage - 1) * pageSize;
     return filteredOrders.slice(startIndex, startIndex + pageSize);
-  }, [filteredOrders, pageNumber, pageSize]);
+  }, [filteredOrders, currentPage, pageSize]);
+
+  /* Thanh phân trang dùng chung: đổi cỡ trang (10/20/50) → về trang 1. */
+  const handlePaginationChange = (nextPage, nextSize) => {
+    if (nextSize && nextSize !== pageSize) {
+      setPageSize(nextSize);
+      setPageNumber(1);
+      return;
+    }
+
+    setPageNumber(nextPage);
+  };
 
   /* Trang chứa yêu cầu vừa thanh toán đã hiện → cuộn tới thẻ của nó, một lần. */
   const highlightScrolledRef = useRef(false);
@@ -800,7 +816,7 @@ const BuyOrderHistoryList = ({ defaultStatus, highlightRequestId = "" } = {}) =>
                 <div className="card-header">
                   <div className="card-header-left">
                     <span className="card-index-tag">
-                      #{(pageNumber - 1) * pageSize + idx + 1}
+                      #{(currentPage - 1) * pageSize + idx + 1}
                     </span>
                     <div className="card-code-group">
                       <h2>{order.purchaseCode || "Đang cập nhật"}</h2>
@@ -856,7 +872,7 @@ const BuyOrderHistoryList = ({ defaultStatus, highlightRequestId = "" } = {}) =>
                   <div>
                     <span>Tuyến vận chuyển</span>
                     <strong>
-                      {order.route || "Trung Quốc --> VN"}{" "}
+                      {getRouteLabel(order.route, "Trung Quốc → Việt Nam")}{" "}
                       <small>
                         ({formatShippingOption(order.shippingOption)})
                       </small>
@@ -981,27 +997,16 @@ const BuyOrderHistoryList = ({ defaultStatus, highlightRequestId = "" } = {}) =>
         </section>
       )}
 
-      {/* Pagination Bar */}
-      {totalCount > 0 && (
-        <section className="buy-order-history-pagination">
-          <div className="pagination-info">
-            Hiển thị{" "}
-            <strong>
-              {(pageNumber - 1) * pageSize + 1} -{" "}
-              {Math.min(pageNumber * pageSize, totalCount)}
-            </strong>{" "}
-            trong <strong>{totalCount}</strong> đơn mua hộ
-          </div>
-
-          <Pagination
-            count={totalPages}
-            page={pageNumber}
-            onChange={(_, page) => setPageNumber(page)}
-            color="primary"
-            shape="rounded"
-          />
-        </section>
-      )}
+      {/* Thanh phân trang dùng chung — "Hiển thị x–y / N", cỡ trang 10/20/50 */}
+      <ListPagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={totalCount}
+        onChange={handlePaginationChange}
+        unit="đơn mua hộ"
+        className="buy-order-history-pager"
+        ariaLabel="Phân trang lịch sử mua hộ"
+      />
     </div>
   );
 };

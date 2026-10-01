@@ -11,6 +11,7 @@ import {
 import SectionCard from "@shared/components/SectionCard/SectionCard";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
+import { translateCodesInText } from "@shared/utils/statusLabel";
 import {
   getPackageStatusLabel,
   getTrackingStageLabel,
@@ -18,6 +19,10 @@ import {
 } from "@features/tracking/constants/trackingStages";
 
 import "./TrackingJourney.css";
+import { buildTablePagination } from "@shared/utils/pagination";
+
+/* Bảng dài (nhiều kiện) thì phân trang 10/20/50; ≤ 10 dòng không hiện thanh phân trang. */
+const PARCEL_TABLE_PAGINATION = buildTablePagination({ unit: "kiện" });
 
 const formatTime = (value) => (value ? formatVietnamDateTime(value) : "—");
 
@@ -150,7 +155,7 @@ export default function TrackingJourney({ tracking }) {
           rowKey={(row) => row.parcelId || row.packageCode}
           columns={parcelColumns}
           dataSource={parcels}
-          pagination={false}
+          pagination={PARCEL_TABLE_PAGINATION}
           scroll={{ x: 640 }}
           locale={{ emptyText: "Chưa có kiện nào." }}
         />
@@ -175,10 +180,10 @@ export default function TrackingJourney({ tracking }) {
                 <span className="tracking-journey__event-dot" />
                 <div className="tracking-journey__event-body">
                   <div className="tracking-journey__event-head">
-                    <strong>{event.title || getTrackingStageLabel(event.stage)}</strong>
+                    <strong>{getTrackingStageLabel(event.stage, event.title)}</strong>
                     <time>{formatTime(event.time)}</time>
                   </div>
-                  {event.message ? <p>{event.message}</p> : null}
+                  {event.message ? <p>{translateCodesInText(event.message)}</p> : null}
                   {event.location || event.shipmentCode ? (
                     <span className="tracking-journey__event-meta">
                       {event.location ? (

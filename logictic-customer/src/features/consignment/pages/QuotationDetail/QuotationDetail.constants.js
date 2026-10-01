@@ -7,55 +7,27 @@
    trạng thái mới.
    ========================================================= */
 
+import {
+  CONSIGNMENT_TYPE_LABELS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_STATUS_LABELS,
+  QUOTATION_STATUS_LABELS,
+  QUOTE_TYPE_LABELS,
+} from "@shared/utils/statusLabel";
+
 /*
- * Trạng thái báo giá khách thấy (QuotationAcceptanceRules của backend):
- * DRAFT = tạm tính hệ thống tự sinh, PENDING = chính thức chờ khách,
- * ACCEPTED / REJECTED; EXPIRED do FE suy ra từ expiredAt.
+ * Trạng thái báo giá, trạng thái / phương thức khoản cọc, loại báo giá, loại vận chuyển:
+ * MỘT bảng dùng chung cho cả app (shared/utils/statusLabel.js) — giữ tên cũ để màn này
+ * không phải sửa theo. Trạng thái báo giá khách thấy (QuotationAcceptanceRules):
+ * DRAFT = tạm tính hệ thống tự sinh, PENDING = chính thức chờ khách, ACCEPTED / REJECTED;
+ * EXPIRED do FE suy ra từ expiredAt.
  */
-const QUOTATION_STATUS_FALLBACK_LABELS = {
-  DRAFT: "Tạm tính",
-  PENDING: "Chờ bạn xác nhận",
-  APPROVED: "Đã duyệt",
-  ACCEPTED: "Đã chấp nhận",
-  PAID: "Đã thanh toán",
-  REJECTED: "Đã từ chối",
-  EXPIRED: "Hết hạn",
-  CANCELLED: "Đã hủy",
-  CANCELED: "Đã hủy",
-};
+const QUOTATION_STATUS_FALLBACK_LABELS = QUOTATION_STATUS_LABELS;
 
 /* Trạng thái khoản cọc (lịch sử thanh toán backend đã chuẩn hoá + mã giữ nguyên). */
-const DEPOSIT_PAYMENT_STATUS_LABELS = {
-  PENDING: "Chờ thanh toán",
-  SUCCESS: "Đã thanh toán",
-  PAID: "Đã thanh toán",
-  FAILED: "Thanh toán thất bại",
-  CANCELED: "Đã hủy",
-  CANCELLED: "Đã hủy",
-  PENDING_RECONCILIATION: "Chờ đối soát",
-  RECEIVED_UNALLOCATED: "Đã nhận, chưa phân bổ",
-};
+const DEPOSIT_PAYMENT_STATUS_LABELS = PAYMENT_STATUS_LABELS;
 
-const DEPOSIT_PAYMENT_METHOD_LABELS = {
-  PAYOS: "payOS",
-  OFFLINE: "Chuyển khoản ngân hàng",
-  SEPAY: "SePay",
-};
-
-const QUOTE_TYPE_LABELS = {
-  ESTIMATE: "Báo giá tạm tính",
-  OFFICIAL: "Báo giá chính thức",
-  FINAL: "Báo giá chính thức",
-};
-
-const CONSIGNMENT_TYPE_LABELS = {
-  EXPRESS: "Hỏa tốc",
-  "HỎA TỐC": "Hỏa tốc",
-  "HOA TOC": "Hỏa tốc",
-  STANDARD: "Tiêu chuẩn",
-  "TIÊU CHUẨN": "Tiêu chuẩn",
-  "TIEU CHUAN": "Tiêu chuẩn",
-};
+const DEPOSIT_PAYMENT_METHOD_LABELS = PAYMENT_METHOD_LABELS;
 
 const FEE_CODE_LABELS = {
   MAIN_SERVICE: "Cước vận chuyển quốc tế",

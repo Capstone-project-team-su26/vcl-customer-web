@@ -1021,3 +1021,71 @@
       font-size: 22px;
     }
   }
+/* =========================================================
+   FONT CỦA COMPONENT THƯ VIỆN TRONG KHU SAU ĐĂNG NHẬP
+
+   Khung này dùng Inter / system-ui (khai ở .main-layout-container), nhưng antd và MUI nhận
+   fontFamily từ theme ở AppProviders ("Times New Roman" — font chung của trang công khai) và
+   GẮN THẲNG lên thẻ, nút, tab, Typography… nên không kế thừa: nhãn trạng thái, nút, tab trong
+   mọi trang dashboard hiện chữ có chân lẫn với chữ không chân. Rule `button { font-family:
+   inherit }` ở shared/styles/fonts.css chỉ chữa được <button> gốc.
+
+   Ở đây ép các component đó kế thừa font của khung. Lớp CSS-in-JS của antd bọc trong :where()
+   (độ ưu tiên 0), lớp emotion của MUI là một class — rule dưới (một class + một thuộc tính)
+   luôn thắng mà không cần !important. Bắt theo tiền tố lớp `ant-` / `Mui` để mọi component con
+   (ô phân trang, mục tab, nhãn…) cũng theo, không phải liệt kê từng loại.
+   Trang công khai (không có .main-layout-container) giữ nguyên font chung.
+   ========================================================= */
+
+.main-layout-container :is(
+    button,
+    input,
+    select,
+    textarea,
+    [class^="ant-"],
+    [class*=" ant-"],
+    [class^="Mui"],
+    [class*=" Mui"]
+  ) {
+  font-family: inherit;
+}
+
+/* Số trang của antd Pagination: antd gắn font lên chính thẻ <a> bên trong ô (không có lớp ant-). */
+.main-layout-container .ant-pagination .ant-pagination-item a {
+  font-family: inherit;
+}
+
+/*
+ * Lớp nổi (modal, menu thả, tooltip, thông báo) được antd / MUI gắn thẳng vào <body>, nằm ngoài
+ * khung nên không kế thừa được — khi đang ở khu dashboard thì cho chúng cùng font với khung.
+ */
+body:has(.main-layout-container)
+  :is(
+    .ant-modal-root,
+    .ant-modal,
+    .ant-dropdown,
+    .ant-select-dropdown,
+    .ant-picker-dropdown,
+    .ant-tooltip,
+    .ant-popover,
+    .ant-message,
+    .ant-notification,
+    .MuiPopover-root,
+    .MuiTooltip-popper,
+    .MuiDialog-root,
+    .MuiMenu-root
+  ) {
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+body:has(.main-layout-container)
+  :is(.ant-modal-root, .ant-dropdown, .ant-popover, .MuiDialog-root, .MuiPopover-root)
+  :is(button, input, textarea, .ant-btn, .ant-tag, .ant-typography, .ant-input, .MuiButtonBase-root, .MuiTypography-root) {
+  font-family: inherit;
+}

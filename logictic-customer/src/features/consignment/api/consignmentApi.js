@@ -986,7 +986,7 @@ export const rejectConsignmentQuotationApi = async (
   }
 };
 
-/* Khách trả cọc qua SePay (QR chuyển khoản, webhook tự xác nhận) hoặc chuyển khoản tay. */
+/* Khách trả cọc qua SePay (QR chuyển khoản, webhook tự xác nhận) hoặc thanh toán tiền mặt (OFFLINE). */
 export const CONSIGNMENT_PAYMENT_METHODS = Object.freeze({
   SEPAY: "SEPAY",
   OFFLINE: "OFFLINE",
@@ -1000,7 +1000,7 @@ export const CONSIGNMENT_PAYMENT_METHODS = Object.freeze({
  *   returnUrl (+ `?orderCode=&status=success`), bấm Huỷ về cancelUrl (+ `status=cancelled`).
  *   returnUrl/cancelUrl phải là URL tuyệt đối có origin trong whitelist của backend, sai thì
  *   backend dùng /history/consignment. Nơi gọi dựng bằng buildPaymentReturnUrls.
- * - OFFLINE: checkoutUrl null, paymentStatus PENDING_RECONCILIATION (chờ Admin đối soát).
+ * - OFFLINE ("Thanh toán tiền mặt"): checkoutUrl null, paymentStatus PENDING_RECONCILIATION (chờ Admin xác nhận đã nhận tiền).
  * - Tỷ lệ cọc 0%: amount 0, orderCode 0, paymentStatus PAID.
  * Số tiền (amount, depositRate, totalBillAmount) luôn lấy từ đây, FE không tự tính.
  */

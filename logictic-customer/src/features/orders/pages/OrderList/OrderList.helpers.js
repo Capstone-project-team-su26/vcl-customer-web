@@ -20,11 +20,13 @@ import {
 } from "@features/consignment/constants/orderStatus";
 import { formatVnd } from "@shared/utils/formatNumber";
 import { apiToTimestamp } from "@shared/utils/timeUtc";
+import { getRouteLabel } from "@shared/utils/statusLabel";
 import {
   isPurchaseWarehouseOrder,
   purchaseCodeOfWarehouseOrder,
 } from "@shared/utils/orderType";
 import { ORDER_KINDS, ORDER_TABS } from "@features/orders/constants/orderPaths";
+import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
 
 /* ---------------------------------------------------------- *
  * Chip giai đoạn                                              *
@@ -122,29 +124,6 @@ const PURCHASE_STAGE_BY_STATUS = {
   QUOTATION_REJECTED: ORDER_STAGES.cancelled,
   CANCELLED: ORDER_STAGES.cancelled,
   CANCELED: ORDER_STAGES.cancelled,
-};
-
-const PURCHASE_STATUS_LABELS = {
-  PENDING_REVIEW: "Chờ duyệt",
-  QUOTED: "Đã báo giá",
-  QUOTATION_SENT: "Đã gửi báo giá",
-  PENDING_CUSTOMER_CONFIRMATION: "Chờ bạn xác nhận",
-  ACCEPTED: "Đã chấp nhận báo giá",
-  WAITING_PAYMENT: "Chờ thanh toán",
-  APPROVED: "Đã duyệt",
-  PROCESSING: "Đang xử lý",
-  PAID: "Đã thanh toán, chờ VCL mua hàng",
-  PURCHASING: "VCL đang mua hàng",
-  PURCHASED: "Đã mua hàng",
-  SELLER_SHIPPED: "Người bán đã gửi hàng",
-  ARRIVED_ORIGIN_WAREHOUSE: "Hàng đã tới kho nguồn",
-  WAITING_STORED: "Chờ nhập kho",
-  STORED: "Đã nhập kho",
-  COMPLETED: "Hoàn tất",
-  REJECTED: "Đã từ chối",
-  QUOTATION_REJECTED: "Đã từ chối báo giá",
-  CANCELLED: "Đã huỷ",
-  CANCELED: "Đã huỷ",
 };
 
 const upper = (value) => String(value ?? "").trim().toUpperCase();
@@ -274,7 +253,8 @@ export const toConsignmentRow = (item, dueByOrderId) => {
     statusCode: status,
     statusLabel: getOrderStatusLabel(status),
     stage: CONSIGNMENT_STAGE_BY_STATUS[status] || ORDER_STAGES.processing,
-    route: item?.route || "",
+    /* "CN-VN" → "Trung Quốc → Việt Nam": không in mã nước thô. */
+    route: getRouteLabel(item?.route),
     receiverName: item?.receiverName || "",
     createdAt: item?.createdAtUtc || item?.createdAt || null,
     createdAtTs: apiToTimestamp(item?.createdAtUtc || item?.createdAt) || 0,
@@ -347,9 +327,11 @@ export const toPurchaseRow = (item, settlementsByRequestId) => {
     id: requestId,
     code: item?.purchaseCode || "Chưa được cấp mã",
     statusCode: status,
-    statusLabel: PURCHASE_STATUS_LABELS[status] || status || "—",
+    /* Một bảng nhãn cho trạng thái mua hộ (purchaseStages) — cùng chữ với trang chi tiết. */
+    statusLabel: getPurchaseStatusLabel(status, item?.statusDisplayName),
     stage: PURCHASE_STAGE_BY_STATUS[status] || ORDER_STAGES.processing,
-    route: item?.route || "",
+    /* "CN-VN" → "Trung Quốc → Việt Nam": không in mã nước thô. */
+    route: getRouteLabel(item?.route),
     receiverName: item?.receiverName || "",
     createdAt: item?.createdAt || null,
     createdAtTs: apiToTimestamp(item?.createdAt) || 0,

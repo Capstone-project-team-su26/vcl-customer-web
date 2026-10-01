@@ -162,6 +162,42 @@ export const getPurchaseRequestDetailApi = async (purchaseRequestId, options = {
   }
 };
 
+/**
+ * Nhật ký đổi trạng thái của một yêu cầu (GET /api/purchase-requests/{id}/history, mới nhất trước).
+ * Khách chỉ xem được yêu cầu của mình (403 nếu không). Backend đời cũ chưa có API → 404 → [].
+ *
+ * @returns {Promise<Array<{ historyId: string, fromStatus: string, toStatus: string,
+ *   toStatusDisplayName: string, note: string, proofImages: string[], changedByName: string,
+ *   createdAt: string|null }>>}
+ */
+export const getPurchaseRequestHistoryApi = async (purchaseRequestId, options = {}) => {
+  const id = requireRequestId(purchaseRequestId);
+
+  try {
+    const response = await httpClient.get(
+      `/api/purchase-requests/${encodeURIComponent(id)}/history`,
+      { signal: getSignal(options) }
+    );
+
+    return toArray(unwrapData(response.data)).map((entry) => ({
+      historyId: trimText(entry?.historyId ?? entry?.id),
+      fromStatus: trimText(entry?.fromStatus).toUpperCase(),
+      toStatus: trimText(entry?.toStatus).toUpperCase(),
+      toStatusDisplayName: trimText(entry?.toStatusDisplayName),
+      note: trimText(entry?.note),
+      proofImages: toArray(entry?.proofImages).map(trimText).filter(Boolean),
+      changedByName: trimText(entry?.changedByName),
+      createdAt: entry?.createdAt || null,
+    }));
+  } catch (error) {
+    if (error?.response?.status === 404) return [];
+
+    logApiError("Lỗi lấy lịch sử trạng thái mua hộ:", error);
+
+    throw error;
+  }
+};
+
 /* Hai tên cũ vẫn được dùng ở vài màn — giữ lại để không phải sửa nơi gọi. */
 export const getPurchaseRequestByIdApi = getPurchaseRequestDetailApi;
 export const getPurchaseRequestById = getPurchaseRequestDetailApi;

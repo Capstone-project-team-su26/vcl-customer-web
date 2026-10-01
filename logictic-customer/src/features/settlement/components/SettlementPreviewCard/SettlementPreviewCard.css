@@ -23,3 +23,10 @@
   font-size: 18px;
   color: #1d4ed8;
 }
+
+/* Ảnh kho VN chụp lúc nhận kiện — lưới ảnh nhỏ trong ô bảng. */
+.settlement-preview__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

@@ -20,6 +20,8 @@ import {
   ShoppingCartOutlined,
 } from "@ant-design/icons";
 
+import { labelOf } from "@shared/utils/statusLabel";
+
 import "./ConsignmentBuyOrderConfirm.css";
 
 const SERVICE_CODE_LABELS = {
@@ -210,12 +212,10 @@ const getServiceLabel = (code) => {
     return SERVICE_CODE_LABELS[normalizedCode];
   }
 
+  /* Mã dịch vụ lạ: nhãn tiếng Việt từ bảng chung, không in chữ tiếng Anh. */
   return normalizedCode
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (character) =>
-      character.toUpperCase(),
-    );
+    ? labelOf(null, normalizedCode, { generic: "Dịch vụ bổ sung" })
+    : "Dịch vụ bổ sung";
 };
 
 const getServiceMeta = (code) => {

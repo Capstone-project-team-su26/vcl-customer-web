@@ -27,6 +27,9 @@ import {
 } from "@features/notifications/api/notificationApi";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
 import { purchaseCodeOfWarehouseOrder } from "@shared/utils/orderType";
+import { translateCodesInText } from "@shared/utils/statusLabel";
+/* Import sâu (file hằng số thuần), không qua barrel tracking — thứ tự CSS (ARCHITECTURE mục 4). */
+import { TRACKING_STAGE_LABELS } from "@features/tracking/constants/trackingStages";
 import {
   CONSIGNMENT_ORDERS_PATH,
   ORDER_KINDS,
@@ -390,8 +393,12 @@ const mapApiNotification = (item, index) => {
 
   return {
     id,
-    title: item.title || item.notificationTitle || "Thông báo hệ thống",
-    description: contentText,
+    /* Server có lúc chèn nguyên mã trạng thái vào câu → dịch mã, giữ phần chữ còn lại. */
+    title: translateCodesInText(
+      item.title || item.notificationTitle || "Thông báo hệ thống",
+      TRACKING_STAGE_LABELS,
+    ),
+    description: translateCodesInText(contentText, TRACKING_STAGE_LABELS),
     isRead,
     createdAt,
     time: formatRelative(createdAt),
@@ -440,6 +447,27 @@ const TYPE_CONFIG = {
   },
 };
 
+/* Mỗi lượt tải bao nhiêu thông báo. API GET /api/notifications có phân trang
+   (pageNumber/pageSize + totalCount): lần đầu tải trang 1, "Tải thêm" tải trang kế tiếp. */
+const NOTIFICATION_PAGE_SIZE = 50;
+
+/* Gộp các trang, bỏ trùng theo id (thông báo mới chen vào đầu làm trang sau lặp dòng). */
+const mergeNotificationPages = (pages) => {
+  const seen = new Set();
+  const merged = [];
+
+  pages.flat().forEach((item) => {
+    /* id giả "notif-<index>" (bản ghi thiếu id) lặp giữa các trang — không dùng để bỏ trùng. */
+    const key = String(item?.id ?? "");
+    const dedupable = key && !key.startsWith("notif-");
+    if (dedupable && seen.has(key)) return;
+    if (dedupable) seen.add(key);
+    merged.push(item);
+  });
+
+  return merged;
+};
+
 const TABS = [
   { key: "all", label: "Tất cả" },
   { key: "unread", label: "Chưa đọc" },
@@ -467,6 +495,10 @@ const NotificationPanel = ({
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [panelStyle, setPanelStyle] = useState({});
+  /* Phân trang kiểu "Tải thêm": số trang đã tải + tổng số thông báo server báo. */
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadedPagesRef = useRef(1);
 
   /* ---- Tính toán số lượng chưa đọc ---- */
   const unreadCount = useMemo(
@@ -545,15 +577,29 @@ const NotificationPanel = ({
       setLoading(true);
       setError("");
 
-      const response = await getNotificationsApi(
-        { pageNumber: 1, pageSize: 50, unreadOnly: false },
-        { signal }
+      /* Tải lại đủ số trang khách đã mở bằng "Tải thêm" (làm mới định kỳ không làm
+         danh sách co về trang 1). */
+      const pageCount = Math.max(1, loadedPagesRef.current);
+      const responses = await Promise.all(
+        Array.from({ length: pageCount }, (_, index) =>
+          getNotificationsApi(
+            {
+              pageNumber: index + 1,
+              pageSize: NOTIFICATION_PAGE_SIZE,
+              unreadOnly: false,
+            },
+            { signal }
+          )
+        )
+      );
+      const [response] = responses;
+
+      const mapped = mergeNotificationPages(
+        responses.map((page) => extractNotificationsList(page).map(mapApiNotification))
       );
 
-      const items = extractNotificationsList(response);
-      const mapped = items.map(mapApiNotification);
-
       setNotifications(mapped);
+      setTotalCount(Math.max(Number(response?.totalCount) || 0, mapped.length));
 
       // Đồng bộ unreadCount trực tiếp từ response của API (nếu có) hoặc tính từ items
       const serverUnreadCount =
@@ -639,6 +685,34 @@ const NotificationPanel = ({
     }
   }, [onUnreadCountChange]);
 
+  /* ---- Tải thêm trang thông báo cũ hơn ---- */
+  const handleLoadMore = useCallback(async () => {
+    const nextPage = loadedPagesRef.current + 1;
+
+    try {
+      setLoadingMore(true);
+      const response = await getNotificationsApi({
+        pageNumber: nextPage,
+        pageSize: NOTIFICATION_PAGE_SIZE,
+        unreadOnly: false,
+      });
+      const items = extractNotificationsList(response).map(mapApiNotification);
+
+      loadedPagesRef.current = nextPage;
+      setNotifications((prev) => mergeNotificationPages([prev, items]));
+      if (Number(response?.totalCount) > 0) setTotalCount(Number(response.totalCount));
+    } catch (err) {
+      if (!isCanceled(err)) {
+        console.error("Lỗi tải thêm thông báo:", err);
+        setError("Không thể tải thêm thông báo. Vui lòng thử lại.");
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, []);
+
+  const hasMoreNotifications = notifications.length < totalCount;
+
   /* ---- Nút Refresh ---- */
   const handleRefresh = useCallback(() => {
     const controller = new AbortController();
@@ -660,7 +734,8 @@ const NotificationPanel = ({
   const tabCounts = useMemo(() => {
     const counts = {};
     TABS.forEach((tab) => {
-      if (tab.key === "all") counts[tab.key] = notifications.length;
+      /* "Tất cả" đếm theo tổng server báo, kể cả trang chưa tải. */
+      if (tab.key === "all") counts[tab.key] = Math.max(totalCount, notifications.length);
       else if (tab.key === "unread")
         counts[tab.key] = notifications.filter((n) => !n.isRead).length;
       else if (tab.key === "order")
@@ -673,7 +748,7 @@ const NotificationPanel = ({
         ).length;
     });
     return counts;
-  }, [notifications]);
+  }, [notifications, totalCount]);
 
   // Đếm theo nguồn để hiển thị chip Mua hộ & Ký gửi
   const buyCount = useMemo(
@@ -860,6 +935,25 @@ const NotificationPanel = ({
               </div>
             );
           })}
+
+        {/* Phân trang kiểu "Tải thêm": hiện đã tải bao nhiêu / tổng, nút tải trang kế. */}
+        {!loading && totalCount > NOTIFICATION_PAGE_SIZE && (
+          <div className="notif-load-more">
+            <span className="notif-load-more__summary">
+              Đã tải {notifications.length} / {totalCount} thông báo
+            </span>
+            {hasMoreNotifications && (
+              <button
+                type="button"
+                className="notif-load-more__btn"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? "Đang tải…" : "Tải thêm thông báo cũ hơn"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ===== FOOTER ===== */}

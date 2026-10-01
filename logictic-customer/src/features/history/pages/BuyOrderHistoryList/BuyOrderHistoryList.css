@@ -629,11 +629,9 @@
 
 /* ================= 6. PAGINATION ================= */
 
-.buy-order-history-page .buy-order-history-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+/* Thanh phân trang dùng chung (shared/components/ListPagination) — giữ nền trắng và
+   tông cam của trang lịch sử mua hộ. */
+.buy-order-history-page .list-pagination.buy-order-history-pager {
   margin-top: 18px;
   padding: 14px 20px;
   border-radius: 16px;
@@ -641,14 +639,18 @@
   border: 1px solid #e2e8f0;
 }
 
-.buy-order-history-page .pagination-info {
-  color: #64748b;
-  font-size: 13.5px;
+.buy-order-history-page .buy-order-history-pager .ant-pagination-item-active {
+  border-color: var(--bh-primary);
+  background: var(--bh-primary);
 }
 
-.buy-order-history-page .pagination-info strong {
-  color: #0f172a;
+.buy-order-history-page
+  .buy-order-history-pager
+  .ant-pagination-item:not(.ant-pagination-item-active):hover
+  a {
+  color: var(--bh-primary);
 }
+
 /* Yêu cầu mua hộ của giao dịch vừa thanh toán (khách từ trang thanh toán về). */
 .buy-order-history-card.is-just-paid {
   outline: 2px solid #2563eb;

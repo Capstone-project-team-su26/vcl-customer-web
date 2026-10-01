@@ -87,7 +87,19 @@ const resolveWarehouseOrder = (order, settlements) => {
   };
 };
 
-export default function SupplierOrderPanel({ purchaseRequestId }) {
+/**
+ * @param {{ purchaseRequestId: string, refreshKey?: number, onChanged?: () => void,
+ *   showWarehouseOrder?: boolean }} props
+ *   refreshKey: trang cha đổi số này khi bấm "Tải lại" để khối tải lại cùng lượt.
+ *   onChanged: báo trang cha sau khi khách đồng ý / từ chối phần chênh (tiến độ đổi theo).
+ *   showWarehouseOrder: false khi trang cha đã có khối đơn vận chuyển riêng (tránh lặp nút).
+ */
+export default function SupplierOrderPanel({
+  purchaseRequestId,
+  refreshKey = 0,
+  onChanged,
+  showWarehouseOrder = true,
+}) {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   /* Đơn kho PUR đã về VN, chờ khách tất toán (GET /api/orders/awaiting-settlement). */
@@ -113,7 +125,8 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
 
     Promise.allSettled([
       getSupplierOrdersApi(purchaseRequestId),
-      getAwaitingSettlementApi(),
+      /* Trang cha tự hiện đơn vận chuyển thì khỏi gọi danh sách chờ tất toán. */
+      showWarehouseOrder ? getAwaitingSettlementApi() : Promise.resolve([]),
     ]).then(([ordersResult, settlementResult]) => {
       if (!alive) return;
 
@@ -132,7 +145,7 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
     return () => {
       alive = false;
     };
-  }, [purchaseRequestId, reloadKey]);
+  }, [purchaseRequestId, reloadKey, refreshKey, showWarehouseOrder]);
 
   /* Ghi lại khoản chênh giá trước khi mở trang thanh toán: trả xong SePay đưa khách về
      "Thanh toán → Lịch sử giao dịch", nơi báo kết quả và dẫn về đúng yêu cầu này. */
@@ -178,6 +191,7 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
       }
 
       load();
+      onChanged?.();
     } catch (error) {
       AuthNotify.error(
         "Không gửi được",
@@ -241,7 +255,7 @@ export default function SupplierOrderPanel({ purchaseRequestId }) {
         const needsDecision = order.status === "AWAITING_CUSTOMER";
         const needsPayment = order.status === "AWAITING_CUSTOMER_PAYMENT";
         const checkoutUrl = order.priceDifferenceCheckoutUrl;
-        const warehouse = resolveWarehouseOrder(order, settlements);
+        const warehouse = showWarehouseOrder ? resolveWarehouseOrder(order, settlements) : null;
 
         return (
           <article key={order.purchaseOrderId} className="supplier-card">

@@ -8,6 +8,8 @@ import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatVnd } from "@shared/utils/formatNumber";
 import { formatVietnamDateTime, getSyncedNowDate } from "@shared/utils/timeUtc";
+import { usePagedRows } from "@shared/hooks/usePagination";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
 import {
   ATTACHMENT_ACCEPT_ATTRIBUTE,
   ATTACHMENT_DOCUMENT_TYPES,
@@ -17,12 +19,12 @@ import {
 } from "@shared/api/attachmentApi";
 import {
   COMPLAINT_WINDOW_DAYS,
-  INCIDENT_CHOICE_LABELS,
-  INCIDENT_RESOLUTION_LABELS,
-  INCIDENT_STATUS_LABELS,
-  INCIDENT_TYPE_LABELS,
   createOrderComplaintApi,
   getParcelIncidentsApi,
+  getIncidentChoiceLabel,
+  getIncidentResolutionLabel,
+  getIncidentStatusLabel,
+  getIncidentTypeLabel,
 } from "@features/incidents/api/parcelIncidentApi";
 import IncidentDetailModal from "@features/incidents/components/IncidentDetailModal/IncidentDetailModal";
 
@@ -59,6 +61,10 @@ export default function OrderIncidentsCard({
   const [complaintOpen, setComplaintOpen] = useState(false);
   const [complaint, setComplaint] = useState({ parcelIds: [], description: "", photo: null });
   const [submitting, setSubmitting] = useState(false);
+
+  /* Sự cố của MỘT đơn: tải một lượt (tối đa 100 — trần pageSize backend) rồi cắt trang phía
+     client; ≤ 10 sự cố thì không hiện thanh phân trang. */
+  const pagedIncidents = usePagedRows(state.items);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -185,54 +191,64 @@ export default function OrderIncidentsCard({
       ) : state.items.length === 0 ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Đơn chưa có sự cố nào." />
       ) : (
-        <ul className="order-incidents">
-          {state.items.map((incident) => {
-            const status = String(incident.status).toUpperCase();
-            const type = String(incident.incidentType).toUpperCase();
-            const waitingForYou = incident.awaitsCustomerChoice && status === "OPEN";
+        <>
+          <ul className="order-incidents">
+            {pagedIncidents.items.map((incident) => {
+              const status = String(incident.status).toUpperCase();
+              const type = String(incident.incidentType).toUpperCase();
+              const waitingForYou = incident.awaitsCustomerChoice && status === "OPEN";
 
-            return (
-              <li key={incident.id} className="order-incidents__item">
-                <div className="order-incidents__main">
-                  <div className="order-incidents__tags">
-                    <strong>{incident.incidentCode}</strong>
-                    <Tag color="volcano">
-                      {incident.incidentTypeText || INCIDENT_TYPE_LABELS[type] || type}
-                    </Tag>
-                    <Tag color={STATUS_COLORS[status] || "default"}>
-                      {INCIDENT_STATUS_LABELS[status] || status}
-                    </Tag>
+              return (
+                <li key={incident.id} className="order-incidents__item">
+                  <div className="order-incidents__main">
+                    <div className="order-incidents__tags">
+                      <strong>{incident.incidentCode}</strong>
+                      <Tag color="volcano">
+                        {getIncidentTypeLabel(type, incident.incidentTypeText)}
+                      </Tag>
+                      <Tag color={STATUS_COLORS[status] || "default"}>
+                        {getIncidentStatusLabel(status)}
+                      </Tag>
+                    </div>
+                    <span className="order-incidents__meta">
+                      Kiện {incident.packageCode} ·{" "}
+                      {incident.reportedAt ? formatVietnamDateTime(incident.reportedAt) : ""}
+                    </span>
+                    {incident.description ? <p>{incident.description}</p> : null}
+                    {incident.customerChoice ? (
+                      <span className="order-incidents__meta">
+                        Bạn chọn: {getIncidentChoiceLabel(incident.customerChoice)}
+                      </span>
+                    ) : null}
+                    {incident.resolution ? (
+                      <span className="order-incidents__meta">
+                        Kết quả: {getIncidentResolutionLabel(incident.resolution)}
+                        {Number(incident.compensationAmount) > 0
+                          ? ` · bồi thường ${formatVnd(incident.compensationAmount)}`
+                          : ""}
+                      </span>
+                    ) : null}
                   </div>
-                  <span className="order-incidents__meta">
-                    Kiện {incident.packageCode} ·{" "}
-                    {incident.reportedAt ? formatVietnamDateTime(incident.reportedAt) : ""}
-                  </span>
-                  {incident.description ? <p>{incident.description}</p> : null}
-                  {incident.customerChoice ? (
-                    <span className="order-incidents__meta">
-                      Bạn chọn: {INCIDENT_CHOICE_LABELS[incident.customerChoice] || incident.customerChoice}
-                    </span>
-                  ) : null}
-                  {incident.resolution ? (
-                    <span className="order-incidents__meta">
-                      Kết quả: {INCIDENT_RESOLUTION_LABELS[incident.resolution] || incident.resolution}
-                      {Number(incident.compensationAmount) > 0
-                        ? ` · bồi thường ${formatVnd(incident.compensationAmount)}`
-                        : ""}
-                    </span>
-                  ) : null}
-                </div>
 
-                <Button
-                  type={waitingForYou ? "primary" : "default"}
-                  onClick={() => setDetailId(incident.id)}
-                >
-                  {waitingForYou ? "Chọn cách xử lý" : "Xem chi tiết"}
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
+                  <Button
+                    type={waitingForYou ? "primary" : "default"}
+                    onClick={() => setDetailId(incident.id)}
+                  >
+                    {waitingForYou ? "Chọn cách xử lý" : "Xem chi tiết"}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <ListPagination
+            {...pagedIncidents.paginationProps}
+            hideOnSinglePage
+            unit="sự cố"
+            className="order-incidents__pager"
+            ariaLabel="Phân trang sự cố của đơn"
+          />
+        </>
       )}
 
       <IncidentDetailModal

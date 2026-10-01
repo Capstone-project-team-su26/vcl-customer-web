@@ -1,6 +1,8 @@
 import React from "react";
 import { CircleAlert, TriangleAlert } from "lucide-react";
 
+import { displayCode, getRouteLabel, metaOf } from "@shared/utils/statusLabel";
+
 import "./ReceivingNoteDocument.css";
 
 /**
@@ -20,13 +22,12 @@ const STATUS_META = {
   RECEIVED: { label: "Kho đã kiểm đếm xong", tone: "progress" },
   APPROVED: { label: "Đã nhập kho", tone: "done" },
   REJECTED: { label: "Phiếu bị từ chối", tone: "warn" },
+  CANCELLED: { label: "Phiếu đã huỷ", tone: "warn" },
 };
 
+/* Mã lạ: nhãn an toàn (không in mã thô); không có mã thì "Đang xử lý". */
 export const getReceivingStatusMeta = (status) =>
-  STATUS_META[String(status || "").toUpperCase()] || {
-    label: status || "Đang xử lý",
-    tone: "wait",
-  };
+  metaOf(STATUS_META, status, { tone: "wait" }, { generic: "Đang xử lý", empty: "Đang xử lý" });
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -36,12 +37,20 @@ const formatDateTime = (value) => {
 
 /** Thùng gỗ + dịch vụ kho phải làm cho một dòng hàng (mỗi dòng là một kiện). */
 const describePackaging = (line) => {
+  /* Tên cấu hình / dịch vụ thiếu thì mới dùng mã — và mã phải dịch, không in thô. */
   const crate =
     line?.packageConfiguration?.configName ||
-    line?.packageConfiguration?.configCode ||
-    "";
+    (line?.packageConfiguration?.configCode
+      ? displayCode(line.packageConfiguration.configCode, null, { generic: "Quy cách khác" })
+      : "");
   const services = Array.isArray(line?.services)
-    ? line.services.map((service) => service?.name || service?.code).filter(Boolean)
+    ? line.services
+        .map(
+          (service) =>
+            service?.name ||
+            (service?.code ? displayCode(service.code, null, { generic: "Dịch vụ khác" }) : ""),
+        )
+        .filter(Boolean)
     : [];
 
   return [crate && `Thùng: ${crate}`, ...services].join(" · ") || "—";
@@ -151,7 +160,7 @@ export default function ReceivingNoteDocument({ note }) {
         </div>
         <div>
           <span>Tuyến vận chuyển</span>
-          <strong>{note.route || "—"}</strong>
+          <strong>{getRouteLabel(note.route, "—")}</strong>
         </div>
         <div>
           <span>Ngày lập phiếu</span>

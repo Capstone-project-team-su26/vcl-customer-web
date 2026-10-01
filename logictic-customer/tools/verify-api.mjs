@@ -3,7 +3,7 @@
  *
  * Quyết định đã chốt: không gọi production, không tạo dữ liệu thật. Script này:
  * Đợt B (báo giá + cọc ký gửi) thêm các kịch bản: lấy báo giá, từ chối, xác nhận và
- * tạo cọc (payOS / chuyển khoản tay), poll trạng thái thanh toán, tỷ lệ cọc, lịch sử
+ * tạo cọc (payOS / tiền mặt), poll trạng thái thanh toán, tỷ lệ cọc, lịch sử
  * thanh toán. Đợt sửa ảnh mock: màn tạo mua hộ + chat CSKH upload ảnh THẬT, chat CSKH
  * gọi /api/conversations thật, hộp thoại cọc mặc định đọc tỷ lệ cọc thật.
  *
@@ -143,6 +143,13 @@ try {
     address: await load("/src/shared/api/addressApi.js"),
     addressHook: await load("/src/shared/components/AddressSelect/useAddressOptions.js"),
     deliveryHelpers: await load("/src/features/delivery/components/OrderDeliveryCard/OrderDeliveryCard.helpers.js"),
+    /* Phân trang dùng chung: helper thuần + hook + thanh phân trang, và nguồn đếm của danh sách đơn. */
+    pagination: await load("/src/shared/utils/pagination.js"),
+    paginationHook: await load("/src/shared/hooks/usePagination.js"),
+    listPagination: await load("/src/shared/components/ListPagination/ListPagination.jsx"),
+    orderTodoRows: await load("/src/features/orders/data/orderTodoRows.js"),
+    /* Giới hạn tạo đơn do Admin cấu hình (GET /api/system-settings/order-limits). */
+    orderLimits: await load("/src/shared/api/orderLimitsApi.js"),
     mock: {
       consignment: await load(MOCK_MODULES.consignment),
       pricing: await load(MOCK_MODULES.pricing),
@@ -180,6 +187,64 @@ if (!loadError) {
     );
   } catch (error) {
     historyRender.error = error;
+  } finally {
+    console.error = originalError;
+    console.warn = originalWarn;
+  }
+}
+
+/*
+ * Render SSR thanh phân trang dùng chung + hook giữ trang trên URL (?page=&size=) —
+ * cũng trước khi cài window giả. Mỗi ca là một chuỗi HTML (hoặc lỗi).
+ */
+const paginationRender = { cases: {}, error: null, logs: [] };
+
+if (!loadError) {
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  console.error = (...args) => paginationRender.logs.push(args.map(String).join(" "));
+  console.warn = (...args) => paginationRender.logs.push(args.map(String).join(" "));
+  try {
+    const React = requireFromRoot("react");
+    const { renderToString } = requireFromRoot("react-dom/server");
+    const { MemoryRouter } = await import(pathToFileURL(requireFromRoot.resolve("react-router-dom")).href);
+    const ListPagination = mods.listPagination.default;
+    const { useUrlPagedRows, usePagedRows } = mods.paginationHook;
+    const rows57 = Array.from({ length: 57 }, (_, i) => `row-${i + 1}`);
+
+    const bar = (props) => renderToString(React.createElement(ListPagination, props));
+
+    /* Trang dùng hook URL: in ra các dòng đang hiện + props thanh phân trang. */
+    const UrlProbe = ({ rows }) => {
+      const paged = useUrlPagedRows(rows);
+      return React.createElement(
+        "div",
+        { "data-items": paged.items.join(","), "data-page": paged.page, "data-size": paged.pageSize },
+        React.createElement(ListPagination, { ...paged.paginationProps, unit: "đơn" })
+      );
+    };
+    const StateProbe = ({ rows, resetKey }) => {
+      const paged = usePagedRows(rows, { resetKey });
+      return React.createElement("div", { "data-items": paged.items.join(","), "data-page": paged.page });
+    };
+    const atUrl = (url, rows) =>
+      renderToString(
+        React.createElement(MemoryRouter, { initialEntries: [url] }, React.createElement(UrlProbe, { rows }))
+      );
+
+    paginationRender.cases = {
+      page2: bar({ page: 2, pageSize: 10, total: 57, unit: "đơn" }),
+      smallHidden: bar({ page: 1, pageSize: 10, total: 8, hideOnSinglePage: true }),
+      smallShown: bar({ page: 1, pageSize: 10, total: 8 }),
+      empty: bar({ page: 1, pageSize: 10, total: 0 }),
+      urlPage3Size20: atUrl("/orders/ky-gui?stage=dang-xu-ly&page=3&size=20", rows57),
+      urlPageTooBig: atUrl("/orders/ky-gui?page=99", rows57),
+      urlSizeInvalid: atUrl("/orders/ky-gui?size=9999", rows57),
+      urlLoading: atUrl("/orders/ky-gui?page=4", []),
+      stateFirst: renderToString(React.createElement(StateProbe, { rows: rows57, resetKey: "a" })),
+    };
+  } catch (error) {
+    paginationRender.error = error;
   } finally {
     console.error = originalError;
     console.warn = originalWarn;
@@ -513,6 +578,7 @@ if (loadError) {
     address,
     addressHook,
     deliveryHelpers,
+    orderLimits,
     mock,
   } = mods;
   const httpClient = httpMod.default;
@@ -530,12 +596,12 @@ if (loadError) {
     )
   );
 
-  await check("httpClient: base URL mặc định https://vcl.henrytech.cloud, timeout 30 giây", () =>
+  await check("httpClient: base URL mặc định https://api-vcl.vnlogistic.click, timeout 30 giây", () =>
     all(
-      expectEqual("API_BASE_URL", httpMod.API_BASE_URL, "https://vcl.henrytech.cloud"),
-      expectEqual("defaults.baseURL", httpClient.defaults.baseURL, "https://vcl.henrytech.cloud"),
+      expectEqual("API_BASE_URL", httpMod.API_BASE_URL, "https://api-vcl.vnlogistic.click"),
+      expectEqual("defaults.baseURL", httpClient.defaults.baseURL, "https://api-vcl.vnlogistic.click"),
       expectEqual("defaults.timeout", httpClient.defaults.timeout, 30000),
-      expectEqual("uploadAxios.baseURL", upload.uploadAxios.defaults.baseURL, "https://vcl.henrytech.cloud"),
+      expectEqual("uploadAxios.baseURL", upload.uploadAxios.defaults.baseURL, "https://api-vcl.vnlogistic.click"),
       expectTrue("uploadAxios timeout dài hơn 30 giây", upload.uploadAxios.defaults.timeout > 30000)
     )
   );
@@ -1682,9 +1748,9 @@ if (loadError) {
   await check("Link PDF phiếu: đổi host api-vcl.zushin.io.vn → base URL, giữ path; download=true; rỗng → null", async () => {
     const legacy = "https://api-vcl.zushin.io.vn/api/public/receipts/abc123";
     return all(
-      expectEqual("xem", receiving.toPublicReceiptUrl(legacy), "https://vcl.henrytech.cloud/api/public/receipts/abc123"),
-      expectEqual("tải", receiving.toPublicReceiptUrl(legacy, { download: true }), "https://vcl.henrytech.cloud/api/public/receipts/abc123?download=true"),
-      expectEqual("đường dẫn tương đối", receiving.toPublicReceiptUrl("/api/public/receipts/xyz"), "https://vcl.henrytech.cloud/api/public/receipts/xyz"),
+      expectEqual("xem", receiving.toPublicReceiptUrl(legacy), "https://api-vcl.vnlogistic.click/api/public/receipts/abc123"),
+      expectEqual("tải", receiving.toPublicReceiptUrl(legacy, { download: true }), "https://api-vcl.vnlogistic.click/api/public/receipts/abc123?download=true"),
+      expectEqual("đường dẫn tương đối", receiving.toPublicReceiptUrl("/api/public/receipts/xyz"), "https://api-vcl.vnlogistic.click/api/public/receipts/xyz"),
       expectEqual("rỗng", receiving.toPublicReceiptUrl(""), null)
     );
   });
@@ -1893,7 +1959,7 @@ if (loadError) {
     );
   });
 
-  await check("Xác nhận + cọc (chuyển khoản tay): checkoutUrl null, paymentStatus PENDING_RECONCILIATION; cọc 0% → PAID", async () => {
+  await check("Xác nhận + cọc (tiền mặt – OFFLINE): checkoutUrl null, paymentStatus PENDING_RECONCILIATION; cọc 0% → PAID", async () => {
     resetState({ localToken: "tok-local" });
     routes = confirmRoute((req) =>
       ok({
@@ -1935,7 +2001,7 @@ if (loadError) {
     const zeroDeposit = await consignment.confirmAndPayConsignmentQuotationApi(QUOTATION_ID, { paymentMethod: "SEPAY" });
     return all(
       expectEqual("body chỉ có paymentMethod khi không truyền URL", requests[0]?.body, { paymentMethod: "OFFLINE" }),
-      expectEqual("chuyển khoản tay", [offline?.paymentStatus, offline?.checkoutUrl, offline?.amount], ["PENDING_RECONCILIATION", null, 825_000]),
+      expectEqual("tiền mặt (OFFLINE)", [offline?.paymentStatus, offline?.checkoutUrl, offline?.amount], ["PENDING_RECONCILIATION", null, 825_000]),
       expectEqual("cọc 0%", [zeroDeposit?.paymentStatus, zeroDeposit?.orderCode, zeroDeposit?.amount], ["PAID", 0, 0])
     );
   });
@@ -2081,10 +2147,73 @@ if (loadError) {
       expectEqual("chỉ dịch vụ", buildPurchaseGeneralNote("", { requiresPacking: true, requiresInsurance: true }), "Yêu cầu đóng gói lại. Đăng ký bảo hiểm"),
       expectEqual("vừa giới hạn → không lỗi", validatePurchaseGeneralNote("a".repeat(max), allServices), ""),
       expectTrue("vượt 1 ký tự → báo lỗi", validatePurchaseGeneralNote("a".repeat(max + 1), allServices).includes(String(max))),
-      expectEqual("50 sản phẩm không lỗi số dòng", validateBuyOrderForm({ form, items: items(50) }).formErrors.items, ""),
-      expectTrue("51 sản phẩm → lỗi số dòng", validateBuyOrderForm({ form, items: items(51) }).formErrors.items.includes("50")),
-      expectEqual("50 kiện không lỗi", orderHelpers.getPackageCountError(new Array(50).fill({})), ""),
-      expectTrue("51 kiện → lỗi", orderHelpers.getPackageCountError(new Array(51).fill({})).includes("50"))
+      expectEqual("50 sản phẩm không lỗi số dòng", validateBuyOrderForm({ form, items: items(50), limits: { maxItems: 50, maxItemQuantity: 999 } }).formErrors.items, ""),
+      expectTrue("51 sản phẩm → lỗi số dòng", validateBuyOrderForm({ form, items: items(51), limits: { maxItems: 50, maxItemQuantity: 999 } }).formErrors.items.includes("50")),
+      expectEqual("50 kiện không lỗi", orderHelpers.getPackageCountError(new Array(50).fill({}), { maxPackages: 50 }), ""),
+      expectTrue("51 kiện → lỗi", orderHelpers.getPackageCountError(new Array(51).fill({}), { maxPackages: 50 }).includes("50"))
+    );
+  });
+
+  await check("Giới hạn tạo đơn: GET /api/system-settings/order-limits, bóc data, null = không giới hạn", async () => {
+    resetState({ localToken: "tok-local" });
+    routes = [
+      {
+        method: "GET",
+        url: "/api/system-settings/order-limits",
+        reply: () =>
+          ok({
+            message: "Lấy cấu hình giới hạn đơn hàng thành công.",
+            data: {
+              consignment: {
+                maxParcelWeightKg: 4, maxParcelLengthCm: 100, maxParcelWidthCm: 200, maxParcelHeightCm: 50,
+                maxParcelQuantity: 5, maxItemDeclaredValue: 6000000, maxTotalWeightKg: 8,
+                maxTotalDeclaredValue: null, maxPackages: 50,
+              },
+              purchase: { maxItems: 50, maxItemQuantity: 3 },
+              items: [],
+            },
+          }),
+      },
+    ];
+    const got = await orderLimits.getOrderLimitsApi();
+    return all(
+      expectEqual("GET đúng endpoint", [onlyRequest()?.method, onlyRequest()?.url], ["GET", "/api/system-settings/order-limits"]),
+      expectEqual("có token", onlyRequest()?.authorization, "Bearer tok-local"),
+      expectEqual("đã tải", got.loaded, true),
+      expectEqual("ký gửi", [got.consignment.maxTotalWeightKg, got.consignment.maxParcelWeightKg, got.consignment.maxTotalDeclaredValue], [8, 4, null]),
+      expectEqual("mua hộ", [got.purchase.maxItems, got.purchase.maxItemQuantity], [50, 3])
+    );
+  });
+
+  await check("Giới hạn tạo đơn: tải lỗi → không giới hạn (không chặn bằng số cũ), backend kiểm", async () => {
+    resetState({ localToken: "tok-local" });
+    routes = [{ method: "GET", url: "/api/system-settings/order-limits", reply: () => fail(500, { message: "Lỗi máy chủ" }) }];
+    const got = await orderLimits.getOrderLimitsApi();
+    const limits = got.consignment;
+    const heavy = [{ weight: "40", declaredValue: "90000000" }];
+    return all(
+      expectEqual("loaded = false", got.loaded, false),
+      expectEqual("mọi giới hạn null", [...Object.values(got.consignment), ...Object.values(got.purchase)].every((v) => v === null), true),
+      expectEqual("tổng đơn không bị chặn", orderHelpers.getOrderTotalsError(heavy, limits), ""),
+      expectEqual("cân 1 kiện không bị chặn", orderHelpers.validatePackageField("weight", { weight: "40" }, limits), ""),
+      expectEqual("số kiện không bị chặn", orderHelpers.getPackageCountError(new Array(80).fill({}), limits), ""),
+      expectEqual("số lượng mua hộ không bị chặn", buyOrderHelpers.validatePurchaseItemQuantity("5000", got.purchase), "")
+    );
+  });
+
+  await check("Giới hạn tạo đơn: form kiểm theo số Admin đặt (8 kg / 4 kg / 20tr / SL 3)", async () => {
+    const limits = { ...orderLimits.NO_ORDER_LIMITS.consignment, maxTotalWeightKg: 8, maxParcelWeightKg: 4, maxTotalDeclaredValue: 20000000 };
+    const seven = [{ weight: "3.5", declaredValue: "100000" }, { weight: "3.5", declaredValue: "100000" }];
+    const nine = [{ weight: "3", declaredValue: "1" }, { weight: "3", declaredValue: "1" }, { weight: "3", declaredValue: "1" }];
+    const rich = new Array(4).fill({ weight: "1", declaredValue: "6000000" });
+    return all(
+      expectEqual("7 kg ≤ 8 → không lỗi (trước đây trần 5 kg)", orderHelpers.getOrderTotalsError(seven, limits), ""),
+      expectTrue("9 kg > 8 → lỗi nêu 8 kg", orderHelpers.getOrderTotalsError(nine, limits).includes("8 kg")),
+      expectTrue("24tr > 20tr → lỗi nêu 20.000.000 đ", orderHelpers.getOrderTotalsError(rich, limits).includes("20.000.000 đ")),
+      expectTrue("kiện 4,5 kg > 4 → lỗi nêu 4 kg", orderHelpers.validatePackageField("weight", { weight: "4.5" }, limits).includes("4 kg")),
+      expectEqual("kiện 4 kg → không lỗi", orderHelpers.validatePackageField("weight", { weight: "4" }, limits), ""),
+      expectTrue("mua hộ SL 4 > 3 → lỗi", buyOrderHelpers.validatePurchaseItemQuantity("4", { maxItems: 50, maxItemQuantity: 3 }).includes("3")),
+      expectEqual("mua hộ SL 3 → không lỗi", buyOrderHelpers.validatePurchaseItemQuantity("3", { maxItems: 50, maxItemQuantity: 3 }), "")
     );
   });
 
@@ -2241,7 +2370,7 @@ if (loadError) {
     ];
     const due = payment.findPayablePayment(payments, "FINAL_PAYMENT");
     return all(
-      expectEqual("khoản chờ trả", [due?.amount, due?.checkoutUrl], [160200, "https://vcl.henrytech.cloud/api/payments/sepay/checkout/99"]),
+      expectEqual("khoản chờ trả", [due?.amount, due?.checkoutUrl], [160200, "https://api-vcl.vnlogistic.click/api/payments/sepay/checkout/99"]),
       expectEqual("SePay", payment.isSepayCheckoutUrl(due?.checkoutUrl), true),
       expectEqual("phí giao lại đã trả", payment.findPayablePayment(payments, "REDELIVERY_FEE"), null),
       expectEqual("javascript: bị chặn", payment.resolveCheckoutUrl("javascript:alert(1)"), null)
@@ -2341,7 +2470,7 @@ if (loadError) {
 
   const purchaseOrders = await load("/src/features/purchase/api/purchaseOrderApi.js");
 
-  await check("Tiền hoàn mua hộ: GET /purchase-requests/{id}/refunds bóc data, giữ nguyên số backend, nhãn tiếng Việt, mã lạ hiện mã; 404 → null; 403 ném lỗi", async () => {
+  await check("Tiền hoàn mua hộ: GET /purchase-requests/{id}/refunds bóc data, giữ nguyên số backend, nhãn tiếng Việt, mã lạ ra nhãn chung (không in mã thô); 404 → null; 403 ném lỗi", async () => {
     resetState({ localToken: "tok-local" });
     /* Mẫu chép từ tests/purchase_refund_flow.py (kịch bản A) của VCL_API. */
     const body = { message: "OK", data: {
@@ -2364,9 +2493,112 @@ if (loadError) {
       expectEqual("tổng đọc thẳng", [data.totalCollected, data.totalRefunded, data.totalPendingRefund], [1086400, 421600, 230800]),
       expectEqual("khoản + trạng thái", [done.reasonText, done.statusText.label, pending.statusText.label], ["Người bán hết hàng hoặc giao thiếu", "Đã chuyển cho bạn", "Đang chờ chuyển"]),
       expectEqual("dòng", [done.lines[0].reasonText, pending.lines[0].reasonText, pending.lines[0].importTaxAdjustment, pending.lines[0].importTaxInRefund, pending.lines[0].priceDifferenceAmount], ["Người bán hết hàng / không mua đủ số lượng bạn đặt", "Người bán giao thiếu", 15200, false, -10000]),
-      expectEqual("mã lạ", [odd.reasonText, odd.statusText.label, odd.lines[0].reasonText, odd.amount], ["REFUND_SOMETHING_NEW", "ODD", "NEW_CODE", 30000]),
+      expectEqual("mã lạ", [odd.reasonText, odd.statusText.label, odd.lines[0].reasonText, odd.amount], ["Hoàn tiền", "Trạng thái khác", "Lý do khác", 30000]),
       expectEqual("404 → null", missing, null),
       expectEqual("403 ném lỗi", [denied.resolved, denied.error?.response?.status], [false, 403])
+    );
+  });
+
+  /* ---------- Tiến độ đơn mua hộ: trạng thái thật → 9 bậc (màn chi tiết mua hộ) ---------- */
+
+  const purchaseStages = await load("/src/features/purchase/constants/purchaseStages.js");
+  const purchaseRequests = await load("/src/features/purchase/api/purchaseRequestApi.js");
+
+  await check("Mua hộ: thanh tiến độ 9 bậc — nhãn tiếng Việt đúng thứ tự, trạng thái yêu cầu (PurchaseRequestService.StatusDisplayNames) → bậc + tông; không bao giờ hiện mã thô", () => {
+    const P = purchaseStages;
+    const at = (input) => {
+      const r = P.resolvePurchaseProgress(input);
+      return [r.stepIndex, r.tone];
+    };
+    const q = { status: "PENDING_CUSTOMER_CONFIRMATION", prepayAmount: 2315100 };
+    const paidPrepay = { payments: [{ paymentType: "PREPAYMENT", status: "PAID", amount: 2315100 }] };
+    return all(
+      expectEqual("nhãn bậc", P.PURCHASE_STEPS.map((s) => s.title), [
+        "Gửi yêu cầu", "Sale báo giá", "Thanh toán trước", "VCL đặt hàng NCC", "NCC giao về kho quốc tế",
+        "Nhập kho & vận chuyển quốc tế", "Về kho Việt Nam", "Tất toán & giao hàng", "Hoàn tất",
+      ]),
+      expectEqual("NEED_MORE_INFO", at({ status: "NEED_MORE_INFO" }), [0, "warning"]),
+      expectEqual("PENDING_REVIEW", at({ status: "PENDING_REVIEW" }), [1, "current"]),
+      expectEqual("REJECTED", at({ status: "REJECTED" }), [1, "stopped"]),
+      expectEqual("QUOTATION_REJECTED", at({ status: "QUOTATION_REJECTED" }), [1, "stopped"]),
+      expectEqual("QUOTED", at({ status: "QUOTED", quotation: q }), [2, "current"]),
+      expectEqual("QUOTED → nút báo giá", P.resolvePurchaseProgress({ status: "QUOTED", quotation: q }).action?.kind, "quotation"),
+      expectEqual("WAITING_PAYMENT, khoản PENDING", at({ status: "WAITING_PAYMENT", quotation: { ...q, status: "ACCEPTED" }, paymentHistory: { payments: [{ paymentType: "PREPAYMENT", status: "PENDING" }] } }), [2, "current"]),
+      expectEqual("PAID", at({ status: "PAID", paymentHistory: paidPrepay }), [3, "current"]),
+      expectEqual("PURCHASING chưa có đơn mua", at({ status: "PURCHASING" }), [3, "current"]),
+      expectEqual("đời cũ SELLER_SHIPPED", at({ status: "SELLER_SHIPPED" }), [4, "current"]),
+      expectEqual("đời cũ STORED", at({ status: "STORED" }), [5, "current"]),
+      expectEqual("đời cũ WAITING_FINAL_PAYMENT", at({ status: "WAITING_FINAL_PAYMENT" }), [7, "current"]),
+      expectEqual("COMPLETED", at({ status: "COMPLETED" }), [8, "done"]),
+      expectEqual("PURCHASING không hiện mã thô", P.getPurchaseStatusLabel("PURCHASING", "PURCHASING"), "VCL đang mua hàng"),
+      expectEqual("mã lạ + chữ server", P.getPurchaseStatusLabel("NEW_CODE", "Trạng thái mới"), "Trạng thái mới"),
+      expectEqual("mã lạ, không có chữ", P.getPurchaseStatusLabel("NEW_CODE", "NEW_CODE"), "Đang xử lý")
+    );
+  });
+
+  await check("Mua hộ: PURCHASING suy bậc từ đơn mua NCC + chặng đơn kho PUR-…-n (phần chậm nhất); chênh giá / tất toán ra nút đúng việc; huỷ dừng ở bậc trước khi huỷ (theo nhật ký)", () => {
+    const P = purchaseStages;
+    const WO = "a3333333-3333-4333-8333-333333333333";
+    const placed = (status, extra = {}) => ({ status, warehouseOrderId: WO, ...extra });
+    const run = (supplierOrders, warehouseOrders = [], extra = {}) =>
+      P.resolvePurchaseProgress({ status: "PURCHASING", supplierOrders, warehouseOrders, ...extra });
+    const wh = (stage, status = "", dueAmount = 0) => [{ orderId: WO, orderCode: "PUR-1-1", status, dueAmount, tracking: stage ? { currentStage: stage } : null }];
+
+    const draft = run([{ status: "PENDING_APPROVAL" }]);
+    const supplier = run([placed("SUPPLIER_CONFIRMED")], wh(null, "APPROVED"));
+    const transit = run([placed("SUPPLIER_SHIPPED")], wh("IN_TRANSIT", "IN_TRANSIT"));
+    const delayed = run([placed("SUPPLIER_SHIPPED")], wh("DELAYED"));
+    const vn = run([placed("SUPPLIER_SHIPPED")], wh("RECEIVED_AT_VN"));
+    const settle = run([placed("SUPPLIER_SHIPPED")], wh("RECEIVED_AT_VN", "WAITING_PAYMENT", 438200));
+    const delivered = run([placed("SUPPLIER_SHIPPED")], wh("DELIVERED", "COMPLETED"));
+    const split = run([placed("SUPPLIER_SHIPPED"), { status: "PENDING_APPROVAL" }], wh("IN_TRANSIT"));
+    const diff = run([{ status: "AWAITING_CUSTOMER", priceDifferenceAmount: 120000 }]);
+    const diffPay = run([{ status: "AWAITING_CUSTOMER_PAYMENT" }]);
+    const cancelledPo = run([{ status: "CANCELLED" }, placed("ORDERED")]);
+    const cancelled = P.resolvePurchaseProgress({
+      status: "CANCELLED",
+      paymentHistory: { totalPendingRefund: 2315100, payments: [{ paymentType: "PREPAYMENT", status: "PAID" }] },
+      history: [{ fromStatus: "PAID", toStatus: "CANCELLED" }, { fromStatus: "WAITING_PAYMENT", toStatus: "PAID" }],
+    });
+    const cancelledNoHistory = P.resolvePurchaseProgress({ status: "CANCELLED", quotation: { status: "PENDING_CUSTOMER_CONFIRMATION" } });
+
+    return all(
+      expectEqual("đơn mua chờ duyệt", [draft.stepIndex, draft.tone], [3, "current"]),
+      expectEqual("đã đặt, kho chưa nhận", [supplier.stepIndex, supplier.statusLabel], [4, "Người bán đang giao hàng"]),
+      expectEqual("đang vận chuyển", [transit.stepIndex, transit.tone, transit.statusLabel, transit.action?.kind], [5, "current", "Đang vận chuyển quốc tế", "tracking"]),
+      expectEqual("trễ → cảnh báo", [delayed.stepIndex, delayed.tone], [5, "warning"]),
+      expectEqual("về kho VN", [vn.stepIndex, vn.tone], [6, "current"]),
+      expectEqual("chờ tất toán", [settle.stepIndex, settle.action?.kind, settle.action?.orderId, settle.statusLabel], [7, "settlement", WO, "Chờ bạn tất toán"]),
+      expectTrue("số tất toán trong câu", settle.hint.includes("438.200đ")),
+      expectEqual("đã giao, chờ chốt", [delivered.stepIndex, delivered.tone], [8, "current"]),
+      expectEqual("tách đơn: theo phần chậm nhất", [split.stepIndex, split.split, split.placedCount, split.unitCount], [3, true, 1, 2]),
+      expectEqual("chênh giá chờ duyệt", [diff.tone, diff.action?.kind, diff.statusLabel], ["warning", "supplierOrders", "Chờ bạn duyệt phần chênh"]),
+      expectEqual("chênh giá chờ trả", [diffPay.action?.label, diffPay.statusLabel], ["Trả phần chênh giá", "Chờ bạn trả phần chênh"]),
+      expectEqual("đơn mua huỷ không tính", [cancelledPo.unitCount, cancelledPo.stepIndex], [1, 4]),
+      expectEqual("huỷ sau trả trước", [cancelled.stepIndex, cancelled.tone, cancelled.statusLabel], [3, "stopped", "Đã huỷ"]),
+      expectTrue("huỷ: báo đang hoàn", cancelled.hint.includes("2.315.100đ")),
+      expectEqual("huỷ, không nhật ký, có báo giá", [cancelledNoHistory.stepIndex, cancelledNoHistory.tone], [2, "stopped"])
+    );
+  });
+
+  await check("Mua hộ: nhật ký GET /purchase-requests/{id}/history bóc data, chuẩn hoá mã / ảnh; 404 (backend cũ) → []; 403 ném lỗi", async () => {
+    resetState({ localToken: "tok-local" });
+    routes = [{ method: "GET", url: `/api/purchase-requests/${GUID}/history`, reply: () => ok({ message: "Lấy lịch sử trạng thái thành công.", data: [
+      { historyId: "h1", fromStatus: "paid", toStatus: "purchasing", toStatusDisplayName: "Đang mua hàng", note: " Đặt NCC ", proofImages: [" https://x/1.png ", ""], changedByName: "Sale A", createdAt: "2026-09-27T02:00:00Z" },
+    ] }) }];
+    const entries = await purchaseRequests.getPurchaseRequestHistoryApi(GUID);
+    const request = requests[0];
+    routes = [{ method: "GET", url: `/api/purchase-requests/${GUID}/history`, reply: () => fail(404, { message: "Not found" }) }];
+    const missing = await purchaseRequests.getPurchaseRequestHistoryApi(GUID);
+    routes = [{ method: "GET", url: `/api/purchase-requests/${GUID}/history`, reply: () => fail(403, { message: "Bạn không có quyền xem lịch sử của đơn mua hộ này." }) }];
+    const denied = await rejection(purchaseRequests.getPurchaseRequestHistoryApi(GUID));
+    const badId = await rejection(purchaseRequests.getPurchaseRequestHistoryApi("PUR-1"));
+    return all(
+      expectEqual("request", [request?.method, request?.url, request?.authorization], ["GET", `/api/purchase-requests/${GUID}/history`, "Bearer tok-local"]),
+      expectEqual("dòng", [entries[0].fromStatus, entries[0].toStatus, entries[0].note, entries[0].proofImages, entries[0].changedByName], ["PAID", "PURCHASING", "Đặt NCC", ["https://x/1.png"], "Sale A"]),
+      expectEqual("404 → []", missing, []),
+      expectEqual("403 ném lỗi", [denied.resolved, denied.error?.response?.status], [false, 403]),
+      expectEqual("id không phải GUID → 404 tại chỗ", [badId.resolved, badId.error?.response?.status, requests.length], [false, 404, 3])
     );
   });
 
@@ -2570,6 +2802,101 @@ if (loadError) {
       expectEqual("Quận 1 ≠ Quận 10", address.findAddressOptionByName(hcm.filter((o) => o.value !== "700100"), "Quận 1"), null),
       expectEqual("không dấu", found.map((o) => o.value), ["880000"]),
       expectEqual("normalizeAddressKeyword", address.normalizeAddressKeyword("  Quận  ĐỐNG Đa "), "quan dong da")
+    );
+  });
+
+  /* ---------- Phân trang dùng chung (mọi danh sách của khách) ---------- */
+
+  await check("Phân trang: paginateRows cắt đúng trang, kẹp trang vượt quá về trang cuối, danh sách rỗng là trang 1/1", () => {
+    const { paginateRows } = mods.pagination;
+    const rows = Array.from({ length: 57 }, (_, i) => i + 1);
+    const p1 = paginateRows(rows, { page: 1, pageSize: 10 });
+    const p6 = paginateRows(rows, { page: 6, pageSize: 10 });
+    const over = paginateRows(rows, { page: 99, pageSize: 20 });
+    const empty = paginateRows([], { page: 3, pageSize: 10 });
+    const junk = paginateRows(null, { page: "abc", pageSize: 0 });
+    return all(
+      expectEqual("trang 1", [p1.items, p1.from, p1.to, p1.totalPages], [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 1, 10, 6]),
+      expectEqual("trang cuối", [p6.items, p6.from, p6.to], [[51, 52, 53, 54, 55, 56, 57], 51, 57]),
+      expectEqual("trang 99 cỡ 20 → trang 3", [over.page, over.items.length, over.from, over.to], [3, 17, 41, 57]),
+      expectEqual("rỗng", [empty.items, empty.page, empty.totalPages, empty.from, empty.to], [[], 1, 1, 0, 0]),
+      expectEqual("dữ liệu rác", [junk.items, junk.page, junk.pageSize], [[], 1, 10])
+    );
+  });
+
+  await check("Phân trang: câu \"Hiển thị x–y / N\", cỡ trang chỉ nhận 10/20/50, ?page=&size= đọc/ghi gọn (mặc định thì xoá khoá)", () => {
+    const pg = mods.pagination;
+    const written = pg.writePageQuery(new URLSearchParams("stage=hoan-tat&page=4&size=20"), { page: 1, pageSize: 10 });
+    const kept = pg.writePageQuery(new URLSearchParams("q=VCL"), { page: 3, pageSize: 50 });
+    return all(
+      expectEqual("tùy chọn cỡ trang", [...pg.PAGE_SIZE_OPTIONS], [10, 20, 50]),
+      expectEqual("câu tóm tắt", pg.formatPageRange({ page: 2, pageSize: 10, total: 57 }), "Hiển thị 11–20 / 57"),
+      expectEqual("câu tóm tắt có đơn vị", pg.formatPageRange({ page: 6, pageSize: 10, total: 57, unit: "đơn" }), "Hiển thị 51–57 / 57 đơn"),
+      expectEqual("câu tóm tắt rỗng", pg.formatPageRange({ page: 1, pageSize: 10, total: 0 }), "Hiển thị 0 / 0"),
+      expectEqual("size=9999 bị từ chối", pg.normalizePageSize(9999), 10),
+      expectEqual("size=20 hợp lệ", pg.normalizePageSize("20"), 20),
+      expectEqual("page rác → 1", [pg.normalizePage("-3"), pg.normalizePage("x"), pg.normalizePage("2")], [1, 1, 2]),
+      expectEqual("đọc query", pg.readPageQuery(new URLSearchParams("page=3&size=50")), { page: 3, pageSize: 50 }),
+      expectEqual("đọc query rác", pg.readPageQuery(new URLSearchParams("page=0&size=7")), { page: 1, pageSize: 10 }),
+      expectEqual("ghi mặc định → xoá khoá, giữ bộ lọc", written.toString(), "stage=hoan-tat"),
+      expectEqual("ghi trang 3 cỡ 50", kept.toString(), "q=VCL&page=3&size=50")
+    );
+  });
+
+  await check("Phân trang: cấu hình bảng antd (buildTablePagination) — 10/20/50, ẩn khi ≤ 1 trang, showTotal \"Hiển thị x–y / N kiện\", nhãn tiếng Việt", () => {
+    const config = mods.pagination.buildTablePagination({ unit: "kiện" });
+    return all(
+      expectEqual("pageSizeOptions", config.pageSizeOptions, ["10", "20", "50"]),
+      expectEqual("defaultPageSize", config.defaultPageSize, 10),
+      expectEqual("hideOnSinglePage", config.hideOnSinglePage, true),
+      expectEqual("showTotal", config.showTotal(23, [11, 20]), "Hiển thị 11–20 / 23 kiện"),
+      expectEqual("locale", config.locale.items_per_page, "/ trang")
+    );
+  });
+
+  await check("Phân trang: thanh ListPagination render \"Hiển thị 11–20 / 57 đơn\" + chọn cỡ trang; ẩn khi rỗng; khối nhỏ ≤ 10 dòng ẩn khi hideOnSinglePage", () => {
+    if (paginationRender.error) {
+      return `render SSR lỗi: ${String(paginationRender.error?.message ?? paginationRender.error).split("\n")[0]}`;
+    }
+    const { cases } = paginationRender;
+    const text = (html) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    return all(
+      expectTrue("câu tóm tắt trang 2", text(cases.page2).includes("Hiển thị 11–20 / 57 đơn")),
+      expectTrue("trang 2 đang chọn", /ant-pagination-item-2[^"]*ant-pagination-item-active|ant-pagination-item-active[^"]*ant-pagination-item-2/.test(cases.page2)),
+      expectTrue("có chọn cỡ trang", /ant-pagination-options/.test(cases.page2)),
+      expectTrue("nhãn \"/ trang\"", text(cases.page2).includes("/ trang")),
+      expectEqual("rỗng → không render", cases.empty, ""),
+      expectEqual("8 dòng + hideOnSinglePage → không render", cases.smallHidden, ""),
+      expectTrue("8 dòng, danh sách chính → vẫn có câu tóm tắt", text(cases.smallShown).includes("Hiển thị 1–8 / 8")),
+      expectEqual("không có cảnh báo React/antd", paginationRender.logs.filter((l) => /Warning|Error/.test(l)), [])
+    );
+  });
+
+  await check("Phân trang: danh sách đơn giữ trang trên URL (?page=3&size=20 → dòng 41–57), ?page=99 kẹp về trang cuối, ?size=9999 về 10, đang tải (0 dòng) không làm hỏng ?page", () => {
+    if (paginationRender.error) return `render SSR lỗi: ${String(paginationRender.error?.message ?? paginationRender.error).split("\n")[0]}`;
+    const { cases } = paginationRender;
+    const attr = (html, name) => (html.match(new RegExp(`data-${name}="([^"]*)"`)) || [])[1];
+    const expected41to57 = Array.from({ length: 17 }, (_, i) => `row-${i + 41}`).join(",");
+    return all(
+      expectEqual("page=3&size=20", [attr(cases.urlPage3Size20, "page"), attr(cases.urlPage3Size20, "size"), attr(cases.urlPage3Size20, "items")], ["3", "20", expected41to57]),
+      expectTrue("câu tóm tắt 41–57", cases.urlPage3Size20.includes("Hiển thị 41–57 / 57 đơn")),
+      expectEqual("page=99 → trang 6", [attr(cases.urlPageTooBig, "page"), attr(cases.urlPageTooBig, "items").split(",").length], ["6", 7]),
+      expectEqual("size=9999 → 10", [attr(cases.urlSizeInvalid, "size"), attr(cases.urlSizeInvalid, "items").split(",").length], ["10", 10]),
+      expectEqual("đang tải: trang 1, không dòng, không thanh", [attr(cases.urlLoading, "page"), attr(cases.urlLoading, "items")], ["1", ""]),
+      expectEqual("hook state: trang 1 = 10 dòng đầu", attr(cases.stateFirst, "items").split(",").length, 10)
+    );
+  });
+
+  await check("Phân trang danh sách đơn: câu tóm tắt + badge menu vẫn đếm TOÀN BỘ đơn, không chỉ trang đang xem", () => {
+    const { summarizeOrderCounts } = mods.orderTodoRows;
+    const { paginateRows } = mods.pagination;
+    const tones = ["action", "wait", "done"];
+    const rows = Array.from({ length: 50 }, (_, i) => ({ key: `r${i}`, todo: { tone: tones[i % 3] } }));
+    const page1 = paginateRows(rows, { page: 1, pageSize: 10 });
+    const all50 = summarizeOrderCounts(rows);
+    return all(
+      expectEqual("trang 1 chỉ hiện 10 dòng", page1.items.length, 10),
+      expectEqual("số đếm trên toàn bộ 50 đơn", all50, { waiting: 17, inProgress: 17, finished: 16, total: 50 })
     );
   });
 

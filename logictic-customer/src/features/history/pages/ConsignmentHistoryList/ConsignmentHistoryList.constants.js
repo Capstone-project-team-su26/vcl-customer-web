@@ -9,11 +9,11 @@ import { ORDER_STATUS_LABELS } from "@features/consignment";
 export const DEFAULT_PAGE_SIZE = 10;
 export const SEARCH_DEBOUNCE_MS = 450;
 
+/* Cùng bộ cỡ trang 10/20/50 với thanh phân trang dùng chung (shared/utils/pagination). */
 export const PAGE_SIZE_OPTIONS = [
   { value: 10, label: "10 đơn/trang" },
   { value: 20, label: "20 đơn/trang" },
   { value: 50, label: "50 đơn/trang" },
-  { value: 100, label: "100 đơn/trang" },
 ];
 
 /**

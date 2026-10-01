@@ -8,8 +8,8 @@ import {
 } from "@ant-design/icons";
 
 import {
-  ATTACHMENT_DOCUMENT_TYPE_LABELS,
   downloadAttachmentApi,
+  getAttachmentDocumentTypeLabel,
 } from "@shared/api/attachmentApi";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
@@ -39,7 +39,7 @@ const formatSize = (size) => {
  * Ảnh xem trước: tải Blob CÓ token rồi mới hiện — file riêng tư, <img src> trỏ thẳng
  * API sẽ bị 401 vì trình duyệt không gắn Authorization cho thẻ img.
  */
-function AttachmentThumb({ attachment }) {
+export function AttachmentThumb({ attachment }) {
   const [state, setState] = useState({ url: null, failed: false });
 
   useEffect(() => {
@@ -139,8 +139,7 @@ export default function AttachmentList({
           <div className="attachment-list__meta">
             <strong title={attachment.fileName}>{attachment.fileName || "Tài liệu"}</strong>
             <span>
-              {ATTACHMENT_DOCUMENT_TYPE_LABELS[attachment.documentType] ||
-                attachment.documentType}
+              {getAttachmentDocumentTypeLabel(attachment.documentType)}
               {formatSize(attachment.size) ? ` · ${formatSize(attachment.size)}` : ""}
               {attachment.uploadedAt
                 ? ` · ${formatVietnamDateTime(attachment.uploadedAt)}`

@@ -96,7 +96,14 @@ import {
   validateImageFile,
 } from "./CustomerServiceChat.helpers";
 
+import { usePagedRows } from "@shared/hooks/usePagination";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
+
 import "./CustomerServiceChat.css";
+
+/* Khung tin nhắn chỉ vẽ N tin mới nhất; "Xem tin nhắn cũ hơn" mở thêm từng nấc N.
+   API GET /api/conversations/{id} trả MỌI tin một lượt (không phân trang) — cắt phía client. */
+const MESSAGE_WINDOW_SIZE = 50;
 
 export default function CustomerServiceChat() {
   const currentUserId = useMemo(() => getCurrentUserId(), []);
@@ -133,6 +140,42 @@ export default function CustomerServiceChat() {
 
   const hasConversation = conversations.length > 0;
   const hasSelectedConversation = Boolean(selectedConversationId);
+
+  /* Danh sách hội thoại: GET /api/conversations không phân trang → cắt trang phía client
+     (10 hội thoại/trang, thanh phân trang gọn dưới cột). */
+  const pagedConversations = usePagedRows(conversations);
+
+  /* Số tin đang mở của hội thoại đang xem — đổi hội thoại là về N tin mới nhất. */
+  const [messageWindow, setMessageWindow] = useState({
+    conversationId: "",
+    count: MESSAGE_WINDOW_SIZE,
+  });
+  const messageWindowCount =
+    messageWindow.conversationId === selectedConversationId
+      ? messageWindow.count
+      : MESSAGE_WINDOW_SIZE;
+  const hiddenOlderMessageCount = Math.max(0, messages.length - messageWindowCount);
+  const visibleMessages = hiddenOlderMessageCount
+    ? messages.slice(hiddenOlderMessageCount)
+    : messages;
+
+  /* Mở thêm tin cũ nhưng giữ nguyên vị trí đang đọc (tin cũ chèn lên trên). */
+  const showOlderMessages = () => {
+    const messageArea = messageAreaRef.current;
+    const previousHeight = messageArea?.scrollHeight || 0;
+    const previousTop = messageArea?.scrollTop || 0;
+
+    setMessageWindow({
+      conversationId: selectedConversationId,
+      count: messageWindowCount + MESSAGE_WINDOW_SIZE,
+    });
+
+    window.requestAnimationFrame(() => {
+      const area = messageAreaRef.current;
+      if (!area) return;
+      area.scrollTop = area.scrollHeight - previousHeight + previousTop;
+    });
+  };
 
   const selectedConversationTitle = selectedConversation
     ? getConversationTitle(selectedConversation)
@@ -1202,7 +1245,7 @@ export default function CustomerServiceChat() {
               )}
 
               {!isLoadingList &&
-                conversations.map((conversation) => {
+                pagedConversations.items.map((conversation) => {
                   const id = getConversationId(conversation);
                   const unreadCount = getUnreadCount(conversation);
                   const isActive = id === selectedConversationId;
@@ -1260,6 +1303,16 @@ export default function CustomerServiceChat() {
                   );
                 })}
             </div>
+
+            {!isLoadingList && (
+              <ListPagination
+                {...pagedConversations.paginationProps}
+                compact
+                hideOnSinglePage
+                className="cskh-conversation-pager"
+                ariaLabel="Phân trang danh sách cuộc trò chuyện"
+              />
+            )}
           </aside>
 
           <main
@@ -1394,8 +1447,25 @@ export default function CustomerServiceChat() {
                     </div>
                   )}
 
+                  {!isLoadingDetail && hiddenOlderMessageCount > 0 && (
+                    <div className="cskh-older-messages">
+                      <button
+                        type="button"
+                        className="cskh-older-messages__btn"
+                        onClick={showOlderMessages}
+                      >
+                        Xem tin nhắn cũ hơn (còn {hiddenOlderMessageCount})
+                      </button>
+                      <span className="cskh-older-messages__summary">
+                        Đang hiện {visibleMessages.length} / {messages.length} tin nhắn
+                      </span>
+                    </div>
+                  )}
+
                   {!isLoadingDetail &&
-                    messages.map((item, index) => {
+                    visibleMessages.map((item, visibleIndex) => {
+                      /* Chỉ số trong TOÀN BỘ tin (khoá fallback không đổi khi mở thêm tin cũ). */
+                      const index = hiddenOlderMessageCount + visibleIndex;
                       const mine = isMessageMine(item, currentUserId);
                       const content = getMessageContent(item);
                       const attachmentUrls = getMessageAttachments(item);

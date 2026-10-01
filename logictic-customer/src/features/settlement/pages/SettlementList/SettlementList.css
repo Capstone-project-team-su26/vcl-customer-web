@@ -221,3 +221,8 @@
     flex-direction: column;
   }
 }
+
+/* Thanh phân trang dùng chung (shared/components/ListPagination) dưới lưới thẻ. */
+.settlement-page .list-pagination {
+  margin-top: 16px;
+}

@@ -9,20 +9,10 @@ export const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 export const MAX_IMAGES_PER_ITEM = 5;
 
 /*
- * TRẦN SỐ LƯỢNG MỖI SẢN PHẨM của một yêu cầu mua hộ.
- *
- * Backend (CreatePurchaseRequestItemDto.Quantity) hiện chỉ có [Range(1, int.MaxValue)] — tức là
- * KHÔNG có trần nghiệp vụ, khách gõ 2.147.483.647 vẫn lọt. Mua hộ là mua lẻ theo link cho khách,
- * số lượng lớn hơn thế là đơn buôn cần Sale báo giá riêng, nên FE tự đặt trần 999 / sản phẩm.
- * Đổi số ở đây là đổi cả nhãn gợi ý lẫn câu báo lỗi. Khi backend thêm trần thì đồng bộ về số đó.
+ * TRẦN SỐ LƯỢNG MỖI SẢN PHẨM và SỐ DÒNG SẢN PHẨM của một yêu cầu mua hộ không còn ghi cứng:
+ * Admin cấu hình (PURCHASE_MAX_ITEM_QUANTITY / PURCHASE_MAX_ITEMS), form đọc qua
+ * GET /api/system-settings/order-limits (useOrderLimits → nhánh `purchase`).
  */
-export const MAX_PURCHASE_ITEM_QUANTITY = 999;
-
-/*
- * SỐ DÒNG SẢN PHẨM TỐI ĐA của một yêu cầu mua hộ — backend (POST /api/purchase-requests)
- * trả 400 khi items vượt 50. Đủ 50 thì khoá nút "Thêm sản phẩm", lúc gửi kiểm lại.
- */
-export const MAX_PURCHASE_ITEMS = 50;
 
 /*
  * ĐỘ DÀI TỐI ĐA — khớp kiểm tra của backend (POST /api/purchase-requests trả 400 kèm câu

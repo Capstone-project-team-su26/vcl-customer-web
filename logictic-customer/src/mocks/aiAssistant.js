@@ -56,7 +56,7 @@ Nếu đã đăng nhập, vào **Đơn đang xử lý** để xem tiến độ t
     keywords: ["thanh toan", "chuyen khoan", "tra tien", "coc", "hoa don"],
     reply: `VCL thu tiền theo 2 mốc: đặt cọc khi xác nhận báo giá, và thanh toán phần còn lại khi hàng về kho Việt Nam trước lúc xuất kho.
 
-Bạn thanh toán ở mục **Thanh toán vận chuyển**; lịch sử các lần trả nằm ở **Lịch sử giao dịch**. Hỗ trợ chuyển khoản ngân hàng và QR.`,
+Bạn thanh toán ở mục **Thanh toán vận chuyển**; lịch sử các lần trả nằm ở **Lịch sử giao dịch**. Hỗ trợ chuyển khoản qua mã QR (SePay) và thanh toán tiền mặt (tiền cọc ký gửi).`,
   },
   {
     keywords: ["cam", "hang cam", "khong nhan", "han che", "duoc gui khong"],

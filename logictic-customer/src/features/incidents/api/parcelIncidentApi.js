@@ -19,6 +19,7 @@
    ========================================================= */
 
 import httpClient, { isCanceledRequest } from "@shared/api/httpClient";
+import { labelOf } from "@shared/utils/statusLabel";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -61,6 +62,28 @@ export const INCIDENT_RESOLUTION_LABELS = Object.freeze({
   COMPENSATE: "Bồi thường",
   DISPOSE: "Huỷ hàng",
 });
+
+/** Giai đoạn phát sinh sự cố (`stage`). */
+export const INCIDENT_STAGE_LABELS = Object.freeze({
+  RECEIVING: "Lúc kho nhận hàng",
+  AFTER_DELIVERY: "Sau khi giao hàng",
+});
+
+/* Getter an toàn: chữ server (vd. `incidentTypeText`) chỉ dùng khi đọc được; mã lạ không in thô. */
+export const getIncidentTypeLabel = (type, serverText) =>
+  labelOf(INCIDENT_TYPE_LABELS, type, { preferred: serverText, generic: "Sự cố khác" });
+
+export const getIncidentStatusLabel = (status, serverText) =>
+  labelOf(INCIDENT_STATUS_LABELS, status, { preferred: serverText, generic: "Đang xử lý" });
+
+export const getIncidentChoiceLabel = (choice) =>
+  labelOf(INCIDENT_CHOICE_LABELS, choice, { generic: "Cách xử lý khác" });
+
+export const getIncidentResolutionLabel = (resolution, serverText) =>
+  labelOf(INCIDENT_RESOLUTION_LABELS, resolution, { preferred: serverText, generic: "Cách xử lý khác" });
+
+export const getIncidentStageLabel = (stage) =>
+  labelOf(INCIDENT_STAGE_LABELS, stage, { generic: "Giai đoạn khác" });
 
 /** Loại COMPLAINT là hàng đã giao — không huỷ hàng được. */
 export const getAllowedIncidentChoices = (incidentType) =>

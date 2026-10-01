@@ -3,7 +3,7 @@
 
    Hợp đồng (README mục "Cắm API thật trở lại" + spec tích hợp API ký gửi đợt A):
    - baseURL đọc VITE_API_BASE_URL (cắt "/" thừa ở cuối), mặc định production
-     https://vcl.henrytech.cloud; timeout 30 giây.
+     https://api-vcl.vnlogistic.click; timeout 30 giây.
    - Request: gắn Authorization: Bearer <accessToken> (sessionStorage trước rồi
      localStorage). URL /api/Auth/* thì KHÔNG gắn (đăng nhập lại khi còn token
      cũ sẽ bị backend từ chối).
@@ -23,7 +23,7 @@ import axios from "axios";
 import { isCancel } from "@shared/api/requestCancel";
 import { syncServerClock } from "@shared/utils/timeUtc";
 
-export const DEFAULT_API_BASE_URL = "https://vcl.henrytech.cloud";
+export const DEFAULT_API_BASE_URL = "https://api-vcl.vnlogistic.click";
 
 export const DEFAULT_TIMEOUT_MS = 30_000;
 

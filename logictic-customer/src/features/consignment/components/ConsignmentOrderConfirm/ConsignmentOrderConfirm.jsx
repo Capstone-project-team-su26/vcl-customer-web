@@ -53,6 +53,7 @@ import {
 } from "./ConsignmentOrderConfirm.helpers";
 
 import EstimateInvoice from "@features/consignment/components/EstimateInvoice/EstimateInvoice";
+import { displayCode } from "@shared/utils/statusLabel";
 import "./ConsignmentOrderConfirm.css";
 
 function PriceInfoLabel({
@@ -1194,7 +1195,7 @@ export default function ConsignmentOrderConfirm({
                                 <ul>
                                   {getPackageServices(pkg).map((service) => (
                                     <li key={service.pricingRuleId}>
-                                      <strong>{service.name || service.code}</strong>
+                                      <strong>{service.name || displayCode(service.code, null, { generic: "Dịch vụ bổ sung" })}</strong>
                                       <span>{formatItemServiceFee(service)}</span>
                                     </li>
                                   ))}

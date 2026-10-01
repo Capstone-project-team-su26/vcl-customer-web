@@ -40,6 +40,11 @@ import {
   CUSTOMER_SERVICE_CHAT_PATH,
 } from "@features/consignment/utils/consignmentCancel";
 import "./ConsignmentListDetailUI.css";
+import { buildTablePagination } from "@shared/utils/pagination";
+import { displayCode, getRouteLabel } from "@shared/utils/statusLabel";
+
+/* Bảng dài (nhiều dòng hàng) thì phân trang 10/20/50; ≤ 10 dòng không hiện thanh phân trang. */
+const ITEM_TABLE_PAGINATION = buildTablePagination({ unit: "dòng hàng" });
 
 
 
@@ -153,7 +158,7 @@ const DetailWarnings = ({
 
     {volumetricRuleLoading && (
       <div className="detail-warning-message">
-        Đang tải quy tắc VOLUMETRIC_DIVISOR từ hệ thống...
+        Đang tải hệ số quy đổi thể tích từ hệ thống...
       </div>
     )}
 
@@ -378,7 +383,7 @@ const ProductTableSection = ({ items, columns }) => (
       columns={columns}
       dataSource={items}
       rowKey={(record, index) => record.id || record.itemId || index}
-      pagination={false}
+      pagination={ITEM_TABLE_PAGINATION}
       scroll={{ x: 1740 }}
     />
   </section>
@@ -434,7 +439,7 @@ const ShippingInformation = ({
         </Descriptions.Item>
 
         <Descriptions.Item label="Tuyến">
-          {consignment.route || "-"}
+          {getRouteLabel(consignment.route, "-")}
         </Descriptions.Item>
 
         <Descriptions.Item label="Khi hàng về Việt Nam">
@@ -871,7 +876,7 @@ const QuotationInformation = ({
 
                   <span>
                     {taxRuleInfo.vatDescription ||
-                      "VAT = (FreightCharge + ServiceFee) × 8%. Không gồm phí vận chuyển nội địa (DOMESTIC_FEE)."}
+                      "VAT = (Cước vận chuyển + Phí dịch vụ) × 8%. Không gồm phí vận chuyển nội địa."}
                   </span>
                 </>
               }
@@ -1549,7 +1554,7 @@ const createProductColumns = ({
         <ul className="detail-item-services">
           {services.map((service, index) => (
             <li key={service?.pricingRuleId || index}>
-              <strong>{service?.name || service?.code}</strong>
+              <strong>{service?.name || displayCode(service?.code, null, { generic: "Dịch vụ bổ sung" })}</strong>
               <span>{formatItemServiceFee(service)}</span>
             </li>
           ))}

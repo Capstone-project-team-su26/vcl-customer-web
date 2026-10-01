@@ -6,6 +6,7 @@ import { getOrderDeliveryTrackingApi } from "@features/delivery/api/deliveryTrac
 /* Import sâu: barrel orders kéo theo các trang (CSS toàn cục) — xem ARCHITECTURE mục 4. */
 import { orderDetailPath } from "@features/orders/constants/orderPaths";
 import { isCanceledError } from "@shared/utils/apiError";
+import { isDisplayableText } from "@shared/utils/statusLabel";
 import "./DeliveryTrackingCard.css";
 
 /**
@@ -54,7 +55,10 @@ export default function DeliveryTrackingCard({ orderId, showOpenButton = true })
 
   const parcels = Array.isArray(tracking.parcels) ? tracking.parcels : [];
   const parcelStatus = String(parcels[0]?.packageStatus || "").toUpperCase();
-  const hint = STATUS_HINT[parcelStatus] || tracking.orderStatusText || "";
+  /* orderStatusText server có lúc là mã thô → chỉ hiện khi là chữ đọc được. */
+  const hint =
+    STATUS_HINT[parcelStatus] ||
+    (isDisplayableText(tracking.orderStatusText) ? tracking.orderStatusText : "");
   const trackingCode = deliveries[deliveries.length - 1]?.carrierTrackingCode;
   const canConfirm =
     String(tracking.orderStatus || "").toUpperCase() === "DELIVERED" &&

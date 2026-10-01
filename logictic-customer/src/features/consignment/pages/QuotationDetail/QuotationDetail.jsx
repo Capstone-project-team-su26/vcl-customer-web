@@ -34,7 +34,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import PaymentRoundedIcon from "@mui/icons-material/PaymentRounded";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CreditCardRoundedIcon from "@mui/icons-material/CreditCardRounded";
-import AccountBalanceRoundedIcon from "@mui/icons-material/AccountBalanceRounded";
+import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 
 import { getConsignmentStatusesApi } from "@features/consignment/api/consignmentStatusApi";
@@ -178,7 +178,7 @@ const FeeDetailGrid = ({ fee }) => {
 };
 
 /* =========================================================
-   CÁCH TRẢ CỌC — SePay (QR chuyển khoản, tự xác nhận) hoặc chuyển khoản tay
+   CÁCH TRẢ CỌC — SePay (QR chuyển khoản, tự xác nhận) hoặc tiền mặt (OFFLINE, VCL xác nhận tay)
    ========================================================= */
 
 const formatPercent = (value) =>
@@ -201,16 +201,18 @@ const CONSIGNMENT_PAYMENT_OPTIONS = [
   },
   {
     value: CONSIGNMENT_PAYMENT_METHODS.OFFLINE,
-    title: "Chuyển khoản ngân hàng",
-    subtitle: "Tự chuyển khoản tiền cọc, Admin đối soát rồi xác nhận.",
-    badge: "Chuyển khoản",
-    icon: AccountBalanceRoundedIcon,
+    title: "Thanh toán tiền mặt",
+    subtitle:
+      "Trả tiền mặt cho nhân viên VCL hoặc tại văn phòng. Đơn cập nhật sau khi VCL xác nhận đã nhận tiền.",
+    badge: "Tiền mặt",
+    icon: PaymentsRoundedIcon,
     requiresDepositRate: false,
-    selectedLabel: "Chuyển khoản ngân hàng",
-    confirmLabel: "Xác nhận và chuyển khoản",
-    getNoteTitle: () => "Chuyển khoản tiền cọc",
+    selectedLabel: "Thanh toán tiền mặt",
+    confirmLabel: "Xác nhận thanh toán tiền mặt",
+    getNoteTitle: ({ depositPercent }) =>
+      `Nộp tiền mặt cọc ${formatPercent(depositPercent)}`,
     getNoteText: () =>
-      "Báo giá được xác nhận ngay khi bấm. Hệ thống sẽ hiện số tiền cọc và nội dung chuyển khoản; đơn cập nhật sau khi Admin xác nhận đã nhận tiền.",
+      "Báo giá được xác nhận ngay khi bấm. Hệ thống sẽ hiện số tiền cọc cần nộp và mã đơn để báo nhân viên; đơn cập nhật sau khi VCL xác nhận đã nhận tiền mặt.",
   },
 ];
 
@@ -251,7 +253,7 @@ const QuotationDetail = ({ embedded = false }) => {
   /* Lịch sử thanh toán (backend) để hiện thông tin cọc sau khi đã xác nhận. */
   const [paymentSummary, setPaymentSummary] = useState(null);
 
-  /* Kết quả confirm-and-pay OFFLINE: hướng dẫn chuyển khoản. */
+  /* Kết quả confirm-and-pay OFFLINE (thanh toán tiền mặt): hướng dẫn nộp tiền. */
   const [offlineInstruction, setOfflineInstruction] = useState(null);
 
   const [, setStatusOptions] = useState([]);
@@ -294,7 +296,7 @@ const QuotationDetail = ({ embedded = false }) => {
       orderDisplayData?.consignmentCode,
   });
 
-  /* Mã VCL- thật (không phải chữ "Chưa được cấp mã") cho nội dung chuyển khoản / khoản chờ payOS. */
+  /* Mã VCL- thật (không phải chữ "Chưa được cấp mã") để báo khi nộp tiền mặt / khoản chờ thanh toán. */
   const realConsignmentCodeForAction =
     quotation?.consignmentCode ||
     orderDisplayData?.consignmentCode ||
@@ -721,7 +723,7 @@ const QuotationDetail = ({ embedded = false }) => {
     if (!Object.values(CONSIGNMENT_PAYMENT_METHODS).includes(paymentMethod)) {
       AuthNotify.warning(
         "Chưa chọn phương thức",
-        "Vui lòng chọn thanh toán qua mã QR SePay hoặc chuyển khoản ngân hàng.",
+        "Vui lòng chọn thanh toán qua mã QR SePay hoặc thanh toán tiền mặt.",
       );
       return;
     }
@@ -761,7 +763,7 @@ const QuotationDetail = ({ embedded = false }) => {
       if (isOfflinePayment) {
         AuthNotify.success(
           "Đã xác nhận báo giá",
-          "Vui lòng chuyển khoản tiền cọc theo hướng dẫn. Đơn được cập nhật sau khi Admin xác nhận.",
+          "Vui lòng nộp tiền cọc bằng tiền mặt theo hướng dẫn. Đơn được cập nhật sau khi VCL xác nhận đã nhận tiền.",
         );
 
         /* Tải lại trước rồi mới mở hướng dẫn: màn "đang tải" không nuốt hộp thoại. */
@@ -1680,7 +1682,7 @@ const QuotationDetail = ({ embedded = false }) => {
                   {" · "}
                   {DEPOSIT_PAYMENT_METHOD_LABELS[
                     normalizeStatus(payment.paymentMethod)
-                  ] || formatStatusCode(payment.paymentMethod)}
+                  ] || formatStatusCode(payment.paymentMethod, "Phương thức khác")}
                   {" · "}
                   {DEPOSIT_PAYMENT_STATUS_LABELS[
                     normalizeStatus(payment.status)
@@ -1770,7 +1772,7 @@ const QuotationDetail = ({ embedded = false }) => {
                           </div>
                         </Image.PreviewGroup>
                       ) : (
-                        <div className="product-table-no-img">N/A</div>
+                        <div className="product-table-no-img">Chưa có ảnh</div>
                       )}
                     </td>
                     <td style={{ textAlign: "left", paddingLeft: "16px" }}>
@@ -1826,7 +1828,10 @@ const QuotationDetail = ({ embedded = false }) => {
                         <div className="product-table-config-tag">
                           <span>
                             {item.configurationName ||
-                              formatStatusCode(item.configurationCode)}
+                              formatStatusCode(
+                                item.configurationCode,
+                                "Quy cách đóng gói khác",
+                              )}
                           </span>
                           {item.configurationFee !== null && (
                             <small>
@@ -2270,12 +2275,12 @@ const QuotationDetail = ({ embedded = false }) => {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Hướng dẫn chuyển khoản tiền cọc</DialogTitle>
+        <DialogTitle>Hướng dẫn thanh toán tiền mặt</DialogTitle>
 
         <DialogContent dividers>
           {offlineInstruction && (
             <Descriptions bordered column={1} size="middle">
-              <Descriptions.Item label="Số tiền cọc">
+              <Descriptions.Item label="Số tiền cọc cần nộp">
                 <strong>{formatMoney(offlineInstruction.amount)}</strong>
                 {hasNumberValue(offlineInstruction.depositRate) &&
                   ` (${offlineInstruction.depositRate}% tổng hoá đơn)`}
@@ -2287,10 +2292,8 @@ const QuotationDetail = ({ embedded = false }) => {
                 </Descriptions.Item>
               )}
 
-              <Descriptions.Item label="Nội dung chuyển khoản">
-                <strong>
-                  {`Coc ${offlineInstruction.consignmentCode || ""}`.trim()}
-                </strong>
+              <Descriptions.Item label="Mã đơn cần báo khi nộp tiền">
+                <strong>{offlineInstruction.consignmentCode || "—"}</strong>
               </Descriptions.Item>
 
               {hasUiValue(offlineInstruction.invoiceNo) && (
@@ -2300,18 +2303,21 @@ const QuotationDetail = ({ embedded = false }) => {
               )}
 
               <Descriptions.Item label="Trạng thái">
-                {DEPOSIT_PAYMENT_STATUS_LABELS[
-                  normalizeStatus(offlineInstruction.paymentStatus)
-                ] || formatStatusCode(offlineInstruction.paymentStatus)}
-                {" — chờ Admin xác nhận đã nhận tiền"}
+                {["PENDING_RECONCILIATION", "PENDING"].includes(
+                  normalizeStatus(offlineInstruction.paymentStatus),
+                )
+                  ? "Chờ VCL xác nhận đã nhận tiền"
+                  : DEPOSIT_PAYMENT_STATUS_LABELS[
+                    normalizeStatus(offlineInstruction.paymentStatus)
+                  ] || formatStatusCode(offlineInstruction.paymentStatus)}
               </Descriptions.Item>
             </Descriptions>
           )}
 
           <p style={{ marginTop: 12, marginBottom: 0 }}>
-            Ghi đúng mã vận đơn trong nội dung chuyển khoản. Liên hệ nhân viên Sale
-            phụ trách để nhận thông tin tài khoản nhận tiền. Đơn chuyển sang
-            &quot;Đã đặt cọc&quot; sau khi Admin đối soát và xác nhận.
+            Liên hệ nhân viên Sale phụ trách để hẹn thời gian/địa điểm nộp tiền,
+            và báo mã đơn ở trên khi nộp. Đơn chuyển sang &quot;Đã đặt cọc&quot;
+            sau khi VCL xác nhận đã nhận tiền mặt.
           </p>
         </DialogContent>
 

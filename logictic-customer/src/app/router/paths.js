@@ -139,7 +139,7 @@ export const DEFAULT_CREATE_ORDER_TAB = CREATE_ORDER_TABS.consignment;
  * ------------------------------------------------------------------ */
 
 export const DASHBOARD_ROUTES = {
-  /* Việc cần làm hôm nay. */
+  /* Bảng điều khiển — tổng quan đơn hàng và chi tiêu của khách. */
   dashboard: "/customer/dashboard",
 
   /* Tạo đơn — một trang, chuyển đổi Ký gửi / Mua hộ bằng tab trên URL. */

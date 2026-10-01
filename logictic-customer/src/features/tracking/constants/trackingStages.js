@@ -1,3 +1,5 @@
+import { labelOf } from "@shared/utils/statusLabel";
+
 /**
  * Chặng hành trình của đơn ký gửi — phía khách (API theo dõi đơn).
  *
@@ -47,6 +49,12 @@ export const TRACKING_STAGE_LABELS = Object.freeze({
   DELIVERY_FAILED: "Giao hàng chưa thành công",
   DELIVERED: "Đã giao hàng",
   DISPOSED: "Đã huỷ theo xử lý sự cố",
+  /* Mốc dòng thời gian lô (không phải chặng của đơn): kho VN mở lô, cân / kiểm từng kiện —
+     sau ARRIVED_DESTINATION. Backend trả chính mã này làm `title` nên FE phải tự có nhãn. */
+  RECEIVED_AT_DESTINATION: "Kho Việt Nam đã nhận và kiểm hàng",
+  /* Trạng thái CHUYẾN (`shipments[].status`) ngoài bộ chặng — thẻ chuyến dùng chung bảng này. */
+  DRAFT: "Đang xếp chuyến",
+  CANCELLED: "Chuyến đã huỷ",
 });
 
 /**
@@ -64,6 +72,18 @@ export const TRACKING_STEPS = Object.freeze([
   { key: "DELIVERY", title: "Giao hàng", stages: ["OUT_FOR_DELIVERY", "DELIVERY_FAILED"] },
   { key: "DONE", title: "Đã giao", stages: ["DELIVERED", "DISPOSED"] },
 ]);
+
+/** Điểm dừng của lộ trình đơn (`route.stops[].key`) — dùng khi server không kèm `title` đọc được. */
+export const TRACKING_ROUTE_STOP_LABELS = Object.freeze({
+  ORIGIN: "Kho nguồn",
+  EXPORTED: "Đã xuất kho",
+  TRANSIT: "Đang vận chuyển",
+  VN_WAREHOUSE: "Kho Việt Nam",
+  DELIVERY: "Giao hàng",
+});
+
+export const getTrackingRouteStopLabel = (key, serverText) =>
+  labelOf(TRACKING_ROUTE_STOP_LABELS, key, { preferred: serverText, generic: "Chặng khác" });
 
 /** Chặng mang tính cảnh báo — tô màu khác để khách chú ý. */
 export const WARNING_STAGES = Object.freeze(["DELAYED", "ON_HOLD", "QUARANTINED", "DELIVERY_FAILED"]);
@@ -117,16 +137,35 @@ export const PACKAGE_STATUS_LABELS = Object.freeze({
   RETURNED: "Đã hoàn về kho",
   DELIVERED: "Đã giao",
   DISPOSED: "Đã huỷ theo sự cố",
+  /* Bổ sung đủ mã kiện backend có thể trả (tools/status-codes.json › parcelStatus). */
+  PENDING_CHECKIN: "Chờ kho nhận",
+  IN_WAREHOUSE: "Kho nguồn đã nhận",
+  SPLIT: "Đã tách kiện",
+  MERGED: "Đã gộp kiện",
+  RESERVED: "Đang chuẩn bị xuất kho",
+  RELEASED: "Đã xuất kho, chờ lên chuyến",
+  ARRIVED_VN: "Đã về Việt Nam",
+  AT_CARRIER_WAREHOUSE: "Đang ở kho đơn vị giao",
+  DELIVERY_DELAYED: "Giao hàng bị chậm",
+  PARTIALLY_DELIVERED: "Đã giao một phần",
+  DELIVERY_ERROR: "Đơn vị giao báo lỗi",
+  DELIVERY_CANCELLED: "Đơn vị giao huỷ chuyến giao",
+  RETURNED_TO_WAREHOUSE: "Giao không thành, đã hoàn về kho",
+  LOST: "Thất lạc",
+  CANCELLED: "Đã huỷ",
 });
 
 const normalizeCode = (value) => String(value ?? "").trim().toUpperCase();
 
-/** Nhãn chặng: ưu tiên chữ server, rồi bảng trên, cuối cùng là mã. */
+/**
+ * Nhãn chặng: ưu tiên chữ server (nếu là chữ người đọc — server có lúc trả lại chính mã, vd.
+ * "RECEIVED_AT_DESTINATION"), rồi bảng trên; mã lạ ra nhãn chung, KHÔNG bao giờ in mã.
+ */
 export const getTrackingStageLabel = (stage, serverText) =>
-  String(serverText || "").trim() || TRACKING_STAGE_LABELS[normalizeCode(stage)] || normalizeCode(stage) || "—";
+  labelOf(TRACKING_STAGE_LABELS, stage, { preferred: serverText, generic: "Đang cập nhật hành trình" });
 
 export const getPackageStatusLabel = (status, serverText) =>
-  String(serverText || "").trim() || PACKAGE_STATUS_LABELS[normalizeCode(status)] || normalizeCode(status) || "—";
+  labelOf(PACKAGE_STATUS_LABELS, status, serverText);
 
 /** Vị trí bậc (0-based) của một chặng trên thanh chặng; -1 nếu mã lạ. */
 export const getTrackingStepIndex = (stage) => {

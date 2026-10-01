@@ -16,8 +16,6 @@ import {
   GENERAL_NOTE_SEPARATOR,
   GENERAL_NOTE_SERVICE_SENTENCES,
   MAX_IMAGE_SIZE,
-  MAX_PURCHASE_ITEM_QUANTITY,
-  MAX_PURCHASE_ITEMS,
   PURCHASE_TEXT_LIMITS,
 } from "./ConsignmentBuyOrder.constants";
 
@@ -60,7 +58,7 @@ export const createEmptyFormErrors = () => ({
   receiverPhone: "",
   selectedDeliveryAddress: "",
   generalNote: "",
-  /* Lỗi cấp danh sách (vượt MAX_PURCHASE_ITEMS dòng) — báo bằng toast, không gắn ô nào. */
+  /* Lỗi cấp danh sách (vượt số dòng Admin cho phép) — báo bằng toast, không gắn ô nào. */
   items: "",
 });
 
@@ -104,19 +102,29 @@ export const getFieldClassName = (baseClassName, errorMessage) =>
     .filter(Boolean)
     .join(" ");
 
+/*
+ * `limits` dưới đây là nhánh `purchase` của giới hạn Admin cấu hình
+ * ({ maxItems, maxItemQuantity }; null = không giới hạn / chưa tải được → không chặn,
+ * backend vẫn kiểm và báo 400 nêu đúng giới hạn).
+ */
+const hasPurchaseLimit = (value) => Number.isFinite(value) && value > 0;
+
 /** Câu báo lỗi dùng chung cho ô Số lượng (gõ sai, dán sai, bấm gửi). */
-export const PURCHASE_QUANTITY_RANGE_MESSAGE = `Số lượng từ 1 đến ${MAX_PURCHASE_ITEM_QUANTITY}.`;
+export const getPurchaseQuantityRangeMessage = (limits) =>
+  hasPurchaseLimit(limits?.maxItemQuantity)
+    ? `Số lượng từ 1 đến ${limits.maxItemQuantity}.`
+    : "Số lượng phải là số nguyên từ 1 trở lên.";
 
 /**
  * Kiểm ô Số lượng của MỘT sản phẩm — màn hình gọi lúc đang gõ, validateItem gọi lại lúc
  * bấm "Tiếp tục"/"Gửi", nên hai lúc luôn báo cùng một câu.
  */
-export const validatePurchaseItemQuantity = (value) =>
+export const validatePurchaseItemQuantity = (value, limits) =>
   validateIntegerInRange(value, {
     min: 1,
-    max: MAX_PURCHASE_ITEM_QUANTITY,
+    max: hasPurchaseLimit(limits?.maxItemQuantity) ? limits.maxItemQuantity : undefined,
     emptyMessage: "Vui lòng nhập số lượng.",
-    rangeMessage: PURCHASE_QUANTITY_RANGE_MESSAGE,
+    rangeMessage: getPurchaseQuantityRangeMessage(limits),
   });
 
 /** "" nếu `value` không vượt `max` ký tự (tính sau khi trim), ngược lại là câu báo lỗi. */
@@ -125,8 +133,15 @@ const validateMaxLength = (value, max, label) =>
     ? `${label} tối đa ${max} ký tự.`
     : "";
 
-/** Câu giải thích khi yêu cầu đã đủ số dòng sản phẩm tối đa. */
-export const PURCHASE_ITEMS_LIMIT_MESSAGE = `Mỗi yêu cầu mua hộ tối đa ${MAX_PURCHASE_ITEMS} sản phẩm. Cần mua thêm, vui lòng tạo yêu cầu mới.`;
+/** Câu giải thích khi yêu cầu đã đủ số dòng sản phẩm tối đa ("" nếu không giới hạn). */
+export const getPurchaseItemsLimitMessage = (limits) =>
+  hasPurchaseLimit(limits?.maxItems)
+    ? `Mỗi yêu cầu mua hộ tối đa ${limits.maxItems} sản phẩm. Cần mua thêm, vui lòng tạo yêu cầu mới.`
+    : "";
+
+/** Đã đủ số dòng sản phẩm Admin cho phép chưa. */
+export const isPurchaseItemLimitReached = (count, limits) =>
+  hasPurchaseLimit(limits?.maxItems) && count >= limits.maxItems;
 
 /** Câu của các dịch vụ đang tick, đúng thứ tự backend ghép vào ghi chú chung. */
 const getSelectedServiceSentences = (services) =>
@@ -662,7 +677,7 @@ export const getClientTimePayload = () => {
   };
 };
 
-export const validateItem = (item) => {
+export const validateItem = (item, limits) => {
   const errors = {};
 
   if (!item.productLink.trim()) {
@@ -708,7 +723,7 @@ export const validateItem = (item) => {
     );
   }
 
-  errors.quantity = validatePurchaseItemQuantity(item.quantity);
+  errors.quantity = validatePurchaseItemQuantity(item.quantity, limits);
 
   if (!item.attributes.trim()) {
     errors.attributes = "Vui lòng nhập thuộc tính sản phẩm.";
@@ -733,7 +748,7 @@ export const validateItem = (item) => {
   return errors;
 };
 
-export const validateBuyOrderForm = ({ form, items }) => {
+export const validateBuyOrderForm = ({ form, items, limits }) => {
   const formErrors = createEmptyFormErrors();
 
   if (!form.route) {
@@ -787,10 +802,12 @@ export const validateBuyOrderForm = ({ form, items }) => {
   );
 
   formErrors.items =
-    items.length > MAX_PURCHASE_ITEMS ? PURCHASE_ITEMS_LIMIT_MESSAGE : "";
+    hasPurchaseLimit(limits?.maxItems) && items.length > limits.maxItems
+      ? getPurchaseItemsLimitMessage(limits)
+      : "";
 
   const itemErrors = Object.fromEntries(
-    items.map((item) => [item.id, validateItem(item)]),
+    items.map((item) => [item.id, validateItem(item, limits)]),
   );
 
   const isValid =

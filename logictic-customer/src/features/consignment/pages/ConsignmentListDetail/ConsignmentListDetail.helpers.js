@@ -10,6 +10,12 @@ import {
   formatUtcDateTime,
   formatVietnamDateTime,
 } from "@shared/utils/timeUtc";
+import {
+  displayCode,
+  getConsignmentTypeLabel as getSharedConsignmentTypeLabel,
+  isDisplayableText,
+  labelOf,
+} from "@shared/utils/statusLabel";
 
 import {
   DIM_DECIMAL_PLACES,
@@ -716,13 +722,8 @@ export const formatPricingRuleCode = (value) => {
     return "Dịch vụ bổ sung";
   }
 
-  return code
-    .replaceAll("_", " ")
-    .replaceAll("-", " ")
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (character) =>
-      character.toUpperCase(),
-    );
+  /* Mã dịch vụ lạ: nhãn tiếng Việt từ bảng chung, không in "Wood Crate" kiểu tiếng Anh. */
+  return displayCode(code, null, { generic: "Dịch vụ bổ sung" });
 };
 
 export const getPricingRuleDisplayName = (rule) => {
@@ -904,6 +905,7 @@ export const normalizeStatus = (status) => {
     .toUpperCase();
 };
 
+/* Mã → nhãn tiếng Việt qua bảng chung; KHÔNG in mã thô kiểu "WAITING DEPOSIT". */
 export const formatStatusCode = (status) => {
   const normalizedStatus = normalizeStatus(status);
 
@@ -911,8 +913,10 @@ export const formatStatusCode = (status) => {
     return "-";
   }
 
-  return normalizedStatus.replaceAll("_", " ").replaceAll("-", " ");
+  return labelOf(null, normalizedStatus);
 };
+
+const toUpperVi = (text) => String(text).toLocaleUpperCase("vi-VN");
 
 export const normalizeStatusOptions = (apiResult) => {
   const candidates = [
@@ -945,13 +949,15 @@ export const normalizeStatusOptions = (apiResult) => {
           item?.id,
       );
 
+      /* Chữ server có lúc chính là mã → chỉ nhận chữ đọc được, còn lại dịch mã. */
       const label = String(
-        item?.label ||
-          item?.name ||
-          item?.displayName ||
-          item?.statusName ||
-          item?.description ||
-          formatStatusCode(value),
+        [
+          item?.label,
+          item?.name,
+          item?.displayName,
+          item?.statusName,
+          item?.description,
+        ].find(isDisplayableText) || formatStatusCode(value),
       ).trim();
 
       return {
@@ -965,28 +971,21 @@ export const normalizeStatusOptions = (apiResult) => {
 export const getQuotationStatusLabel = (status) => {
   const normalizedStatus = normalizeStatus(status);
 
-  return QUOTATION_STATUS_LABELS[normalizedStatus] || normalizedStatus || "-";
+  return normalizedStatus
+    ? toUpperVi(labelOf(QUOTATION_STATUS_LABELS, normalizedStatus, { generic: "Đang cập nhật" }))
+    : "-";
 };
 
 export const getQuoteTypeLabel = (type) => {
   const normalizedType = normalizeStatus(type);
 
-  return QUOTE_TYPE_LABELS[normalizedType] || normalizedType || "-";
+  return normalizedType
+    ? toUpperVi(labelOf(QUOTE_TYPE_LABELS, normalizedType, { generic: "Báo giá" }))
+    : "-";
 };
 
-export const getConsignmentTypeLabel = (type) => {
-  const normalizedType = normalizeStatus(type);
-
-  if (normalizedType === "EXPRESS") {
-    return "HỎA TỐC";
-  }
-
-  if (normalizedType === "STANDARD") {
-    return "TIÊU CHUẨN";
-  }
-
-  return type || "-";
-};
+export const getConsignmentTypeLabel = (type) =>
+  String(type ?? "").trim() ? toUpperVi(getSharedConsignmentTypeLabel(type)) : "-";
 
 export const getStatusClassName = (status) => {
   return String(status || "unknown")

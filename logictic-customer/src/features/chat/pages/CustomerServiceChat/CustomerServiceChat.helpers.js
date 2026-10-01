@@ -19,6 +19,9 @@ import {
   RELATED_TYPE_LABELS,
   STATUS_LABELS,
 } from "./CustomerServiceChat.constants";
+import { getRoleLabel, labelOf } from "@shared/utils/statusLabel";
+import { getOrderStatusLabel } from "@features/consignment/constants/orderStatus";
+import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
 
 export const normalizeDisplayCode = (value) => {
   return String(value || "")
@@ -45,13 +48,8 @@ export const getStatusDisplayName = (value) => {
     return "";
   }
 
-  return (
-    STATUS_LABELS[normalized] ||
-    normalized
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/^./, (character) => character.toUpperCase())
-  );
+  /* Mã lạ: nhãn an toàn từ bảng chung — không in mã / chữ tiếng Anh ("Pending review"). */
+  return labelOf(STATUS_LABELS, normalized);
 };
 
 export const createAttachmentItem = (file) => ({
@@ -315,7 +313,8 @@ export const getRoleDisplayName = (role) => {
   if (roleKey.includes("WAREHOUSE")) return "Nhân viên kho";
   if (roleKey.includes("STAFF")) return "Nhân viên";
 
-  return role;
+  /* Vai trò lạ: nhãn từ bảng vai trò dùng chung, không in mã thô. */
+  return getRoleLabel(role);
 };
 
 export const getMessageSenderRole = (message) => {
@@ -718,9 +717,18 @@ export const getRelatedItemLabel = (item, relatedType) => {
   const id = getRelatedItemId(item, relatedType);
   const code = getRelatedItemCode(item, relatedType);
   const name = getRelatedItemName(item, relatedType);
-  const status = getStatusDisplayName(getRelatedItemStatus(item));
+  /* Trạng thái đọc theo đúng bảng của loại liên kết (mua hộ / ký gửi). */
+  const rawStatus = getRelatedItemStatus(item);
+  const relatedKey = normalizeDisplayCode(relatedType);
+  const status = !rawStatus
+    ? ""
+    : relatedKey.includes("PURCHASE")
+      ? getPurchaseStatusLabel(rawStatus)
+      : relatedKey.includes("CONSIGNMENT")
+        ? getOrderStatusLabel(rawStatus)
+        : getStatusDisplayName(rawStatus);
   const typeLabel = getRelatedTypeLabel(relatedType);
-  const shortId = id ? String(id).slice(0, 8) : "N/A";
+  const shortId = id ? String(id).slice(0, 8) : "Chưa có mã";
 
   const parts = [
     typeLabel,

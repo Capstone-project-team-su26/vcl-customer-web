@@ -6,6 +6,10 @@
  */
 
 import { ORDER_STATUS_LABELS as SHARED_ORDER_STATUS_LABELS } from "@features/consignment/constants/orderStatus";
+import {
+  QUOTATION_STATUS_LABELS as SHARED_QUOTATION_STATUS_LABELS,
+  QUOTE_TYPE_LABELS as SHARED_QUOTE_TYPE_LABELS,
+} from "@shared/utils/statusLabel";
 
 export const HIDDEN_ADDITIONAL_SERVICE_CODES = new Set([
   "VOLUMETRIC_DIVISOR",
@@ -33,19 +37,11 @@ export const PRICING_RULE_VI_LABELS = {
    TRẠNG THÁI ĐƠN HÀNG
    ========================================================= */
 
-export const QUOTATION_STATUS_LABELS = {
-  DRAFT: "TẠM TÍNH",
-  PENDING: "CHỜ XÁC NHẬN",
-  ACCEPTED: "ĐÃ CHẤP NHẬN",
-  APPROVED: "ĐÃ DUYỆT",
-  REJECTED: "ĐÃ TỪ CHỐI",
-  EXPIRED: "HẾT HẠN",
-};
+/* Trạng thái / loại báo giá: MỘT bảng dùng chung (shared/utils/statusLabel.js). Màn này hiện
+   chữ IN HOA — getter ở helpers tự viết hoa, bảng giữ chữ thường như mọi màn khác. */
+export const QUOTATION_STATUS_LABELS = SHARED_QUOTATION_STATUS_LABELS;
 
-export const QUOTE_TYPE_LABELS = {
-  ESTIMATE: "BÁO GIÁ TẠM TÍNH",
-  FINAL: "BÁO GIÁ CHÍNH THỨC",
-};
+export const QUOTE_TYPE_LABELS = SHARED_QUOTE_TYPE_LABELS;
 
 
 /*

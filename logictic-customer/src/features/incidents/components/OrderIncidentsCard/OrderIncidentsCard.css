@@ -55,3 +55,8 @@
   font-weight: 600;
   color: #334155;
 }
+
+/* Thanh phân trang dùng chung dưới danh sách sự cố (chỉ hiện khi > 10 sự cố). */
+.order-incidents__pager {
+  margin-top: 12px;
+}

@@ -22,6 +22,7 @@
    ========================================================= */
 
 import httpClient, { isCanceledRequest } from "@shared/api/httpClient";
+import { labelOf } from "@shared/utils/statusLabel";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,6 +35,10 @@ export const DELIVERY_REQUEST_STATUS_LABELS = Object.freeze({
   DELIVERY_DISPATCHED: "Đã giao cho đơn vị vận chuyển",
   DELIVERY_RETURNED: "Hàng hoàn về kho",
 });
+
+/** Nhãn phiếu giao: `statusText` server nếu là chữ đọc được, không thì bảng trên (không in mã). */
+export const getDeliveryRequestStatusLabel = (status, serverText) =>
+  labelOf(DELIVERY_REQUEST_STATUS_LABELS, status, { preferred: serverText, generic: "Đang xử lý giao hàng" });
 
 const getSignal = (options = {}) =>
   typeof options?.addEventListener === "function" ? options : options?.signal;

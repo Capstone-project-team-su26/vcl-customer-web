@@ -26,6 +26,7 @@ import httpClient, {
   API_BASE_URL,
   isCanceledRequest,
 } from "@shared/api/httpClient";
+import { INSTALLMENT_TYPE_LABELS } from "@shared/utils/statusLabel";
 
 /* =========================================================
    KHOẢN THU (installmentType) — bám ConsignmentPaymentService
@@ -41,12 +42,8 @@ export const PAYMENT_INSTALLMENT_TYPES = Object.freeze({
   REDELIVERY_FEE: "REDELIVERY_FEE",
 });
 
-export const PAYMENT_INSTALLMENT_LABELS = Object.freeze({
-  DEPOSIT: "Tiền cọc",
-  FINAL_PAYMENT: "Tất toán",
-  STORAGE_FEE: "Phí lưu kho",
-  REDELIVERY_FEE: "Phí giao lại",
-});
+/* Nhãn loại khoản: một bảng dùng chung (shared/utils/statusLabel.js), giữ tên export cũ. */
+export const PAYMENT_INSTALLMENT_LABELS = INSTALLMENT_TYPE_LABELS;
 
 /**
  * checkoutUrl của payOS là link tuyệt đối; của SePay là đường dẫn TƯƠNG ĐỐI

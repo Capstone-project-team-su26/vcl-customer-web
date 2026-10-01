@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Alert, Button, Spin, Table, Tag } from "antd";
+import { Alert, Button, Image, Spin, Table, Tag } from "antd";
 import { CalculatorOutlined, CheckCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 
 import SectionCard from "@shared/components/SectionCard/SectionCard";
+import { AttachmentThumb } from "@shared/components/AttachmentList/AttachmentList";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatDecimal, formatKg, formatSignedVnd, formatVnd } from "@shared/utils/formatNumber";
 import {
-  SETTLEMENT_BLOCKER_LABELS,
+  getSettlementBlockerLabel,
   getSettlementPreviewApi,
 } from "@features/settlement/api/settlementApi";
 /* Import sâu có chủ đích: barrel payment / tracking kéo theo trang (thứ tự CSS). */
@@ -24,6 +25,10 @@ import {
 import { getPackageStatusLabel } from "@features/tracking/constants/trackingStages";
 
 import "./SettlementPreviewCard.css";
+import { buildTablePagination } from "@shared/utils/pagination";
+
+/* Bảng dài (nhiều kiện) thì phân trang 10/20/50; ≤ 10 dòng không hiện thanh phân trang. */
+const PARCEL_TABLE_PAGINATION = buildTablePagination({ unit: "kiện" });
 
 /**
  * Xem trước tất toán theo cân đo tại kho VN (tài liệu hàng về VN mục C) + trả đợt cuối.
@@ -129,6 +134,27 @@ export default function SettlementPreviewCard({ orderId, refreshKey = 0, payment
     },
     { title: "Cân quy đổi", dataIndex: "volumetricWeight", key: "volumetricWeight", render: (v) => formatKg(v) },
     { title: "Cân tính cước", dataIndex: "chargeableWeight", key: "chargeableWeight", render: (v) => <strong>{formatKg(v)}</strong> },
+    /*
+     * Ảnh kho Việt Nam chụp lúc nhận kiện (chỉ kiện của đơn bạn — server kiểm quyền khi tải).
+     * Căn cứ cho số cân đo VN; ảnh tải kèm token, bấm để phóng to.
+     */
+    {
+      title: "Ảnh kho VN nhận",
+      key: "arrivalPhotos",
+      render: (_, row) => {
+        const photos = (row.arrivalPhotos || []).filter((p) => p?.id && String(p.contentType || "").startsWith("image/"));
+        if (!photos.length) return "—";
+        return (
+          <Image.PreviewGroup>
+            <div className="settlement-preview__photos">
+              {photos.map((photo) => (
+                <AttachmentThumb key={photo.id} attachment={photo} />
+              ))}
+            </div>
+          </Image.PreviewGroup>
+        );
+      },
+    },
   ];
 
   return (
@@ -180,7 +206,7 @@ export default function SettlementPreviewCard({ orderId, refreshKey = 0, payment
                 <ul className="settlement-preview__blockers">
                   {openBlockers.map((blocker) => (
                     <li key={`${blocker.code}-${blocker.message}`}>
-                      {blocker.message || SETTLEMENT_BLOCKER_LABELS[blocker.code] || blocker.code}
+                      {getSettlementBlockerLabel(blocker.code, blocker.message)}
                     </li>
                   ))}
                 </ul>
@@ -260,8 +286,8 @@ export default function SettlementPreviewCard({ orderId, refreshKey = 0, payment
             rowKey="parcelId"
             columns={columns}
             dataSource={preview.parcels}
-            pagination={false}
-            scroll={{ x: 760 }}
+            pagination={PARCEL_TABLE_PAGINATION}
+            scroll={{ x: 900 }}
             style={{ marginTop: 12 }}
           />
         </>

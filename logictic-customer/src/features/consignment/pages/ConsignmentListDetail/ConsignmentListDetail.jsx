@@ -222,7 +222,7 @@ const ConsignmentListDetail = ({ embedded = true }) => {
 
       if (!normalizedRule) {
         throw new Error(
-          "Không tìm thấy quy tắc VOLUMETRIC_DIVISOR đang ACTIVE hoặc value không hợp lệ.",
+          "Không tìm thấy hệ số quy đổi thể tích đang áp dụng, hoặc giá trị không hợp lệ.",
         );
       }
 

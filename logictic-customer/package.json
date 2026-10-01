@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "verify:mocks": "node tools/verify-mocks.mjs",
-    "verify:api": "node tools/verify-api.mjs"
+    "verify:api": "node tools/verify-api.mjs",
+    "verify:status-labels": "node tools/verify-status-labels.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.2",

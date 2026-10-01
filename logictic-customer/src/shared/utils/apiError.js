@@ -10,6 +10,7 @@
    ========================================================= */
 
 import { isCancel } from "@shared/api/requestCancel";
+import { translateCodesInText } from "@shared/utils/statusLabel";
 
 /** Lỗi do người dùng rời trang / huỷ request — không được báo đỏ. */
 export const isCanceledError = (error) => isCancel(error);
@@ -19,10 +20,7 @@ export const isCanceledError = (error) => isCancel(error);
  * @param {string} [fallback]
  * @returns {string}
  */
-export const getApiErrorMessage = (
-  error,
-  fallback = "Có lỗi xảy ra. Vui lòng thử lại.",
-) => {
+const readApiErrorMessage = (error, fallback) => {
   const data = error?.response?.data;
 
   if (data && typeof data === "object") {
@@ -58,5 +56,12 @@ export const getApiErrorMessage = (
 
   return error?.message || fallback;
 };
+
+/* Câu lỗi server đôi khi chèn nguyên mã trạng thái ("…SUPPLIER_CONFIRMED, SUPPLIER_SHIPPED") →
+   dịch mã sang nhãn tiếng Việt, giữ phần chữ còn lại. */
+export const getApiErrorMessage = (
+  error,
+  fallback = "Có lỗi xảy ra. Vui lòng thử lại.",
+) => translateCodesInText(readApiErrorMessage(error, fallback));
 
 export default getApiErrorMessage;

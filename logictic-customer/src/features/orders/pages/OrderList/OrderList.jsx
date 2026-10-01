@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Empty, Input, Spin, Tag } from "antd";
 import {
@@ -9,6 +9,9 @@ import {
 
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
+import { useUrlPagedRows } from "@shared/hooks/usePagination";
+import { PAGE_QUERY_KEY } from "@shared/utils/pagination";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
 
 import {
   ORDER_STAGES,
@@ -119,9 +122,11 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
     return () => controller.abort();
   }, [requestKey, kind, copy.loadError]);
 
-  /* Đổi chip / ô tìm kiếm = đổi query, không đổi state riêng: URL luôn là nguồn sự thật. */
+  /* Đổi chip / ô tìm kiếm = đổi query, không đổi state riêng: URL luôn là nguồn sự thật.
+     Bộ lọc đổi thì về trang 1 (xoá ?page=); cỡ trang (?size=) giữ nguyên. */
   const updateQuery = (patch) => {
     const next = new URLSearchParams(searchParams);
+    next.delete(PAGE_QUERY_KEY);
 
     for (const [key, value] of Object.entries(patch)) {
       if (!value || value === ORDER_STAGES.all) {
@@ -140,6 +145,17 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
     () => filterRows(state.rows, { stage, search }),
     [state.rows, stage, search],
   );
+
+  /* Phân trang PHÍA CLIENT trên các dòng đã lọc: danh sách vẫn tải hết mọi trang API (để
+     số trên chip, câu tóm tắt và badge menu đếm TOÀN BỘ đơn), chỉ phần hiển thị bị cắt.
+     Trang nằm trên URL (?page=&size=) cạnh ?stage=&q=. */
+  const listTopRef = useRef(null);
+  const pagedRows = useUrlPagedRows(visibleRows);
+
+  const changePage = (nextPage, nextSize) => {
+    pagedRows.onChange(nextPage, nextSize);
+    listTopRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  };
 
   /* Đúng bộ số đã gửi cho badge menu (publishOrderTodoCount ở trên): tính trên TOÀN BỘ
      dòng, không phải dòng đang lọc. */
@@ -178,7 +194,7 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
   };
 
   return (
-    <div className="order-list">
+    <div className="order-list" ref={listTopRef}>
       <header className="order-list__head">
         <div>
           <h2>{copy.title}</h2>
@@ -272,7 +288,7 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
           )}
 
           <ul className="order-list__rows">
-            {visibleRows.map((row) => (
+            {pagedRows.items.map((row) => (
               <li key={row.key}>
                 <button
                   type="button"
@@ -303,6 +319,13 @@ export default function OrderList({ kind = ORDER_KINDS.consignment }) {
               </li>
             ))}
           </ul>
+
+          <ListPagination
+            {...pagedRows.paginationProps}
+            onChange={changePage}
+            unit="đơn"
+            ariaLabel="Phân trang danh sách đơn"
+          />
         </>
       )}
     </div>

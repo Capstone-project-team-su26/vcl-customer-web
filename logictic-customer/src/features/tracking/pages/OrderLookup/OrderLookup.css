@@ -979,3 +979,7 @@
     width: 100%;
   }
 }
+/* Thanh phân trang dùng chung dưới danh sách kiện (chỉ hiện khi > 10 kiện). */
+.order-lookup-parcels-pager {
+  margin-top: 14px;
+}

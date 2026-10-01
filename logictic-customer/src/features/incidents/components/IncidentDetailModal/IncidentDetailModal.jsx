@@ -16,12 +16,13 @@ import {
 } from "@shared/api/attachmentApi";
 import {
   INCIDENT_CHOICE_LABELS,
-  INCIDENT_RESOLUTION_LABELS,
-  INCIDENT_STATUS_LABELS,
-  INCIDENT_TYPE_LABELS,
   getAllowedIncidentChoices,
   getParcelIncidentDetailApi,
   respondParcelIncidentApi,
+  getIncidentChoiceLabel,
+  getIncidentResolutionLabel,
+  getIncidentStatusLabel,
+  getIncidentTypeLabel,
 } from "@features/incidents/api/parcelIncidentApi";
 
 import "./IncidentDetailModal.css";
@@ -132,10 +133,10 @@ export default function IncidentDetailModal({ incidentId, onClose, onChanged }) 
         <div className="incident-detail">
           <div className="incident-detail__tags">
             <Tag color="volcano">
-              {incident.incidentTypeText || INCIDENT_TYPE_LABELS[type] || type}
+              {getIncidentTypeLabel(type, incident.incidentTypeText)}
             </Tag>
             <Tag color={STATUS_COLORS[status] || "default"}>
-              {INCIDENT_STATUS_LABELS[status] || status}
+              {getIncidentStatusLabel(status)}
             </Tag>
             <span>Kiện {incident.packageCode}</span>
           </div>
@@ -153,7 +154,7 @@ export default function IncidentDetailModal({ incidentId, onClose, onChanged }) 
               <div>
                 <dt>Bạn đã chọn</dt>
                 <dd>
-                  {INCIDENT_CHOICE_LABELS[incident.customerChoice] || incident.customerChoice}
+                  {getIncidentChoiceLabel(incident.customerChoice)}
                   {incident.customerRespondedAt
                     ? ` · ${formatVietnamDateTime(incident.customerRespondedAt)}`
                     : ""}
@@ -164,7 +165,7 @@ export default function IncidentDetailModal({ incidentId, onClose, onChanged }) 
               <div>
                 <dt>Kết quả xử lý</dt>
                 <dd>
-                  {INCIDENT_RESOLUTION_LABELS[incident.resolution] || incident.resolution}
+                  {getIncidentResolutionLabel(incident.resolution)}
                   {incident.resolvedAt ? ` · ${formatVietnamDateTime(incident.resolvedAt)}` : ""}
                 </dd>
               </div>

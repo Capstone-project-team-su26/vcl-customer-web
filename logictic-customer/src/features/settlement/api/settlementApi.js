@@ -18,6 +18,7 @@
    ========================================================= */
 
 import httpClient, { isCanceledRequest } from "@shared/api/httpClient";
+import { labelOf } from "@shared/utils/statusLabel";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,6 +31,13 @@ export const SETTLEMENT_BLOCKER_LABELS = Object.freeze({
   NO_DEPOSIT: "Đơn chưa thanh toán tiền cọc.",
   ALREADY_SETTLED: "Đơn đã tất toán xong.",
 });
+
+/** Câu vướng mắc: `message` server nếu đọc được, không thì bảng trên; mã lạ không in thô. */
+export const getSettlementBlockerLabel = (code, serverMessage) =>
+  labelOf(SETTLEMENT_BLOCKER_LABELS, code, {
+    preferred: serverMessage,
+    generic: "Đơn còn vướng mắc cần VCL xử lý.",
+  });
 
 const getSignal = (options = {}) =>
   typeof options?.addEventListener === "function" ? options : options?.signal;

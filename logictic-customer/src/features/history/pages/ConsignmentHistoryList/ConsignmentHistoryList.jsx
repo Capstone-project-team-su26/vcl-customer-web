@@ -20,7 +20,6 @@ import {
 import {
   Button,
   CircularProgress,
-  Pagination,
 } from "@mui/material";
 
 import AutorenewIcon from "@mui/icons-material/Autorenew";
@@ -32,6 +31,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import { getConsignmentsApi } from "@features/consignment/api/consignmentApi";
 import { getConsignmentStatusesApi } from "@features/consignment/api/consignmentStatusApi";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import { getConsignmentTypeLabel as getSharedConsignmentTypeLabel, getRouteLabel } from "@shared/utils/statusLabel";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
 
 import {
   ORDER_STATUS,
@@ -509,11 +510,17 @@ const ConsignmentHistoryList = ({
     }
   };
 
-  const handlePageChange = (
-    _,
-    nextPageNumber
+  const handlePaginationChange = (
+    nextPageNumber,
+    nextPageSize
   ) => {
-    setPageNumber(nextPageNumber);
+    /* Đổi cỡ trang (10/20/50) → về trang 1, như Select cỡ trang ở thanh lọc. */
+    if (nextPageSize && nextPageSize !== pageSize) {
+      setPageSize(nextPageSize);
+      setPageNumber(1);
+    } else {
+      setPageNumber(nextPageNumber);
+    }
 
     const scrollTarget =
       document.querySelector(".consignment-data-scroll") ||
@@ -648,7 +655,10 @@ const ConsignmentHistoryList = ({
       return "TIÊU CHUẨN";
     }
 
-    return type || "-";
+    /* Mã lạ: nhãn an toàn từ bảng dùng chung, không in mã thô. */
+    return type
+      ? getSharedConsignmentTypeLabel(type).toLocaleUpperCase("vi-VN")
+      : "-";
   };
 
   const getTrackingCode = (item) => {
@@ -936,7 +946,7 @@ const ConsignmentHistoryList = ({
 
                             <span className="tag-count">
                               Tuyến{" "}
-                              {item.route || "-"}
+                              {getRouteLabel(item.route, "-")}
                             </span>
 
                             <span
@@ -1141,51 +1151,17 @@ const ConsignmentHistoryList = ({
         )}
       </div>
 
-      {totalCount > 0 && (
-        <div className="pagination-section">
-          <span className="pagination-summary">
-            Hiển thị{" "}
-            <strong>
-              {
-                visibleConsignments.length
-              }
-            </strong>{" "}
-            mục trên trang này, tổng cộng{" "}
-            <strong>
-              {
-                totalCount
-              }
-            </strong>{" "}
-            mục
-          </span>
-
-          <div className="pagination-controls">
-            <Select
-              value={pageSize}
-              options={PAGE_SIZE_OPTIONS}
-              onChange={(val) => {
-                setPageSize(val);
-                setPageNumber(1);
-              }}
-              className="pagination-pagesize-select"
-              style={{ minWidth: 145 }}
-            />
-
-            <Pagination
-              count={totalPages}
-              page={pageNumber}
-              onChange={
-                handlePageChange
-              }
-              disabled={loading}
-              color="primary"
-              shape="rounded"
-              showFirstButton
-              showLastButton
-            />
-          </div>
-        </div>
-      )}
+      {/* Thanh phân trang dùng chung — phân trang PHÍA SERVER (totalCount API trả). */}
+      <ListPagination
+        page={pageNumber}
+        pageSize={pageSize}
+        total={totalCount}
+        onChange={handlePaginationChange}
+        disabled={loading}
+        unit="đơn ký gửi"
+        className="consignment-history-pager"
+        ariaLabel="Phân trang lịch sử ký gửi"
+      />
     </div>
   );
 };

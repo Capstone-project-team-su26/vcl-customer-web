@@ -2181,3 +2181,13 @@
   outline-offset: 2px;
   box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
 }
+
+/* Thanh phân trang dùng chung (shared/components/ListPagination) — cùng bề rộng tối đa
+   với vùng dữ liệu, nền trắng như thanh cũ. */
+.list-pagination.consignment-history-pager {
+  width: 100%;
+  max-width: 1500px;
+  margin: 16px auto 0;
+  background: #ffffff;
+  box-sizing: border-box;
+}

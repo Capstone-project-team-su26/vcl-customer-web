@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getServicePricings } from "@features/pricing/api/pricingRuleService";
+import { displayCode, labelOf } from "@shared/utils/statusLabel";
 
 import ServicePolicyDetail from "@features/service-policy/components/ServicePolicyDetail/ServicePolicyDetail";
 import "./ServicePolicy.css";
@@ -142,13 +143,8 @@ const getStatusLabel = (status) => {
     return "Chưa xác định";
   }
 
-  return (
-    STATUS_LABELS[normalizedStatus] ||
-    normalizedStatus
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/^./, (character) => character.toUpperCase())
-  );
+  /* Mã lạ: nhãn an toàn, không in chữ tiếng Anh. */
+  return labelOf(STATUS_LABELS, normalizedStatus);
 };
 
 const getStatusClassName = (status) => {
@@ -182,7 +178,10 @@ const getCountryLabel = (value) => {
 const getServiceTypeLabel = (value) => {
   const normalizedValue = normalizeCode(value);
 
-  return SERVICE_TYPE_LABELS[normalizedValue] || String(value || "-");
+  return (
+    SERVICE_TYPE_LABELS[normalizedValue] ||
+    (value ? displayCode(value, null, { generic: "Dịch vụ khác" }) : "-")
+  );
 };
 
 const formatMoney = (value, currency = "VND") => {

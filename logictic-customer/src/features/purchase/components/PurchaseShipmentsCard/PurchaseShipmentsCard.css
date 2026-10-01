@@ -1,0 +1,142 @@
+.purchase-shipments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.purchase-shipment {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e4ecf5;
+  border-radius: 14px;
+  background: #fbfdff;
+}
+
+.purchase-shipment__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.purchase-shipment__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.purchase-shipment__title strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0b1b2e;
+  word-break: break-all;
+}
+
+.purchase-shipment__title span {
+  font-size: 12.5px;
+  color: #5b6b80;
+}
+
+.purchase-shipment__tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.purchase-shipment__tags .ant-tag {
+  margin-inline-end: 0;
+}
+
+.purchase-shipment__hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f5fb;
+  font-size: 13px;
+  color: #475569;
+}
+
+.purchase-shipment__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.purchase-shipment__facts > div {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f1f6fc;
+}
+
+.purchase-shipment__facts > div.is-due {
+  background: #fff7ed;
+}
+
+.purchase-shipment__facts dt {
+  font-size: 11.5px;
+  color: #5b6b80;
+}
+
+.purchase-shipment__facts dd {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0b1b2e;
+  word-break: break-word;
+}
+
+.purchase-shipment__facts > div.is-due dd {
+  color: #c2410c;
+}
+
+.purchase-shipment__facts > div.is-pending dd {
+  color: #6d28d9;
+}
+
+.purchase-shipment__facts > div.is-paid dd {
+  color: #15803d;
+}
+
+.purchase-shipment__event {
+  margin: 0;
+  font-size: 12.5px;
+  color: #5b6b80;
+}
+
+.purchase-shipment__event b {
+  color: #334155;
+}
+
+.purchase-shipment__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.purchase-shipment__parcels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.purchase-shipment__parcels li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px dashed #e3eaf4;
+  font-size: 13px;
+  color: #334155;
+}
+
+@media (max-width: 480px) {
+  .purchase-shipment {
+    padding: 12px;
+  }
+
+}

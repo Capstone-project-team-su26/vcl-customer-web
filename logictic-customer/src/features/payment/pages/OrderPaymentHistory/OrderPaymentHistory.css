@@ -1088,3 +1088,8 @@
   outline-offset: 2px;
   box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
 }
+
+/* Thanh phân trang dùng chung dưới danh sách giao dịch (chỉ hiện khi > 10 giao dịch). */
+.payment-transaction-pager {
+  margin-top: 14px;
+}

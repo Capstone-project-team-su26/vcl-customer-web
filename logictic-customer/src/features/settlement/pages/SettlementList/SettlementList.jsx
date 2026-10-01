@@ -34,6 +34,8 @@ import {
 import { isPurchaseWarehouseOrder } from "@shared/utils/orderType";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
+import { usePagedRows } from "@shared/hooks/usePagination";
+import ListPagination from "@shared/components/ListPagination/ListPagination";
 
 import "./SettlementList.css";
 
@@ -51,6 +53,9 @@ export default function SettlementList() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+
+  /* API awaiting-settlement trả hết một lượt (không phân trang) → cắt trang phía client. */
+  const pagedOrders = usePagedRows(orders);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -111,136 +116,144 @@ export default function SettlementList() {
           <span>Khi hàng về tới kho Việt Nam và nhân viên chốt phí, đơn sẽ hiện ở đây.</span>
         </div>
       ) : (
-        <div className="settlement-list">
-          {orders.map((order) => {
-            const due = order.pendingPaymentAmount;
-            const canPay = Number(due) > 0 && Boolean(order.pendingCheckoutUrl);
-            /* Đơn kho mua hộ: orderType backend trả, thiếu thì theo tiền tố mã PUR-. */
-            const isPurchase = isPurchaseWarehouseOrder(order);
-            const requestId = isPurchase ? order.purchaseRequestId : null;
-            /* Chi tiết đơn (ký gửi hay đơn kho mua hộ) — đơn mua hộ mang theo id yêu cầu. */
-            const openPaymentTab = () =>
-              navigate(purchaseWarehouseOrderPath(order.orderId, ORDER_TABS.payment, requestId));
+        <>
+          <div className="settlement-list">
+            {pagedOrders.items.map((order) => {
+              const due = order.pendingPaymentAmount;
+              const canPay = Number(due) > 0 && Boolean(order.pendingCheckoutUrl);
+              /* Đơn kho mua hộ: orderType backend trả, thiếu thì theo tiền tố mã PUR-. */
+              const isPurchase = isPurchaseWarehouseOrder(order);
+              const requestId = isPurchase ? order.purchaseRequestId : null;
+              /* Chi tiết đơn (ký gửi hay đơn kho mua hộ) — đơn mua hộ mang theo id yêu cầu. */
+              const openPaymentTab = () =>
+                navigate(purchaseWarehouseOrderPath(order.orderId, ORDER_TABS.payment, requestId));
 
-            return (
-              <article key={order.orderId} className="settlement-card">
-                <div className="settlement-card__top">
-                  <div>
-                    <span className="settlement-card__kind">
-                      {isPurchase ? (
-                        <span className="settlement-card__tag">Mua hộ</span>
-                      ) : (
-                        "Đơn ký gửi"
-                      )}
-                    </span>
-                    <strong>{order.orderCode}</strong>
-                  </div>
-
-                  {canPay ? (
-                    <span className="settlement-card__badge is-due">Chờ bạn thanh toán</span>
-                  ) : (
-                    <span className="settlement-card__badge">Chờ nhân viên chốt phí</span>
-                  )}
-                </div>
-
-                <dl className="settlement-card__facts">
-                  <div>
-                    <dt>Hàng đã về kho</dt>
-                    <dd>
-                      {order.parcelCount} kiện ·{" "}
-                      {Number(order.totalWeight || 0).toLocaleString("vi-VN")} kg
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Về kho lúc</dt>
-                    <dd>{formatDateTime(order.arrivedAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Giao tới</dt>
-                    <dd>{order.receiverAddress || "—"}</dd>
-                  </div>
-                </dl>
-
-                {isPurchase && requestId ? (
-                  <p className="settlement-card__origin">
-                    Đơn vận chuyển của một yêu cầu mua hộ.{" "}
-                    <button
-                      type="button"
-                      className="settlement-card__link"
-                      onClick={() => navigate(purchaseRequestDetailPath(requestId))}
-                    >
-                      Xem yêu cầu mua hộ
-                    </button>
-                  </p>
-                ) : null}
-
-                {order.discrepancyParcelCount > 0 && (
-                  <p className="settlement-card__warning">
-                    <ReportProblemRoundedIcon />
-                    <span>
-                      Kho ghi nhận <strong>{order.discrepancyParcelCount} kiện</strong> có chênh
-                      lệch so với khai báo. Nhân viên sẽ liên hệ với bạn trước khi chốt tiền.
-                    </span>
-                  </p>
-                )}
-
-                <div className="settlement-card__foot">
-                  {canPay ? (
-                    <>
-                      <div className="settlement-card__amount">
-                        <span>Còn phải trả</span>
-                        <strong>{formatMoney(due)}</strong>
-                      </div>
-
-                      <Button
-                        variant="contained"
-                        startIcon={<PaidRoundedIcon />}
-                        onClick={() => {
-                          /* Link SePay là đường dẫn tương đối — openCheckout ghép base URL API. */
-                          const opened = openCheckout(order.pendingCheckoutUrl, {
-                            /* Đơn kho mua hộ: trả xong về phần Mua hộ, "Xem đơn" kèm ?yc=. */
-                            orderType: isPurchase ? "PURCHASE" : "CONSIGNMENT",
-                            purchaseRequestId: requestId,
-                            subject: PAYMENT_SUBJECTS.order,
-                            targetId: order.orderId,
-                            purpose: PAYMENT_PURPOSES.finalPayment,
-                            code: order.orderCode,
-                            amount: due,
-                          });
-
-                          if (!opened) {
-                            AuthNotify.error(
-                              "Không mở được trang thanh toán",
-                              "Link thanh toán không hợp lệ.",
-                            );
-                          }
-                        }}
-                      >
-                        Thanh toán ngay
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="settlement-card__hint">
-                        Nhân viên đang chốt phí cuối cho đơn này.
+              return (
+                <article key={order.orderId} className="settlement-card">
+                  <div className="settlement-card__top">
+                    <div>
+                      <span className="settlement-card__kind">
+                        {isPurchase ? (
+                          <span className="settlement-card__tag">Mua hộ</span>
+                        ) : (
+                          "Đơn ký gửi"
+                        )}
                       </span>
+                      <strong>{order.orderCode}</strong>
+                    </div>
 
-                      {isPurchase ? (
-                        <Button variant="outlined" onClick={openPaymentTab}>
-                          Xem lịch sử thanh toán
-                        </Button>
-                      ) : (
-                        <Button variant="outlined" onClick={openPaymentTab}>
-                          Xem trước tất toán
-                        </Button>
-                      )}
-                    </>
+                    {canPay ? (
+                      <span className="settlement-card__badge is-due">Chờ bạn thanh toán</span>
+                    ) : (
+                      <span className="settlement-card__badge">Chờ nhân viên chốt phí</span>
+                    )}
+                  </div>
+
+                  <dl className="settlement-card__facts">
+                    <div>
+                      <dt>Hàng đã về kho</dt>
+                      <dd>
+                        {order.parcelCount} kiện ·{" "}
+                        {Number(order.totalWeight || 0).toLocaleString("vi-VN")} kg
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Về kho lúc</dt>
+                      <dd>{formatDateTime(order.arrivedAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Giao tới</dt>
+                      <dd>{order.receiverAddress || "—"}</dd>
+                    </div>
+                  </dl>
+
+                  {isPurchase && requestId ? (
+                    <p className="settlement-card__origin">
+                      Đơn vận chuyển của một yêu cầu mua hộ.{" "}
+                      <button
+                        type="button"
+                        className="settlement-card__link"
+                        onClick={() => navigate(purchaseRequestDetailPath(requestId))}
+                      >
+                        Xem yêu cầu mua hộ
+                      </button>
+                    </p>
+                  ) : null}
+
+                  {order.discrepancyParcelCount > 0 && (
+                    <p className="settlement-card__warning">
+                      <ReportProblemRoundedIcon />
+                      <span>
+                        Kho ghi nhận <strong>{order.discrepancyParcelCount} kiện</strong> có chênh
+                        lệch so với khai báo. Nhân viên sẽ liên hệ với bạn trước khi chốt tiền.
+                      </span>
+                    </p>
                   )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
+
+                  <div className="settlement-card__foot">
+                    {canPay ? (
+                      <>
+                        <div className="settlement-card__amount">
+                          <span>Còn phải trả</span>
+                          <strong>{formatMoney(due)}</strong>
+                        </div>
+
+                        <Button
+                          variant="contained"
+                          startIcon={<PaidRoundedIcon />}
+                          onClick={() => {
+                            /* Link SePay là đường dẫn tương đối — openCheckout ghép base URL API. */
+                            const opened = openCheckout(order.pendingCheckoutUrl, {
+                              /* Đơn kho mua hộ: trả xong về phần Mua hộ, "Xem đơn" kèm ?yc=. */
+                              orderType: isPurchase ? "PURCHASE" : "CONSIGNMENT",
+                              purchaseRequestId: requestId,
+                              subject: PAYMENT_SUBJECTS.order,
+                              targetId: order.orderId,
+                              purpose: PAYMENT_PURPOSES.finalPayment,
+                              code: order.orderCode,
+                              amount: due,
+                            });
+
+                            if (!opened) {
+                              AuthNotify.error(
+                                "Không mở được trang thanh toán",
+                                "Link thanh toán không hợp lệ.",
+                              );
+                            }
+                          }}
+                        >
+                          Thanh toán ngay
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="settlement-card__hint">
+                          Nhân viên đang chốt phí cuối cho đơn này.
+                        </span>
+
+                        {isPurchase ? (
+                          <Button variant="outlined" onClick={openPaymentTab}>
+                            Xem lịch sử thanh toán
+                          </Button>
+                        ) : (
+                          <Button variant="outlined" onClick={openPaymentTab}>
+                            Xem trước tất toán
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <ListPagination
+            {...pagedOrders.paginationProps}
+            unit="đơn"
+            ariaLabel="Phân trang đơn cần tất toán"
+          />
+        </>
       )}
     </div>
   );

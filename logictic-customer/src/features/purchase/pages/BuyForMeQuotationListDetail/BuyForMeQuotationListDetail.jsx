@@ -12,6 +12,7 @@ import {
 } from "react-router-dom";
 
 import { Image, Tag } from "antd";
+import { getConsignmentTypeLabel, getRouteLabel } from "@shared/utils/statusLabel";
 
 import {
   Button,
@@ -48,6 +49,7 @@ import {
   rejectQuotationApi,
 } from "@features/purchase/api/purchaseRequestApi";
 import { resolvePrepayState } from "@features/purchase/utils/purchasePayments";
+import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
 import {
   formatUtcDateTime,
   formatVietnamDateTime,
@@ -227,7 +229,12 @@ const formatStatusTag = (status, displayName = "") => {
     case "CANCELED":
       return <Tag color="red">Đã từ chối</Tag>;
     default:
-      return <Tag color="default">{displayName || normalized || "Chưa xác định"}</Tag>;
+      /* Mã khác: bảng trạng thái mua hộ (chữ server chỉ khi đọc được) — không in mã thô. */
+      return (
+        <Tag color="default">
+          {normalized ? getPurchaseStatusLabel(normalized, displayName) : "Chưa xác định"}
+        </Tag>
+      );
   }
 };
 
@@ -825,7 +832,7 @@ const BuyForMeQuotationListDetail = () => {
                   <span>
                     Tuyến:{" "}
                     <strong>
-                      {requestInfo.route || "Trung Quốc --> Việt Nam"}
+                      {getRouteLabel(requestInfo.route, "Trung Quốc → Việt Nam")}
                     </strong>
                   </span>
                   <span>
@@ -877,8 +884,8 @@ const BuyForMeQuotationListDetail = () => {
               </div>
               <span>Tuyến & Gói cước</span>
               <strong>
-                {requestInfo.route || "Trung Quốc --> VN"}
-                <small>({requestInfo.shippingOption || "Standard"})</small>
+                {getRouteLabel(requestInfo.route, "Trung Quốc → Việt Nam")}
+                <small>({getConsignmentTypeLabel(requestInfo.shippingOption || "STANDARD")})</small>
               </strong>
             </div>
 
@@ -928,7 +935,7 @@ const BuyForMeQuotationListDetail = () => {
                 <div className="summary-field">
                   <span>Tuyến & Gói cước</span>
                   <strong>
-                    {requestInfo.route || "Trung Quốc --> VN"} ({requestInfo.shippingOption || "Standard"})
+                    {getRouteLabel(requestInfo.route, "Trung Quốc → Việt Nam")} ({getConsignmentTypeLabel(requestInfo.shippingOption || "STANDARD")})
                   </strong>
                 </div>
                 <div className="summary-field">

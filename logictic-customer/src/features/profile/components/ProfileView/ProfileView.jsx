@@ -13,6 +13,8 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 
+import { labelOf } from "@shared/utils/statusLabel";
+
 const STATUS_LABELS = {
   ACTIVE: "Đang hoạt động",
   INACTIVE: "Ngừng hoạt động",
@@ -27,6 +29,8 @@ const STATUS_LABELS = {
   DELETED: "Đã xóa",
   VERIFIED: "Đã xác minh",
   UNVERIFIED: "Chưa xác minh",
+  PENDINGVERIFICATION: "Chờ xác thực",
+  PENDING_VERIFICATION: "Chờ xác thực",
 };
 
 const normalizeStatus = (status) => {
@@ -45,15 +49,10 @@ const getStatusLabel = (status) => {
     return "Chưa xác định";
   }
 
-  return (
-    STATUS_LABELS[normalizedStatus] ||
-    normalizedStatus
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/^./, (character) =>
-        character.toUpperCase()
-      )
-  );
+  /* Mã lạ: nhãn an toàn, không in chữ tiếng Anh kiểu "Pending verification". */
+  return labelOf(STATUS_LABELS, normalizedStatus, {
+    generic: "Chưa xác định",
+  });
 };
 
 const getStatusClassName = (status) => {

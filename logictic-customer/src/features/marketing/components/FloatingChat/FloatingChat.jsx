@@ -28,6 +28,8 @@ import {
 } from "@features/consignment/api/consignmentApi.mock";
 import { getOrderStatusLabel } from "@features/consignment";
 import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestApi";
+import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
+import { getPaymentStatusLabel, textOr } from "@shared/utils/statusLabel";
 import { getRestrictedItemListApi } from "@shared/api/restrictedItemApi.mock";
 import {
   getServicePricings,
@@ -305,7 +307,7 @@ const fetchAllApiContextData = async () => {
         consignList.slice(0, 8).forEach((item, idx) => {
           const code = item.orderCode || item.code || item.consignmentCode || item.id || `KG-${idx + 1}`;
           const name = item.productName || item.notes || "Hàng ký gửi";
-          const tracking = item.chinaTrackingCode || item.trackingCode || "N/A";
+          const tracking = item.chinaTrackingCode || item.trackingCode || "chưa có";
           const status = item.status ? getOrderStatusLabel(item.status) : item.statusName || "Đang xử lý";
           const isPaid = item.isPaid || item.paymentStatus === "PAID" || item.paymentStatus === 1 ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN";
           const fee = item.totalFee || item.totalShippingFee || item.totalAmount || item.declaredValueCny;
@@ -329,8 +331,16 @@ const fetchAllApiContextData = async () => {
           const code = item.orderCode || item.code || item.purchaseRequestCode || item.id || `MH-${idx + 1}`;
           const name = item.productName || item.title || "Hàng mua hộ";
           const qty = item.quantity || 1;
-          const status = item.statusName || item.status || "Mới tạo";
-          const isPaid = item.paymentStatusName || item.paymentStatus || (item.isPaid ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN");
+          /* Chỉ đưa nhãn tiếng Việt vào ngữ cảnh AI — mã thô sẽ bị AI nhắc lại nguyên văn cho khách. */
+          const status = item.status
+            ? getPurchaseStatusLabel(item.status, item.statusName)
+            : textOr(item.statusName, "Mới tạo");
+          const isPaid = typeof item.paymentStatus === "string" && item.paymentStatus
+            ? getPaymentStatusLabel(item.paymentStatus, item.paymentStatusName)
+            : textOr(
+                item.paymentStatusName,
+                item.isPaid || item.paymentStatus === 1 ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN",
+              );
           const price = item.totalAmount || item.totalPriceVnd || item.depositAmount;
 
           apiContextText += `     + Mã [${code}]: ${name} (SL: ${qty}), Trạng thái: ${status}, Thanh toán: ${isPaid} (${formatVnd(price)})\n`;
@@ -361,7 +371,7 @@ QUY TẮC PHẢN HỒI:
       const fullName = u.fullName || u.name || sessionStorage.getItem("fullName") || "Khách hàng";
       const phone = u.phone || sessionStorage.getItem("phone") || "Chưa cập nhật";
       const email = u.email || sessionStorage.getItem("email") || "Chưa cập nhật";
-      const id = u.userId || u.id || u.customerId || "N/A";
+      const id = u.userId || u.id || u.customerId || "Chưa có";
 
       authContext = `
 TRẠNG THÁI KHÁCH HÀNG: ĐÃ ĐĂNG NHẬP & XÁC THỰC THÀNH CÔNG (Token JWT khả dụng)

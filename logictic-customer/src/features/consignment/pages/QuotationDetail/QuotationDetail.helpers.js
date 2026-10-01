@@ -19,6 +19,7 @@ import {
 } from "@shared/utils/timeUtc";
 
 import { getPaymentCheckoutUrl } from "@features/purchase/api/purchaseRequestApi";
+import { isDisplayableText, labelOf } from "@shared/utils/statusLabel";
 
 import {
   QUOTE_TYPE_LABELS,
@@ -41,14 +42,15 @@ const normalizeStatus = (value) => {
     .toUpperCase();
 };
 
-const formatStatusCode = (status) => {
+/* Mã → nhãn tiếng Việt qua bảng chung; KHÔNG in mã thô kiểu "WAITING DEPOSIT". */
+const formatStatusCode = (status, generic) => {
   const normalizedStatus = normalizeStatus(status);
 
   if (!normalizedStatus) {
     return "-";
   }
 
-  return normalizedStatus.replaceAll("_", " ").replaceAll("-", " ");
+  return labelOf(null, normalizedStatus, generic ? { generic } : undefined);
 };
 
 
@@ -143,12 +145,15 @@ const normalizeStatusOptions = (apiResult) => {
         item?.id,
       );
 
+      /* Chữ server có lúc chính là mã → chỉ nhận chữ đọc được, còn lại dịch mã. */
       const label = String(
-        item?.label ||
-        item?.name ||
-        item?.displayName ||
-        item?.statusName ||
-        item?.description ||
+        [
+          item?.label,
+          item?.name,
+          item?.displayName,
+          item?.statusName,
+          item?.description,
+        ].find(isDisplayableText) ||
         formatStatusCode(value),
       ).trim();
 
@@ -163,14 +168,17 @@ const normalizeStatusOptions = (apiResult) => {
 const getQuoteTypeLabel = (quoteType) => {
   const normalizedType = normalizeStatus(quoteType);
 
-  return QUOTE_TYPE_LABELS[normalizedType] || normalizedType || "-";
+  return normalizedType
+    ? labelOf(QUOTE_TYPE_LABELS, normalizedType, { generic: "Báo giá" })
+    : "-";
 };
 
 const getConsignmentTypeLabel = (consignmentType) => {
   const rawValue = String(consignmentType ?? "").trim();
-  const normalizedType = normalizeStatus(rawValue);
 
-  return CONSIGNMENT_TYPE_LABELS[normalizedType] || rawValue || "-";
+  return rawValue
+    ? labelOf(CONSIGNMENT_TYPE_LABELS, rawValue, { generic: "Loại vận chuyển khác" })
+    : "-";
 };
 
 const getStatusClassName = (status) => {
@@ -1560,7 +1568,7 @@ const getFeeCodeLabel = (code) => {
     return "";
   }
 
-  return FEE_CODE_LABELS[normalizedCode] || formatStatusCode(normalizedCode);
+  return FEE_CODE_LABELS[normalizedCode] || formatStatusCode(normalizedCode, "Phí khác");
 };
 
 const translateFeeLabelToVietnamese = (value) => {
@@ -1587,7 +1595,7 @@ const getFeeLabel = (fee) => {
 const getFeeTypeLabel = (fee) => {
   const type = normalizeStatus(fee?.feeType || fee?.type || fee?.code);
 
-  return FEE_TYPE_LABELS[type] || formatStatusCode(type);
+  return FEE_TYPE_LABELS[type] || formatStatusCode(type, "Loại phí khác");
 };
 
 const getFeeCalculationType = (fee) => {
@@ -1597,7 +1605,7 @@ const getFeeCalculationType = (fee) => {
 const getFeeCalculationTypeLabel = (fee) => {
   const type = getFeeCalculationType(fee);
 
-  return CALCULATION_TYPE_LABELS[type] || formatStatusCode(type);
+  return CALCULATION_TYPE_LABELS[type] || formatStatusCode(type, "Cách tính khác");
 };
 
 /**

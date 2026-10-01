@@ -18,22 +18,17 @@
 .todo-dashboard__head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.todo-dashboard__head h2 {
+/* Không lặp tiêu đề trang — tiêu đề nằm trên thanh header, đây chỉ là dòng tóm tắt. */
+.todo-dashboard__summary {
   margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: #0b1b2e;
-}
-
-.todo-dashboard__head p {
-  margin: 4px 0 0;
   max-width: 640px;
-  color: #5b6b80;
+  color: #334155;
+  font-weight: 500;
 }
 
 .todo-dashboard__reload {

@@ -201,7 +201,7 @@ const QuotationPaymentConfirmDialog = ({
           feeCode !== "DEPOSIT_RATE"
         ) {
           throw new Error(
-            "API không trả về cấu hình DEPOSIT_RATE.",
+            "Hệ thống chưa trả về tỷ lệ đặt cọc.",
           );
         }
 
@@ -408,7 +408,7 @@ const QuotationPaymentConfirmDialog = ({
     (isOnline
       ? "Thanh toán online qua SePay"
       : isOffline
-        ? "Xác nhận báo giá offline"
+        ? "Thanh toán tiền mặt"
         : "");
 
   const handleClose = () => {
@@ -950,7 +950,7 @@ const QuotationPaymentConfirmDialog = ({
               (isOnline
                 ? "Thanh toán qua SePay"
                 : isOffline
-                  ? "Xác nhận báo giá offline"
+                  ? "Xác nhận thanh toán tiền mặt"
                   : "Tiếp tục")}
         </Button>
       </DialogActions>

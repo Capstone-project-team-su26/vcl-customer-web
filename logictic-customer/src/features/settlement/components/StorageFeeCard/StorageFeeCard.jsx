@@ -19,6 +19,10 @@ import {
   PAYMENT_PURPOSES,
   PAYMENT_SUBJECTS,
 } from "@features/payment/utils/pendingPaymentReturn";
+import { buildTablePagination } from "@shared/utils/pagination";
+
+/* Bảng dài (nhiều kiện) thì phân trang 10/20/50; ≤ 10 dòng không hiện thanh phân trang. */
+const PARCEL_TABLE_PAGINATION = buildTablePagination({ unit: "kiện" });
 
 /**
  * Phí lưu kho tại kho VN của đơn (GET /api/orders/{id}/storage-fee, hàng về VN mục D1).
@@ -122,7 +126,7 @@ export default function StorageFeeCard({ orderId, refreshKey = 0, paymentOwner }
         rowKey={(row) => row.parcelId || row.packageCode}
         columns={columns}
         dataSource={storedParcels}
-        pagination={false}
+        pagination={PARCEL_TABLE_PAGINATION}
         scroll={{ x: 640 }}
         style={{ marginTop: 12 }}
       />

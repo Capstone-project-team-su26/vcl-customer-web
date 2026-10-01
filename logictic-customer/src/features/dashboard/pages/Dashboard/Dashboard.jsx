@@ -1,9 +1,9 @@
 /**
- * BẢNG ĐIỀU KHIỂN CỦA KHÁCH = danh sách VIỆC CẦN LÀM, không phải bảng thống kê.
+ * BẢNG ĐIỀU KHIỂN CỦA KHÁCH = tổng quan đơn hàng và chi tiêu (thống kê bên khách).
  *
- * Trả lời đúng một câu khách hỏi khi vừa đăng nhập: "hôm nay tôi phải làm gì?".
- * Việc nào còn phải làm nằm trên, việc đã xong xuống dưới dạng thẻ mờ, hàng đang chạy
- * gom thành một dải nhỏ để khách biết đơn không nằm im.
+ * Từ trên xuống: dòng tóm tắt, dải "hàng đang chạy" để khách biết đơn không nằm im,
+ * thống kê chi tiêu (DashboardCharts), lối tắt. Việc cần khách xử lý nằm ở các mục
+ * Đơn ký gửi / Đơn mua hộ / Thanh toán.
  *
  * Số liệu lấy từ MỘT endpoint (`/api/customers/me/dashboard`) gộp cả ký gửi lẫn mua hộ.
  * Bản cũ gọi hai endpoint danh sách rồi tự cộng ở trình duyệt: kéo cả trăm đơn về máy
@@ -67,7 +67,7 @@ export default function Dashboard() {
         setState({
           key: refreshKey,
           board: EMPTY_BOARD,
-          error: getApiErrorMessage(error, "Không tải được việc cần làm của bạn."),
+          error: getApiErrorMessage(error, "Không tải được bảng điều khiển của bạn."),
         });
       });
 
@@ -114,23 +114,22 @@ export default function Dashboard() {
 
   return (
     <div className="todo-dashboard">
-      <header className="todo-dashboard__head">
-        <div>
-          <h2>Bảng điều khiển</h2>
-          <p>
-            {loading
-              ? "Đang đọc tình hình đơn của bạn…"
-              : progress.total > 0
-                ? `${progress.total} đơn đang đi tiếp. Việc cần bạn xử lý xem ở mục Đơn ký gửi, Đơn mua hộ và Thanh toán.`
-                : "Chưa có đơn nào đang chạy. Tạo đơn mới ở lối tắt bên dưới."}
-          </p>
-        </div>
+      {/* Tiêu đề "BẢNG ĐIỀU KHIỂN" đã nằm trên thanh header (MainLayout), ở đây chỉ còn
+          dòng tóm tắt + nút tải lại để khỏi lặp tiêu đề. */}
+      <div className="todo-dashboard__head">
+        <p className="todo-dashboard__summary">
+          {loading
+            ? "Đang đọc tình hình đơn của bạn…"
+            : progress.total > 0
+              ? `${progress.total} đơn đang đi tiếp. Việc cần bạn xử lý xem ở mục Đơn ký gửi, Đơn mua hộ và Thanh toán.`
+              : "Chưa có đơn nào đang chạy. Tạo đơn mới ở lối tắt bên dưới."}
+        </p>
 
         <button type="button" className="todo-dashboard__reload" onClick={reload}>
           <ReloadOutlined />
           Tải lại
         </button>
-      </header>
+      </div>
 
       {state.error ? <Alert type="error" showIcon message={state.error} /> : null}
 

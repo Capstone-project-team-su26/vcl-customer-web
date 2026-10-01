@@ -1,0 +1,243 @@
+/* =========================================================
+   TIỀN CỦA ĐƠN MUA HỘ — cùng bảng màu với TrackingMoneyCard (ký gửi):
+   xanh = tổng, xanh lá = đã trả, cam = còn phải trả, tím = tạm tính về VN.
+   ========================================================= */
+
+.purchase-money__totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.purchase-money__box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e3eaf4;
+  background: #f8fbff;
+}
+
+.purchase-money__box span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b6b80;
+}
+
+.purchase-money__box strong {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0b1b2e;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.purchase-money__box small {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.purchase-money__box.is-total {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.purchase-money__box.is-total strong {
+  color: #1d4ed8;
+}
+
+.purchase-money__box.is-paid {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.purchase-money__box.is-paid strong {
+  color: #15803d;
+}
+
+.purchase-money__box.is-due {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.purchase-money__box.is-due strong {
+  color: #c2410c;
+}
+
+.purchase-money__box.is-muted strong {
+  color: #64748b;
+}
+
+.purchase-money__box.is-later {
+  border-color: #ddd6fe;
+  background: #f7f5ff;
+}
+
+.purchase-money__box.is-later strong {
+  color: #6d28d9;
+}
+
+.purchase-money__box.is-refund {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.purchase-money__box.is-refund strong {
+  color: #047857;
+}
+
+.purchase-money__alert {
+  margin-top: 12px;
+}
+
+.purchase-money__groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.purchase-money__groups.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.purchase-money__group {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e3eaf4;
+  background: #fff;
+}
+
+.purchase-money__group.is-later {
+  border-style: dashed;
+  border-color: #d8ccfb;
+}
+
+.purchase-money__group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 6px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0b1b2e;
+}
+
+.purchase-money__group-head b {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.purchase-money__lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.purchase-money__lines li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px dashed #e3eaf4;
+  font-size: 13px;
+  color: #334155;
+}
+
+.purchase-money__lines b {
+  font-weight: 700;
+  color: #0b1b2e;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.purchase-money__note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.purchase-money__payments {
+  margin-top: 16px;
+}
+
+.purchase-money__payments h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0b1b2e;
+}
+
+.purchase-money__payments ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.purchase-money__payments li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #eef2f7;
+}
+
+.purchase-money__payment-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.purchase-money__payment-main strong {
+  font-size: 13.5px;
+  color: #0b1b2e;
+}
+
+.purchase-money__payment-main span {
+  font-size: 12px;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.purchase-money__payment-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.purchase-money__payment-side b {
+  font-variant-numeric: tabular-nums;
+  color: #0b1b2e;
+}
+
+.purchase-money__payment-side .ant-tag {
+  margin-inline-end: 0;
+}
+
+@media (max-width: 720px) {
+  .purchase-money__groups {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-money__totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .purchase-money__payments li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
