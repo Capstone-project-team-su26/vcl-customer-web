@@ -9,7 +9,7 @@
  * 2. Giải quyết triệt để lỗi CORS ("Failed to fetch") khi gọi trực tiếp từ trình duyệt.
  * 3. Tự động xử lý retry khi OpenRouter bị quá tải (concurrency / rate limit).
  */
-
+//fic 
 const DEFAULT_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "google/gemini-2.5-flash";
 
