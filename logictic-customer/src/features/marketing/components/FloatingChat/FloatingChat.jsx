@@ -466,20 +466,25 @@ const requestCodexReply = async ({
   // Khoá chỉ đến từ biến môi trường — không còn fallback nhúng trong source.
   const activeApiKey = AI_CONFIG.apiKey;
 
-  // Bản UI-only mặc định không có AI thật. Thay vì báo lỗi "chưa cấu hình" ngay
-  // trên trang chủ, trả lời bằng kịch bản mock để khung chat vẫn demo được.
-  // Đặt VITE_CODEX_ENDPOINT + VITE_CODEX_API_KEY là tự động dùng AI thật trở lại.
-  if (!activeApiKey || !AI_CONFIG.endpoint) {
+  if (!AI_CONFIG.endpoint) {
     return requestMockAssistantReply({ messages, signal });
   }
 
   const isExternalProvider =
     /openrouter\.ai|openai\.com|anthropic\.com|groq\.com/i.test(AI_CONFIG.endpoint);
 
+  // Nếu gọi trực tiếp third-party provider từ browser mà không có key thì fallback về mock
+  if (isExternalProvider && !activeApiKey) {
+    return requestMockAssistantReply({ messages, signal });
+  }
+
   const headers = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${activeApiKey}`,
   };
+
+  if (activeApiKey) {
+    headers.Authorization = `Bearer ${activeApiKey}`;
+  }
 
   // Chỉ đính kèm token người dùng khi gọi backend/proxy nội bộ.
   // Các dịch vụ public như OpenRouter sẽ từ chối qua CORS preflight (Access-Control-Allow-Headers).
@@ -524,8 +529,8 @@ const requestCodexReply = async ({
       return requestCodexReply({ messages, signal, retryCount: retryCount + 1 });
     }
 
-    if (lowerMsg.includes("invalid token")) {
-      throw new Error("Khóa kết nối AI bị từ chối. Vui lòng kiểm tra VITE_CODEX_API_KEY.");
+    if (lowerMsg.includes("invalid token") || lowerMsg.includes("api key")) {
+      throw new Error("Khóa kết nối AI bị từ chối hoặc chưa được cấu hình trên server.");
     }
 
     if (lowerMsg.includes("concurrency limit") || lowerMsg.includes("retry later")) {
@@ -535,7 +540,10 @@ const requestCodexReply = async ({
     throw new Error(rawErrMsg || `Lỗi kết nối AI (${codexResponse.status})`);
   }
 
-  const reply = codexData?.choices?.[0]?.message?.content;
+  const reply =
+    codexData?.reply ||
+    codexData?.choices?.[0]?.message?.content ||
+    codexData?.content;
   if (!reply) {
     throw new Error("AI không trả về phản hồi hợp lệ.");
   }

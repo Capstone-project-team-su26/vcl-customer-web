@@ -16,8 +16,12 @@ export const AI_CONFIG = {
   temperature: 0.3,
 };
 
-/** Có đủ endpoint + khoá để gọi trợ lý AI hay không. */
-export const isAiConfigured = () =>
-  Boolean(AI_CONFIG.endpoint && AI_CONFIG.apiKey);
+/** Có đủ cấu hình để gọi trợ lý AI hay không (hỗ trợ cả proxy server lẫn gọi trực tiếp). */
+export const isAiConfigured = () => {
+  if (!AI_CONFIG.endpoint) return false;
+  const isExternal =
+    /openrouter\.ai|openai\.com|anthropic\.com|groq\.com/i.test(AI_CONFIG.endpoint);
+  return isExternal ? Boolean(AI_CONFIG.apiKey) : true;
+};
 
 export default AI_CONFIG;
