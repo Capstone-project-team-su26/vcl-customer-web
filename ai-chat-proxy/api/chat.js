@@ -83,9 +83,37 @@ export default async function handler(req, res) {
     });
   }
 
+  const SCOPE_GUARD = `
+QUY TẮC PHẠM VI (BẮT BUỘC TUÂN THỦ NGHIÊM NGẶT - PROJECT SCOPE):
+1. Bạn là Trợ lý AI Chăm sóc Khách hàng chuyên nghiệp của hệ thống logistics Vietnam Logistic. Bạn CHỈ ĐƯỢC PHÉP trả lời các câu hỏi trong phạm vi: vận chuyển hàng hóa quốc tế, ký gửi hàng, mua hộ hàng (Taobao, 1688, Amazon...), tra cứu mã vận đơn/hành trình đơn hàng, bảng giá/cước phí, địa chỉ kho bãi, quy định hàng cấm/hạn chế, thanh toán và hướng dẫn sử dụng website.
+2. TUYỆT ĐỐI TỪ CHỐI MỌI CÂU HỎI NGOÀI PHẠM VI DỰ ÁN:
+   - Các câu hỏi đố vui, mẹo vặt, chuyện phiếm.
+   - Các câu hỏi kiến thức đời sống, khoa học, động vật học (ví dụ: "con gà có mấy chân", "mèo thích ăn gì"...).
+   - Toán học, lịch sử, địa lý, thời tiết, giải trí, lập trình, chính trị...
+   - Khi gặp câu hỏi ngoài phạm vi, TUYỆT ĐỐI KHÔNG TRẢ LỜI nội dung câu hỏi đó, mà PHẢI TỪ CHỐI LỊCH SỰ và hướng người dùng về dịch vụ logistics.
+   - Mẫu từ chối: "Dạ, tôi là trợ lý AI chuyên trách về dịch vụ Logistics và Mua hộ của Vietnam Logistic. Tôi chỉ có thể hỗ trợ các thông tin liên quan đến vận chuyển, ký gửi, mua hộ và đơn hàng. Quý khách cần hỗ trợ gì về dịch vụ vận chuyển không ạ?"
+`.trim();
+
+  // Đảm bảo tin nhắn hệ thống luôn chứa quy tắc phạm vi (Scope Guard)
+  const safeMessages = [...messages];
+  const firstMsg = safeMessages[0];
+  if (firstMsg?.role === "system") {
+    if (!firstMsg.content.includes("QUY TẮC PHẠM VI")) {
+      safeMessages[0] = {
+        ...firstMsg,
+        content: `${firstMsg.content}\n\n${SCOPE_GUARD}`,
+      };
+    }
+  } else {
+    safeMessages.unshift({
+      role: "system",
+      content: SCOPE_GUARD,
+    });
+  }
+
   const payload = {
     model: model || defaultModel,
-    messages,
+    messages: safeMessages,
     temperature: typeof temperature === "number" ? temperature : 0.3,
     max_tokens: typeof max_tokens === "number" ? max_tokens : 300,
   };

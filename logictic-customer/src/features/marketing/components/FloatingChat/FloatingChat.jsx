@@ -25,16 +25,16 @@ import {
   getConsignmentsApi,
   getConsignmentRoutesApi,
   getConsignmentShippingOptionsApi,
-} from "@features/consignment/api/consignmentApi.mock";
+} from "@features/consignment/api/consignmentApi";
 import { getOrderStatusLabel } from "@features/consignment";
 import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestApi";
 import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
 import { getPaymentStatusLabel, textOr } from "@shared/utils/statusLabel";
-import { getRestrictedItemListApi } from "@shared/api/restrictedItemApi.mock";
+import { getRestrictedItemListApi } from "@shared/api/restrictedItemApi";
 import {
   getServicePricings,
   getDepositRate,
-} from "@features/pricing/api/pricingRuleService.mock";
+} from "@features/pricing/api/pricingRuleService";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 
 import "./FloatingChat.css";
@@ -62,6 +62,21 @@ THÔNG TIN DỮ LIỆU CÔNG KHAI HỆ THỐNG (Không cần đăng nhập):
   - Mua hộ hàng quốc tế: Taobao, 1688, Tmall, Mercari, Rakuten, Amazon... Thanh toán chuyển khoản VNĐ.
   - Ký gửi hàng hóa: Cấp địa chỉ kho quốc tế, gom kiện tự động, quy trình 6 bước (Tạo đơn -> Nhập kho QT -> Lưu kho -> Thông quan -> Xuất kho -> Về VN).
   - Tra cứu mã vận đơn công khai: Khách hàng có thể tra cứu mã vận đơn trực tiếp tại màn /order-lookup.
+
+QUY TẮC PHẠM VI (BẮT BUỘC TUÂN THỦ NGHIÊM NGẶT - SCOPE):
+1. BẠN CHỈ ĐƯỢC PHÉP TRẢ LỜI CÁC CÂU HỎI TRONG PHẠM VI NGHIỆP VỤ CỦA ${BRAND.name}:
+   - Ký gửi hàng hóa, mua hộ hàng quốc tế (Trung Quốc, Nhật Bản, Hàn Quốc, Mỹ...).
+   - Bảng giá cước vận chuyển, tỷ giá ngoại tệ, đặt cọc, thanh toán.
+   - Tra cứu trạng thái đơn hàng, tiến trình vận chuyển, mã vận đơn (tracking).
+   - Địa chỉ và thông tin kho bãi (Việt Nam và kho quốc tế).
+   - Danh mục hàng cấm vận chuyển, hàng hạn chế ký gửi.
+   - Hướng dẫn tạo đơn, đăng ký, đăng nhập và sử dụng website.
+2. TUYỆT ĐỐI TỪ CHỐI MỌI CÂU HỎI NGOÀI PHẠM VI DỰ ÁN:
+   - Các câu hỏi đố vui, mẹo vặt, chuyện phiếm.
+   - Các câu hỏi kiến thức đời sống, khoa học, động vật học (ví dụ: "con gà có mấy chân", "mèo thích ăn gì"...).
+   - Toán học, lịch sử, địa lý, thời tiết, giải trí, lập trình, chính trị...
+   - Khi gặp câu hỏi ngoài phạm vi, TUYỆT ĐỐI KHÔNG TRẢ LỜI nội dung đó, mà PHẢI TỪ CHỐI LỊCH SỰ và hướng người dùng về các dịch vụ logistics của công ty.
+   - Mẫu từ chối: "Dạ, tôi là trợ lý AI chuyên trách về dịch vụ Logistics và Mua hộ của ${BRAND.name}. Tôi chỉ có thể hỗ trợ các thông tin liên quan đến vận chuyển, ký gửi, mua hộ và đơn hàng. Quý khách cần hỗ trợ gì về dịch vụ vận chuyển không ạ?"
 
 QUY TẮC PHẢN HỒI:
 - Trả lời cực kỳ ngắn gọn, súc tích (1-3 câu ngắn, dưới 100 từ).
@@ -283,7 +298,20 @@ const fetchAllApiContextData = async () => {
       };
 
       const consignList = extractArray(consignRes);
+      const totalConsignCount =
+        typeof consignRes?.total === "number"
+          ? consignRes.total
+          : typeof consignRes?.totalCount === "number"
+          ? consignRes.totalCount
+          : consignList.length;
+
       const purchaseList = extractArray(purchaseRes);
+      const totalPurchaseCount =
+        typeof purchaseRes?.total === "number"
+          ? purchaseRes.total
+          : typeof purchaseRes?.totalCount === "number"
+          ? purchaseRes.totalCount
+          : purchaseList.length;
 
       const formatVnd = (num) => {
         const n = Number(num);
@@ -291,18 +319,18 @@ const fetchAllApiContextData = async () => {
         return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
       };
 
-      apiContextText += "\n--- DỮ LIỆU ĐƠN HÀNG THỰC TẾ CỦA KHÁCH HÀNG TỪ API ---\n";
+      apiContextText += "\n--- DỮ LIỆU ĐƠN HÀNG THỰC TẾ CỦA KHÁCH HÀNG TỪ API (HỆ THỐNG THẬT) ---\n";
 
       // Ký gửi
-      apiContextText += `1. ĐƠN KÝ GỬI (Tổng số: ${consignList.length} đơn):\n`;
-      if (consignList.length === 0) {
-        apiContextText += "   - Chưa có đơn ký gửi nào.\n";
+      apiContextText += `1. ĐƠN KÝ GỬI (Tổng số đơn thực tế của khách: ${totalConsignCount} đơn):\n`;
+      if (totalConsignCount === 0 || consignList.length === 0) {
+        apiContextText += "   - Hiện tại khách hàng CHƯA CÓ đơn ký gửi nào trên hệ thống (tổng số: 0 đơn).\n";
       } else {
         const paidCount = consignList.filter(
           (i) => i.isPaid === true || i.paymentStatus === "PAID" || i.paymentStatus === 1 || String(i.paymentStatus).toUpperCase() === "PAID"
         ).length;
         apiContextText += `   - Trạng thái thanh toán: ${paidCount} đơn đã thanh toán, ${consignList.length - paidCount} đơn chưa thanh toán.\n`;
-        apiContextText += "   - Chi tiết các đơn ký gửi:\n";
+        apiContextText += "   - Chi tiết các đơn ký gửi gần nhất:\n";
 
         consignList.slice(0, 8).forEach((item, idx) => {
           const code = item.orderCode || item.code || item.consignmentCode || item.id || `KG-${idx + 1}`;
@@ -317,15 +345,15 @@ const fetchAllApiContextData = async () => {
       }
 
       // Mua hộ
-      apiContextText += `2. ĐƠN MUA HỘ (Tổng số: ${purchaseList.length} đơn):\n`;
-      if (purchaseList.length === 0) {
-        apiContextText += "   - Chưa có đơn mua hộ nào.\n";
+      apiContextText += `2. ĐƠN MUA HỘ (Tổng số đơn thực tế của khách: ${totalPurchaseCount} đơn):\n`;
+      if (totalPurchaseCount === 0 || purchaseList.length === 0) {
+        apiContextText += "   - Hiện tại khách hàng CHƯA CÓ đơn mua hộ nào trên hệ thống (tổng số: 0 đơn).\n";
       } else {
         const paidCount = purchaseList.filter(
           (i) => i.isPaid === true || i.paymentStatus === "PAID" || i.paymentStatus === "DEPOSITED" || i.paymentStatus === 1
         ).length;
         apiContextText += `   - Trạng thái thanh toán: ${paidCount} đơn đã cọc/thanh toán, ${purchaseList.length - paidCount} đơn chưa thanh toán/chờ báo giá.\n`;
-        apiContextText += "   - Chi tiết các đơn mua hộ:\n";
+        apiContextText += "   - Chi tiết các đơn mua hộ gần nhất:\n";
 
         purchaseList.slice(0, 8).forEach((item, idx) => {
           const code = item.orderCode || item.code || item.purchaseRequestCode || item.id || `MH-${idx + 1}`;
@@ -363,7 +391,8 @@ const buildDynamicSystemInstruction = (apiContextData = "") => {
 TRẠNG THÁI KHÁCH HÀNG: Chưa đăng nhập (Khách vãng lai).
 QUY TẮC PHẢN HỒI:
 1. Người dùng CHƯA ĐĂNG NHẬP VẪN ĐƯỢC CHAT HỎI ĐÁP BÌNH THƯỜNG tất cả thông tin công khai (địa chỉ kho, cước phí, danh mục hàng cấm, quy trình ký gửi/mua hộ...). Trả lời nhiệt tình, chính xác.
-2. NẾU người dùng yêu cầu tạo đơn Ký gửi hoặc Mua hộ cụ thể, hãy tư vấn quy trình VÀ nhắc người dùng ĐĂNG NHẬP TÀI KHOẢN để chính thức khởi tạo đơn hàng.`;
+2. NẾU người dùng hỏi về số lượng đơn hàng hoặc tra cứu đơn hàng cá nhân của họ ("hiện tại đơn hàng kí gửi bao nhiêu", "tôi có bao nhiêu đơn..."): BẮT BUỘC trả lời rằng do khách chưa đăng nhập nên hệ thống chưa thể kiểm tra đơn hàng cá nhân, và hướng dẫn khách đăng nhập tài khoản để xem chính xác. Tuyệt đối không được bịa ra số đơn hàng.
+3. NẾU người dùng yêu cầu tạo đơn Ký gửi hoặc Mua hộ cụ thể, hãy tư vấn quy trình VÀ nhắc người dùng ĐĂNG NHẬP TÀI KHOẢN để chính thức khởi tạo đơn hàng.`;
 
   if (token || userStr) {
     try {
@@ -379,7 +408,9 @@ TRẠNG THÁI KHÁCH HÀNG: ĐÃ ĐĂNG NHẬP & XÁC THỰC THÀNH CÔNG (Token
 - Họ và tên: ${fullName}
 - Số điện thoại: ${phone}
 - Email: ${email}
-CHỈ ĐỊNH PHẢN HỒI: Xưng hô thân thiện bằng tên khách hàng (ví dụ: 'Chào anh/chị ${fullName}...'). Trả lời chính xác từ dữ liệu API bên dưới.`;
+CHỈ ĐỊNH PHẢN HỒI:
+- Xưng hô thân thiện bằng tên khách hàng (ví dụ: 'Chào anh/chị ${fullName}...').
+- Khi khách hỏi về số lượng đơn hàng hoặc đơn hàng hiện tại (ví dụ: "hiện tại đơn hàng kí gửi bao nhiêu", "tôi có mấy đơn ký gửi..."), BẮT BUỘC trả lời chính xác số lượng đơn từ "DỮ LIỆU ĐƠN HÀNG THỰC TẾ CỦA KHÁCH HÀNG TỪ API" bên dưới. Nếu dữ liệu ghi 0 đơn hoặc chưa có đơn, phải nói rõ là hiện tại chưa có đơn ký gửi nào, tuyệt đối không bịa đặt số đơn hay tự lấy số liệu mẫu.`;
     } catch {
       authContext = "\nTRẠNG THÁI KHÁCH HÀNG: Đã đăng nhập hệ thống (Token JWT khả dụng).";
     }
