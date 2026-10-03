@@ -6,7 +6,7 @@
    của FloatingChat.
 
    Chưa có token (khách vãng lai) thì trả mảng rỗng, không gọi mạng. FloatingChat
-   (màn ngoài đợt A) import bản sao restrictedItemApi.mock.js.
+   dùng bản THẬT này qua FloatingChat/floatingChatContext.js (không còn bản mock).
 
    Giữ nguyên findArrayFromResult bên dưới: nó là lớp chống lệch envelope
    giữa backend và UI (data / items / results / restrictedItems).

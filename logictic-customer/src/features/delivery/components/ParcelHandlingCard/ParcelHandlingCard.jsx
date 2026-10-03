@@ -160,6 +160,18 @@ export default function ParcelHandlingCard({ orderId, refreshKey = 0, onChanged 
           scroll={{ x: 560 }}
         />
       )}
+      {/* Kiện gửi kho không tự đi tiếp ngay: nói rõ các bước để khách khỏi tưởng chọn "không được". */}
+      {!state.loading &&
+        !state.error &&
+        state.rows.some((row) => (draft[row.parcelId] || row.handling) === PARCEL_HANDLING.STORE_AT_VN) && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginTop: 12 }}
+            title="Kiện gửi lại kho Việt Nam đi tiếp thế nào?"
+            description="Sau khi bạn tất toán, nhân viên kinh doanh báo kho; kho Việt Nam lập phiếu nhập kho, quản lý kho duyệt rồi xếp kiện lên kệ (tính phí lưu kho sau thời gian miễn phí). Khi muốn nhận hàng, vào tab Hành trình › “Giao hàng tới bạn” để đặt giao. Bạn đổi được lựa chọn tới khi kiện đã vào phiếu nhập kho hoặc đã đặt giao."
+          />
+        )}
     </SectionCard>
   );
 }

@@ -3,6 +3,8 @@
  * chỉ phụ thuộc tham số và bảng tra cứu tĩnh, nên để riêng cho component chỉ còn phần dựng giao diện.
  */
 
+import { formatPackageConfigurationName } from "@shared/utils/productTypeLabel";
+
 import { PACKAGE_CONFIGURATION_LABELS } from "./ConsignmentListDetailUI.constants";
 
 export const isWoodCrateDisplayRule = (rule) => {
@@ -62,12 +64,11 @@ export const getPackageConfigurationDisplay = (
     configClass: configCode
       .toLowerCase()
       .replaceAll("_", "-"),
-    displayName:
-      translated?.name ||
-      String(
-        configuration?.configName ||
-          "Cấu hình đóng gói",
-      ).trim(),
+    /* Tên thùng: một nguồn cho cả app (mã → tên Việt, rồi displayName, rồi tên DB đã dịch). */
+    displayName: formatPackageConfigurationName(
+      { ...configuration, configCode },
+      { fallback: "Cấu hình đóng gói" },
+    ),
     displaySize:
       translated?.size ||
       configCode.replaceAll("_", " "),

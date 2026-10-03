@@ -7,6 +7,8 @@
   --policy-border: #e7edf4;
 
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 100vh;
   padding: 24px;
   color: var(--policy-text);
@@ -282,7 +284,8 @@
 
 .policy-service__table {
   width: 100%;
-  min-width: 1240px;
+  /* 6 cột gọn: vừa khung ở 1280px; màn hẹp hơn thì cuộn ngang TRONG khung bảng. */
+  min-width: 720px;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -317,7 +320,7 @@
   overflow-wrap: anywhere;
 }
 
-.policy-service__table tbody tr {
+.policy-service__table tbody tr.policy-service__data-row {
   cursor: pointer;
   outline: none;
   transition: background-color 0.18s ease;
@@ -348,10 +351,54 @@
   font-weight: 900;
 }
 
-.policy-service__price-cell {
+.policy-service__price-text {
   color: #d97706;
   font-size: 14px;
   font-weight: 900;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.policy-service__nowrap {
+  white-space: nowrap;
+}
+
+.policy-service__table th.is-right,
+.policy-service__table td.is-right {
+  text-align: right;
+}
+
+/* Dòng tiêu đề nhóm tuyến: không dính đầu bảng như hàng tiêu đề cột. */
+.policy-service__table tr.policy-service__group-row th {
+  position: static;
+  padding: 10px 16px;
+  color: #7c4a03;
+  background: #fffbf0;
+  border-top: 1px solid #f3e3b8;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.policy-service__group-row th span {
+  font-weight: 900;
+}
+
+.policy-service__group-row th small {
+  margin-left: 10px;
+  color: #a08455;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.policy-service__note {
+  margin: 0;
+  padding: 12px 22px;
+  color: #6b5a3a;
+  background: #fffdf6;
+  border-bottom: 1px solid #f3ead4;
+  font-size: 12.5px;
+  line-height: 1.6;
 }
 
 .policy-service__service-badge,
@@ -480,6 +527,77 @@
   color: #1f2937;
   font-size: 16px;
   font-weight: 850;
+}
+
+.policy-service__mobile-group {
+  display: grid;
+  gap: 10px;
+}
+
+.policy-service__mobile-group-title {
+  margin: 4px 2px 0;
+  color: #7c4a03;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.policy-service__pricing-card-meta {
+  margin: 0;
+  padding: 12px 15px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.policy-service__pricing-card-meta dt {
+  color: #947446;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.policy-service__pricing-card-meta dd {
+  margin: 3px 0 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.service-policy-detail__box-rules {
+  margin-top: 16px;
+}
+
+.service-policy-detail__box-rules h3 {
+  margin: 0 0 8px;
+  color: #7c4a03;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.service-policy-detail__box-rules ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.service-policy-detail__box-rules li {
+  padding: 9px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fffdf8;
+  border: 1px solid #f3ead4;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.service-policy-detail__box-rules strong {
+  color: #d97706;
+  white-space: nowrap;
 }
 
 .policy-service__route {
@@ -1088,7 +1206,11 @@
     padding: 12px;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 16px;
+  }
+
+  .policy-service__note {
+    padding: 10px 15px;
   }
 
   .service-policy-detail {

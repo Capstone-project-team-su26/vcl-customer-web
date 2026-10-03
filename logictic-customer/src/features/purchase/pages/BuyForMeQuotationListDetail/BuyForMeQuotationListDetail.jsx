@@ -39,6 +39,12 @@ import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import useProductTypeNames from "@shared/hooks/useProductTypeNames";
+import {
+  needsProductTypeCatalog,
+  resolveProductTypeLabel,
+  textWithoutGuid,
+} from "@shared/utils/productTypeLabel";
 import {
   acceptQuotationApi,
   confirmAndPayQuotationApi,
@@ -551,6 +557,13 @@ const BuyForMeQuotationListDetail = () => {
   const requestInfo = detailData || {};
   const quotation = requestInfo.quotation || null;
   const itemsList = Array.isArray(requestInfo.items) ? requestInfo.items : [];
+  /* Dòng hàng chỉ mang GUID loại hàng thì nạp danh mục để ra tên — không in GUID. */
+  const productTypeNames = useProductTypeNames(needsProductTypeCatalog(itemsList));
+  const getProductTypeText = (product) =>
+    resolveProductTypeLabel(product, productTypeNames, { emptyLabel: "" });
+  /* Mã yêu cầu: chưa có purchaseCode thì không lộ id (GUID) trên đường dẫn ra màn hình. */
+  const requestCodeLabel =
+    requestInfo.purchaseCode || textWithoutGuid(requestId, "—");
   const quotationItems = Array.isArray(quotation?.items) ? quotation.items : [];
   const additionalFees = Array.isArray(quotation?.additionalFees)
     ? quotation.additionalFees
@@ -756,7 +769,7 @@ const BuyForMeQuotationListDetail = () => {
         </Button>
         <span>
           Danh sách mua hộ / Chi tiết báo giá:{" "}
-          <strong>{requestInfo.purchaseCode || requestId}</strong>
+          <strong>{requestCodeLabel}</strong>
         </span>
       </nav>
 
@@ -1068,7 +1081,7 @@ const BuyForMeQuotationListDetail = () => {
                             {(() => {
                               const name = product.productName || product.name || product.title || product.product_name;
                               if (!name || String(name).trim() === String(product.quantity)) {
-                                return product.productType || product.categoryName || `Sản phẩm #${idx + 1}`;
+                                return getProductTypeText(product) || `Sản phẩm #${idx + 1}`;
                               }
                               return name;
                             })()}
@@ -1076,9 +1089,9 @@ const BuyForMeQuotationListDetail = () => {
                         </div>
 
                         <div className="product-action-tags">
-                          {(product.productType || product.categoryName) && (
+                          {getProductTypeText(product) && (
                             <span className="product-type-pill">
-                              {product.productType || product.categoryName}
+                              {getProductTypeText(product)}
                             </span>
                           )}
                           {(product.sourceWebsite || product.domain) && (
@@ -1611,7 +1624,7 @@ const BuyForMeQuotationListDetail = () => {
           <QuotationCancelDialog
             open={rejectDialogOpen}
             loading={quotationAction === "reject"}
-            consignmentCode={requestInfo.purchaseCode || requestId}
+            consignmentCode={requestCodeLabel}
             totalAmount={computedTotalAmount}
             formatMoney={formatVndCurrency}
             onClose={handleCloseRejectDialog}
@@ -1622,7 +1635,7 @@ const BuyForMeQuotationListDetail = () => {
           <QuotationPaymentConfirmDialog
             open={paymentDialogOpen}
             loading={quotationAction === "pay" || quotationAction === "accept"}
-            consignmentCode={requestInfo.purchaseCode || requestId}
+            consignmentCode={requestCodeLabel}
             totalAmount={computedTotalAmount}
             customDepositAmount={payable.canPayOnline ? payable.depositAmount : null}
             customDepositDescription={payable.description}

@@ -54,6 +54,7 @@ import {
 
 import EstimateInvoice from "@features/consignment/components/EstimateInvoice/EstimateInvoice";
 import { displayCode } from "@shared/utils/statusLabel";
+import { resolveProductTypeLabel } from "@shared/utils/productTypeLabel";
 import "./ConsignmentOrderConfirm.css";
 
 function PriceInfoLabel({
@@ -1067,7 +1068,10 @@ export default function ConsignmentOrderConfirm({
                   const packageId = getPackageId(pkg, index);
                   const selectedConfiguration = selectedConfigurationByPackage.get(packageId) || null;
                   const productName = String(pkg?.productName || "Chưa có tên sản phẩm").trim();
-                  const productTypeLabel = getOptionLabel(productTypeOptions, pkg.productType, "productType");
+                  /* Không khớp option nào thì getOptionLabel trả lại chính id — helper chặn GUID. */
+                  const productTypeLabel = resolveProductTypeLabel(
+                    getOptionLabel(productTypeOptions, pkg.productType, "productType"),
+                  );
 
                   return (
                     <article key={packageId} className="confirm-package-card">

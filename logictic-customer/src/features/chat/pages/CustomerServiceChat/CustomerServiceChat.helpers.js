@@ -20,6 +20,7 @@ import {
   STATUS_LABELS,
 } from "./CustomerServiceChat.constants";
 import { getRoleLabel, labelOf } from "@shared/utils/statusLabel";
+import { textWithoutGuid } from "@shared/utils/productTypeLabel";
 import { getOrderStatusLabel } from "@features/consignment/constants/orderStatus";
 import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
 
@@ -469,7 +470,8 @@ export const getConversationRelatedCode = (conversation) => {
     conversation?.requestCode ||
     conversation?.consignmentCode ||
     conversation?.purchaseRequestCode ||
-    conversation?.relatedId ||
+    /* relatedId là GUID khi server chưa gửi mã — không in GUID ra phụ đề. */
+    textWithoutGuid(conversation?.relatedId) ||
     ""
   );
 };
@@ -728,11 +730,12 @@ export const getRelatedItemLabel = (item, relatedType) => {
         ? getOrderStatusLabel(rawStatus)
         : getStatusDisplayName(rawStatus);
   const typeLabel = getRelatedTypeLabel(relatedType);
-  const shortId = id ? String(id).slice(0, 8) : "Chưa có mã";
+  /* Chưa có mã thì không in id (GUID, kể cả cắt ngắn); id không phải GUID thì vẫn dùng. */
+  const fallbackCode = textWithoutGuid(id, "Chưa có mã");
 
   const parts = [
     typeLabel,
-    code || `${shortId}...`,
+    code || fallbackCode,
     name,
     status,
   ].filter(Boolean);

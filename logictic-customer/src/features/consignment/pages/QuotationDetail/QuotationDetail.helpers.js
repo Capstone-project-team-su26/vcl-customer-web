@@ -20,6 +20,11 @@ import {
 
 import { getPaymentCheckoutUrl } from "@features/purchase/api/purchaseRequestApi";
 import { isDisplayableText, labelOf } from "@shared/utils/statusLabel";
+import {
+  isGuidLike,
+  resolveProductTypeLabel as resolveSharedProductTypeLabel,
+  translatePackageConfigurationText,
+} from "@shared/utils/productTypeLabel";
 
 import {
   QUOTE_TYPE_LABELS,
@@ -430,10 +435,7 @@ const normalizeObjectLabel = (value) => {
   return String(value || "").trim();
 };
 
-const isGuidLike = (value) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    String(value || "").trim(),
-  );
+/* isGuidLike: mẫu GUID lỏng dùng chung (@shared/utils/productTypeLabel), giữ tên export cũ. */
 
 const normalizeLookupKey = (value) =>
   String(value ?? "")
@@ -565,9 +567,19 @@ const resolveProductTypeLabel = (item, productTypeLabelMap) => {
     }
   }
 
-  const currentLabel = String(item?.productType || "").trim();
-
-  return currentLabel && !isGuidLike(currentLabel) ? currentLabel : "";
+  /*
+   * Không tra được trong danh mục: tên backend gửi kèm / tên cũ đi thẳng; còn GUID thì
+   * "Chưa phân loại" (helper dùng chung) — không in GUID, không giấu loại hàng đã khai.
+   * Dòng hàng không có thông tin loại hàng nào thì vẫn để trống như trước.
+   */
+  return resolveSharedProductTypeLabel(
+    {
+      productTypeName: item?.productType,
+      productType: item?.productTypeRaw || item?.productTypeId || item?.productTypeCode,
+    },
+    productTypeLabelMap,
+    { emptyLabel: "" },
+  );
 };
 
 const buildPackageConfigurationMap = (configurations = []) => {
@@ -888,9 +900,10 @@ const normalizeOrderItem = (item, index) => {
 
     configurationName: String(
       getFirstValue(
+        /* displayName = tên thùng tiếng Việt backend gửi kèm, ưu tiên hơn tên DB. */
+        packageConfiguration?.displayName,
         packageConfiguration?.configName,
         packageConfiguration?.name,
-        packageConfiguration?.displayName,
         source?.packageConfigurationName,
         source?.configName,
         "",
@@ -1571,16 +1584,9 @@ const getFeeCodeLabel = (code) => {
   return FEE_CODE_LABELS[normalizedCode] || formatStatusCode(normalizedCode, "Phí khác");
 };
 
-const translateFeeLabelToVietnamese = (value) => {
-  return String(value || "")
-    .replace(/large\s*box/gi, "Thùng cỡ lớn")
-    .replace(/medium\s*box/gi, "Thùng cỡ vừa")
-    .replace(/small\s*box/gi, "Thùng cỡ nhỏ")
-    .replace(/custom\s*box/gi, "Thùng tùy chỉnh")
-    .replace(/wood\s*crate/gi, "Đóng thùng gỗ")
-    .replace(/packing\s*fee/gi, "Phí đóng gói")
-    .trim();
-};
+/* Dịch tên thùng / phí tiếng Anh: một bảng dịch dùng chung với tên cấu hình thùng. */
+const translateFeeLabelToVietnamese = (value) =>
+  translatePackageConfigurationText(value);
 
 const getFeeLabel = (fee) => {
   const apiLabel = fee?.label || fee?.feeName || "";

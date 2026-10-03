@@ -1472,6 +1472,7 @@ const createProductColumns = ({
     render: (_, record) => {
       const productTypeLabel = getProductTypeLabel(
         getRecordProductType(record),
+        record,
       );
 
       if (!productTypeLabel || productTypeLabel === "-") {

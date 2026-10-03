@@ -21,6 +21,7 @@ import {
 } from "@ant-design/icons";
 
 import { labelOf } from "@shared/utils/statusLabel";
+import { resolveProductTypeLabel } from "@shared/utils/productTypeLabel";
 
 import "./ConsignmentBuyOrderConfirm.css";
 
@@ -611,10 +612,13 @@ export default function ConsignmentBuyOrderConfirm({
                   const imageUrls =
                     getImagePreviewUrls(item);
 
+                  /* Không khớp option nào thì getOptionLabel trả lại chính id — helper chặn GUID. */
                   const productTypeLabel =
-                    getOptionLabel(
-                      productTypeOptions,
-                      getProductTypeValue(item),
+                    resolveProductTypeLabel(
+                      getOptionLabel(
+                        productTypeOptions,
+                        getProductTypeValue(item),
+                      ),
                     );
 
                   const fullProductLink =

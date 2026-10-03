@@ -5,6 +5,8 @@ import {
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 
+import { formatPackageConfigurationName } from "@shared/utils/productTypeLabel";
+
 import {
   ACTIVE_STATUS,
   VOLUMETRIC_DIVISOR_CODE,
@@ -196,12 +198,14 @@ export const normalizePackageConfiguration = (configuration = {}) => ({
     configuration?.configCode ||
       configuration?.code,
   ),
-  configName: String(
-    configuration?.configName ||
-      configuration?.name ||
-      configuration?.displayName ||
-      "Cấu hình đóng gói",
-  ).trim(),
+  /* Tên hiển thị cho khách: mã → tên Việt, rồi displayName, rồi tên DB (dịch tiếng Anh). */
+  configName: formatPackageConfigurationName(
+    {
+      ...configuration,
+      configCode: configuration?.configCode || configuration?.code,
+    },
+    { fallback: "Cấu hình đóng gói" },
+  ),
   length: toFiniteNumberOrNull(configuration?.length) ?? 0,
   width: toFiniteNumberOrNull(configuration?.width) ?? 0,
   height: toFiniteNumberOrNull(configuration?.height) ?? 0,

@@ -66,6 +66,11 @@ import { getSupplierOrdersApi } from "@features/purchase/api/purchaseOrderApi";
 import { resolvePurchaseProgress } from "@features/purchase/constants/purchaseStages";
 /* Loại hàng hoá lấy danh mục thật để nhãn khớp với dữ liệu đơn trả về từ server. */
 import { getProductTypesApi } from "@features/consignment/api/consignmentApi";
+import {
+  isGuidLike,
+  resolveProductTypeLabel,
+  UNCLASSIFIED_PRODUCT_TYPE_LABEL,
+} from "@shared/utils/productTypeLabel";
 import SupplierOrderPanel from "@features/purchase/components/SupplierOrderPanel/SupplierOrderPanel";
 import PurchaseRefundPanel from "@features/purchase/components/PurchaseRefundPanel/PurchaseRefundPanel";
 import PurchaseMoneyCard from "@features/purchase/components/PurchaseMoneyCard/PurchaseMoneyCard";
@@ -231,50 +236,32 @@ const getItemProductTypeKey = (item) =>
       "",
   ).trim();
 
+/*
+ * Nhãn loại hàng của một dòng mua hộ. Danh mục (id → tên) trước, rồi helper dùng chung:
+ * productTypeName → tên cũ lưu thẳng trong productType → GUID tra danh mục →
+ * "Chưa phân loại". Không bao giờ in GUID; dòng không có thông tin thì "Chưa cập nhật".
+ */
 const getItemProductTypeLabel = (
   item,
   productTypeNameMap,
 ) => {
   const key = getItemProductTypeKey(item);
+  const mappedLabel = key
+    ? productTypeNameMap?.get(key) ?? productTypeNameMap?.get(key.toLowerCase())
+    : "";
 
-  if (key && productTypeNameMap?.has(key)) {
-    return productTypeNameMap.get(key);
+  if (mappedLabel && !isGuidLike(mappedLabel)) {
+    return mappedLabel;
   }
 
-  if (
-    item?.productType &&
-    typeof item.productType === "object"
-  ) {
-    const directName = safeText(
-      item.productType?.productTypeName ??
-        item.productType?.name ??
-        item.productType?.label ??
-        item.productType?.categoryName,
-      "",
-    );
-
-    if (directName) {
-      return directName;
-    }
-  }
-
-  if (
-    typeof item?.productType === "string" &&
-    item.productType.trim()
-  ) {
-    const str = item.productType.trim();
-    if (productTypeNameMap?.has(str)) {
-      return productTypeNameMap.get(str);
-    }
-    return str;
-  }
-
-  return safeText(
-    item?.productTypeName ||
-      item?.productTypeCategoryName ||
-      item?.categoryName ||
-      (key && !key.includes("-") ? key : ""),
-    "Chưa cập nhật",
+  return resolveProductTypeLabel(
+    {
+      ...item,
+      productTypeName:
+        item?.productTypeName || item?.productTypeCategoryName,
+    },
+    productTypeNameMap,
+    { emptyLabel: "Chưa cập nhật" },
   );
 };
 
@@ -587,11 +574,14 @@ const PurchaseRequestDetail = () => {
     (productTypesState.items || []).forEach((pt) => {
       const name = getProductTypeName(pt);
       const id = getProductTypeId(pt);
-      if (id) map.set(id, name);
-      if (pt?.productTypeId) map.set(String(pt.productTypeId).trim(), name);
-      if (pt?.id) map.set(String(pt.id).trim(), name);
-      if (pt?.code) map.set(String(pt.code).trim(), name);
-      if (pt?.value) map.set(String(pt.value).trim(), name);
+      /* Tên rơi về id (danh mục thiếu tên) thì không đưa vào bảng — tránh in GUID. */
+      if (!name || isGuidLike(name)) return;
+      [id, pt?.productTypeId, pt?.id, pt?.code, pt?.value].forEach((key) => {
+        const text = String(key ?? "").trim();
+        if (!text) return;
+        map.set(text, name);
+        map.set(text.toLowerCase(), name);
+      });
     });
     return map;
   }, [productTypesState.items]);
@@ -1326,6 +1316,12 @@ const ProductItemCard = ({
       productTypeNameMap,
     );
 
+  /* Đang tải danh mục và dòng hàng chỉ có GUID (chưa ra tên) → báo đang tải, không in GUID. */
+  const waitingProductTypeCatalog =
+    productTypesLoading &&
+    (!item?.productType ||
+      productTypeLabel === UNCLASSIFIED_PRODUCT_TYPE_LABEL);
+
   const compactLink = getCompactLinkData(
     productLink,
   );
@@ -1443,15 +1439,11 @@ const ProductItemCard = ({
           <InfoRow
             label="Loại sản phẩm"
             value={
-              productTypesLoading &&
-              !item?.productType
+              waitingProductTypeCatalog
                 ? "Đang tải tên loại sản phẩm..."
                 : productTypeLabel
             }
-            loading={
-              productTypesLoading &&
-              !item?.productType
-            }
+            loading={waitingProductTypeCatalog}
             accent
           />
 

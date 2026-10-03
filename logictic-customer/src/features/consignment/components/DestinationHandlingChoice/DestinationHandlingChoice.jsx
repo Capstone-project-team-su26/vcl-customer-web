@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useMemo,
   useState,
@@ -152,7 +152,7 @@ export default function DestinationHandlingChoice({
 
         <Tooltip
           placement="top"
-          title="Bạn chọn trước để kho chuẩn bị. Nếu đổi ý, gọi cho nhân viên kinh doanh trước khi hàng về là được."
+          title="Bạn chọn trước để kho chuẩn bị. Đổi ý thì tự đổi cho từng kiện ở trang đơn (tab Kiện & kho) tới khi kho lập phiếu nhập kho hoặc bạn đã đặt giao."
         >
           <InfoCircleOutlined className="destination-handling__info-icon" />
         </Tooltip>

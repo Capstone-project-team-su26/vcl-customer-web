@@ -1,6 +1,12 @@
 import React from "react";
 import { CircleAlert, TriangleAlert } from "lucide-react";
 
+import useProductTypeNames from "@shared/hooks/useProductTypeNames";
+import {
+  formatPackageConfigurationName,
+  needsProductTypeCatalog,
+  resolveProductTypeLabel,
+} from "@shared/utils/productTypeLabel";
 import { displayCode, getRouteLabel, metaOf } from "@shared/utils/statusLabel";
 
 import "./ReceivingNoteDocument.css";
@@ -38,11 +44,13 @@ const formatDateTime = (value) => {
 /** Thùng gỗ + dịch vụ kho phải làm cho một dòng hàng (mỗi dòng là một kiện). */
 const describePackaging = (line) => {
   /* Tên cấu hình / dịch vụ thiếu thì mới dùng mã — và mã phải dịch, không in thô. */
-  const crate =
-    line?.packageConfiguration?.configName ||
-    (line?.packageConfiguration?.configCode
-      ? displayCode(line.packageConfiguration.configCode, null, { generic: "Quy cách khác" })
-      : "");
+  const crate = line?.packageConfiguration
+    ? formatPackageConfigurationName(line.packageConfiguration, {
+        fallback: line.packageConfiguration.configCode
+          ? displayCode(line.packageConfiguration.configCode, null, { generic: "Quy cách khác" })
+          : "",
+      })
+    : "";
   const services = Array.isArray(line?.services)
     ? line.services
         .map(
@@ -95,7 +103,19 @@ function Diff({ value, suffix = "" }) {
 }
 
 export default function ReceivingNoteDocument({ note }) {
+  /* Dòng hàng chỉ có GUID loại hàng (thiếu productTypeName) → nạp danh mục để ra tên. */
+  const productTypeNames = useProductTypeNames(
+    needsProductTypeCatalog([
+      ...(Array.isArray(note?.items) ? note.items : []),
+      ...(Array.isArray(note?.expectedItems) ? note.expectedItems : []),
+    ]),
+  );
+
   if (!note) return null;
+
+  /* Không bao giờ in GUID: tên backend → tên cũ → danh mục → "Chưa phân loại"; trống thì "—". */
+  const productTypeOf = (line) =>
+    resolveProductTypeLabel(line, productTypeNames, { emptyLabel: "—" });
 
   const meta = getReceivingStatusMeta(note.status);
   const lines = Array.isArray(note.items) ? note.items : [];
@@ -194,7 +214,7 @@ export default function ReceivingNoteDocument({ note }) {
                 <tr key={line.id || `${line.productName}-${index}`}>
                   <td className="rnd-col-idx">{index + 1}</td>
                   <td className="rnd-strong">{line.productName || "—"}</td>
-                  <td>{line.productType || "—"}</td>
+                  <td>{productTypeOf(line)}</td>
                   <td className="rnd-num">{formatNumber(line.declaredQuantity)}</td>
                   <td className="rnd-num rnd-strong">{formatNumber(line.actualQuantity)}</td>
                   <td className="rnd-num">
@@ -255,7 +275,7 @@ export default function ReceivingNoteDocument({ note }) {
                   <tr key={line.orderItemId || `${line.productName}-${index}`}>
                     <td className="rnd-col-idx">{index + 1}</td>
                     <td className="rnd-strong">{line.productName || "—"}</td>
-                    <td>{line.productType || "—"}</td>
+                    <td>{productTypeOf(line)}</td>
                     <td className="rnd-num">{formatNumber(line.quantity)}</td>
                     <td className="rnd-num">{formatNumber(line.weight)}</td>
                     <td className="rnd-num">{describeDimensions(line)}</td>

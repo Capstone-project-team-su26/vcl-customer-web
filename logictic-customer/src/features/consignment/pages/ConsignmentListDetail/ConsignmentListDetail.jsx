@@ -10,6 +10,7 @@ import axios from "@shared/api/requestCancel";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import { isGuidLike, resolveProductTypeLabel } from "@shared/utils/productTypeLabel";
 
 import {
   getConsignmentDetailApi,
@@ -768,17 +769,29 @@ const ConsignmentListDetail = ({ embedded = true }) => {
     [productTypeOptions],
   );
 
+  /*
+   * Nhãn loại hàng: tên danh mục theo id → productTypeName backend gửi kèm → tên cũ.
+   * Không ra tên thì "Chưa phân loại" (helper dùng chung) — không bao giờ in GUID.
+   */
   const getProductTypeLabel = useCallback(
-    (productType) => {
+    (productType, record) => {
       const normalizedProductType = normalizeProductType(productType);
 
       if (!normalizedProductType) {
-        return "-";
+        return record
+          ? resolveProductTypeLabel(record, productTypeLabelMap, { emptyLabel: "-" })
+          : "-";
       }
 
-      return (
-        productTypeLabelMap.get(normalizedProductType) ||
-        String(productType).trim()
+      const mappedLabel = productTypeLabelMap.get(normalizedProductType);
+
+      if (mappedLabel && !isGuidLike(mappedLabel)) {
+        return mappedLabel;
+      }
+
+      return resolveProductTypeLabel(
+        { ...(record || {}), productType: String(productType).trim() },
+        productTypeLabelMap,
       );
     },
     [productTypeLabelMap],

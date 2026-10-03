@@ -1,270 +1,37 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
-import { getServicePricings } from "@features/pricing/api/pricingRuleService";
-import { displayCode, labelOf } from "@shared/utils/statusLabel";
-
+import { getServicePricingsApi } from "@features/pricing/api/servicePricingService";
+import useWeightPricingParams from "@features/pricing/hooks/useWeightPricingParams";
 import ServicePolicyDetail from "@features/service-policy/components/ServicePolicyDetail/ServicePolicyDetail";
+import {
+  buildCustomerPriceList,
+  searchPriceList,
+} from "@features/service-policy/utils/servicePricingTable";
 import "./ServicePolicy.css";
 
-const COLUMN_LABELS = {
-  serviceType: "Loại dịch vụ",
-  originCountry: "Quốc gia gửi",
-  destinationCountry: "Quốc gia nhận",
-  price: "Đơn giá",
-  currency: "Loại tiền",
-  effectiveDate: "Ngày áp dụng",
-  createdAt: "Ngày tạo",
-  updatedAt: "Ngày cập nhật",
-  status: "Trạng thái",
-};
+/*
+ * Bảng giá vận chuyển cho khách — CÙNG API với màn admin "Bảng giá vận chuyển"
+ * (GET /api/service-pricings, cùng normalizeServicePricing). Chỉ hiện dòng đang áp dụng
+ * và dòng sắp áp dụng (có nhãn); dòng đã bị bảng giá mới hơn thay thế bị ẩn.
+ */
 
-const PRIORITY_COLUMNS = [
-  "serviceType",
-  "originCountry",
-  "destinationCountry",
-  "price",
-  "currency",
-  "effectiveDate",
-  "status",
-];
-const HIDDEN_COLUMNS = [
-  "serviceCode",
-  "servicePricingId",
-  "pricingRule",
-  "pricingRules",
-  "pricingRuleIds",
-  "boxPricingRule",
-  "boxPricingRules",
-  "description",
-  "unit",
-  "unitType",
-  "carrierId",
-  "id",
+const TABLE_COLUMNS = [
+  { key: "index", label: "STT", className: "policy-service__index-column" },
+  { key: "service", label: "Dịch vụ" },
+  { key: "weight", label: "Mức cân" },
+  { key: "price", label: "Đơn giá", className: "is-right" },
+  { key: "effective", label: "Áp dụng từ" },
+  { key: "status", label: "Trạng thái" },
+  { key: "action", label: "", className: "policy-service__action-column" },
 ];
 
-const normalizeFieldKey = (value) => {
-  return String(value || "")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toLowerCase();
-};
+const isCanceledRequest = (error) =>
+  error?.code === "ERR_CANCELED" ||
+  error?.name === "CanceledError" ||
+  error?.name === "AbortError";
 
-const isHiddenColumn = (column) => {
-  const normalizedColumn = normalizeFieldKey(column);
-
-  return HIDDEN_COLUMNS.some(
-    (hiddenColumn) => normalizeFieldKey(hiddenColumn) === normalizedColumn,
-  );
-};
-
-const STATUS_LABELS = {
-  ACTIVE: "Đang áp dụng",
-  INACTIVE: "Ngừng áp dụng",
-  PENDING: "Chờ áp dụng",
-  PENDING_REVIEW: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Đã từ chối",
-  EXPIRED: "Hết hiệu lực",
-  DISABLED: "Tạm ngưng",
-  DRAFT: "Bản nháp",
-  DELETED: "Đã xóa",
-};
-
-const COUNTRY_LABELS = {
-  VN: "Việt Nam",
-  VIETNAM: "Việt Nam",
-  JP: "Nhật Bản",
-  JAPAN: "Nhật Bản",
-  KR: "Hàn Quốc",
-  KOREA: "Hàn Quốc",
-  CN: "Trung Quốc",
-  CHINA: "Trung Quốc",
-  US: "Hoa Kỳ",
-  USA: "Hoa Kỳ",
-  UNITED_STATES: "Hoa Kỳ",
-  ID: "Indonesia",
-  INDONESIA: "Indonesia",
-};
-
-const SERVICE_TYPE_LABELS = {
-  // STANDARD: "Tiêu chuẩn",
-  EXPRESS: "Hỏa tốc",
-  STANDARD: "Tiêu chuẩn",
-};
-
-const isCanceledRequest = (error) => {
-  return (
-    error?.code === "ERR_CANCELED" ||
-    error?.name === "CanceledError" ||
-    error?.name === "AbortError"
-  );
-};
-
-const normalizeCode = (value) => {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toUpperCase()
-    .replaceAll(" ", "_")
-    .replaceAll("-", "_");
-};
-
-const normalizeSearchText = (value) => {
-  return String(value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-};
-
-const getRowKey = (item, index) => {
-  return (
-    item?.id ||
-    item?.servicePricingId ||
-    `${item?.carrierId || "bang-gia"}-${index}`
-  );
-};
-
-const getColumnLabel = (column) => {
-  if (COLUMN_LABELS[column]) {
-    return COLUMN_LABELS[column];
-  }
-
-  return String(column || "")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replaceAll("_", " ")
-    .trim();
-};
-
-const getStatusLabel = (status) => {
-  const normalizedStatus = normalizeCode(status);
-
-  if (!normalizedStatus) {
-    return "Chưa xác định";
-  }
-
-  /* Mã lạ: nhãn an toàn, không in chữ tiếng Anh. */
-  return labelOf(STATUS_LABELS, normalizedStatus);
-};
-
-const getStatusClassName = (status) => {
-  const normalizedStatus = normalizeCode(status);
-
-  if (["ACTIVE", "APPROVED"].includes(normalizedStatus)) {
-    return "is-active";
-  }
-
-  if (["PENDING", "PENDING_REVIEW", "DRAFT"].includes(normalizedStatus)) {
-    return "is-pending";
-  }
-
-  if (["REJECTED", "DELETED"].includes(normalizedStatus)) {
-    return "is-danger";
-  }
-
-  if (["INACTIVE", "DISABLED", "EXPIRED"].includes(normalizedStatus)) {
-    return "is-inactive";
-  }
-
-  return "is-neutral";
-};
-
-const getCountryLabel = (value) => {
-  const normalizedValue = normalizeCode(value);
-
-  return COUNTRY_LABELS[normalizedValue] || String(value || "-");
-};
-
-const getServiceTypeLabel = (value) => {
-  const normalizedValue = normalizeCode(value);
-
-  return (
-    SERVICE_TYPE_LABELS[normalizedValue] ||
-    (value ? displayCode(value, null, { generic: "Dịch vụ khác" }) : "-")
-  );
-};
-
-const formatMoney = (value, currency = "VND") => {
-  const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue)) {
-    return value ?? "-";
-  }
-
-  try {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: String(currency || "VND").toUpperCase(),
-      maximumFractionDigits: 0,
-    }).format(numericValue);
-  } catch {
-    return `${numericValue.toLocaleString("vi-VN")} ${currency || ""}`.trim();
-  }
-};
-
-const formatDateTime = (value) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
-
-const renderRawValue = (value) => {
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Có" : "Không";
-  }
-
-  if (typeof value === "object") {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-
-  return String(value);
-};
-
-const getDisplayValue = (column, value, item) => {
-  if (column === "price") {
-    return formatMoney(value, item?.currency);
-  }
-
-  if (column === "status") {
-    return getStatusLabel(value);
-  }
-
-  if (column === "originCountry" || column === "destinationCountry") {
-    return getCountryLabel(value);
-  }
-
-  if (column === "serviceType") {
-    return getServiceTypeLabel(value);
-  }
-
-  if (["effectiveDate", "createdAt", "updatedAt"].includes(column)) {
-    return formatDateTime(value);
-  }
-
-  return renderRawValue(value);
-};
+const formatKg = (value) =>
+  Number(value).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 
 export default function ServicePolicy() {
   const [servicePricings, setServicePricings] = useState([]);
@@ -274,15 +41,14 @@ export default function ServicePolicy() {
   const [searchInput, setSearchInput] = useState("");
   const [selectedPricing, setSelectedPricing] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const weightParams = useWeightPricingParams();
 
   const fetchServicePricings = useCallback(async (signal) => {
     try {
       setLoading(true);
       setErrorMessage("");
 
-      const data = await getServicePricings({
-        signal,
-      });
+      const data = await getServicePricingsApi({ signal });
 
       setServicePricings(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -290,10 +56,10 @@ export default function ServicePolicy() {
         return;
       }
 
-      console.error("Lỗi tải bảng giá dịch vụ:", error);
+      console.error("Lỗi tải bảng giá vận chuyển:", error);
 
       setServicePricings([]);
-      setErrorMessage(error?.message || "Không thể tải bảng giá dịch vụ.");
+      setErrorMessage("Không thể tải bảng giá vận chuyển. Vui lòng thử lại.");
     } finally {
       if (!signal?.aborted) {
         setLoading(false);
@@ -311,72 +77,38 @@ export default function ServicePolicy() {
     };
   }, [fetchServicePricings, reloadKey]);
 
-  const columns = useMemo(() => {
-    const columnSet = new Set();
+  const priceList = useMemo(
+    () => buildCustomerPriceList(servicePricings),
+    [servicePricings],
+  );
 
-    servicePricings.forEach((item) => {
-      if (item && typeof item === "object" && !Array.isArray(item)) {
-        Object.keys(item).forEach((key) => {
-          if (!isHiddenColumn(key)) {
-            columnSet.add(key);
-          }
-        });
-      }
-    });
+  /* Lọc theo ô tìm kiếm rồi đánh STT liên tục qua các nhóm tuyến. */
+  const visibleGroups = useMemo(
+    () =>
+      searchPriceList(priceList.groups, searchInput).reduce(
+        (groups, group) => {
+          const offset = groups.reduce((sum, item) => sum + item.rows.length, 0);
 
-    const allColumns = Array.from(columnSet);
+          return [
+            ...groups,
+            {
+              ...group,
+              rows: group.rows.map((row, index) => ({
+                ...row,
+                rowNumber: offset + index + 1,
+              })),
+            },
+          ];
+        },
+        [],
+      ),
+    [priceList.groups, searchInput],
+  );
 
-    return [
-      ...PRIORITY_COLUMNS.filter((column) => allColumns.includes(column)),
-      ...allColumns.filter((column) => !PRIORITY_COLUMNS.includes(column)),
-    ];
-  }, [servicePricings]);
-
-  const filteredServicePricings = useMemo(() => {
-    const normalizedSearch = normalizeSearchText(searchInput);
-
-    if (!normalizedSearch) {
-      return servicePricings;
-    }
-
-    return servicePricings.filter((item) => {
-      const searchableContent = Object.entries(item || {})
-        .map(([key, value]) => getDisplayValue(key, value, item))
-        .map(normalizeSearchText)
-        .join(" ");
-
-      return searchableContent.includes(normalizedSearch);
-    });
-  }, [servicePricings, searchInput]);
-
-  const totalRoutes = useMemo(() => {
-    const routes = new Set();
-
-    servicePricings.forEach((item) => {
-      const origin = String(item?.originCountry || "").trim();
-      const destination = String(item?.destinationCountry || "").trim();
-
-      if (origin || destination) {
-        routes.add(`${origin}-${destination}`);
-      }
-    });
-
-    return routes.size;
-  }, [servicePricings]);
-
-  const totalServiceTypes = useMemo(() => {
-    const serviceTypes = new Set();
-
-    servicePricings.forEach((item) => {
-      const serviceType = String(item?.serviceType || "").trim();
-
-      if (serviceType) {
-        serviceTypes.add(serviceType);
-      }
-    });
-
-    return serviceTypes.size;
-  }, [servicePricings]);
+  const visibleCount = visibleGroups.reduce(
+    (sum, group) => sum + group.rows.length,
+    0,
+  );
 
   const handleOpenDetail = (item) => {
     setSelectedPricing(item);
@@ -393,6 +125,8 @@ export default function ServicePolicy() {
       handleOpenDetail(item);
     }
   };
+
+  const { stats } = priceList;
 
   return (
     <main className="policy-service">
@@ -430,20 +164,24 @@ export default function ServicePolicy() {
       <section className="policy-service__statistics">
         <article className="policy-service__stat-card">
           <span>Tổng bảng giá</span>
-          <strong>{servicePricings.length}</strong>
-          <small>Bảng giá trên hệ thống</small>
+          <strong>{loading ? "…" : stats.total}</strong>
+          <small>
+            {stats.upcoming > 0
+              ? `Đang áp dụng · thêm ${stats.upcoming} bảng giá sắp áp dụng`
+              : "Bảng giá đang áp dụng"}
+          </small>
         </article>
 
         <article className="policy-service__stat-card">
           <span>Tuyến vận chuyển</span>
-          <strong>{totalRoutes}</strong>
+          <strong>{loading ? "…" : stats.routes}</strong>
           <small>Tuyến đang có bảng giá</small>
         </article>
 
         <article className="policy-service__stat-card">
           <span>Loại dịch vụ</span>
-          <strong>{totalServiceTypes}</strong>
-          <small>Dịch vụ đang được áp dụng</small>
+          <strong>{loading ? "…" : stats.serviceTypes}</strong>
+          <small>Dịch vụ vận chuyển đang áp dụng</small>
         </article>
       </section>
 
@@ -451,7 +189,7 @@ export default function ServicePolicy() {
         <div className="policy-service__card-header">
           <div>
             <h2>Danh sách bảng giá</h2>
-            <p>Dữ liệu được cập nhật trực tiếp từ hệ thống</p>
+            <p>Theo tuyến, dịch vụ và mức cân — cập nhật trực tiếp từ hệ thống</p>
           </div>
 
           <div className="policy-service__search-wrapper">
@@ -460,7 +198,7 @@ export default function ServicePolicy() {
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Tìm tuyến, dịch vụ, trạng thái..."
+              placeholder="Tìm tuyến, dịch vụ, đơn giá..."
               aria-label="Tìm kiếm bảng giá"
             />
 
@@ -475,6 +213,15 @@ export default function ServicePolicy() {
             )}
           </div>
         </div>
+
+        {weightParams.status === "ready" && (
+          <p className="policy-service__note">
+            Cước tính theo cân tính cước = max(cân thực, cân quy đổi thể tích
+            D×R×C/{weightParams.volumetricDivisor}), tối thiểu{" "}
+            {formatKg(weightParams.minimumWeight)} kg. Đơn giá chưa gồm phụ phí
+            dịch vụ (đóng gói, kiểm hàng, bảo hiểm…) và thuế.
+          </p>
+        )}
 
         {loading ? (
           <div className="policy-service__state">
@@ -495,55 +242,71 @@ export default function ServicePolicy() {
               Thử tải lại
             </button>
           </div>
-        ) : filteredServicePricings.length === 0 ? (
+        ) : visibleCount === 0 ? (
           <div className="policy-service__state">
             <div className="policy-service__state-icon">0</div>
-            <h3>Không có dữ liệu phù hợp</h3>
-            <p>Hãy thử thay đổi từ khóa tìm kiếm.</p>
+            <h3>
+              {priceList.rows.length === 0
+                ? "Chưa có bảng giá đang áp dụng"
+                : "Không có dữ liệu phù hợp"}
+            </h3>
+            <p>
+              {priceList.rows.length === 0
+                ? "Vui lòng liên hệ CSKH để được báo giá."
+                : "Hãy thử thay đổi từ khóa tìm kiếm."}
+            </p>
           </div>
         ) : (
           <>
             <div className="policy-service__mobile-list">
-              {filteredServicePricings.map((item, index) => (
-                <article
-                  key={getRowKey(item, index)}
-                  className="policy-service__pricing-card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleOpenDetail(item)}
-                  onKeyDown={(event) => handleRowKeyDown(event, item)}
-                >
-                  <div className="policy-service__pricing-card-head">
-                    <div>
-                      <span>Loại dịch vụ</span>
-                      <h3>{getServiceTypeLabel(item?.serviceType)}</h3>
-                    </div>
+              {visibleGroups.map((group) => (
+                <section key={group.key} className="policy-service__mobile-group">
+                  <h3 className="policy-service__mobile-group-title">
+                    {group.label}
+                  </h3>
 
-                    <span
-                      className={`policy-service__status ${getStatusClassName(
-                        item?.status,
-                      )}`}
+                  {group.rows.map((item) => (
+                    <article
+                      key={item.id}
+                      className="policy-service__pricing-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleOpenDetail(item)}
+                      onKeyDown={(event) => handleRowKeyDown(event, item)}
                     >
-                      {getStatusLabel(item?.status)}
-                    </span>
-                  </div>
+                      <div className="policy-service__pricing-card-head">
+                        <div>
+                          <span>Dịch vụ</span>
+                          <h3>{item.view.serviceLabel}</h3>
+                        </div>
 
-                  <div className="policy-service__route">
-                    <span>{getCountryLabel(item?.originCountry)}</span>
-                    <b>→</b>
-                    <span>{getCountryLabel(item?.destinationCountry)}</span>
-                  </div>
+                        <span
+                          className={`policy-service__status ${item.view.statusTone}`}
+                        >
+                          {item.view.statusLabel}
+                        </span>
+                      </div>
 
-                  <div className="policy-service__price-box">
-                    <span>Đơn giá</span>
-                    <strong>{formatMoney(item?.price, item?.currency)}</strong>
-                  </div>
+                      <dl className="policy-service__pricing-card-meta">
+                        <div>
+                          <dt>Mức cân</dt>
+                          <dd>{item.view.weightLabel}</dd>
+                        </div>
+                        <div>
+                          <dt>Áp dụng từ</dt>
+                          <dd>{item.view.effectiveLabel}</dd>
+                        </div>
+                      </dl>
 
-                  <div className="policy-service__card-action">
-                    <span>Xem chi tiết</span>
-                    <b>→</b>
-                  </div>
-                </article>
+                      <div className="policy-service__price-box">
+                        <span>Đơn giá</span>
+                        <strong className="policy-service__price-text">
+                          {item.view.priceLabel}
+                        </strong>
+                      </div>
+                    </article>
+                  ))}
+                </section>
               ))}
             </div>
 
@@ -551,64 +314,72 @@ export default function ServicePolicy() {
               <table className="policy-service__table">
                 <thead>
                   <tr>
-                    <th className="policy-service__index-column">STT</th>
-
-                    {columns.map((column) => (
-                      <th key={column}>{getColumnLabel(column)}</th>
+                    {TABLE_COLUMNS.map((column) => (
+                      <th key={column.key} className={column.className}>
+                        {column.label}
+                      </th>
                     ))}
-
-                    <th className="policy-service__action-column">Thao tác</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filteredServicePricings.map((item, index) => (
-                    <tr
-                      key={getRowKey(item, index)}
-                      tabIndex={0}
-                      onClick={() => handleOpenDetail(item)}
-                      onKeyDown={(event) => handleRowKeyDown(event, item)}
-                    >
-                      <td className="policy-service__index-cell">
-                        {index + 1}
-                      </td>
+                  {visibleGroups.map((group) => (
+                    <Fragment key={group.key}>
+                      <tr className="policy-service__group-row">
+                        <th colSpan={TABLE_COLUMNS.length} scope="rowgroup">
+                          <span>{group.label}</span>
+                          <small>{group.rows.length} bảng giá</small>
+                        </th>
+                      </tr>
 
-                      {columns.map((column) => (
-                        <td key={`${getRowKey(item, index)}-${column}`}>
-                          {column === "status" ? (
-                            <span
-                              className={`policy-service__status ${getStatusClassName(
-                                item?.status,
-                              )}`}
-                            >
-                              {getStatusLabel(item?.status)}
-                            </span>
-                          ) : column === "serviceType" ? (
-                            <span className="policy-service__service-badge">
-                              {getServiceTypeLabel(item?.serviceType)}
-                            </span>
-                          ) : column === "price" ? (
-                            <strong className="policy-service__price-cell">
-                              {formatMoney(item?.price, item?.currency)}
-                            </strong>
-                          ) : (
-                            getDisplayValue(column, item?.[column], item)
-                          )}
-                        </td>
+                      {group.rows.map((item) => (
+                          <tr
+                            key={item.id}
+                            className="policy-service__data-row"
+                            tabIndex={0}
+                            onClick={() => handleOpenDetail(item)}
+                            onKeyDown={(event) => handleRowKeyDown(event, item)}
+                          >
+                            <td className="policy-service__index-cell">
+                              {item.rowNumber}
+                            </td>
+                            <td>
+                              <span className="policy-service__service-badge">
+                                {item.view.serviceLabel}
+                              </span>
+                            </td>
+                            <td className="policy-service__nowrap">
+                              {item.view.weightLabel}
+                            </td>
+                            <td className="is-right">
+                              <strong className="policy-service__price-text">
+                                {item.view.priceLabel}
+                              </strong>
+                            </td>
+                            <td className="policy-service__nowrap">
+                              {item.view.effectiveLabel}
+                            </td>
+                            <td>
+                              <span
+                                className={`policy-service__status ${item.view.statusTone}`}
+                              >
+                                {item.view.statusLabel}
+                              </span>
+                            </td>
+                            <td className="policy-service__action-cell">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOpenDetail(item);
+                                }}
+                              >
+                                Chi tiết
+                              </button>
+                            </td>
+                          </tr>
                       ))}
-
-                      <td className="policy-service__action-cell">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleOpenDetail(item);
-                          }}
-                        >
-                          Chi tiết
-                        </button>
-                      </td>
-                    </tr>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

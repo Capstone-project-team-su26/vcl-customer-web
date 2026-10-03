@@ -1213,21 +1213,10 @@ export const getConsignmentTimelineApi = async (
 /**
  * GET /api/product-types → { message, data: [{ id, name }] }.
  * Màn tạo đơn lấy id làm value, nên productType gửi đi là id loại hàng.
+ * Danh mục dùng chung nhiều feature (mua hộ, phiếu tiếp nhận kho…) nên endpoint khai báo
+ * ở `@shared/api/productTypeApi`; ở đây re-export để giữ nguyên hợp đồng export cũ.
  */
-export const getProductTypesApi = async (options = {}) => {
-  try {
-    const response = await httpClient.get(
-      "/api/product-types",
-      { signal: getSignal(options) }
-    );
-
-    return toArray(unwrapData(response.data));
-  } catch (error) {
-    logApiError("Lỗi lấy danh sách loại sản phẩm:", error);
-
-    throw error;
-  }
-};
+export { getProductTypesApi } from "@shared/api/productTypeApi";
 
 /**
  * PUT /api/orders/consignments/{orderId}/cancel — backend bắt buộc có body.

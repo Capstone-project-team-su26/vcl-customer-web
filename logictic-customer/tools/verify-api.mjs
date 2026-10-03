@@ -101,6 +101,15 @@ const createSsrServer = () =>
 const server = await createSsrServer();
 const load = (rel) => server.ssrLoadModule(rel);
 
+/*
+ * envDir rỗng KHÔNG đủ để chặn .env của máy dev: vite.config.js (đội vừa đổi để middleware
+ * /api/chat đọc được khoá AI) gọi loadEnv(mode, process.cwd(), "") rồi Object.assign vào
+ * process.env, nên VITE_API_BASE_URL của .env vẫn vào bundle SSR. Các kịch bản base URL vì
+ * vậy so với giá trị env thật nếu có, không thì với DEFAULT_API_BASE_URL — kết quả không phụ
+ * thuộc .env của máy chạy. Hằng DEFAULT_API_BASE_URL vẫn được kiểm riêng, không nới.
+ */
+const ENV_API_BASE_URL = String(process.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
+
 /* Nạp khi CHƯA có window/localStorage giả: httpClient không được đụng tới chúng ở top-level. */
 const hadWindowAtLoad = typeof globalThis.window !== "undefined";
 const hadStorageAtLoad =
@@ -150,6 +159,15 @@ try {
     orderTodoRows: await load("/src/features/orders/data/orderTodoRows.js"),
     /* Giới hạn tạo đơn do Admin cấu hình (GET /api/system-settings/order-limits). */
     orderLimits: await load("/src/shared/api/orderLimitsApi.js"),
+    /* Bảng giá vận chuyển cho khách: cùng API + normalizer với màn admin, lớp hiển thị thuần. */
+    servicePricing: await load("/src/features/pricing/api/servicePricingService.js"),
+    priceTable: await load("/src/features/service-policy/utils/servicePricingTable.js"),
+    /* Ngữ cảnh dữ liệu thật của khung chat AI nổi (bảng giá = cùng nguồn trang "Chính sách dịch vụ"). */
+    floatingChat: await load("/src/features/marketing/components/FloatingChat/floatingChatContext.js"),
+    /* Nhãn loại hàng / tên thùng dùng chung (không bao giờ in GUID) + danh mục loại hàng có cache. */
+    productTypeLabel: await load("/src/shared/utils/productTypeLabel.js"),
+    productTypeApi: await load("/src/shared/api/productTypeApi.js"),
+    receivingDocument: await load("/src/features/receiving/components/ReceivingNoteDocument/ReceivingNoteDocument.jsx"),
     mock: {
       consignment: await load(MOCK_MODULES.consignment),
       pricing: await load(MOCK_MODULES.pricing),
@@ -579,9 +597,14 @@ if (loadError) {
     addressHook,
     deliveryHelpers,
     orderLimits,
+    servicePricing,
+    priceTable,
+    floatingChat,
     mock,
   } = mods;
   const httpClient = httpMod.default;
+  /* Base URL mà mọi URL tuyệt đối dựng từ API_BASE_URL phải dùng — xem ENV_API_BASE_URL ở trên. */
+  const EXPECTED_API_BASE_URL = ENV_API_BASE_URL || httpMod.DEFAULT_API_BASE_URL;
 
   httpClient.defaults.adapter = fakeAdapter;
   upload.uploadAxios.defaults.adapter = fakeAdapter;
@@ -596,12 +619,13 @@ if (loadError) {
     )
   );
 
-  await check("httpClient: base URL mặc định https://api-vcl.vnlogistic.click, timeout 30 giây", () =>
+  await check(`httpClient: base URL = VITE_API_BASE_URL nếu có (${ENV_API_BASE_URL || "không đặt"}), không thì mặc định https://api-vcl.vnlogistic.click; timeout 30 giây`, () =>
     all(
-      expectEqual("API_BASE_URL", httpMod.API_BASE_URL, "https://api-vcl.vnlogistic.click"),
-      expectEqual("defaults.baseURL", httpClient.defaults.baseURL, "https://api-vcl.vnlogistic.click"),
+      expectEqual("DEFAULT_API_BASE_URL", httpMod.DEFAULT_API_BASE_URL, "https://api-vcl.vnlogistic.click"),
+      expectEqual("API_BASE_URL", httpMod.API_BASE_URL, EXPECTED_API_BASE_URL),
+      expectEqual("defaults.baseURL", httpClient.defaults.baseURL, EXPECTED_API_BASE_URL),
       expectEqual("defaults.timeout", httpClient.defaults.timeout, 30000),
-      expectEqual("uploadAxios.baseURL", upload.uploadAxios.defaults.baseURL, "https://api-vcl.vnlogistic.click"),
+      expectEqual("uploadAxios.baseURL", upload.uploadAxios.defaults.baseURL, EXPECTED_API_BASE_URL),
       expectTrue("uploadAxios timeout dài hơn 30 giây", upload.uploadAxios.defaults.timeout > 30000)
     )
   );
@@ -992,6 +1016,53 @@ if (loadError) {
     const hook = fs.readFileSync(path.join(ROOT, "src/features/pricing/hooks/useWeightPricingParams.js"), "utf8");
     if (!hook.includes('from "@features/pricing/api/pricingRuleService"')) issues.push("useWeightPricingParams không gọi bản thật");
     return issues.length === 0 ? true : issues.join("; ");
+  });
+
+  await check("Bảng giá vận chuyển (Chính sách dịch vụ): GET /api/service-pricings như admin → chỉ dòng đang/sắp áp dụng, \"32.000 đ/kg\" một dòng, mức cân \"0 – 5 kg\", nhóm tuyến → dịch vụ → mức cân, không mã thô / tiếng Anh", async () => {
+    resetState();
+    const NOW = Date.parse("2026-10-03T00:00:00Z");
+    const rows = [
+      { id: "p-cn-std-old", carrierId: "c-1", serviceType: "Standard", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 4000, currency: "VND", effectiveDate: "2026-01-01T00:00:00Z", boxPricingRules: [] },
+      { id: "p-cn-std", carrierId: "c-1", serviceType: "Standard", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 5000, currency: "VND", effectiveDate: "2026-07-12T00:00:00Z", boxPricingRules: [] },
+      { id: "p-cn-exp", carrierId: null, serviceType: "Express", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 32000, currency: "VND", effectiveDate: "2026-07-15T00:00:00Z", boxPricingRules: [{ ruleName: "Đóng thùng gỗ", calculationType: "FIXED", value: 35000, status: "ACTIVE" }] },
+      { id: "p-cn-exp-next", carrierId: null, serviceType: "Express", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 30000, currency: "VND", effectiveDate: "2026-12-01T00:00:00Z", boxPricingRules: [] },
+      { id: "p-kr-tier2", serviceType: "Standard", originCountry: "KR", destinationCountry: "VN", unitType: "VND/KG", minWeight: 5, maxWeight: 20, price: 27000, currency: "VND", effectiveDate: "2026-01-01T00:00:00Z" },
+      { id: "p-kr-tier1", serviceType: "Standard", originCountry: "KR", destinationCountry: "VN", unitType: "VND/KG", minWeight: 0, maxWeight: 5, price: 32000, currency: "VND", effectiveDate: "2026-01-01T00:00:00Z" },
+      { id: "p-kr-cbm", serviceType: "Economy", originCountry: "KR", destinationCountry: "VN", unitType: "M3", price: 1500000, currency: "VND", effectiveDate: "2026-01-01T00:00:00Z" },
+      { id: "p-kr-off", serviceType: "Express", originCountry: "KR", destinationCountry: "VN", unitType: "KG", price: 99000, currency: "VND", effectiveDate: "2026-01-01T00:00:00Z", status: "INACTIVE" },
+      { id: "p-storage", serviceType: "STORAGE", originCountry: "VN", destinationCountry: "VN", unitType: "PARCEL_DAY", price: 20000, currency: "VND", effectiveDate: "2026-08-10T20:35:09Z" },
+    ];
+    routes = [
+      { method: "GET", url: "/api/service-pricings", reply: () => ok(rows) },
+      { method: "GET", url: "/api/service-pricings/p-cn-exp", reply: () => ok(rows[2]) },
+    ];
+    const list = await servicePricing.getServicePricingsApi();
+    const listRequest = onlyRequest();
+    const detail = await servicePricing.getServicePricingDetailApi("p-cn-exp");
+    const built = priceTable.buildCustomerPriceList(list, { now: NOW });
+    const byId = Object.fromEntries(built.rows.map((row) => [row.id, row]));
+    const page = fs.readFileSync(path.join(ROOT, "src/features/service-policy/pages/ServicePolicy/ServicePolicy.jsx"), "utf8");
+    const detailPage = fs.readFileSync(path.join(ROOT, "src/features/service-policy/components/ServicePolicyDetail/ServicePolicyDetail.jsx"), "utf8");
+    const css = fs.readFileSync(path.join(ROOT, "src/features/service-policy/pages/ServicePolicy/ServicePolicy.css"), "utf8");
+    const shownText = built.rows.flatMap((row) => [row.view.routeLabel, row.view.serviceLabel, row.view.priceLabel, row.view.weightLabel, row.view.statusLabel]);
+    return all(
+      expectEqual("request", listRequest && [listRequest.method, listRequest.url, listRequest.params], ["GET", "/api/service-pricings", undefined]),
+      expectEqual("chuẩn hoá giống admin", [list[0].serviceType, list[0].serviceTypeDisplayName, list[0].routeDisplayName, list[0].unitType], ["STANDARD", "Tiêu chuẩn", "Trung Quốc → Việt Nam", "KG"]),
+      expectEqual("chi tiết", [detail.id, detail.serviceTypeDisplayName, detail.boxPricingRules.length], ["p-cn-exp", "Hỏa tốc", 1]),
+      expectEqual("dòng hiển thị theo thứ tự tuyến → dịch vụ → mức cân, lưu kho cuối", built.rows.map((row) => row.id), ["p-kr-tier1", "p-kr-tier2", "p-kr-cbm", "p-cn-exp", "p-cn-exp-next", "p-cn-std", "p-storage"]),
+      expectEqual("ẩn dòng bị thay thế + dòng INACTIVE", [byId["p-cn-std-old"], byId["p-kr-off"], built.hiddenCount], [undefined, undefined, 2]),
+      expectEqual("trạng thái", [byId["p-cn-exp"].view.statusLabel, byId["p-cn-exp-next"].view.statusLabel], ["Đang áp dụng", "Sắp áp dụng"]),
+      expectEqual("đơn giá vi-VN + đơn vị", [byId["p-kr-tier1"].view.priceLabel, byId["p-kr-cbm"].view.priceLabel, byId["p-storage"].view.priceLabel], ["32.000 đ/kg", "1.500.000 đ/m³", "20.000 đ/kiện/ngày"]),
+      expectEqual("mức cân", [byId["p-kr-tier1"].view.weightLabel, byId["p-kr-tier2"].view.weightLabel, byId["p-cn-std"].view.weightLabel, byId["p-kr-cbm"].view.weightLabel], ["0 – 5 kg", "5 – 20 kg", "Mọi mức cân", "—"]),
+      expectEqual("nhóm tuyến", built.groups.map((group) => [group.label, group.rows.length]), [["Hàn Quốc → Việt Nam", 3], ["Trung Quốc → Việt Nam", 3], ["Phí khác · Tại Việt Nam", 1]]),
+      expectEqual("thống kê (đang áp dụng; tuyến / dịch vụ chỉ tính vận chuyển)", built.stats, { total: 6, upcoming: 1, routes: 2, serviceTypes: 3 }),
+      expectEqual("giá 0 → Liên hệ", priceTable.formatUnitPrice({ price: 0, unitType: "KG" }), "Liên hệ"),
+      expectEqual("phụ phí đóng thùng", priceTable.formatBoxRule(detail.boxPricingRules[0]), { name: "Đóng thùng gỗ", value: "35.000 đ" }),
+      expectEqual("tìm không dấu", priceTable.searchPriceList(built.groups, "hoa toc").flatMap((g) => g.rows.map((r) => r.id)), ["p-cn-exp", "p-cn-exp-next"]),
+      expectEqual("không mã thô / tiếng Anh", shownText.filter((text) => /STANDARD|EXPRESS|STORAGE|PARCEL_DAY|Service|Weight|undefined|NaN/i.test(text)), []),
+      expectTrue("trang + chi tiết dùng API thật, không còn fixture mock", page.includes('from "@features/pricing/api/servicePricingService"') && detailPage.includes('from "@features/pricing/api/servicePricingService"') && !/pricingRuleService|@\/mocks/.test(page + detailPage)),
+      expectTrue("giá không xuống dòng, bảng không ép rộng 1240px", /\.policy-service__price-text\s*\{[^}]*white-space:\s*nowrap/.test(css) && !css.includes("min-width: 1240px"))
+    );
   });
 
   await check("Dữ liệu form: gợi ý thùng POST /api/package-configurations/suggest trả id cấu hình thật", async () => {
@@ -1434,7 +1505,11 @@ if (loadError) {
        tab "Kiện & kho" của /orders/:orderId. Hai màn danh sách mua hộ cũ
        (PurchaseRequestPendingList, BuyForMeQuotationList) cũng đã xoá, thay bằng danh
        sách đơn duy nhất /orders. Màn chi tiết mua hộ còn lại vẫn phải trỏ bản mock. */
-    "src/features/marketing/components/FloatingChat/FloatingChat.jsx": ["consignment", "restricted", "pricing"],
+    /* Khung chat AI nổi (FloatingChat) đã RỜI danh sách này: ngữ cảnh AI phải là dữ liệu
+       THẬT (bảng giá /api/service-pricings như trang "Chính sách dịch vụ", hệ số DIM, phụ phí,
+       tuyến, hàng cấm + đơn của chính khách) để AI không báo giá giả. Nó nằm trong
+       MUST_USE_REAL bên dưới và có kịch bản riêng "Chat AI nổi: ngữ cảnh giá…". Các màn còn
+       lại trong danh sách vẫn bị kiểm như cũ. */
     /* Chat CSKH (constants + màn), màn tạo mua hộ (helpers upload ảnh) và hộp thoại cọc
        đã rời danh sách này: xem kịch bản "Ảnh thật / chat thật" bên dưới — chúng phải
        import bản THẬT, không còn import *.mock.js. */
@@ -1524,6 +1599,17 @@ if (loadError) {
     "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.jsx": ["@shared/api/uploadImage", "@features/chat/api/conversationApi"],
     "src/features/chat/pages/CustomerServiceChat/CustomerServiceChat.constants.js": ["@features/consignment/api/consignmentApi", "@features/purchase/api/purchaseRequestApi"],
     "src/features/payment/components/QuotationPaymentConfirmDialog/QuotationPaymentConfirmDialog.jsx": ["@features/pricing/api/pricingRuleService"],
+    /* Khung chat AI nổi: import bản THẬT là đúng (trước đây nằm trong OUT_OF_WAVE_SCREENS và
+       đọc bảng giá mock). Màn chỉ dựng prompt; mọi lời gọi API nằm ở floatingChatContext.js. */
+    "src/features/marketing/components/FloatingChat/FloatingChat.jsx": ["./floatingChatContext"],
+    "src/features/marketing/components/FloatingChat/floatingChatContext.js": [
+      "@features/pricing/api/servicePricingService",
+      "@features/service-policy/utils/servicePricingTable",
+      "@features/pricing/api/pricingRuleService",
+      "@features/consignment/api/consignmentApi",
+      "@features/purchase/api/purchaseRequestApi",
+      "@shared/api/restrictedItemApi",
+    ],
   };
 
   await check("Ảnh thật / chat thật: màn mua hộ, chat CSKH, hộp thoại cọc import bản THẬT, không còn import *.mock hay @/mocks", () => {
@@ -1538,6 +1624,137 @@ if (loadError) {
       if (leaked.length) issues.push(`${rel}: còn import ${leaked.join(", ")}`);
     }
     return issues.length === 0 ? true : issues.join("; ");
+  });
+
+  /*
+   * Khung chat AI nổi: trước đây bảng giá trong ngữ cảnh AI đọc getServicePricings của
+   * pricingRuleService (fixture mock) nên AI có thể báo giá giả. Nay ngữ cảnh phải lấy từ
+   * getServicePricingsApi (GET /api/service-pricings) + buildCustomerPriceList — đúng dòng và
+   * đúng chữ trang "Chính sách dịch vụ" hiển thị; lỗi thì không có con số nào.
+   */
+  await check("Chat AI nổi: ngữ cảnh giá lấy từ getServicePricingsApi, đúng dòng đang/sắp áp dụng như trang Chính sách dịch vụ, không import mock; lỗi → không có số giá; cache 5 phút; đơn chỉ tải khi có token, cache theo token", async () => {
+    const NOW = Date.parse("2026-10-03T00:00:00Z");
+    const priceRows = [
+      { id: "p-cn-std-old", serviceType: "Standard", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 4000, currency: "VND", effectiveDate: "2026-01-01T00:00:00Z", boxPricingRules: [] },
+      { id: "p-cn-std", serviceType: "Standard", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 5000, currency: "VND", effectiveDate: "2026-07-12T00:00:00Z", boxPricingRules: [] },
+      { id: "p-cn-exp", serviceType: "Express", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 32000, currency: "VND", effectiveDate: "2026-07-15T00:00:00Z", boxPricingRules: [{ ruleName: "Đóng thùng gỗ", calculationType: "FIXED", value: 35000, status: "ACTIVE" }] },
+      { id: "p-cn-exp-next", serviceType: "Express", originCountry: "CN", destinationCountry: "VN", unitType: "KG", price: 30000, currency: "VND", effectiveDate: "2026-12-01T00:00:00Z", boxPricingRules: [] },
+      { id: "p-kr-std", serviceType: "Standard", originCountry: "KR", destinationCountry: "VN", unitType: "KG", price: 80000, currency: "VND", effectiveDate: "2026-01-01T00:00:00Z", boxPricingRules: [] },
+      { id: "p-storage", serviceType: "STORAGE", originCountry: "VN", destinationCountry: "VN", unitType: "PARCEL_DAY", price: 20000, currency: "VND", effectiveDate: "2026-08-10T20:35:09Z" },
+    ];
+    let pricingReply = () => ok(priceRows);
+    const publicRoutes = () => [
+      { method: "GET", url: "/api/service-pricings", reply: () => pricingReply() },
+      { method: "GET", url: "/api/pricing-rules", reply: () => ok([
+        { id: "r-dim", ruleName: "Hệ số DIM", ruleCode: "VOLUMETRIC_DIVISOR", ruleType: "VOLUMETRIC_DIVISOR", value: 6000, status: "ACTIVE" },
+        { id: "r-min", ruleName: "Cân tối thiểu", ruleCode: "MIN_WEIGHT", ruleType: "MIN_WEIGHT", value: 0.5, status: "ACTIVE" },
+      ]) },
+      { method: "GET", url: "/api/orders/consignments/item-services", reply: () => ok({ message: "ok", data: [
+        { pricingRuleId: "r-ins", code: "SUR_INSPECTION", name: "Phụ phí kiểm hàng", calculationType: "FIXED", value: 10000, description: "" },
+        { pricingRuleId: "r-bh", code: "SUR_INSURANCE", name: "Phụ phí bảo hiểm", calculationType: "PERCENTAGE", value: 3, minAmount: 10000, maxAmount: 1000000 },
+      ] }) },
+      { method: "GET", url: "/api/additional-service-fees", reply: () => ok({ message: "ok", data: [{ id: "f-1", feeName: "Tỷ lệ cọc", feeCode: "DEPOSIT_RATE", value: 30, isActive: true }] }) },
+      { method: "GET", url: "/api/orders/consignments/routes", reply: () => ok({ message: "ok", data: ["Trung quốc --> Việt Nam", "Hàn Quốc --> Việt Nam"] }) },
+      { method: "GET", url: "/api/orders/consignments/shipping-options", reply: () => ok({ message: "ok", data: ["Express", "Standard"] }) },
+    ];
+    const urlsOf = (list) => list.map((r) => r.url);
+    const countOf = (url) => requests.filter((r) => r.url === url).length;
+
+    /* 1. Import: không còn mock nào; bảng giá đi qua getServicePricingsApi + buildCustomerPriceList. */
+    const chatSource = fs.readFileSync(path.join(ROOT, "src/features/marketing/components/FloatingChat/FloatingChat.jsx"), "utf8");
+    const contextSource = fs.readFileSync(path.join(ROOT, "src/features/marketing/components/FloatingChat/floatingChatContext.js"), "utf8");
+    const mockImports = [chatSource, contextSource]
+      .flatMap((source) => readImports(source).map(({ specifier }) => specifier))
+      .filter((spec) => /\.mock(\.js)?$/.test(spec) || spec.startsWith("@/mocks"));
+    const staticIssues = [
+      ...mockImports.map((spec) => `còn import ${spec}`),
+      [chatSource, contextSource].some((source) => readImports(source).some(({ named }) => named.includes("getServicePricings") || named.includes("getServicePricingById")))
+        ? "còn import getServicePricings / getServicePricingById (fixture mock của pricingRuleService)"
+        : null,
+      /getServicePricingsApi\(/.test(contextSource) ? null : "không gọi getServicePricingsApi",
+      /buildCustomerPriceList\(/.test(contextSource) ? null : "không chọn dòng bằng buildCustomerPriceList",
+    ].filter(Boolean);
+
+    /* 2. Khách vãng lai: chỉ gọi endpoint công khai, không token, giá đúng trang Chính sách dịch vụ. */
+    resetState();
+    floatingChat.resetFloatingChatContextCache();
+    routes = publicRoutes();
+    const guest = await floatingChat.loadFloatingChatContext({ now: NOW });
+    const guestRequests = [...requests];
+    const expected = priceTable.buildCustomerPriceList(priceRows.map(servicePricing.normalizeServicePricing), { now: NOW });
+    const missingPrices = expected.rows.filter((row) => !guest.text.includes(`${row.view.serviceLabel}${row.view.weightLabel !== "—" ? ` · ${row.view.weightLabel}` : ""}: ${row.view.priceLabel}`)).map((row) => row.id);
+
+    /* 3. Cache: 1 phút sau không gọi lại; 6 phút sau tải lại. */
+    const beforeCache = requests.length;
+    await floatingChat.loadFloatingChatContext({ now: NOW + 60_000 });
+    const cachedRequests = requests.length - beforeCache;
+    await floatingChat.loadFloatingChatContext({ now: NOW + 6 * 60_000 });
+    const refetchedPricing = countOf("/api/service-pricings");
+
+    /* 4. Lỗi bảng giá (500) và bảng giá rỗng → không con số giá nào; trả lời dự phòng cũng vậy. */
+    resetState();
+    floatingChat.resetFloatingChatContextCache();
+    routes = publicRoutes();
+    pricingReply = () => fail(500, { message: "Lỗi máy chủ" });
+    const failed = await floatingChat.loadFloatingChatContext({ now: NOW });
+    const failedPriceSection = failed.text.split("\n\n")[1] || "";
+    const failedOffline = floatingChat.buildOfflineReply("giá ký gửi Trung Quốc về Việt Nam bao nhiêu", failed);
+    const beforeRetry = countOf("/api/service-pricings");
+    await floatingChat.loadFloatingChatContext({ now: NOW + 31_000 });
+    const retriedAfter30s = countOf("/api/service-pricings") - beforeRetry;
+    floatingChat.resetFloatingChatContextCache();
+    pricingReply = () => ok([]);
+    const empty = await floatingChat.loadFloatingChatContext({ now: NOW });
+    pricingReply = () => ok(priceRows);
+    floatingChat.resetFloatingChatContextCache();
+    const okOffline = floatingChat.buildOfflineReply("giá ký gửi Trung Quốc về Việt Nam bao nhiêu", await floatingChat.loadFloatingChatContext({ now: NOW }));
+
+    /* 5. Đã đăng nhập: đơn của chính khách (token), đổi token → tải lại phần đơn, không tải lại bảng giá. */
+    resetState({ localToken: "tok-a", user: USER });
+    floatingChat.resetFloatingChatContextCache();
+    routes = [
+      ...publicRoutes(),
+      { method: "GET", url: "/api/restricted-items", reply: () => ok([{ id: "ri-1", restrictedItemName: "Pin lithium rời", description: "Không nhận pin rời" }]) },
+      { method: "GET", url: "/api/orders/consignments", reply: (req) => ok(listPage([listRow], 1, req.params.pageNumber, req.params.pageSize)) },
+      { method: "GET", url: "/api/purchase-requests", reply: () => ok({ message: "ok", data: { items: [], totalCount: 0, pageNumber: 1, pageSize: 30 } }) },
+    ];
+    const member = await floatingChat.loadFloatingChatContext({ now: NOW });
+    const memberOrderAuth = requests.filter((r) => r.url === "/api/orders/consignments").map((r) => r.authorization);
+    localStorage.setItem("accessToken", "tok-b");
+    await floatingChat.loadFloatingChatContext({ now: NOW + 1000 });
+    const afterSwitchAuth = requests.filter((r) => r.url === "/api/orders/consignments").map((r) => r.authorization);
+    floatingChat.resetFloatingChatContextCache();
+
+    return all(
+      expectEqual("import / nguồn giá", staticIssues, []),
+      expectEqual("bảng giá tải được", guest.pricesOk, true),
+      expectEqual("khách vãng lai chỉ gọi API công khai, mỗi endpoint 1 lần", urlsOf(guestRequests).sort(), ["/api/additional-service-fees", "/api/orders/consignments/item-services", "/api/orders/consignments/routes", "/api/orders/consignments/shipping-options", "/api/pricing-rules", "/api/service-pricings"]),
+      expectEqual("khách vãng lai không gắn token", guestRequests.map((r) => r.authorization).filter(Boolean), []),
+      expectEqual("mọi dòng trang Chính sách dịch vụ hiện có mặt, đúng chữ", missingPrices, []),
+      expectTrue("dòng đang áp dụng đúng định dạng", guest.text.includes("Trung Quốc → Việt Nam:\n- Hỏa tốc · Mọi mức cân: 32.000 đ/kg (Đang áp dụng từ 15/07/2026)") && guest.text.includes("- Tiêu chuẩn · Mọi mức cân: 80.000 đ/kg (Đang áp dụng từ 01/01/2026)")),
+      expectTrue("dòng sắp áp dụng có nhãn + ngày", guest.text.includes("30.000 đ/kg (SẮP ÁP DỤNG từ 01/12/2026, CHƯA áp dụng hôm nay)")),
+      expectEqual("dòng đã bị thay thế bị ẩn", guest.text.includes("4.000 đ/kg"), false),
+      expectTrue("phụ phí đóng thùng kèm dòng giá", guest.text.includes("+ Phụ phí kèm theo: Đóng thùng gỗ 35.000 đ")),
+      expectTrue("tiêu đề bảng giá chính thức", guest.text.includes(floatingChat.PRICE_SECTION_TITLE)),
+      expectTrue("cách tính đọc hệ số thật", guest.text.includes("D×R×C/6000") && guest.text.includes("tối thiểu 0,5 kg")),
+      expectTrue("phụ phí theo kiện + cọc thật", guest.text.includes("- Phụ phí kiểm hàng: 10.000 đ") && guest.text.includes("- Phụ phí bảo hiểm: 3% (tối thiểu 10.000 đ, tối đa 1.000.000 đ)") && guest.text.includes("Tỷ lệ đặt cọc đơn ký gửi: 30%")),
+      expectTrue("tuyến + phương án thật", guest.text.includes("Tuyến: Trung quốc → Việt Nam; Hàn Quốc → Việt Nam") && guest.text.includes("Phương án: Hỏa tốc, Tiêu chuẩn")),
+      expectEqual("không có mục đơn hàng khi chưa đăng nhập", guest.text.includes("ĐƠN HÀNG THẬT"), false),
+      expectEqual("không undefined / NaN / mã thô", guest.text.match(/undefined|NaN|\bSTANDARD\b|\bEXPRESS\b|PARCEL_DAY/g), null),
+      expectEqual("cache: 1 phút sau không gọi mạng", cachedRequests, 0),
+      expectEqual("cache: 6 phút sau tải lại bảng giá", refetchedPricing, 2),
+      expectEqual("lỗi 500 → pricesOk", failed.pricesOk, false),
+      expectTrue("lỗi 500 → ngữ cảnh báo không tải được + trang Chính sách dịch vụ", failedPriceSection.includes(floatingChat.PRICE_UNAVAILABLE_TITLE) && failedPriceSection.includes("Chính sách dịch vụ")),
+      expectEqual("lỗi 500 → không có con số giá nào", failedPriceSection.match(/\d[\d.,]*\s*đ/g), null),
+      expectEqual("lỗi 500 → trả lời dự phòng không có số giá", [failedOffline === floatingChat.PRICE_UNAVAILABLE_REPLY, /\d[\d.,]*\s*đ/.test(failedOffline)], [true, false]),
+      expectEqual("lỗi chỉ cache 30 giây", retriedAfter30s, 1),
+      expectEqual("bảng giá rỗng → cũng coi như không có giá", [empty.pricesOk, empty.text.includes(floatingChat.PRICE_UNAVAILABLE_TITLE)], [false, true]),
+      expectTrue("trả lời dự phòng khi có giá = đúng dòng bảng giá thật", okOffline.includes("- Hỏa tốc · Mọi mức cân: 32.000 đ/kg") && !okOffline.includes("4.000 đ/kg")),
+      expectEqual("đã đăng nhập: đơn tải bằng token của chính khách", memberOrderAuth, ["Bearer tok-a"]),
+      expectTrue("đã đăng nhập: đơn + hàng cấm thật trong ngữ cảnh", member.text.includes("Mã [VCL-20260917-0001]") && member.text.includes("tổng số đơn thật của khách: 1 đơn") && member.text.includes("1. Pin lithium rời — Không nhận pin rời")),
+      expectEqual("đổi tài khoản → tải lại đơn bằng token mới", afterSwitchAuth, ["Bearer tok-a", "Bearer tok-b"]),
+      expectEqual("đổi tài khoản → không tải lại bảng giá", requests.filter((r) => r.url === "/api/service-pricings").length, 1)
+    );
   });
 
   await check("Mua hộ: uploadProductImages gọi POST /api/uploads/images thật (mỗi request một ảnh như màn ký gửi), trả đúng URL server theo thứ tự; bấm gửi lại không upload lại ảnh đã lên", async () => {
@@ -1748,9 +1965,9 @@ if (loadError) {
   await check("Link PDF phiếu: đổi host api-vcl.zushin.io.vn → base URL, giữ path; download=true; rỗng → null", async () => {
     const legacy = "https://api-vcl.zushin.io.vn/api/public/receipts/abc123";
     return all(
-      expectEqual("xem", receiving.toPublicReceiptUrl(legacy), "https://api-vcl.vnlogistic.click/api/public/receipts/abc123"),
-      expectEqual("tải", receiving.toPublicReceiptUrl(legacy, { download: true }), "https://api-vcl.vnlogistic.click/api/public/receipts/abc123?download=true"),
-      expectEqual("đường dẫn tương đối", receiving.toPublicReceiptUrl("/api/public/receipts/xyz"), "https://api-vcl.vnlogistic.click/api/public/receipts/xyz"),
+      expectEqual("xem", receiving.toPublicReceiptUrl(legacy), `${EXPECTED_API_BASE_URL}/api/public/receipts/abc123`),
+      expectEqual("tải", receiving.toPublicReceiptUrl(legacy, { download: true }), `${EXPECTED_API_BASE_URL}/api/public/receipts/abc123?download=true`),
+      expectEqual("đường dẫn tương đối", receiving.toPublicReceiptUrl("/api/public/receipts/xyz"), `${EXPECTED_API_BASE_URL}/api/public/receipts/xyz`),
       expectEqual("rỗng", receiving.toPublicReceiptUrl(""), null)
     );
   });
@@ -2370,7 +2587,7 @@ if (loadError) {
     ];
     const due = payment.findPayablePayment(payments, "FINAL_PAYMENT");
     return all(
-      expectEqual("khoản chờ trả", [due?.amount, due?.checkoutUrl], [160200, "https://api-vcl.vnlogistic.click/api/payments/sepay/checkout/99"]),
+      expectEqual("khoản chờ trả", [due?.amount, due?.checkoutUrl], [160200, `${EXPECTED_API_BASE_URL}/api/payments/sepay/checkout/99`]),
       expectEqual("SePay", payment.isSepayCheckoutUrl(due?.checkoutUrl), true),
       expectEqual("phí giao lại đã trả", payment.findPayablePayment(payments, "REDELIVERY_FEE"), null),
       expectEqual("javascript: bị chặn", payment.resolveCheckoutUrl("javascript:alert(1)"), null)
@@ -2897,6 +3114,119 @@ if (loadError) {
     return all(
       expectEqual("trang 1 chỉ hiện 10 dòng", page1.items.length, 10),
       expectEqual("số đếm trên toàn bộ 50 đơn", all50, { waiting: 17, inProgress: 17, finished: 16, total: 50 })
+    );
+  });
+
+  /* ---------- Loại hàng & tên thùng: không bao giờ in GUID ---------- */
+
+  const SEED_PRODUCT_TYPE_ID = "11111111-0000-0000-0000-000000000001"; /* ID seed, KHÔNG chuẩn RFC 4122 */
+  const GUID_TEXT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+  await check("Loại hàng: dòng hàng chỉ có GUID productType (thiếu productTypeName) → có danh mục ra tên, không danh mục ra \"Chưa phân loại\"; tên cũ đi thẳng; không bao giờ ra GUID", () => {
+    const L = mods.productTypeLabel;
+    const catalog = L.buildProductTypeNameMap([{ id: SEED_PRODUCT_TYPE_ID.toUpperCase(), name: "Đồ gia dụng" }, { id: PRODUCT_TYPE_ID, name: "Gốm sứ" }]);
+    const guidOnly = { productName: "Nồi", productType: SEED_PRODUCT_TYPE_ID };
+    const outputs = [
+      L.resolveProductTypeLabel(guidOnly, catalog),
+      L.resolveProductTypeLabel(guidOnly),
+      L.resolveProductTypeLabel({ productTypeId: PRODUCT_TYPE_ID }, new Map()),
+      L.resolveProductTypeLabel({ productType: SEED_PRODUCT_TYPE_ID, productTypeName: SEED_PRODUCT_TYPE_ID }, null),
+      L.resolveProductTypeLabel({ productType: { id: PRODUCT_TYPE_ID } }, catalog),
+    ];
+    return all(
+      expectTrue("isGuidLike nhận ID seed không chuẩn RFC 4122", L.isGuidLike(SEED_PRODUCT_TYPE_ID) && L.isGuidLike(` ${PRODUCT_TYPE_ID.toUpperCase()} `)),
+      expectTrue("isGuidLike không nhận tên", !L.isGuidLike("Gốm sứ") && !L.isGuidLike("") && !L.isGuidLike(null)),
+      expectEqual("GUID + danh mục (khoá chữ thường) → tên", outputs[0], "Đồ gia dụng"),
+      expectEqual("GUID, không danh mục → Chưa phân loại", outputs[1], "Chưa phân loại"),
+      expectEqual("productTypeId GUID không có trong danh mục → Chưa phân loại", outputs[2], "Chưa phân loại"),
+      expectEqual("productTypeName là GUID bị bỏ qua", outputs[3], "Chưa phân loại"),
+      expectEqual("productType dạng object { id } → tên danh mục", outputs[4], "Gốm sứ"),
+      expectEqual("productTypeName backend gửi kèm thắng", L.resolveProductTypeLabel({ productType: SEED_PRODUCT_TYPE_ID, productTypeName: "Quần áo" }, catalog), "Quần áo"),
+      expectEqual("categoryName", L.resolveProductTypeLabel({ categoryId: SEED_PRODUCT_TYPE_ID, categoryName: "Mỹ phẩm" }), "Mỹ phẩm"),
+      expectEqual("tên cũ (mua hộ / dữ liệu cũ) đi thẳng", L.resolveProductTypeLabel({ productType: "Thời trang" }), "Thời trang"),
+      expectEqual("chuỗi trần là tên cũ", L.resolveProductTypeLabel("Hàng dễ vỡ"), "Hàng dễ vỡ"),
+      expectEqual("không có thông tin → Chưa phân loại (mặc định)", L.resolveProductTypeLabel({}), "Chưa phân loại"),
+      expectEqual("không có thông tin → emptyLabel", L.resolveProductTypeLabel({}, null, { emptyLabel: "—" }), "—"),
+      expectEqual("GUID không tra được vẫn \"Chưa phân loại\" dù có emptyLabel", L.resolveProductTypeLabel(guidOnly, null, { emptyLabel: "—" }), "Chưa phân loại"),
+      expectTrue("không đầu ra nào là GUID", outputs.every((text) => !GUID_TEXT.test(text))),
+      expectEqual("needsProductTypeCatalog", [L.needsProductTypeCatalog([guidOnly]), L.needsProductTypeCatalog([{ productType: "Thời trang" }, { productType: SEED_PRODUCT_TYPE_ID, productTypeName: "Quần áo" }]), L.needsProductTypeCatalog(null)], [true, false, false]),
+      expectEqual("textWithoutGuid", [L.textWithoutGuid(PRODUCT_TYPE_ID, "—"), L.textWithoutGuid("VCL-1", "—"), L.textWithoutGuid(undefined, "—")], ["—", "VCL-1", "—"])
+    );
+  });
+
+  await check("Tên thùng: MEDIUM → \"Thùng cỡ vừa\" (dù DB ghi \"Medium Box\"), mã lạ → displayName / tên DB, tên tiếng Anh được dịch; bảng nhãn cũ của màn ký gửi giữ nguyên", () => {
+    const L = mods.productTypeLabel;
+    const format = L.formatPackageConfigurationName;
+    return all(
+      expectEqual("MEDIUM", format({ configCode: "MEDIUM", configName: "Medium Box" }), "Thùng cỡ vừa"),
+      expectEqual("mã thường/khoảng trắng", [format({ configCode: " small " }), format({ code: "large" }), format({ configCode: "CUSTOM", configName: "Custom" })], ["Thùng cỡ nhỏ", "Thùng cỡ lớn", "Thùng tùy chỉnh"]),
+      expectEqual("mã lạ → tên DB", format({ configCode: "XL_PALLET", configName: "Pallet gỗ lớn" }), "Pallet gỗ lớn"),
+      expectEqual("mã lạ → displayName ưu tiên", format({ configCode: "XL_PALLET", configName: "Big pallet", displayName: "Pallet cỡ đại" }), "Pallet cỡ đại"),
+      expectEqual("mã lạ, tên tiếng Anh → dịch", format({ configCode: "MEDIUM_PLUS", configName: "Medium Box" }), "Thùng cỡ vừa"),
+      expectEqual("không tên → mã", format({ configCode: "XL_PALLET" }), "XL_PALLET"),
+      expectEqual("không tên + fallback", format({ configCode: "XL_PALLET" }, { fallback: "Cấu hình đóng gói" }), "Cấu hình đóng gói"),
+      expectEqual("rỗng", format(null), ""),
+      expectEqual("bảng nhãn", { ...L.PACKAGE_CONFIGURATION_LABELS.MEDIUM }, { name: "Thùng cỡ vừa", size: "CỠ VỪA" })
+    );
+  });
+
+  await check("Danh mục loại hàng: getProductTypesApi của consignmentApi chính là bản dùng chung; loadProductTypeCatalog gọi mạng MỘT lần, lỗi không bị cache", async () => {
+    const P = mods.productTypeApi;
+    resetState();
+    P.clearProductTypeCatalogCache();
+    let shouldFail = true;
+    routes = [
+      {
+        method: "GET",
+        url: "/api/product-types",
+        reply: () => (shouldFail ? fail(500, { message: "Lỗi máy chủ" }) : ok({ message: "ok", data: [{ id: SEED_PRODUCT_TYPE_ID, name: "Đồ gia dụng" }] })),
+      },
+    ];
+    const first = await rejection(P.loadProductTypeCatalog());
+    shouldFail = false;
+    const [second, third] = await Promise.all([P.loadProductTypeCatalog(), P.loadProductTypeCatalog()]);
+    const fourth = await P.loadProductTypeCatalog();
+    const map = mods.productTypeLabel.buildProductTypeNameMap(fourth);
+    P.clearProductTypeCatalogCache();
+    return all(
+      expectTrue("re-export cùng hàm", consignment.getProductTypesApi === P.getProductTypesApi),
+      expectEqual("lần đầu lỗi → ném lỗi", [first.resolved, first.error?.response?.status], [false, 500]),
+      expectEqual("dữ liệu bóc envelope", second, [{ id: SEED_PRODUCT_TYPE_ID, name: "Đồ gia dụng" }]),
+      expectTrue("dùng chung một promise", second === third && third === fourth),
+      expectEqual("số request: 1 lỗi + 1 thành công", requests.map((r) => [r.method, r.url]), [["GET", "/api/product-types"], ["GET", "/api/product-types"]]),
+      expectEqual("không gắn token", requests.map((r) => r.authorization), [null, null]),
+      expectEqual("tra tên", mods.productTypeLabel.resolveProductTypeLabel({ productType: SEED_PRODUCT_TYPE_ID }, map), "Đồ gia dụng")
+    );
+  });
+
+  await check("Loại hàng ở màn báo giá ký gửi + phiếu tiếp nhận kho: GUID không tra được ra \"Chưa phân loại\", thùng MEDIUM ra \"Thùng cỡ vừa\", không in GUID", () => {
+    const Q = mods.quotationHelpers;
+    const map = Q.buildProductTypeLabelMap([{ id: SEED_PRODUCT_TYPE_ID, label: "Đồ gia dụng" }]);
+    const React = requireFromRoot("react");
+    const { renderToString } = requireFromRoot("react-dom/server");
+    const html = renderToString(
+      React.createElement(mods.receivingDocument.default, {
+        note: {
+          status: "ACTIVE",
+          items: [],
+          expectedItems: [
+            { orderItemId: "a", productName: "Nồi", productType: PRODUCT_TYPE_ID, quantity: 1, packageConfiguration: { configCode: "MEDIUM", configName: "Medium Box" } },
+            { orderItemId: "b", productName: "Áo", productType: "Thời trang", quantity: 1 },
+            { orderItemId: "c", productName: "Ghế", productType: SEED_PRODUCT_TYPE_ID, productTypeName: "Nội thất", quantity: 1 },
+          ],
+        },
+      })
+    );
+    const text = html.replace(/<[^>]+>/g, " ");
+    return all(
+      expectEqual("báo giá: GUID có trong danh mục", Q.resolveProductTypeLabel({ productTypeRaw: SEED_PRODUCT_TYPE_ID, productType: "" }, map), "Đồ gia dụng"),
+      expectEqual("báo giá: GUID không có trong danh mục", Q.resolveProductTypeLabel({ productTypeRaw: PRODUCT_TYPE_ID, productType: "" }, map), "Chưa phân loại"),
+      expectEqual("báo giá: tên cũ", Q.resolveProductTypeLabel({ productTypeRaw: "Thời trang", productType: "Thời trang" }, map), "Thời trang"),
+      expectEqual("báo giá: không có loại hàng → để trống như cũ", Q.resolveProductTypeLabel({}, map), ""),
+      expectTrue("phiếu kho: Chưa phân loại", text.includes("Chưa phân loại")),
+      expectTrue("phiếu kho: tên cũ + productTypeName", text.includes("Thời trang") && text.includes("Nội thất")),
+      expectTrue("phiếu kho: Thùng cỡ vừa", text.includes("Thùng: Thùng cỡ vừa") && !/Medium Box/i.test(text)),
+      expectTrue("phiếu kho: không in GUID", !GUID_TEXT.test(text))
     );
   });
 

@@ -33,6 +33,7 @@ import { Link } from "react-router-dom";
 
 import Header from "@layouts/SiteHeader/SiteHeader";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import { textWithoutGuid } from "@shared/utils/productTypeLabel";
 import { usePagedRows } from "@shared/hooks/usePagination";
 import ListPagination from "@shared/components/ListPagination/ListPagination";
 
@@ -242,7 +243,8 @@ const normalizeParcel = (
     parcel?.trackingCode ||
     parcel?.domesticTrackingCode ||
     parcel?.code ||
-    parcel?.id ||
+    /* id kiện là GUID: không in ra làm mã kiện. */
+    textWithoutGuid(parcel?.id) ||
     `Kiện ${index + 1}`;
 
   const status =

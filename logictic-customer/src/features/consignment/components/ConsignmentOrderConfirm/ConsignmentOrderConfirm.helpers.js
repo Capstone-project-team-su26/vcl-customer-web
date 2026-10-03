@@ -3,6 +3,8 @@
  * chỉ phụ thuộc tham số và hằng số tra cứu, nên tách ra để component chỉ còn phần dựng giao diện.
  */
 
+import { formatPackageConfigurationName } from "@shared/utils/productTypeLabel";
+
 import {
   CONDITION_UNIT_LABELS,
   PACKAGE_CONFIGURATION_LABELS,
@@ -659,10 +661,10 @@ export const getConfigurationDisplay = (
 
   return {
     configCode,
-    name:
-      translated?.name ||
-      configuration?.configName ||
-      "Cấu hình thùng",
+    name: formatPackageConfigurationName(
+      { ...configuration, configCode },
+      { fallback: "Cấu hình thùng" },
+    ),
     size:
       translated?.size ||
       configCode.replaceAll(

@@ -13,6 +13,7 @@ import {
 
 import { getApiErrorMessage, isCanceledError } from "@shared/utils/apiError";
 import { formatVietnamDateTime } from "@shared/utils/timeUtc";
+import { textWithoutGuid } from "@shared/utils/productTypeLabel";
 import {
   isPurchaseWarehouseOrder,
   purchaseCodeOfWarehouseOrder,
@@ -416,7 +417,8 @@ export default function OrderDetail() {
                 ? `Đơn mua hộ${purchaseCode ? ` · ${purchaseCode}` : ""}`
                 : "Đơn ký gửi"}
             </span>
-            <h1>{orderCode}</h1>
+            {/* Đơn chưa được cấp mã thì orderCode rơi về id route (GUID) — không in GUID. */}
+            <h1>{textWithoutGuid(orderCode, "Chưa được cấp mã")}</h1>
             <p>
               {tracking
                 ? `${tracking.originWarehouseName || "Kho nguồn"} → ${

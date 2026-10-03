@@ -36,6 +36,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CreditCardRoundedIcon from "@mui/icons-material/CreditCardRounded";
 import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
+import { formatPackageConfigurationName } from "@shared/utils/productTypeLabel";
 
 import { getConsignmentStatusesApi } from "@features/consignment/api/consignmentStatusApi";
 import {
@@ -953,11 +954,21 @@ const QuotationDetail = ({ embedded = false }) => {
 
           productTypeLabel: resolveProductTypeLabel(item, productTypeLabelMap),
 
-          configurationName:
-            item?.configurationName ||
-            configuration?.configName ||
-            configuration?.name ||
-            "",
+          /* Tên thùng tiếng Việt (mã → tên Việt → displayName → tên DB đã dịch), không in "Medium Box". */
+          configurationName: formatPackageConfigurationName(
+            {
+              configCode:
+                item?.configurationCode ||
+                configuration?.configCode ||
+                configuration?.code,
+              displayName: configuration?.displayName,
+              configName:
+                item?.configurationName ||
+                configuration?.configName ||
+                configuration?.name,
+            },
+            { fallback: "" },
+          ),
 
           configurationCode:
             item?.configurationCode ||

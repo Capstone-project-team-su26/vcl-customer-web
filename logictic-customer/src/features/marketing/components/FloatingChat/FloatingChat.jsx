@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
@@ -19,22 +19,19 @@ import {
 
 import { BRAND } from "@shared/constants/homeData";
 import { AI_CONFIG } from "@shared/config/aiConfig";
-import { requestMockAssistantReply } from "@/mocks/aiAssistant";
-import { extractOrderIntentApi } from "@features/consignment/api/aiOrderIntentApi";
+/*
+ * Ngữ cảnh AI = DỮ LIỆU THẬT (bảng giá GET /api/service-pricings chọn dòng như trang
+ * "Chính sách dịch vụ", hệ số DIM, phụ phí, tuyến, hàng cấm + đơn của chính khách khi đã
+ * đăng nhập). Không còn đọc pricingRuleService.getServicePricings (fixture mock) hay
+ * kịch bản @/mocks/aiAssistant có giá mẫu.
+ */
 import {
-  getConsignmentsApi,
-  getConsignmentRoutesApi,
-  getConsignmentShippingOptionsApi,
-} from "@features/consignment/api/consignmentApi";
-import { getOrderStatusLabel } from "@features/consignment";
-import { getPurchaseRequestsApi } from "@features/purchase/api/purchaseRequestApi";
-import { getPurchaseStatusLabel } from "@features/purchase/constants/purchaseStages";
-import { getPaymentStatusLabel, textOr } from "@shared/utils/statusLabel";
-import { getRestrictedItemListApi } from "@shared/api/restrictedItemApi";
-import {
-  getServicePricings,
-  getDepositRate,
-} from "@features/pricing/api/pricingRuleService";
+  buildOfflineReply,
+  loadFloatingChatContext,
+  PRICE_SECTION_TITLE,
+  PRICE_UNAVAILABLE_TITLE,
+  SERVICE_POLICY_PAGE_NAME,
+} from "./floatingChatContext";
 import AuthNotify from "@shared/components/AuthNotify/AuthNotify";
 
 import "./FloatingChat.css";
@@ -49,15 +46,9 @@ const MAX_HISTORY_MESSAGES = 4;
 const SYSTEM_INSTRUCTION = `
 Bạn là Trợ lý AI Chăm sóc Khách hàng chuyên nghiệp của hệ thống logistics ${BRAND.name}.
 
-THÔNG TIN DỮ LIỆU CÔNG KHAI HỆ THỐNG (Không cần đăng nhập):
+THÔNG TIN CÔNG KHAI (Không cần đăng nhập):
 - Trụ sở chính & Kho Việt Nam: ${BRAND.address} (Hotline: ${BRAND.hotline}, Email: ${BRAND.email})
-- Kho tiếp nhận Quốc tế: Kho Trung Quốc (Quảng Châu/Bằng Tường), Kho Nhật Bản, Kho Hàn Quốc, Kho Mỹ, Kho Indonesia, Kho Philippines.
-- Danh mục HÀNG CẤM KÝ GỬI & VẬN CHUYỂN (/api/restricted-items):
-  1. Chất nổ, chất dễ cháy, chất độc hại, bình khí nén.
-  2. Vũ khí, đạn dược, công cụ hỗ trợ, chất ma túy, chất kích thích.
-  3. Tiền mặt, kim loại quý, đá quý, tài liệu mật.
-  4. Hàng giả, hàng nhái các thương hiệu được bảo hộ.
-  5. Thực phẩm tươi sống, động vật sống, chất lỏng không nhãn mác.
+- Tuyến vận chuyển, bảng giá, phụ phí, hàng cấm: CHỈ lấy từ phần "DỮ LIỆU THẬT TỪ HỆ THỐNG" bên dưới.
 - Dịch vụ công khai:
   - Mua hộ hàng quốc tế: Taobao, 1688, Tmall, Mercari, Rakuten, Amazon... Thanh toán chuyển khoản VNĐ.
   - Ký gửi hàng hóa: Cấp địa chỉ kho quốc tế, gom kiện tự động, quy trình 6 bước (Tạo đơn -> Nhập kho QT -> Lưu kho -> Thông quan -> Xuất kho -> Về VN).
@@ -82,6 +73,13 @@ QUY TẮC PHẢN HỒI:
 - Trả lời cực kỳ ngắn gọn, súc tích (1-3 câu ngắn, dưới 100 từ).
 - Luôn bằng tiếng Việt lịch sự, thân thiện và chính xác.
 - Khi người dùng hỏi thông tin công khai (địa chỉ kho, hàng cấm, quy trình ký gửi/mua hộ), cung cấp câu trả lời ngay lập tức.
+
+QUY TẮC VỀ GIÁ (BẮT BUỘC):
+- Phần "${PRICE_SECTION_TITLE}" là bảng giá CHÍNH THỨC đang áp dụng của ${BRAND.name}, cùng nội dung trang "${SERVICE_POLICY_PAGE_NAME}". Chỉ báo giá đúng các dòng trong đó, giữ nguyên con số và đơn vị (ví dụ "80.000 đ/kg").
+- TUYỆT ĐỐI KHÔNG tự đặt ra, ước đoán, làm tròn hay lấy giá từ nguồn khác (kiến thức chung, website khác, các câu trả lời trước trong hội thoại — có thể đã cũ). Tuyến / dịch vụ / mức cân không có trong bảng: nói hiện chưa có bảng giá cho trường hợp đó và mời khách liên hệ CSKH.
+- Dòng "Liên hệ" nghĩa là chưa niêm yết giá: mời khách liên hệ CSKH. Dòng "Sắp áp dụng" chỉ có hiệu lực từ ngày ghi kèm.
+- Khi khách cho cân nặng / kích thước, chỉ tạm tính theo đúng đơn giá + cách tính trong bảng, nói rõ là tạm tính, chưa gồm phụ phí và thuế; giá cuối theo báo giá của kho.
+- Nếu ngữ cảnh có mục "${PRICE_UNAVAILABLE_TITLE}": trả lời rằng hiện chưa lấy được bảng giá hiện hành, mời khách xem trang "${SERVICE_POLICY_PAGE_NAME}" hoặc liên hệ CSKH (hotline ${BRAND.hotline}); KHÔNG nêu bất kỳ con số giá nào.
 `.trim();
 
 const renderFormattedMessage = (text) => {
@@ -162,13 +160,6 @@ const QUICK_MESSAGES = [
   },
 ];
 
-const INITIAL_BOT_MESSAGE = {
-  id: "welcome-msg",
-  sender: "bot",
-  text: `Xin chào! Tôi là trợ lý AI của ${BRAND.name}. Tôi có thể giúp gì cho bạn hôm nay?`,
-  time: "Vừa xong",
-};
-
 /* =========================================================
    HELPERS
    ========================================================= */
@@ -215,174 +206,6 @@ const createChatMessage = ({
   requireLogin,
 });
 
-const fetchAllApiContextData = async () => {
-  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-
-  try {
-    const promises = [
-      getConsignmentRoutesApi().catch(() => null),
-      getConsignmentShippingOptionsApi().catch(() => null),
-      getRestrictedItemListApi().catch(() => null),
-      getServicePricings().catch(() => null),
-      getDepositRate().catch(() => null),
-    ];
-
-    if (token) {
-      promises.push(getConsignmentsApi(1, 30).catch(() => null));
-      promises.push(getPurchaseRequestsApi(1, 30).catch(() => null));
-    }
-
-    const results = await Promise.allSettled(promises);
-
-    const routesRes = results[0]?.status === "fulfilled" ? results[0].value : null;
-    const shippingOptsRes = results[1]?.status === "fulfilled" ? results[1].value : null;
-    const restrictedItemsRes = results[2]?.status === "fulfilled" ? results[2].value : null;
-    const servicePricingsRes = results[3]?.status === "fulfilled" ? results[3].value : null;
-    const depositRateRes = results[4]?.status === "fulfilled" ? results[4].value : null;
-    const consignRes = token && results[5]?.status === "fulfilled" ? results[5].value : null;
-    const purchaseRes = token && results[6]?.status === "fulfilled" ? results[6].value : null;
-
-    let apiContextText = "";
-
-    // 1. KHO BÃI & TUYẾN ĐƯỜNG TỪ API
-    if (routesRes || shippingOptsRes) {
-      apiContextText += "\n--- DỮ LIỆU KHO BÃI & TUYẾN ĐƯỜNG THỰC TẾ TỪ API ---\n";
-      if (Array.isArray(routesRes)) {
-        routesRes.forEach((r) => {
-          apiContextText += `- Tuyến vận chuyển: ${r.routeName || r.name || r.id} (${r.description || ""})\n`;
-        });
-      }
-      if (Array.isArray(shippingOptsRes)) {
-        shippingOptsRes.forEach((opt) => {
-          apiContextText += `- Tùy chọn giao hàng: ${opt.name || opt.shippingOptionName} - Mô tả: ${opt.description || ""}\n`;
-        });
-      }
-    }
-
-    // 2. BẢNG GIÁ & TỶ GIÁ TỪ API
-    if (servicePricingsRes || depositRateRes) {
-      apiContextText += "\n--- DỮ LIỆU BẢNG GIÁ CƯỚC VẬN CHUYỂN & TỶ GIÁ THỰC TẾ TỪ API ---\n";
-      if (depositRateRes) {
-        const rateVal = depositRateRes.value ?? depositRateRes;
-        apiContextText += `- Tỷ lệ cọc quy định mua hộ: ${rateVal}%\n`;
-      }
-      if (Array.isArray(servicePricingsRes)) {
-        servicePricingsRes.slice(0, 8).forEach((p) => {
-          const name = p.name || p.serviceName || "Gói dịch vụ";
-          const price = p.price || p.unitPrice || p.rate || "Xem chi tiết";
-          apiContextText += `- ${name}: Đơn giá ${price} (Áp dụng từ ${p.minWeight || 0}kg)\n`;
-        });
-      }
-    }
-
-    // 3. DANH MỤC HÀNG CẤM TỪ API
-    if (Array.isArray(restrictedItemsRes) && restrictedItemsRes.length > 0) {
-      apiContextText += "\n--- DANH MỤC HÀNG CẤM KÝ GỬI THỰC TẾ TỪ API ---\n";
-      restrictedItemsRes.slice(0, 15).forEach((item, idx) => {
-        const name = item.name || item.itemName || item.title || item;
-        apiContextText += `${idx + 1}. ${name}\n`;
-      });
-    }
-
-    // 4. DỮ LIỆU ĐƠN HÀNG THỰC TẾ KHÁCH HÀNG (KHI ĐÃ ĐĂNG NHẬP)
-    if (token) {
-      const extractArray = (val) => {
-        if (!val) return [];
-        if (Array.isArray(val)) return val;
-        if (Array.isArray(val.items)) return val.items;
-        if (Array.isArray(val.consignments)) return val.consignments;
-        if (Array.isArray(val.purchaseRequests)) return val.purchaseRequests;
-        if (Array.isArray(val.data?.items)) return val.data.items;
-        if (Array.isArray(val.data)) return val.data;
-        return [];
-      };
-
-      const consignList = extractArray(consignRes);
-      const totalConsignCount =
-        typeof consignRes?.total === "number"
-          ? consignRes.total
-          : typeof consignRes?.totalCount === "number"
-          ? consignRes.totalCount
-          : consignList.length;
-
-      const purchaseList = extractArray(purchaseRes);
-      const totalPurchaseCount =
-        typeof purchaseRes?.total === "number"
-          ? purchaseRes.total
-          : typeof purchaseRes?.totalCount === "number"
-          ? purchaseRes.totalCount
-          : purchaseList.length;
-
-      const formatVnd = (num) => {
-        const n = Number(num);
-        if (!Number.isFinite(n) || n <= 0) return "Chưa có cước/báo giá";
-        return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
-      };
-
-      apiContextText += "\n--- DỮ LIỆU ĐƠN HÀNG THỰC TẾ CỦA KHÁCH HÀNG TỪ API (HỆ THỐNG THẬT) ---\n";
-
-      // Ký gửi
-      apiContextText += `1. ĐƠN KÝ GỬI (Tổng số đơn thực tế của khách: ${totalConsignCount} đơn):\n`;
-      if (totalConsignCount === 0 || consignList.length === 0) {
-        apiContextText += "   - Hiện tại khách hàng CHƯA CÓ đơn ký gửi nào trên hệ thống (tổng số: 0 đơn).\n";
-      } else {
-        const paidCount = consignList.filter(
-          (i) => i.isPaid === true || i.paymentStatus === "PAID" || i.paymentStatus === 1 || String(i.paymentStatus).toUpperCase() === "PAID"
-        ).length;
-        apiContextText += `   - Trạng thái thanh toán: ${paidCount} đơn đã thanh toán, ${consignList.length - paidCount} đơn chưa thanh toán.\n`;
-        apiContextText += "   - Chi tiết các đơn ký gửi gần nhất:\n";
-
-        consignList.slice(0, 8).forEach((item, idx) => {
-          const code = item.orderCode || item.code || item.consignmentCode || item.id || `KG-${idx + 1}`;
-          const name = item.productName || item.notes || "Hàng ký gửi";
-          const tracking = item.chinaTrackingCode || item.trackingCode || "chưa có";
-          const status = item.status ? getOrderStatusLabel(item.status) : item.statusName || "Đang xử lý";
-          const isPaid = item.isPaid || item.paymentStatus === "PAID" || item.paymentStatus === 1 ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN";
-          const fee = item.totalFee || item.totalShippingFee || item.totalAmount || item.declaredValueCny;
-
-          apiContextText += `     + Mã [${code}]: ${name} (Tracking TQ: ${tracking}), Trạng thái: ${status}, Thanh toán: ${isPaid} (${formatVnd(fee)})\n`;
-        });
-      }
-
-      // Mua hộ
-      apiContextText += `2. ĐƠN MUA HỘ (Tổng số đơn thực tế của khách: ${totalPurchaseCount} đơn):\n`;
-      if (totalPurchaseCount === 0 || purchaseList.length === 0) {
-        apiContextText += "   - Hiện tại khách hàng CHƯA CÓ đơn mua hộ nào trên hệ thống (tổng số: 0 đơn).\n";
-      } else {
-        const paidCount = purchaseList.filter(
-          (i) => i.isPaid === true || i.paymentStatus === "PAID" || i.paymentStatus === "DEPOSITED" || i.paymentStatus === 1
-        ).length;
-        apiContextText += `   - Trạng thái thanh toán: ${paidCount} đơn đã cọc/thanh toán, ${purchaseList.length - paidCount} đơn chưa thanh toán/chờ báo giá.\n`;
-        apiContextText += "   - Chi tiết các đơn mua hộ gần nhất:\n";
-
-        purchaseList.slice(0, 8).forEach((item, idx) => {
-          const code = item.orderCode || item.code || item.purchaseRequestCode || item.id || `MH-${idx + 1}`;
-          const name = item.productName || item.title || "Hàng mua hộ";
-          const qty = item.quantity || 1;
-          /* Chỉ đưa nhãn tiếng Việt vào ngữ cảnh AI — mã thô sẽ bị AI nhắc lại nguyên văn cho khách. */
-          const status = item.status
-            ? getPurchaseStatusLabel(item.status, item.statusName)
-            : textOr(item.statusName, "Mới tạo");
-          const isPaid = typeof item.paymentStatus === "string" && item.paymentStatus
-            ? getPaymentStatusLabel(item.paymentStatus, item.paymentStatusName)
-            : textOr(
-                item.paymentStatusName,
-                item.isPaid || item.paymentStatus === 1 ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN",
-              );
-          const price = item.totalAmount || item.totalPriceVnd || item.depositAmount;
-
-          apiContextText += `     + Mã [${code}]: ${name} (SL: ${qty}), Trạng thái: ${status}, Thanh toán: ${isPaid} (${formatVnd(price)})\n`;
-        });
-      }
-    }
-
-    return apiContextText;
-  } catch (err) {
-    console.warn("Lỗi đồng bộ dữ liệu API cho AI context:", err);
-    return "";
-  }
-};
-
 const buildDynamicSystemInstruction = (apiContextData = "") => {
   const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
   const userStr = sessionStorage.getItem("user") || localStorage.getItem("user");
@@ -394,7 +217,8 @@ QUY TẮC PHẢN HỒI:
 2. NẾU người dùng hỏi về số lượng đơn hàng hoặc tra cứu đơn hàng cá nhân của họ ("hiện tại đơn hàng kí gửi bao nhiêu", "tôi có bao nhiêu đơn..."): BẮT BUỘC trả lời rằng do khách chưa đăng nhập nên hệ thống chưa thể kiểm tra đơn hàng cá nhân, và hướng dẫn khách đăng nhập tài khoản để xem chính xác. Tuyệt đối không được bịa ra số đơn hàng.
 3. NẾU người dùng yêu cầu tạo đơn Ký gửi hoặc Mua hộ cụ thể, hãy tư vấn quy trình VÀ nhắc người dùng ĐĂNG NHẬP TÀI KHOẢN để chính thức khởi tạo đơn hàng.`;
 
-  if (token || userStr) {
+  /* Chỉ coi là đã đăng nhập khi có accessToken — đơn hàng trong ngữ cảnh cũng chỉ tải khi có token. */
+  if (token) {
     try {
       const u = userStr ? JSON.parse(userStr) : {};
       const fullName = u.fullName || u.name || sessionStorage.getItem("fullName") || "Khách hàng";
@@ -410,7 +234,7 @@ TRẠNG THÁI KHÁCH HÀNG: ĐÃ ĐĂNG NHẬP & XÁC THỰC THÀNH CÔNG (Token
 - Email: ${email}
 CHỈ ĐỊNH PHẢN HỒI:
 - Xưng hô thân thiện bằng tên khách hàng (ví dụ: 'Chào anh/chị ${fullName}...').
-- Khi khách hỏi về số lượng đơn hàng hoặc đơn hàng hiện tại (ví dụ: "hiện tại đơn hàng kí gửi bao nhiêu", "tôi có mấy đơn ký gửi..."), BẮT BUỘC trả lời chính xác số lượng đơn từ "DỮ LIỆU ĐƠN HÀNG THỰC TẾ CỦA KHÁCH HÀNG TỪ API" bên dưới. Nếu dữ liệu ghi 0 đơn hoặc chưa có đơn, phải nói rõ là hiện tại chưa có đơn ký gửi nào, tuyệt đối không bịa đặt số đơn hay tự lấy số liệu mẫu.`;
+- Khi khách hỏi về số lượng đơn hàng hoặc đơn hàng hiện tại (ví dụ: "hiện tại đơn hàng kí gửi bao nhiêu", "tôi có mấy đơn ký gửi..."), BẮT BUỘC trả lời chính xác số lượng đơn từ mục "ĐƠN HÀNG THẬT CỦA CHÍNH KHÁCH ĐANG ĐĂNG NHẬP" bên dưới. Nếu dữ liệu ghi 0 đơn hoặc chưa có đơn, phải nói rõ là hiện tại chưa có đơn ký gửi nào; nếu ghi "KHÔNG TẢI ĐƯỢC" hoặc không có mục đó, nói hệ thống chưa lấy được đơn và mời khách xem mục Đơn hàng. Tuyệt đối không bịa đặt số đơn hay tự lấy số liệu mẫu.`;
     } catch {
       authContext = "\nTRẠNG THÁI KHÁCH HÀNG: Đã đăng nhập hệ thống (Token JWT khả dụng).";
     }
@@ -426,7 +250,9 @@ const createInitialMessage = () => {
     try {
       const u = JSON.parse(userStr);
       fullName = u.fullName || u.name || sessionStorage.getItem("fullName") || "";
-    } catch { }
+    } catch {
+      /* user hỏng JSON: chào không kèm tên. */
+    }
   }
 
   const welcomeText = fullName
@@ -477,13 +303,16 @@ const buildCodexMessages = (messages, apiContextData = "") => {
    CODEX AI REQUEST (Direct Call)
    ========================================================= */
 
+const lastUserText = (messages = []) =>
+  [...messages].reverse().find((item) => item?.sender === "user")?.text || "";
+
 const requestCodexReply = async ({
   messages,
   signal,
-  apiContextData = "",
+  chatContext = null,
   retryCount = 0,
 }) => {
-  const apiMessages = buildCodexMessages(messages, apiContextData);
+  const apiMessages = buildCodexMessages(messages, chatContext?.text || "");
 
   if (apiMessages.length <= 1) {
     throw new Error("Không có nội dung để gửi đến trợ lý AI.");
@@ -497,16 +326,16 @@ const requestCodexReply = async ({
   // Khoá chỉ đến từ biến môi trường — không còn fallback nhúng trong source.
   const activeApiKey = AI_CONFIG.apiKey;
 
-  if (!AI_CONFIG.endpoint) {
-    return requestMockAssistantReply({ messages, signal });
-  }
-
   const isExternalProvider =
-    /openrouter\.ai|openai\.com|anthropic\.com|groq\.com/i.test(AI_CONFIG.endpoint);
+    /openrouter\.ai|openai\.com|anthropic\.com|groq\.com/i.test(AI_CONFIG.endpoint || "");
 
-  // Nếu gọi trực tiếp third-party provider từ browser mà không có key thì fallback về mock
-  if (isExternalProvider && !activeApiKey) {
-    return requestMockAssistantReply({ messages, signal });
+  /*
+   * Chưa cấu hình AI (không endpoint, hoặc gọi thẳng provider mà thiếu key): trả lời dự
+   * phòng từ DỮ LIỆU THẬT đã tải (hỏi giá → in đúng bảng giá thật / báo không lấy được),
+   * không còn rơi về kịch bản mẫu có giá giả.
+   */
+  if (!AI_CONFIG.endpoint || (isExternalProvider && !activeApiKey)) {
+    return buildOfflineReply(lastUserText(messages), chatContext);
   }
 
   const headers = {
@@ -557,7 +386,7 @@ const requestCodexReply = async ({
       retryCount < 2
     ) {
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      return requestCodexReply({ messages, signal, retryCount: retryCount + 1 });
+      return requestCodexReply({ messages, signal, chatContext, retryCount: retryCount + 1 });
     }
 
     if (lowerMsg.includes("invalid token") || lowerMsg.includes("api key")) {
@@ -614,24 +443,20 @@ export default function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [apiContextData, setApiContextData] = useState("");
-  const apiContextRef = useRef("");
 
   const [messages, setMessages] = useState(loadPersistedMessages);
 
-  useEffect(() => {
-    apiContextRef.current = apiContextData;
-  }, [apiContextData]);
-
+  /*
+   * Tải lười: mở khung chat thì nạp sẵn ngữ cảnh dữ liệu thật (cache 5 phút trong
+   * floatingChatContext); gửi tin vẫn await lại cùng promise nên tin đầu tiên luôn có
+   * bảng giá thật, kể cả khi khách gõ nhanh hơn lúc tải xong.
+   */
   useEffect(() => {
     if (!isOpen) return;
 
-    fetchAllApiContextData()
-      .then((ctx) => {
-        setApiContextData(ctx);
-        apiContextRef.current = ctx;
-      })
-      .catch((err) => console.warn("Lỗi đồng bộ dữ liệu API:", err));
+    loadFloatingChatContext().catch(() => {
+      /* Không bao giờ reject; phòng hờ để không có unhandled rejection. */
+    });
   }, [isOpen]);
 
   /* =======================================================
@@ -751,10 +576,16 @@ export default function FloatingChat() {
     requestControllerRef.current = controller;
 
     try {
+      const chatContext = await loadFloatingChatContext();
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
       const reply = await requestCodexReply({
         messages: nextMessages,
         signal: controller.signal,
-        apiContextData: apiContextRef.current || apiContextData,
+        chatContext,
       });
 
       const isLoggedIn = Boolean(

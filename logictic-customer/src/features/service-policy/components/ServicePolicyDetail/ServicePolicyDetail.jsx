@@ -1,108 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { getServicePricingById } from "@features/pricing/api/pricingRuleService";
-import { displayCode, labelOf } from "@shared/utils/statusLabel";
+import { getServicePricingDetailApi } from "@features/pricing/api/servicePricingService";
+import {
+  PRICE_STATUS_META,
+  formatBoxRule,
+  formatDate,
+  formatUnitPrice,
+  formatWeightRange,
+  getRouteLabel,
+  getServiceLabel,
+  getUnitLabel,
+} from "@features/service-policy/utils/servicePricingTable";
 
 import "@features/service-policy/pages/ServicePolicy/ServicePolicy.css";
 
-const FIELD_LABELS = {
-  serviceName: "Dịch vụ",
-  serviceType: "Loại dịch vụ",
-  originCountry: "Quốc gia gửi",
-  destinationCountry: "Quốc gia nhận",
-  unitType: "Đơn vị tính",
-  price: "Đơn giá",
-  currency: "Loại tiền",
-  effectiveDate: "Ngày áp dụng",
-  createdAt: "Ngày tạo",
-  updatedAt: "Ngày cập nhật",
-  status: "Trạng thái",
-};
-
-const PRIORITY_FIELDS = [
-  "serviceName",
-  "serviceType",
-  "originCountry",
-  "destinationCountry",
-  "price",
-  "unitType",
-  "currency",
-  "effectiveDate",
-  "status",
-];
-
-const HIDDEN_FIELDS = [
-  "id",
-  "servicePricingId",
-  "pricingRule",
-  "pricingRules",
-  "pricingRuleIds",
-  "boxPricingRule",
-  "boxPricingRules",
-  "carrierId",
-  "serviceCode",
-  "description",
-  "unit",
-];
-
-const normalizeFieldKey = (value) => {
-  return String(value || "")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toLowerCase();
-};
-
-const isHiddenField = (field) => {
-  const normalizedField = normalizeFieldKey(field);
-
-  return HIDDEN_FIELDS.some(
-    (hiddenField) => normalizeFieldKey(hiddenField) === normalizedField,
-  );
-};
-
-const STATUS_LABELS = {
-  ACTIVE: "Đang áp dụng",
-  INACTIVE: "Ngừng áp dụng",
-  PENDING: "Chờ áp dụng",
-  PENDING_REVIEW: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Đã từ chối",
-  EXPIRED: "Hết hiệu lực",
-  DISABLED: "Tạm ngưng",
-  DRAFT: "Bản nháp",
-  DELETED: "Đã xóa",
-};
-
-const COUNTRY_LABELS = {
-  VN: "Việt Nam",
-  VIETNAM: "Việt Nam",
-  JP: "Nhật Bản",
-  JAPAN: "Nhật Bản",
-  KR: "Hàn Quốc",
-  KOREA: "Hàn Quốc",
-  CN: "Trung Quốc",
-  CHINA: "Trung Quốc",
-  US: "Hoa Kỳ",
-  USA: "Hoa Kỳ",
-  UNITED_STATES: "Hoa Kỳ",
-  ID: "Indonesia",
-  INDONESIA: "Indonesia",
-};
-
-const SERVICE_TYPE_LABELS = {
-  STANDARD: "Tiêu chuẩn",
-  EXPRESS: "Hỏa tốc",
-  FAST: "Nhanh",
-};
+/*
+ * Chi tiết một dòng bảng giá — đọc lại GET /api/service-pricings/{id} (API thật, cùng
+ * normalizeServicePricing với admin). Chỉ hiện trường dành cho khách; không in mã hãng
+ * vận chuyển hay mã nội bộ. Lỗi tải chi tiết thì giữ dữ liệu từ danh sách.
+ */
 
 const CLOSE_ANIMATION_TIME = 240;
-
-const normalizeCode = (value) => {
-  return String(value || "")
-    .trim()
-    .toUpperCase()
-    .replaceAll(" ", "_")
-    .replaceAll("-", "_");
-};
 
 const isCanceledRequest = (error) => {
   return (
@@ -113,145 +31,18 @@ const isCanceledRequest = (error) => {
 };
 
 const getPricingId = (pricing) => {
-  return String(pricing?.id || pricing?.servicePricingId || "").trim();
+  return String(pricing?.id || "").trim();
 };
 
-const getFieldLabel = (field) => {
-  if (FIELD_LABELS[field]) {
-    return FIELD_LABELS[field];
-  }
-
-  return String(field || "")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replaceAll("_", " ")
-    .trim();
-};
-
-const getStatusLabel = (status) => {
-  const normalizedStatus = normalizeCode(status);
-
-  if (!normalizedStatus) {
-    return "Chưa xác định";
-  }
-
-  /* Mã lạ: nhãn an toàn, không in chữ tiếng Anh. */
-  return labelOf(STATUS_LABELS, normalizedStatus);
-};
-
-const getStatusClassName = (status) => {
-  const normalizedStatus = normalizeCode(status);
-
-  if (["ACTIVE", "APPROVED"].includes(normalizedStatus)) {
-    return "is-active";
-  }
-
-  if (["PENDING", "PENDING_REVIEW", "DRAFT"].includes(normalizedStatus)) {
-    return "is-pending";
-  }
-
-  if (["REJECTED", "DELETED"].includes(normalizedStatus)) {
-    return "is-danger";
-  }
-
-  if (["INACTIVE", "DISABLED", "EXPIRED"].includes(normalizedStatus)) {
-    return "is-inactive";
-  }
-
-  return "is-neutral";
-};
-
-const getCountryLabel = (value) => {
-  const normalizedValue = normalizeCode(value);
-
-  return COUNTRY_LABELS[normalizedValue] || String(value || "-");
-};
-
-const getServiceTypeLabel = (value) => {
-  const normalizedValue = normalizeCode(value);
-
-  return (
-    SERVICE_TYPE_LABELS[normalizedValue] ||
-    (value ? displayCode(value, null, { generic: "Dịch vụ khác" }) : "-")
-  );
-};
-
-const formatMoney = (value, currency = "VND") => {
-  const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue)) {
-    return value ?? "-";
-  }
-
-  try {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: String(currency || "VND").toUpperCase(),
-      maximumFractionDigits: 0,
-    }).format(numericValue);
-  } catch {
-    return `${numericValue.toLocaleString("vi-VN")} ${currency || ""}`.trim();
-  }
-};
-
-const formatDateTime = (value) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
-
-const renderValue = (key, value, pricing) => {
-  if (value === null || value === undefined || value === "") {
-    return "-";
-  }
-
-  if (key === "status") {
-    return getStatusLabel(value);
-  }
-
-  if (key === "serviceType") {
-    return getServiceTypeLabel(value);
-  }
-
-  if (key === "originCountry" || key === "destinationCountry") {
-    return getCountryLabel(value);
-  }
-
-  if (key === "price") {
-    return formatMoney(value, pricing?.currency);
-  }
-
-  if (["effectiveDate", "createdAt", "updatedAt"].includes(key)) {
-    return formatDateTime(value);
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Có" : "Không";
-  }
-
-  if (typeof value === "object") {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-
-  return String(value);
-};
+const buildFields = (detail) => [
+  { key: "service", label: "Dịch vụ", value: getServiceLabel(detail?.serviceType) },
+  { key: "route", label: "Tuyến", value: getRouteLabel(detail) },
+  { key: "unit", label: "Đơn vị tính", value: getUnitLabel(detail?.unitType) },
+  { key: "weight", label: "Mức cân", value: formatWeightRange(detail) },
+  { key: "price", label: "Đơn giá", value: formatUnitPrice(detail) },
+  { key: "currency", label: "Loại tiền", value: detail?.currency || "VND" },
+  { key: "effective", label: "Áp dụng từ", value: formatDate(detail?.effectiveDate) },
+];
 
 export default function ServicePolicyDetail({ open, pricing, onClose }) {
   const [mounted, setMounted] = useState(false);
@@ -293,7 +84,7 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
         setLoading(true);
         setErrorMessage("");
 
-        const response = await getServicePricingById(pricingId, {
+        const response = await getServicePricingDetailApi(pricingId, {
           signal: controller.signal,
         });
 
@@ -305,6 +96,8 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
           setDetail((current) => ({
             ...(current || {}),
             ...response,
+            /* Trạng thái hiệu lực tính trên cả danh sách — giữ của dòng đã bấm. */
+            view: current?.view,
           }));
         }
       } catch (error) {
@@ -315,8 +108,7 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
         console.error("Lỗi tải chi tiết bảng giá:", error);
 
         setErrorMessage(
-          error?.message ||
-            "Không thể tải dữ liệu chi tiết. Hệ thống vẫn hiển thị dữ liệu từ danh sách.",
+          "Không thể tải dữ liệu chi tiết. Hệ thống vẫn hiển thị dữ liệu từ danh sách.",
         );
       } finally {
         if (!controller.signal.aborted) {
@@ -362,25 +154,19 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
     };
   }, []);
 
-  const fields = useMemo(() => {
-    if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
-      return [];
-    }
+  const fields = useMemo(() => (detail ? buildFields(detail) : []), [detail]);
 
-    const keys = Object.keys(detail).filter(
-      (key) => !isHiddenField(key),
-    );
-    const orderedKeys = [
-      ...PRIORITY_FIELDS.filter((key) => keys.includes(key)),
-      ...keys.filter((key) => !PRIORITY_FIELDS.includes(key)),
-    ];
+  const boxRules = useMemo(
+    () =>
+      (Array.isArray(detail?.boxPricingRules) ? detail.boxPricingRules : [])
+        .filter((rule) => !rule?.status || String(rule.status).toUpperCase() === "ACTIVE")
+        .map(formatBoxRule),
+    [detail],
+  );
 
-    return orderedKeys.map((key) => ({
-      key,
-      label: getFieldLabel(key),
-      value: renderValue(key, detail[key], detail),
-    }));
-  }, [detail]);
+  const statusMeta = detail?.view
+    ? { label: detail.view.statusLabel, tone: detail.view.statusTone }
+    : PRICE_STATUS_META.CURRENT;
 
   const requestClose = () => {
     if (closing) {
@@ -427,12 +213,9 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
           <div>
             <span>CHI TIẾT BẢNG GIÁ</span>
             <h2 id="service-policy-detail-title">
-              {getServiceTypeLabel(detail?.serviceType)}
+              {getServiceLabel(detail?.serviceType)}
             </h2>
-            <p>
-              {getCountryLabel(detail?.originCountry)} →{" "}
-              {getCountryLabel(detail?.destinationCountry)}
-            </p>
+            <p>{getRouteLabel(detail)}</p>
           </div>
 
           {/* <button
@@ -448,17 +231,17 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
         <div className="service-policy-detail__hero">
           <div>
             <span>Đơn giá áp dụng</span>
-            <strong>{formatMoney(detail?.price, detail?.currency)}</strong>
-            <small>Trên mỗi {detail?.unitType || "đơn vị"}</small>
+            <strong className="policy-service__price-text">
+              {formatUnitPrice(detail)}
+            </strong>
+            <small>Áp dụng từ {formatDate(detail?.effectiveDate)}</small>
           </div>
 
           <span
-            className={`service-policy-detail__status ${getStatusClassName(
-              detail?.status,
-            )}`}
+            className={`service-policy-detail__status ${statusMeta.tone}`}
           >
             <i />
-            {getStatusLabel(detail?.status)}
+            {statusMeta.label}
           </span>
         </div>
 
@@ -481,9 +264,7 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
             {fields.map((field, index) => (
               <article
                 key={field.key}
-                className={`service-policy-detail__field ${
-                  field.key === "carrierId" ? "is-wide" : ""
-                }`}
+                className="service-policy-detail__field"
                 style={{
                   animationDelay: `${Math.min(index * 35, 280)}ms`,
                 }}
@@ -493,6 +274,20 @@ export default function ServicePolicyDetail({ open, pricing, onClose }) {
               </article>
             ))}
           </div>
+
+          {boxRules.length > 0 && (
+            <div className="service-policy-detail__box-rules">
+              <h3>Phụ phí đóng gói áp dụng kèm</h3>
+              <ul>
+                {boxRules.map((rule, index) => (
+                  <li key={`${rule.name}-${index}`}>
+                    <span>{rule.name}</span>
+                    <strong>{rule.value}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <footer className="service-policy-detail__footer">

@@ -404,6 +404,17 @@
     "hasDefault": true,
     "realApi": true
   },
+  "src/shared/api/productTypeApi.js": {
+    "named": [
+      "PRODUCT_TYPES_ENDPOINT",
+      "clearProductTypeCatalogCache",
+      "getProductTypesApi",
+      "loadProductTypeCatalog"
+    ],
+    "hasDefault": false,
+    "originalLines": 0,
+    "realApi": true
+  },
   "src/shared/api/orderLimitsApi.js": {
     "named": [
       "NO_ORDER_LIMITS",
@@ -412,6 +423,19 @@
       "normalizeOrderLimits"
     ],
     "hasDefault": false,
+    "originalLines": 0,
+    "realApi": true
+  },
+  "src/features/pricing/api/servicePricingService.js": {
+    "named": [
+      "SERVICE_PRICINGS_ENDPOINT",
+      "filterServicePricings",
+      "formatVnd",
+      "getServicePricingDetailApi",
+      "getServicePricingsApi",
+      "normalizeServicePricing"
+    ],
+    "hasDefault": true,
     "originalLines": 0,
     "realApi": true
   }
