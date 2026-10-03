@@ -116,20 +116,20 @@ export default function PurchaseMoneyCard({
       value: outstanding,
     },
     quotation &&
-      !legacy &&
-      !stopped && {
-        key: "later",
-        tone: "is-later",
-        label: "Tạm tính, thu khi hàng về VN",
-        value: quotation.estimatedLaterAmount,
-      },
+    !legacy &&
+    !stopped && {
+      key: "later",
+      tone: "is-later",
+      label: "Tạm tính, thu khi hàng về VN",
+      value: quotation.estimatedLaterAmount,
+    },
     quotation &&
-      legacy && {
-        key: "remaining",
-        tone: "is-later",
-        label: "Còn lại (báo giá cũ)",
-        value: quotation.remainingAmount,
-      },
+    legacy && {
+      key: "remaining",
+      tone: "is-later",
+      label: "Còn lại (báo giá cũ)",
+      value: quotation.remainingAmount,
+    },
     refunded > 0 && {
       key: "refund",
       tone: "is-refund",
@@ -138,27 +138,31 @@ export default function PurchaseMoneyCard({
       extra: pendingRefund > 0 ? `+ ${formatVnd(pendingRefund)} đang chờ hoàn` : "",
     },
     refunded <= 0 &&
-      pendingRefund > 0 && {
-        key: "refund-pending",
-        tone: "is-refund",
-        label: "VCL đang hoàn cho bạn",
-        value: pendingRefund,
-      },
+    pendingRefund > 0 && {
+      key: "refund-pending",
+      tone: "is-refund",
+      label: "VCL đang hoàn cho bạn",
+      value: pendingRefund,
+    },
   ].filter(Boolean);
 
   const additionalFees = Array.isArray(quotation?.additionalFees) ? quotation.additionalFees : [];
 
   const prepayLines = quotation
     ? [
-        { key: "goods", label: "Tiền hàng", value: quotation.productsSubtotal },
-        { key: "fee", label: "Phí mua hộ", value: quotation.purchaseFee },
-        { key: "domestic", label: "Ship nội địa (người bán → kho VCL)", value: quotation.domesticShippingFee },
-        ...additionalFees.map((fee, index) => ({
-          key: `extra-${fee?.id || index}`,
-          label: fee?.feeName || "Phụ phí",
-          value: fee?.amount,
-        })),
-      ].filter((line) => toNumber(line.value) !== 0)
+      { key: "goods", label: "Tiền hàng", value: quotation.productsSubtotal },
+      ...(additionalFees.length === 0
+        ? [
+            { key: "fee", label: "Phí mua hộ", value: quotation.purchaseFee },
+            { key: "domestic", label: "Ship nội địa (người bán → kho VCL)", value: quotation.domesticShippingFee },
+          ]
+        : []),
+      ...additionalFees.map((fee, index) => ({
+        key: `extra-${fee?.id || index}`,
+        label: fee?.feeName || "Phụ phí",
+        value: fee?.amount,
+      })),
+    ].filter((line) => toNumber(line.value) !== 0)
     : [];
 
   const weightNote =
@@ -168,9 +172,9 @@ export default function PurchaseMoneyCard({
 
   const laterLines = quotation
     ? [
-        { key: "freight", label: `Cước quốc tế tạm tính${weightNote}`, value: quotation.shippingFee },
-        { key: "tax", label: "Thuế nhập khẩu tạm tính", value: quotation.importTax },
-      ].filter((line) => toNumber(line.value) !== 0)
+      { key: "freight", label: `Cước quốc tế tạm tính${weightNote}`, value: quotation.shippingFee },
+      { key: "tax", label: "Thuế nhập khẩu tạm tính", value: quotation.importTax },
+    ].filter((line) => toNumber(line.value) !== 0)
     : [];
 
   return (
